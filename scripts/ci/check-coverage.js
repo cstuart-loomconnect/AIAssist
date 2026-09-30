@@ -4,12 +4,25 @@ const fs = require('fs');
 const path = require('path');
 
 const [dir = 'test-results', min = '75'] = process.argv.slice(2);
-const file = fs.readdirSync(dir).find((f) => /^test-result-\d+\.json$/.test(f) || f === 'test-result.json');
-if (!file) {
-    console.error(`No test result JSON found in ${dir}`);
+// The CLI names the file test-result-<runId>.json (run IDs contain letters), and also writes other
+// JSON files (coverage detail), so pick the one that holds the run summary.
+const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json')) : [];
+let summary;
+for (const f of files) {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        if (parsed.summary && parsed.summary.testsRan !== undefined) {
+            summary = parsed.summary;
+            break;
+        }
+    } catch (e) {
+        // not a results file
+    }
+}
+if (!summary) {
+    console.error(`No Apex test summary found in ${dir}. Files present: ${files.join(', ') || 'none'}`);
     process.exit(1);
 }
-const { summary } = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
 const coverage = parseInt(String(summary.orgWideCoverage).replace('%', ''), 10);
 console.log(`Tests: ${summary.passing} passing, ${summary.failing} failing. Org-wide coverage: ${coverage}%`);
 if (Number(summary.failing) > 0) process.exit(1);
