@@ -61,12 +61,19 @@ jobs:
         with:
           node-version: 22
       # Lints LWC HTML/CSS for SLDS styling-hook, deprecated class and hardcoded value issues.
-      - run: npx --yes @salesforce-ux/slds-linter@latest lint force-app --format sarif --output slds-report.sarif
+      - name: SLDS lint
+        run: npx --yes @salesforce-ux/slds-linter@latest lint force-app
+      - name: SLDS report
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p slds-report
+          npx --yes @salesforce-ux/slds-linter@latest report force-app --format sarif --output slds-report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: slds-report
-          path: slds-report.sarif
+          path: slds-report/
           if-no-files-found: ignore
 
   code-analyzer:
@@ -83,6 +90,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      # The Flow engine in Code Analyzer needs Python 3.10+.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm install --global @salesforce/cli
       - run: sf plugins install code-analyzer
       # Fails the job on severity 2 (High) or worse. Config lives in code-analyzer.yml.
@@ -96,7 +107,8 @@ jobs:
             --severity-threshold 2 \
             --view table \
             --output-file code-analyzer-results.html \
-            --output-file code-analyzer-results.sarif
+            --output-file code-analyzer-results.sarif \
+            --output-file code-analyzer-results.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -116,70 +128,46 @@ jobs:
       - run: npm install --package-lock-only --no-audit --no-fund
       - run: npm audit --audit-level=high
 
-  scratch-org-tests:
-    name: Scratch org + Apex tests
-    needs: [detect, format-and-lint, code-analyzer, dependency-audit]
-    # Skip if a prerequisite was skipped for lack of source; fail if one failed.
-    if: needs.detect.outputs.has_apex == 'true' && !cancelled() && !contains(needs.*.result, 'failure')
+  naming-conventions:
+    name: Naming conventions
+    needs: detect
+    if: needs.detect.outputs.has_source == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      ORG_ALIAS: ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --global @salesforce/cli
+      - run: node scripts/ci/check-naming.js
 
-      - name: Authenticate Dev Hub
-        env:
-          DEVHUB_SFDX_AUTH_URL: ${{ secrets.DEVHUB_SFDX_AUTH_URL }}
-        run: |
-          test -n "$DEVHUB_SFDX_AUTH_URL" || { echo "::error::Missing DEVHUB_SFDX_AUTH_URL secret"; exit 1; }
-          echo "$DEVHUB_SFDX_AUTH_URL" > devhub.txt
-          sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
-          rm devhub.txt
+  scratch-org-tests:
+    name: Scratch org + Apex tests
+    needs: [detect, format-and-lint, code-analyzer, dependency-audit, naming-conventions]
+    # Skip if a prerequisite was skipped for lack of source; fail if one failed.
+    if: needs.detect.outputs.has_apex == 'true' && !cancelled() && !contains(needs.*.result, 'failure')
+    uses: ./.github/workflows/scratch-org-tests.yml
+    secrets: inherit
 
-      - name: Create scratch org
-        run: |
-          sf org create scratch \
-            --definition-file config/project-scratch-def.json \
-            --alias "$ORG_ALIAS" \
-            --duration-days 1 \
-            --set-default \
-            --wait 15
-
-      - name: Validate deploy (check-only)
-        run: sf project deploy start --dry-run --source-dir force-app --test-level NoTestRun --wait 30
-
-      - name: Deploy source
-        run: sf project deploy start --source-dir force-app --wait 30
-
-      - name: Assign permission sets
-        run: node scripts/ci/assign-permsets.js
-
-      - name: Run Apex tests
-        run: |
-          mkdir -p test-results
-          sf apex run test \
-            --test-level RunLocalTests \
-            --code-coverage \
-            --result-format json \
-            --output-dir test-results \
-            --wait 45
-
-      - name: Enforce coverage
-        if: always()
-        run: node scripts/ci/check-coverage.js test-results 75
-
-      - uses: actions/upload-artifact@v4
-        if: always()
+  pr-comment:
+    name: Post results to PR
+    needs: [code-analyzer, naming-conventions, scratch-org-tests]
+    if: github.event_name == 'pull_request' && !cancelled()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          name: apex-test-results
-          path: test-results/
-          if-no-files-found: ignore
-
-      - name: Delete scratch org
-        if: always()
-        run: sf org delete scratch --target-org "$ORG_ALIAS" --no-prompt || true
+          pattern: '{code-analyzer-results,apex-test-results}'
+      - uses: actions/github-script@v7
+        # Fork PRs get a read-only token; don't fail the run over a missing comment.
+        continue-on-error: true
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const script = require('./scripts/ci/pr-comment.js');
+            await script({ github, context, needs: JSON.parse(process.env.NEEDS) });

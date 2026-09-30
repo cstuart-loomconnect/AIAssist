@@ -1,0 +1,40 @@
+name: PR Hygiene
+
+# Labels PRs by the areas they change and enforces a conventional PR title (feat:, fix:, ...).
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Label by area
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v5
+        continue-on-error: true
+
+  title:
+    name: PR title format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            test
+            perf
+            build
+            ci
+            chore
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: The subject "{subject}" must start with a lowercase letter.
