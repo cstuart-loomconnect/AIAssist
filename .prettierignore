@@ -9,3 +9,8 @@
 .vscode
 
 coverage/
+# CI tooling and contributor docs
+.github
+scripts/ci
+code-analyzer.yml
+CONTRIBUTING.md
