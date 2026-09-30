@@ -24,7 +24,7 @@ jobs:
     env:
       ORG_ALIAS: ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v7
