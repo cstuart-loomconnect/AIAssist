@@ -37,7 +37,16 @@ jobs:
           DEVHUB_SFDX_AUTH_URL: ${{ secrets.DEVHUB_SFDX_AUTH_URL }}
         run: |
           test -n "$DEVHUB_SFDX_AUTH_URL" || { echo "::error::Missing DEVHUB_SFDX_AUTH_URL secret"; exit 1; }
-          echo "$DEVHUB_SFDX_AUTH_URL" > devhub.txt
+          # Tolerate stray quotes, spaces and line breaks from pasting, then keep only the URL itself.
+          url=$(printf '%s' "$DEVHUB_SFDX_AUTH_URL" | tr -d '[:space:]"'"'" | grep -o 'force://.*' || true)
+          if [ -z "$url" ]; then
+            len=${#DEVHUB_SFDX_AUTH_URL}
+            echo "::error::DEVHUB_SFDX_AUTH_URL does not contain a force:// URL (secret length: $len characters). Generate it with: sf org auth show-sfdx-auth-url --target-org <devhub> --no-prompt"
+            exit 1
+          fi
+          case "$url" in *"@"*) ;; *) echo "::error::Auth URL is missing the @<instanceUrl> part (length: ${#url})"; exit 1;; esac
+          echo "Auth URL format looks valid (length: ${#url} characters)"
+          printf '%s' "$url" > devhub.txt
           sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
           rm devhub.txt
 
