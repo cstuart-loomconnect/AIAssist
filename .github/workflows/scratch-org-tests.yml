@@ -68,7 +68,18 @@ jobs:
       - name: Assign permission sets
         run: node scripts/ci/assign-permsets.js
 
+      - name: Look for Apex tests
+        id: tests
+        run: |
+          if grep -rIlis --include='*.cls' '@istest' force-app | head -1 | grep -q .; then
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No Apex test classes (@IsTest) found, so no tests were run and coverage was not checked."
+          fi
+
       - name: Run Apex tests
+        if: steps.tests.outputs.has_tests == 'true'
         run: |
           mkdir -p test-results
           sf apex run test \
@@ -80,7 +91,7 @@ jobs:
 
       # Only when tests actually produced results; otherwise the earlier failure is the real error.
       - name: Enforce coverage
-        if: always() && hashFiles('test-results/*.json') != ''
+        if: always() && steps.tests.outputs.has_tests == 'true' && hashFiles('test-results/*.json') != ''
         run: node scripts/ci/check-coverage.js test-results 75
 
       - uses: actions/upload-artifact@v4

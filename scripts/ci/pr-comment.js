@@ -6,19 +6,22 @@ const path = require('path');
 const MARKER = '<!-- ci-results -->';
 const ICON = { success: '✅', failure: '❌', skipped: '⏭️', cancelled: '🚫' };
 
-function readJson(dir, pattern) {
+// Returns the first JSON file in dir that satisfies `accept`, or null.
+function readJson(dir, accept) {
     if (!fs.existsSync(dir)) return null;
-    const file = fs.readdirSync(dir).find((f) => pattern.test(f));
-    if (!file) return null;
-    try {
-        return JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
-    } catch (e) {
-        return null;
+    for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.json'))) {
+        try {
+            const parsed = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+            if (accept(parsed)) return parsed;
+        } catch (e) {
+            // not the file we want
+        }
     }
+    return null;
 }
 
 function apexSection() {
-    const result = readJson('apex-test-results', /^test-result(-\d+)?\.json$/);
+    const result = readJson('apex-test-results', (r) => r.summary && r.summary.testsRan !== undefined);
     if (!result) return '_No Apex test results (no Apex in this change, or the job did not run)._';
     const s = result.summary;
     const lines = [
@@ -35,7 +38,7 @@ function apexSection() {
 }
 
 function analyzerSection() {
-    const r = readJson('code-analyzer-results', /^code-analyzer-results\.json$/);
+    const r = readJson('code-analyzer-results', (r) => r.violationCounts !== undefined);
     if (!r) return '_No Code Analyzer results._';
     const c = r.violationCounts || {};
     const lines = [
