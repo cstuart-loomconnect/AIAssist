@@ -61,12 +61,16 @@ jobs:
         with:
           node-version: 22
       # Lints LWC HTML/CSS for SLDS styling-hook, deprecated class and hardcoded value issues.
-      - run: npx --yes @salesforce-ux/slds-linter@latest lint force-app --format sarif --output slds-report.sarif
+      - name: SLDS lint
+        run: npx --yes @salesforce-ux/slds-linter@latest lint force-app
+      - name: SLDS report
+        if: always()
+        run: npx --yes @salesforce-ux/slds-linter@latest report force-app --format sarif --output slds-report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: slds-report
-          path: slds-report.sarif
+          path: slds-report/
           if-no-files-found: ignore
 
   code-analyzer:
