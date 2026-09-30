@@ -1,15 +1,17 @@
 name: PR Validation
 
-# Runs on every pull request into development or master, and on pushes to feature branches.
+# Runs on pull requests into development or master, on pushes to feature branches, and on every
+# merge into development (post-merge integration run).
 on:
   pull_request:
     branches: [development, master]
   push:
-    branches: ['feature/**']
+    branches: ['feature/**', development]
 
 concurrency:
   group: pr-validation-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a post-merge run on development; each merge gets its own result.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/development' }}
 
 permissions:
   contents: read
@@ -102,9 +104,21 @@ jobs:
           path: code-analyzer-results.*
           if-no-files-found: ignore
 
+  dependency-audit:
+    name: Dependency audit (npm)
+    needs: detect
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --package-lock-only --no-audit --no-fund
+      - run: npm audit --audit-level=high
+
   scratch-org-tests:
     name: Scratch org + Apex tests
-    needs: [detect, format-and-lint, code-analyzer]
+    needs: [detect, format-and-lint, code-analyzer, dependency-audit]
     # Skip if a prerequisite was skipped for lack of source; fail if one failed.
     if: needs.detect.outputs.has_apex == 'true' && !cancelled() && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
@@ -135,6 +149,9 @@ jobs:
             --duration-days 1 \
             --set-default \
             --wait 15
+
+      - name: Validate deploy (check-only)
+        run: sf project deploy start --dry-run --source-dir force-app --test-level NoTestRun --wait 30
 
       - name: Deploy source
         run: sf project deploy start --source-dir force-app --wait 30
