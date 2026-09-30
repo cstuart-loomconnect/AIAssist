@@ -1,0 +1,16 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true,
+      "package": "AIAssist",
+      "versionName": "Initial Release",
+      "versionDescription": "AI Assist for Salesforce",
+      "versionNumber": "0.1.0.NEXT"
+    }
+  ],
+  "name": "AIAssist",
+  "namespace": "LoomConnect",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "67.0"
+}
