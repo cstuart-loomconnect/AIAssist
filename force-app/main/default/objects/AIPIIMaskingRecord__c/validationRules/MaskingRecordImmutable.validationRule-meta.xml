@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MaskingRecordImmutable</fullName>
+    <active>true</active>
+    <description>Write-once evidence.</description>
+    <errorConditionFormula>AND(NOT(ISNEW()), OR(ISCHANGED(SourceObject__c), ISCHANGED(SourceField__c), ISCHANGED(PIIFieldType__c), ISCHANGED(ComplianceGroup__c), ISCHANGED(MaskingStrategy__c), ISCHANGED(ValuesMasked__c), ISCHANGED(Outcome__c)))</errorConditionFormula>
+    <errorMessage>A PII masking record is evidence and cannot be changed.</errorMessage>
+</ValidationRule>

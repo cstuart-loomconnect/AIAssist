@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FailureDetail__c</fullName>
+    <description>Why the deletion failed, if it did. Never contains deleted content.</description>
+    <inlineHelpText>Set automatically when the deletion fails.</inlineHelpText>
+    <label>Failure Detail</label>
+    <required>false</required>
+    <type>TextArea</type>
+</CustomField>

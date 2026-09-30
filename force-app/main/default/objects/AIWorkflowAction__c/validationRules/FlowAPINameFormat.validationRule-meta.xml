@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FlowAPINameFormat</fullName>
+    <active>true</active>
+    <description>Flow API Name may contain only letters, numbers and underscores, and must start with a letter.</description>
+    <errorConditionFormula>AND(NOT(ISBLANK(FlowAPIName__c)), NOT(REGEX(FlowAPIName__c, "^[A-Za-z][A-Za-z0-9_]*$")))</errorConditionFormula>
+    <errorDisplayField>FlowAPIName__c</errorDisplayField>
+    <errorMessage>Flow API Name may contain only letters, numbers and underscores, and must start with a letter.</errorMessage>
+</ValidationRule>

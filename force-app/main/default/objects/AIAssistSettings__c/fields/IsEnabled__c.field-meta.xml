@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsEnabled__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Master on/off switch for this AI Assist Settings record. Unchecked, AI Assist treats the application as switched off for everyone the record applies to. Replaces the former Is Application Active field.</description>
+    <inlineHelpText>Untick to switch AI Assist off. Ticked by default so AI Assist works out of the box.</inlineHelpText>
+    <label>Is Enabled</label>
+    <type>Checkbox</type>
+</CustomField>

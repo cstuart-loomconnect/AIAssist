@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIPromptTemplate__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The Prompt Template used to produce this reply. A conversation can switch templates, so this is recorded per message.</description>
+    <inlineHelpText>Set by the platform when the reply is generated.</inlineHelpText>
+    <label>AI Prompt Template</label>
+    <referenceTo>AIPromptTemplate__c</referenceTo>
+    <relationshipLabel>AI Conversation Messages</relationshipLabel>
+    <relationshipName>AIConversationMessages</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EvidenceCannotBeRewritten</fullName>
+    <active>true</active>
+    <description>Evidence fields can be set once.</description>
+    <errorConditionFormula>AND(NOT(ISNEW()), OR(AND(ISCHANGED(ConfirmedBy__c), NOT(ISBLANK(PRIORVALUE(ConfirmedBy__c)))), AND(ISCHANGED(ConfirmedDate__c), NOT(ISBLANK(PRIORVALUE(ConfirmedDate__c)))), AND(ISCHANGED(TargetRecordId__c), NOT(ISBLANK(PRIORVALUE(TargetRecordId__c)))), AND(ISCHANGED(RequiredConfirmation__c), PRIORVALUE(RequiredConfirmation__c)), AND(ISCHANGED(PIIMaskingApplied__c), PRIORVALUE(PIIMaskingApplied__c)), AND(ISCHANGED(Provider__c), NOT(ISBLANK(PRIORVALUE(Provider__c))))))</errorConditionFormula>
+    <errorMessage>Once a step has recorded who confirmed, which record, which provider or that masking ran, that evidence cannot be changed.</errorMessage>
+</ValidationRule>

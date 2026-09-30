@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <compactLayoutAssignment>AIUsageDailyCompact</compactLayoutAssignment>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>One row per user, agent, model and day: conversations, messages, tokens and failures. Kept after conversations are purged so cost and adoption reporting survive retention, and so daily limits are checked with one indexed read instead of summing messages.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>AI Usage Daily</label>
+    <nameField>
+        <displayFormat>AI Usage - {000000}</displayFormat>
+        <label>AI Usage Daily Name</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI Usage Daily Records</pluralLabel>
+    <searchLayouts />
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

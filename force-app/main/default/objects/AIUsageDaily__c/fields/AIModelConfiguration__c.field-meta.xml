@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIModelConfiguration__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The model configuration that served the usage. Prices are read from here to estimate cost.</description>
+    <inlineHelpText>The model this usage row counts.</inlineHelpText>
+    <label>AI Model Configuration</label>
+    <referenceTo>AIModelConfiguration__c</referenceTo>
+    <relationshipLabel>AI Usage Daily Records</relationshipLabel>
+    <relationshipName>AIUsageDailyRecords</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

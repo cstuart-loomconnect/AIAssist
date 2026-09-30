@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SignalTagFormat</fullName>
+    <active>true</active>
+    <description>The Signal Tag is a token the AI emits and the platform matches on, so its format is strictly limited.</description>
+    <errorConditionFormula>AND(NOT(ISBLANK(SignalTag__c)), NOT(REGEX(SignalTag__c, "^[A-Z][A-Z0-9_]{1,39}$")))</errorConditionFormula>
+    <errorDisplayField>SignalTag__c</errorDisplayField>
+    <errorMessage>Signal Tag must be 2 to 40 characters: capital letters, numbers and underscores, starting with a letter.</errorMessage>
+</ValidationRule>

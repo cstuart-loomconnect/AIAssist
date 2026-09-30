@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EstimatedCost__c</fullName>
+    <description>Estimated spend using the prices on the model configuration. An estimate only - your provider invoice is the source of truth.</description>
+    <formula>(InputTokens__c * BLANKVALUE(AIModelConfiguration__r.InputCostPerMillionTokens__c, 0) + OutputTokens__c * BLANKVALUE(AIModelConfiguration__r.OutputCostPerMillionTokens__c, 0)) / 1000000</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Calculated from token counts and the model configuration prices.</inlineHelpText>
+    <label>Estimated Cost</label>
+    <precision>18</precision>
+    <scale>4</scale>
+    <type>Number</type>
+</CustomField>

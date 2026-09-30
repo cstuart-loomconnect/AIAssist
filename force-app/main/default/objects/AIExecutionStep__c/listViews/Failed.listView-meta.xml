@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Failed</fullName>
+    <columns>NAME</columns>
+    <columns>AIConversationMessage__c</columns>
+    <columns>StepOrder__c</columns>
+    <columns>AIDataSource__c</columns>
+    <columns>AIWorkflowAction__c</columns>
+    <columns>StepDetail__c</columns>
+    <columns>AttemptNumber__c</columns>
+    <columns>CREATED_DATE</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>Failed</value>
+    </filters>
+    <label>Failed Steps</label>
+</ListView>

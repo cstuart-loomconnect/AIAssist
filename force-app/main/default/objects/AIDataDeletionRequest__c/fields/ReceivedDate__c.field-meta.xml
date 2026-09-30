@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ReceivedDate__c</fullName>
+    <description>The day the data deletion request was received. Starts the statutory clock.</description>
+    <inlineHelpText>Enter the date the person asked, not today's date.</inlineHelpText>
+    <label>Received Date</label>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <type>Date</type>
+</CustomField>

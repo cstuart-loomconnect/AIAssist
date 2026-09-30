@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Comment__c</fullName>
+    <complianceGroup>PII</complianceGroup>
+    <description>Free-text detail explaining the rating.</description>
+    <inlineHelpText>Add any additional detail on what was or wasn't helpful about this response.</inlineHelpText>
+    <label>Comment</label>
+    <required>false</required>
+    <securityClassification>Confidential</securityClassification>
+    <trackTrending>false</trackTrending>
+    <type>TextArea</type>
+</CustomField>

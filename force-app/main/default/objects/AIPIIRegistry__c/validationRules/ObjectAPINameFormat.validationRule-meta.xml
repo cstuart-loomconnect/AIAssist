@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ObjectAPINameFormat</fullName>
+    <active>true</active>
+    <description>Object API Name may contain only letters, numbers and underscores.</description>
+    <errorConditionFormula>AND(NOT(ISBLANK(ObjectAPIName__c)), NOT(REGEX(ObjectAPIName__c, "^[A-Za-z][A-Za-z0-9_]*$")))</errorConditionFormula>
+    <errorDisplayField>ObjectAPIName__c</errorDisplayField>
+    <errorMessage>Object API Name may contain only letters, numbers and underscores.</errorMessage>
+</ValidationRule>

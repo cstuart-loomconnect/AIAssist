@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApexClassRequired</fullName>
+    <active>true</active>
+    <description>Apex Class Name is required when Action Type is Apex.</description>
+    <errorConditionFormula>AND(ISPICKVAL(ActionType__c, "Apex"), ISBLANK(ApexClassName__c))</errorConditionFormula>
+    <errorDisplayField>ApexClassName__c</errorDisplayField>
+    <errorMessage>Apex Class Name is required when Action Type is Apex.</errorMessage>
+</ValidationRule>

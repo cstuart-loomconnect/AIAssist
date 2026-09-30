@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ShowExecutionTraceToUser__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Shows each step the agent takes (for example Looking up information) while a reply is being prepared. Step names only - request and response content is governed separately by the per-user Debug Mode Enabled setting.</description>
+    <inlineHelpText>Tick to show users live progress steps while they wait. This never shows request or response content; that needs Debug Mode on the user.</inlineHelpText>
+    <label>Show Live Progress Steps To User</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

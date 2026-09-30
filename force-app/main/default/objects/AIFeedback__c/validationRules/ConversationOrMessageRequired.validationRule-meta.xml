@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ConversationOrMessageRequired</fullName>
+    <active>true</active>
+    <description>Feedback must be linked to a conversation or a message.</description>
+    <errorConditionFormula>AND(ISBLANK(AIConversation__c), ISBLANK(AIConversationMessage__c))</errorConditionFormula>
+    <errorDisplayField>AIConversationMessage__c</errorDisplayField>
+    <errorMessage>Feedback must be linked to a conversation or a message.</errorMessage>
+</ValidationRule>

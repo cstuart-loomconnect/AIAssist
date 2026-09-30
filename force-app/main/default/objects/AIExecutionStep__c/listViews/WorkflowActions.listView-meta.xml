@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>WorkflowActions</fullName>
+    <columns>NAME</columns>
+    <columns>CREATED_DATE</columns>
+    <columns>AIWorkflowAction__c</columns>
+    <columns>Status__c</columns>
+    <columns>TargetObject__c</columns>
+    <columns>TargetRecordId__c</columns>
+    <columns>RequiredConfirmation__c</columns>
+    <columns>ConfirmedBy__c</columns>
+    <columns>ConfirmedDate__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>StepType__c</field>
+        <operation>equals</operation>
+        <value>Workflow Action</value>
+    </filters>
+    <label>Workflow Action Steps</label>
+</ListView>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SubjectUser__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>The user whose data is to be deleted. Used when Scope is User.</description>
+    <inlineHelpText>Select the user. Leave blank when Scope is Related Record.</inlineHelpText>
+    <label>Subject User</label>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>AI Data Deletion Requests</relationshipLabel>
+    <relationshipName>AIDataDeletionRequests</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

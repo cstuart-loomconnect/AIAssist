@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HitALimit</fullName>
+    <columns>NAME</columns>
+    <columns>AIAgent__c</columns>
+    <columns>ConversationCloseReason__c</columns>
+    <columns>ConversationClosedTimestamp__c</columns>
+    <columns>MessageCount__c</columns>
+    <columns>ConversationTokenUsage__c</columns>
+    <columns>CREATEDBY_USER</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>ConversationCloseReason__c</field>
+        <operation>equals</operation>
+        <value>Message Limit Reached,Token Limit Reached</value>
+    </filters>
+    <label>Closed At A Limit</label>
+</ListView>

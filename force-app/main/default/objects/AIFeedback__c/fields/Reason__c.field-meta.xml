@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reason__c</fullName>
+    <description>Why the user rated a response Not Helpful. Drives prompt and data-source tuning far better than free-text comments.</description>
+    <inlineHelpText>Pick the closest reason. Leave blank for a Helpful rating.</inlineHelpText>
+    <label>Reason</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Inaccurate</fullName>
+                <default>false</default>
+                <label>Inaccurate</label>
+            </value>
+            <value>
+                <fullName>Incomplete</fullName>
+                <default>false</default>
+                <label>Incomplete</label>
+            </value>
+            <value>
+                <fullName>Not Relevant</fullName>
+                <default>false</default>
+                <label>Not Relevant</label>
+            </value>
+            <value>
+                <fullName>Too Slow</fullName>
+                <default>false</default>
+                <label>Too Slow</label>
+            </value>
+            <value>
+                <fullName>Unsafe Or Inappropriate</fullName>
+                <default>false</default>
+                <label>Unsafe Or Inappropriate</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

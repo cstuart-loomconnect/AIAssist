@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ProviderCalls</fullName>
+    <columns>NAME</columns>
+    <columns>CREATED_DATE</columns>
+    <columns>Provider__c</columns>
+    <columns>ModelIdentifier__c</columns>
+    <columns>RecordsSentCount__c</columns>
+    <columns>FieldsSentCount__c</columns>
+    <columns>PIIMaskingApplied__c</columns>
+    <columns>PIIValuesMasked__c</columns>
+    <columns>Status__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>StepType__c</field>
+        <operation>equals</operation>
+        <value>Provider Call</value>
+    </filters>
+    <label>Data Sent To Provider</label>
+</ListView>

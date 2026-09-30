@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LastMessageTimestamp__c</fullName>
+    <description>Timestamp of the most recent message in the conversation. Maintained by the platform so idle-timeout and Last Message Date retention can filter on one indexed-friendly field instead of scanning every message.</description>
+    <inlineHelpText>Updated automatically each time a message is added to the conversation.</inlineHelpText>
+    <label>Last Message Timestamp</label>
+    <required>false</required>
+    <type>DateTime</type>
+</CustomField>

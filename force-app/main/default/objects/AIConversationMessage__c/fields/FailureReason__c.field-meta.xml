@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>FailureReason__c</fullName>
+    <description>Why the reply failed, when Processing Status is Failed. A category only - detail is on the execution steps and the platform log.</description>
+    <inlineHelpText>Set by the platform when a reply fails.</inlineHelpText>
+    <label>Failure Reason</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Provider Error</fullName>
+                <default>false</default>
+                <label>Provider Error</label>
+            </value>
+            <value>
+                <fullName>Timeout</fullName>
+                <default>false</default>
+                <label>Timeout</label>
+            </value>
+            <value>
+                <fullName>Limit Reached</fullName>
+                <default>false</default>
+                <label>Limit Reached</label>
+            </value>
+            <value>
+                <fullName>Request Blocked</fullName>
+                <default>false</default>
+                <label>Request Blocked</label>
+            </value>
+            <value>
+                <fullName>PII Masking Failed</fullName>
+                <default>false</default>
+                <label>PII Masking Failed</label>
+            </value>
+            <value>
+                <fullName>Configuration Error</fullName>
+                <default>false</default>
+                <label>Configuration Error</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

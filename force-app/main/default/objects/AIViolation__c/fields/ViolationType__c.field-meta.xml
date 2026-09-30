@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ViolationType__c</fullName>
+    <description>The category of violation, copied from the triggering rule at the time it fired.</description>
+    <inlineHelpText>Set automatically based on the rule that fired.</inlineHelpText>
+    <label>Violation Type</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetName>AIViolationType</valueSetName>
+    </valueSet>
+</CustomField>

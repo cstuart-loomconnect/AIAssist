@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AuditFieldsImmutable</fullName>
+    <active>true</active>
+    <description>Defence in depth behind field-level security. References and detail may be cleared for a data deletion request; nothing else may change.</description>
+    <errorConditionFormula>AND(NOT(ISNEW()), OR(ISCHANGED(AIViolationRule__c), ISCHANGED(ViolationType__c), ISCHANGED(Severity__c), ISCHANGED(RequestBlocked__c), AND(ISCHANGED(AIConversation__c), NOT(ISBLANK(AIConversation__c))), AND(ISCHANGED(AIConversationMessage__c), NOT(ISBLANK(AIConversationMessage__c))), AND(ISCHANGED(User__c), NOT(ISBLANK(User__c))), AND(ISCHANGED(Detail__c), NOT(ISBLANK(Detail__c)))))</errorConditionFormula>
+    <errorMessage>A violation is an audit record. Only Review Status can be changed after it is created, apart from removing the person and detail for a data deletion request.</errorMessage>
+</ValidationRule>

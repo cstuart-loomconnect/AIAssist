@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ElevatedFeatures</fullName>
+    <booleanFilter>1 OR 2 OR 3</booleanFilter>
+    <columns>NAME</columns>
+    <columns>User__c</columns>
+    <columns>DebugModeEnabled__c</columns>
+    <columns>WorkflowActionsEnabled__c</columns>
+    <columns>ConversationExportEnabled__c</columns>
+    <columns>ConversationVisibilityScope__c</columns>
+    <columns>LAST_UPDATE</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>DebugModeEnabled__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <filters>
+        <field>WorkflowActionsEnabled__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <filters>
+        <field>ConversationExportEnabled__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <label>Elevated Features On</label>
+</ListView>
