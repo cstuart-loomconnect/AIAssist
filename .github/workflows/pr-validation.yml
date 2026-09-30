@@ -83,6 +83,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      # The Flow engine in Code Analyzer needs Python 3.10+.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm install --global @salesforce/cli
       - run: sf plugins install code-analyzer
       # Fails the job on severity 2 (High) or worse. Config lives in code-analyzer.yml.
