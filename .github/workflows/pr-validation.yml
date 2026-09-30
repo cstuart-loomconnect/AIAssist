@@ -1,0 +1,188 @@
+name: PR Validation
+
+# Runs on every pull request into development or master, and on pushes to feature branches.
+on:
+  pull_request:
+    branches: [development, master]
+  push:
+    branches: ['feature/**']
+
+concurrency:
+  group: pr-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect changed metadata
+    runs-on: ubuntu-latest
+    outputs:
+      has_apex: ${{ steps.scan.outputs.has_apex }}
+      has_lwc: ${{ steps.scan.outputs.has_lwc }}
+      has_source: ${{ steps.scan.outputs.has_source }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: scan
+        run: |
+          apex=$(find force-app -name '*.cls' -o -name '*.trigger' | head -1)
+          lwc=$(find force-app -path '*/lwc/*' -name '*.js' -not -path '*/__tests__/*' | head -1)
+          source=$(find force-app -type f -not -name '.gitkeep' | head -1)
+          echo "has_apex=$([ -n "$apex" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_lwc=$([ -n "$lwc" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_source=$([ -n "$source" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  format-and-lint:
+    name: Prettier + ESLint (LWC/Aura)
+    needs: detect
+    if: needs.detect.outputs.has_source == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npm run prettier:verify
+      - run: npx eslint "force-app/**/{aura,lwc}/**/*.js" --no-error-on-unmatched-pattern
+
+  lwc-jest:
+    name: LWC Jest unit tests
+    needs: detect
+    if: needs.detect.outputs.has_lwc == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npm run test:unit:coverage -- --passWithNoTests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lwc-jest-coverage
+          path: coverage/
+          if-no-files-found: ignore
+
+  slds-validator:
+    name: SLDS Validator
+    needs: detect
+    if: needs.detect.outputs.has_lwc == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Lints LWC HTML/CSS for SLDS styling-hook, deprecated class and hardcoded value issues.
+      - run: npx --yes @salesforce-ux/slds-linter@latest lint force-app --format sarif --output slds-report.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: slds-report
+          path: slds-report.sarif
+          if-no-files-found: ignore
+
+  code-analyzer:
+    name: Salesforce Code Analyzer
+    needs: detect
+    if: needs.detect.outputs.has_source == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm install --global @salesforce/cli
+      - run: sf plugins install code-analyzer
+      # Fails the job on severity 2 (High) or worse. Config lives in code-analyzer.yml.
+      - name: Run Code Analyzer
+        run: |
+          sf code-analyzer run \
+            --workspace force-app \
+            --config-file code-analyzer.yml \
+            --rule-selector Recommended \
+            --rule-selector AppExchange \
+            --severity-threshold 2 \
+            --view table \
+            --output-file code-analyzer-results.html \
+            --output-file code-analyzer-results.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-analyzer-results
+          path: code-analyzer-results.*
+          if-no-files-found: ignore
+
+  scratch-org-tests:
+    name: Scratch org + Apex tests
+    needs: [detect, format-and-lint, code-analyzer]
+    # Skip if a prerequisite was skipped for lack of source; fail if one failed.
+    if: needs.detect.outputs.has_apex == 'true' && !cancelled() && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ORG_ALIAS: ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --global @salesforce/cli
+
+      - name: Authenticate Dev Hub
+        env:
+          DEVHUB_SFDX_AUTH_URL: ${{ secrets.DEVHUB_SFDX_AUTH_URL }}
+        run: |
+          test -n "$DEVHUB_SFDX_AUTH_URL" || { echo "::error::Missing DEVHUB_SFDX_AUTH_URL secret"; exit 1; }
+          echo "$DEVHUB_SFDX_AUTH_URL" > devhub.txt
+          sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
+          rm devhub.txt
+
+      - name: Create scratch org
+        run: |
+          sf org create scratch \
+            --definition-file config/project-scratch-def.json \
+            --alias "$ORG_ALIAS" \
+            --duration-days 1 \
+            --set-default \
+            --wait 15
+
+      - name: Deploy source
+        run: sf project deploy start --source-dir force-app --wait 30
+
+      - name: Assign permission sets
+        run: node scripts/ci/assign-permsets.js
+
+      - name: Run Apex tests
+        run: |
+          mkdir -p test-results
+          sf apex run test \
+            --test-level RunLocalTests \
+            --code-coverage \
+            --result-format json \
+            --output-dir test-results \
+            --wait 45
+
+      - name: Enforce coverage
+        if: always()
+        run: node scripts/ci/check-coverage.js test-results 75
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apex-test-results
+          path: test-results/
+          if-no-files-found: ignore
+
+      - name: Delete scratch org
+        if: always()
+        run: sf org delete scratch --target-org "$ORG_ALIAS" --no-prompt || true
