@@ -1,0 +1,25 @@
+apex:
+  - changed-files:
+      - any-glob-to-any-file: ['force-app/**/classes/**', 'force-app/**/triggers/**']
+lwc:
+  - changed-files:
+      - any-glob-to-any-file: 'force-app/**/lwc/**'
+aura:
+  - changed-files:
+      - any-glob-to-any-file: 'force-app/**/aura/**'
+objects:
+  - changed-files:
+      - any-glob-to-any-file: ['force-app/**/objects/**', 'force-app/**/customMetadata/**']
+flows:
+  - changed-files:
+      - any-glob-to-any-file: 'force-app/**/flows/**'
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          ['force-app/**/permissionsets/**', 'force-app/**/externalCredentials/**', 'force-app/**/namedCredentials/**']
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**', 'scripts/**', 'code-analyzer.yml', 'package.json']
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ['**/*.md']
