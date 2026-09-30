@@ -65,7 +65,10 @@ jobs:
         run: npx --yes @salesforce-ux/slds-linter@latest lint force-app
       - name: SLDS report
         if: always()
-        run: npx --yes @salesforce-ux/slds-linter@latest report force-app --format sarif --output slds-report
+        continue-on-error: true
+        run: |
+          mkdir -p slds-report
+          npx --yes @salesforce-ux/slds-linter@latest report force-app --format sarif --output slds-report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
