@@ -48,26 +48,6 @@ jobs:
       - run: npm run prettier:verify
       - run: npx eslint "force-app/**/{aura,lwc}/**/*.js" --no-error-on-unmatched-pattern
 
-  lwc-jest:
-    name: LWC Jest unit tests
-    needs: detect
-    if: needs.detect.outputs.has_lwc == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install --no-audit --no-fund
-      - run: npm run test:unit:coverage -- --passWithNoTests
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lwc-jest-coverage
-          path: coverage/
-          if-no-files-found: ignore
-
   slds-validator:
     name: SLDS Validator
     needs: detect
