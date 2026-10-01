@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>InputTokenCount__c</fullName>
+    <description
+  >Tokens sent to the AI provider to produce this reply (prompt, history and tool results), as reported by the provider. Token Count remains the total.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Set by the platform from the provider response. Used for cost reporting.</inlineHelpText>
+    <label>Input Token Count</label>
+    <precision>9</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

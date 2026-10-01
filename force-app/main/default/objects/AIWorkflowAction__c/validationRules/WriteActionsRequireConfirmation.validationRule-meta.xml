@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>WriteActionsRequireConfirmation</fullName>
+    <active>true</active>
+    <description
+  >Safety control: a Write action can never run without the user explicitly confirming it.</description>
+    <errorConditionFormula
+  >AND(ISPICKVAL(ExecutionType__c, "Write"), NOT(RequiresConfirmation__c))</errorConditionFormula>
+    <errorDisplayField>RequiresConfirmation__c</errorDisplayField>
+    <errorMessage
+  >Actions that change data (Execution Type = Write) must require user confirmation.</errorMessage>
+</ValidationRule>

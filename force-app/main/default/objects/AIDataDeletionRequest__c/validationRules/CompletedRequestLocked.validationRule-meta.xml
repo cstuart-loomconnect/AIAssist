@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CompletedRequestLocked</fullName>
+    <active>true</active>
+    <description
+  >The proof of what was deleted is never edited after the fact.</description>
+    <errorConditionFormula
+  >AND(NOT(ISNEW()), ISPICKVAL(PRIORVALUE(Status__c), "Completed"))</errorConditionFormula>
+    <errorMessage
+  >A completed data deletion request is an audit record and cannot be changed.</errorMessage>
+</ValidationRule>

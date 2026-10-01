@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PIIValuesMasked__c</fullName>
+    <description
+  >Total personal-data values replaced with placeholders in this call, calculated from the PII Masking Records under it.</description>
+    <inlineHelpText>Calculated from the PII Masking Records.</inlineHelpText>
+    <label>PII Values Masked</label>
+    <summarizedField>AIPIIMaskingRecord__c.ValuesMasked__c</summarizedField>
+    <summaryForeignKey
+  >AIPIIMaskingRecord__c.AIExecutionStep__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <type>Summary</type>
+</CustomField>

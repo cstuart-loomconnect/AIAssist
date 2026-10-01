@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PIIMaskingApplied__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Whether personal-data masking ran before this call was sent. Unchecked on a Provider Call step means the request went out unmasked and should be reviewed. Checked with nothing masked means masking ran and found nothing.</description>
+    <inlineHelpText>Set by the platform.</inlineHelpText>
+    <label>PII Masking Applied</label>
+    <type>Checkbox</type>
+</CustomField>

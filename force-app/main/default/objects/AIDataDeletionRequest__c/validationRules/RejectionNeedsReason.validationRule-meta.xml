@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RejectionNeedsReason</fullName>
+    <active>true</active>
+    <description>Give a reason when rejecting a request.</description>
+    <errorConditionFormula
+  >AND(ISPICKVAL(ApprovalDecision__c, "Rejected"), ISBLANK(RejectionReason__c))</errorConditionFormula>
+    <errorDisplayField>RejectionReason__c</errorDisplayField>
+    <errorMessage>Give a reason when rejecting a request.</errorMessage>
+</ValidationRule>

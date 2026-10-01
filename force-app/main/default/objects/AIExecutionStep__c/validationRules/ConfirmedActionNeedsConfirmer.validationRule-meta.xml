@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ConfirmedActionNeedsConfirmer</fullName>
+    <active>true</active>
+    <description
+  >The step itself proves the user confirmed before a write action ran.</description>
+    <errorConditionFormula
+  >AND(ISNEW(), ISPICKVAL(StepType__c, "Workflow Action"), RequiredConfirmation__c, ISPICKVAL(Status__c, "Success"), OR(ISBLANK(ConfirmedBy__c), ISBLANK(ConfirmedDate__c)))</errorConditionFormula>
+    <errorDisplayField>ConfirmedBy__c</errorDisplayField>
+    <errorMessage
+  >An action that required confirmation cannot be recorded as successful without who confirmed it and when.</errorMessage>
+</ValidationRule>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CostCurrencyFormat</fullName>
+    <active>true</active>
+    <description
+  >Cost Currency must be a three-letter code in capitals, for example USD.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(CostCurrency__c)), NOT(REGEX(CostCurrency__c, "^[A-Z]{3}$")))</errorConditionFormula>
+    <errorDisplayField>CostCurrency__c</errorDisplayField>
+    <errorMessage
+  >Cost Currency must be a three-letter code in capitals, for example USD.</errorMessage>
+</ValidationRule>
