@@ -10,6 +10,8 @@
     <label>Assignment Key</label>
     <length>120</length>
     <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>true</unique>
 </CustomField>

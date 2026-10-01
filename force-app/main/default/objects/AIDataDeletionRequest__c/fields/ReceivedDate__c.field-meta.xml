@@ -4,9 +4,10 @@
     <description
   >The day the data deletion request was received. Starts the statutory clock.</description>
     <inlineHelpText
-  >Enter the date the person asked, not today's date.</inlineHelpText>
+  >Enter the date the person asked, not today&apos;s date.</inlineHelpText>
     <label>Received Date</label>
     <required>false</required>
     <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>Date</type>
 </CustomField>

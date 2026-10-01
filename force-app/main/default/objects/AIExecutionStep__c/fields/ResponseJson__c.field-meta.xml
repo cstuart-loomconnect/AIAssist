@@ -3,7 +3,7 @@
     <fullName>ResponseJson__c</fullName>
     <complianceGroup>PII</complianceGroup>
     <description
-  >Only set on a "Provider callout" step - the raw HTTP response body the AI provider returned for that callout.</description>
+  >Only set on a &quot;Provider callout&quot; step - the raw HTTP response body the AI provider returned for that callout.</description>
     <inlineHelpText
   >Left blank for a data source step. Only captured when the running user has AIUserSettings__c.DebugModeEnabled__c, to avoid the storage cost for everyone else.</inlineHelpText>
     <label>Response JSON</label>

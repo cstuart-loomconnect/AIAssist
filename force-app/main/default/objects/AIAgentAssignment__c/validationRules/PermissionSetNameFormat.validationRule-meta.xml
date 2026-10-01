@@ -5,7 +5,7 @@
     <description
   >Permission Set Name must be the API name: letters, numbers and underscores only.</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(PermissionSetName__c)), NOT(REGEX(PermissionSetName__c, "^[A-Za-z][A-Za-z0-9_]*$")))</errorConditionFormula>
+  >AND(NOT(ISBLANK(PermissionSetName__c)), NOT(REGEX(PermissionSetName__c, &quot;^[A-Za-z][A-Za-z0-9_]*$&quot;)))</errorConditionFormula>
     <errorDisplayField>PermissionSetName__c</errorDisplayField>
     <errorMessage
   >Permission Set Name must be the API name: letters, numbers and underscores only.</errorMessage>

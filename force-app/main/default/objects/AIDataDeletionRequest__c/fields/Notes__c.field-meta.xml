@@ -7,5 +7,7 @@
   >Internal notes only. Do not include personal data.</inlineHelpText>
     <label>Notes</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>TextArea</type>
 </CustomField>

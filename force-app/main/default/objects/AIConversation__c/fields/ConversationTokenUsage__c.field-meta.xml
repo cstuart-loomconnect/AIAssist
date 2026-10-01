@@ -5,7 +5,7 @@
   >The running total of tokens consumed across this conversation.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Updated as the conversation progresses and checked against the Agent's Max Tokens Per Conversation limit.</inlineHelpText>
+  >Updated as the conversation progresses and checked against the Agent&apos;s Max Tokens Per Conversation limit.</inlineHelpText>
     <label>Conversation Token Usage</label>
     <precision>9</precision>
     <required>false</required>

@@ -85,7 +85,7 @@
         <shortDescription
     >Chat: reply when nothing matches and the agent has no Fallback Message.</shortDescription>
         <value
-    >I'm not able to help with that request. Try rephrasing it, or ask your administrator what this assistant can do.</value>
+    >I&apos;m not able to help with that request. Try rephrasing it, or ask your administrator what this assistant can do.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Feedback_Comment_Placeholder</fullName>
@@ -94,7 +94,7 @@
         <protected>false</protected>
         <shortDescription>Chat: feedback comment placeholder.</shortDescription>
         <value
-    >Tell us more (optional). Please don't include personal information.</value>
+    >Tell us more (optional). Please don&apos;t include personal information.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Feedback_Helpful</fullName>
@@ -146,7 +146,7 @@
         <shortDescription
     >Chat: greeting when the agent has no Greeting Message.</shortDescription>
         <value
-    >Hi, I'm your AI assistant. How can I help with this record?</value>
+    >Hi, I&apos;m your AI assistant. How can I help with this record?</value>
     </labels>
     <labels>
         <fullName>AI_Chat_History</fullName>
@@ -225,7 +225,7 @@
         <protected>false</protected>
         <shortDescription
     >Chat: usage banner before a limit is hit.</shortDescription>
-        <value>You're close to your AI Assist usage limit.</value>
+        <value>You&apos;re close to your AI Assist usage limit.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Working</fullName>
@@ -397,7 +397,7 @@
         <protected>false</protected>
         <shortDescription
     >Chat: action not enabled for the user or not assigned to the agent.</shortDescription>
-        <value>You don't have permission to run this action.</value>
+        <value>You don&apos;t have permission to run this action.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Agent_Inactive</fullName>
@@ -416,7 +416,7 @@
         <shortDescription
     >Chat: agent is Assigned Users Only and the user is not assigned.</shortDescription>
         <value
-    >You haven't been given access to this AI agent. Ask your administrator to assign it to you.</value>
+    >You haven&apos;t been given access to this AI agent. Ask your administrator to assign it to you.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Agent_Not_Available</fullName>
@@ -455,7 +455,7 @@
         <protected>false</protected>
         <shortDescription
     >Console: a list or detail view failed to load.</shortDescription>
-        <value>This page couldn't be loaded. Refresh and try again.</value>
+        <value>This page couldn&apos;t be loaded. Refresh and try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Console_Not_Authorised</fullName>
@@ -465,7 +465,7 @@
         <shortDescription
     >Console: operation needs the Admin or Super User permission set.</shortDescription>
         <value
-    >You don't have permission to do that. Ask your administrator for the AI Assist Admin or Super User permission set.</value>
+    >You don&apos;t have permission to do that. Ask your administrator for the AI Assist Admin or Super User permission set.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Console_Save_Failed</fullName>
@@ -475,7 +475,7 @@
         <shortDescription
     >Console: a save failed validation or DML.</shortDescription>
         <value
-    >Your changes couldn't be saved. Check the highlighted fields and try again.</value>
+    >Your changes couldn&apos;t be saved. Check the highlighted fields and try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Busy</fullName>
@@ -505,7 +505,7 @@
         <shortDescription
     >Chat: Max Conversations Per 24 Hours reached.</shortDescription>
         <value
-    >You've reached the number of conversations allowed in 24 hours. Try again later.</value>
+    >You&apos;ve reached the number of conversations allowed in 24 hours. Try again later.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
@@ -525,7 +525,7 @@
         <shortDescription
     >Chat: Max Tokens Per 24 Hours reached.</shortDescription>
         <value
-    >You've reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
+    >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Data_Deletion_Not_Approved</fullName>
@@ -544,7 +544,7 @@
         <shortDescription
     >Chat: a data source returned nothing because of access limits.</shortDescription>
         <value
-    >Some of the information needed to answer wasn't available to you, so the answer may be incomplete.</value>
+    >Some of the information needed to answer wasn&apos;t available to you, so the answer may be incomplete.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Generic</fullName>
@@ -602,7 +602,7 @@
         <shortDescription
     >Chat: user lacks the permission set or object access.</shortDescription>
         <value
-    >You don't have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
+    >You don&apos;t have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_AI_Rules_Not_Included</fullName>
@@ -671,7 +671,7 @@
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Messages reached.</shortDescription>
         <value
-    >Your organisation has used this month's message allowance. Ask your account team about a larger plan.</value>
+    >Your organisation has used this month&apos;s message allowance. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Tokens</fullName>
@@ -680,7 +680,7 @@
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Tokens reached.</shortDescription>
         <value
-    >Your organisation has used this month's token allowance. Ask your account team about a larger plan.</value>
+    >Your organisation has used this month&apos;s token allowance. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Providers_Limit</fullName>
@@ -710,7 +710,7 @@
         <shortDescription
     >Chat: PII masking failed. The request is never sent unmasked.</shortDescription>
         <value
-    >We couldn't safely protect personal information in this request, so it wasn't sent. Please contact your administrator.</value>
+    >We couldn&apos;t safely protect personal information in this request, so it wasn&apos;t sent. Please contact your administrator.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Not_Configured</fullName>
@@ -720,7 +720,7 @@
         <shortDescription
     >Chat: the agent has no active Model Configuration.</shortDescription>
         <value
-    >AI Assist hasn't been fully set up yet. Ask your administrator to complete the model configuration.</value>
+    >AI Assist hasn&apos;t been fully set up yet. Ask your administrator to complete the model configuration.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Timeout</fullName>
@@ -749,7 +749,7 @@
         <shortDescription
     >Chat: the running user cannot read the related record.</shortDescription>
         <value
-    >You don't have access to the record this conversation is about.</value>
+    >You don&apos;t have access to the record this conversation is about.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Request_Blocked</fullName>
@@ -854,7 +854,7 @@
         <protected>false</protected>
         <shortDescription>Console: data deletion request.</shortDescription>
         <value
-    >A data deletion request removes a person's conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
+    >A data deletion request removes a person&apos;s conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Source_Max_Rows</fullName>
@@ -953,7 +953,7 @@
         <protected>false</protected>
         <shortDescription>Console: who-can-do-what summary.</shortDescription>
         <value
-    >AI Assist User: can chat, give feedback and accept the usage terms. Cannot see configuration, other people's conversations or logs.</value>
+    >AI Assist User: can chat, give feedback and accept the usage terms. Cannot see configuration, other people&apos;s conversations or logs.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Retention</fullName>

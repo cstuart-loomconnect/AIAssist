@@ -4,7 +4,7 @@
     <description
   >Determines whether this data source requires a specific record to run against, or operates independently of any single record.</description>
     <inlineHelpText
-  >Choose Bound if this source needs a record Id to run, such as querying a specific record's fields. Choose Unbound if it doesn't depend on a specific record, such as searching metadata or configuration across an object type.</inlineHelpText>
+  >Choose Bound if this source needs a record Id to run, such as querying a specific record&apos;s fields. Choose Unbound if it doesn&apos;t depend on a specific record, such as searching metadata or configuration across an object type.</inlineHelpText>
     <label>Binding Type</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

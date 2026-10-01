@@ -2,9 +2,9 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>TriggerKeywords__c</fullName>
     <description
-  >A short list of keywords or phrases associated with this agent's scenario, used as a fast pre-filter when the AI is deciding how to respond.</description>
+  >A short list of keywords or phrases associated with this agent&apos;s scenario, used as a fast pre-filter when the AI is deciding how to respond.</description>
     <inlineHelpText
-  >List a few words a user's question might contain that suggest this agent's expertise is relevant, such as "credit score, arrears, declined."</inlineHelpText>
+  >List a few words a user&apos;s question might contain that suggest this agent&apos;s expertise is relevant, such as &quot;credit score, arrears, declined.&quot;</inlineHelpText>
     <label>Trigger Keywords</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

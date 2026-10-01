@@ -49,7 +49,7 @@
         <label>Configuration</label>
         <layoutColumns>
             <layoutItems>
-                <behavior>Edit</behavior>
+                <behavior>Required</behavior>
                 <field>SourceType__c</field>
             </layoutItems>
             <layoutItems>

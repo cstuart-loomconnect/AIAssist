@@ -3,7 +3,7 @@
     <fullName>ComplianceGroup__c</fullName>
     <businessStatus>Active</businessStatus>
     <description
-  >The AI PII Compliance Group this Field Type is tagged under, e.g. "Health Information". Optional - only needed if this Field Type should also be reachable via the Compliance Group fallback (see IsComplianceGroupFallback__c).</description>
+  >The AI PII Compliance Group this Field Type is tagged under, e.g. &quot;Health Information&quot;. Optional - only needed if this Field Type should also be reachable via the Compliance Group fallback (see IsComplianceGroupFallback__c).</description>
     <fieldManageability>SubscriberControlled</fieldManageability>
     <inlineHelpText
   >The Data Classification compliance group this field type belongs to. Used as a fallback when no keyword matches.</inlineHelpText>

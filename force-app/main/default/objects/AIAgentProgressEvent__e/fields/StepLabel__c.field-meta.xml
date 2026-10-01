@@ -2,7 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>StepLabel__c</fullName>
     <description
-  >The ready-to-display label for the phase that just started (e.g. "Reading Contact Roles", "Provider callout") - the chat LWC shows it verbatim, with no further formatting.</description>
+  >The ready-to-display label for the phase that just started (e.g. &quot;Reading Contact Roles&quot;, &quot;Provider callout&quot;) - the chat LWC shows it verbatim, with no further formatting.</description>
     <externalId>false</externalId>
     <inlineHelpText
   >Short, user-safe description of what the agent is doing. Never contains record data.</inlineHelpText>

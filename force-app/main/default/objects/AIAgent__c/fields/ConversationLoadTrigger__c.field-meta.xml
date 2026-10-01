@@ -7,6 +7,7 @@
   >Choose whether past conversation history should load automatically when the record page opens, only when the chat panel is opened, or only when the user explicitly requests it.</inlineHelpText>
     <label>Conversation Load Trigger</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>

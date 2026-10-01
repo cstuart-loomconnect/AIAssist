@@ -7,5 +7,7 @@
   >Updated automatically each time this rule raises a violation.</inlineHelpText>
     <label>Last Triggered</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

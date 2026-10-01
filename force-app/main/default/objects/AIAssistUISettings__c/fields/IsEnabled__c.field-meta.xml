@@ -7,5 +7,6 @@
     <inlineHelpText
   >Untick to turn this set of UI settings off. Ticked by default so the settings are active out of the box.</inlineHelpText>
     <label>Is Enabled</label>
+    <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

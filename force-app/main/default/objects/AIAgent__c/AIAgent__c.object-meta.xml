@@ -158,6 +158,7 @@
     <label>AI Agent</label>
     <nameField>
         <label>AI Agent Name</label>
+        <trackHistory>false</trackHistory>
         <type>Text</type>
     </nameField>
     <pluralLabel>AI Agents</pluralLabel>

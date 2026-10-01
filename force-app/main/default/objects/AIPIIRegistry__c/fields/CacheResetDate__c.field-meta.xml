@@ -7,6 +7,7 @@
   >Set this to force an out-of-cycle resync, such as after a classification change in Setup.</inlineHelpText>
     <label>Cache Reset Date</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Date</type>
 </CustomField>

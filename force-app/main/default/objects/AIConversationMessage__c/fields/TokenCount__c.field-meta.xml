@@ -2,10 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>TokenCount__c</fullName>
     <description
-  >The number of tokens this individual message contributed to the conversation's running total.</description>
+  >The number of tokens this individual message contributed to the conversation&apos;s running total.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Used to build up the parent conversation's Tokens Used total and to trace usage back to a specific turn.</inlineHelpText>
+  >Used to build up the parent conversation&apos;s Tokens Used total and to trace usage back to a specific turn.</inlineHelpText>
     <label>Token Count</label>
     <precision>9</precision>
     <required>false</required>

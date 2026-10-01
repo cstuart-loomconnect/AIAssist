@@ -6,7 +6,7 @@
   >The exact structured tag the AI must output if it detects this condition, parsed deterministically by Apex rather than inferred from prose.</description>
     <externalId>true</externalId>
     <inlineHelpText
-  >Define a unique tag the AI should emit if it detects this condition, such as VIOLATION_BULK_EXPORT_ATTEMPT. Apex looks for this exact tag in the response — the AI's free-text explanation is never trusted directly. Must be unique across all rules.</inlineHelpText>
+  >Define a unique tag the AI should emit if it detects this condition, such as VIOLATION_BULK_EXPORT_ATTEMPT. Apex looks for this exact tag in the response — the AI&apos;s free-text explanation is never trusted directly. Must be unique across all rules.</inlineHelpText>
     <label>Signal Tag</label>
     <length>40</length>
     <required>false</required>

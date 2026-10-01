@@ -3,7 +3,7 @@
     <fullName>RequiresConfirmation__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >Determines whether the user must review and confirm this action's inputs before it executes.</description>
+  >Determines whether the user must review and confirm this action&apos;s inputs before it executes.</description>
     <inlineHelpText
   >Turn this on for any action that changes data, so the user reviews pre-filled values before it runs.</inlineHelpText>
     <label>Requires Confirmation</label>

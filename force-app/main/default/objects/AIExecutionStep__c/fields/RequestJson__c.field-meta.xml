@@ -3,7 +3,7 @@
     <fullName>RequestJson__c</fullName>
     <complianceGroup>PII</complianceGroup>
     <description
-  >Only set on a "Provider callout" step - the exact JSON body of that callout, already pseudonymised, since it's built from the same masked values sent to the provider.</description>
+  >Only set on a &quot;Provider callout&quot; step - the exact JSON body of that callout, already pseudonymised, since it&apos;s built from the same masked values sent to the provider.</description>
     <inlineHelpText
   >Left blank for a data source step. Only captured when the running user has AIUserSettings__c.DebugModeEnabled__c, to avoid the storage cost for everyone else.</inlineHelpText>
     <label>Request JSON</label>

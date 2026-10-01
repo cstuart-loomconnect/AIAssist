@@ -5,7 +5,7 @@
     <description
   >Fill in only the subject that matches the Scope: Subject User for User, Subject Record Id for Related Record. A scope is required.</description>
     <errorConditionFormula
-  >OR(AND(ISPICKVAL(Scope__c, "User"), OR(ISBLANK(SubjectUser__c), NOT(ISBLANK(SubjectRecordId__c)))), AND(ISPICKVAL(Scope__c, "Related Record"), OR(ISBLANK(SubjectRecordId__c), NOT(ISBLANK(SubjectUser__c)))), ISPICKVAL(Scope__c, ""))</errorConditionFormula>
+  >OR(AND(ISPICKVAL(Scope__c, &quot;User&quot;), OR(ISBLANK(SubjectUser__c), NOT(ISBLANK(SubjectRecordId__c)))), AND(ISPICKVAL(Scope__c, &quot;Related Record&quot;), OR(ISBLANK(SubjectRecordId__c), NOT(ISBLANK(SubjectUser__c)))), ISPICKVAL(Scope__c, &quot;&quot;))</errorConditionFormula>
     <errorDisplayField>Scope__c</errorDisplayField>
     <errorMessage
   >Fill in only the subject that matches the Scope: Subject User for User, Subject Record Id for Related Record. A scope is required.</errorMessage>

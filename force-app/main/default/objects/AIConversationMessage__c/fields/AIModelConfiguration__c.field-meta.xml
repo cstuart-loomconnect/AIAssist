@@ -3,7 +3,7 @@
     <fullName>AIModelConfiguration__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description
-  >The Model Configuration that produced this reply. Captured per message because the agent's model can change mid-conversation and cost reports must attribute tokens to the model actually used.</description>
+  >The Model Configuration that produced this reply. Captured per message because the agent&apos;s model can change mid-conversation and cost reports must attribute tokens to the model actually used.</description>
     <inlineHelpText
   >Set by the platform when the reply is generated.</inlineHelpText>
     <label>AI Model Configuration</label>
@@ -11,5 +11,6 @@
     <relationshipLabel>AI Conversation Messages</relationshipLabel>
     <relationshipName>AIConversationMessages</relationshipName>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

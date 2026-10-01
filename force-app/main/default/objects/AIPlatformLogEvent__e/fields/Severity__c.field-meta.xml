@@ -5,6 +5,9 @@
   >Severity of the logged event (Error, Warning or Info). Copied to the AI Platform Log record.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set by the platform.</inlineHelpText>
+    <isFilteringDisabled>false</isFilteringDisabled>
+    <isNameField>false</isNameField>
+    <isSortingDisabled>false</isSortingDisabled>
     <label>Severity</label>
     <length>20</length>
     <required>false</required>

@@ -5,7 +5,7 @@
     <description
   >The proof of what was deleted is never edited after the fact.</description>
     <errorConditionFormula
-  >AND(NOT(ISNEW()), ISPICKVAL(PRIORVALUE(Status__c), "Completed"))</errorConditionFormula>
+  >AND(NOT(ISNEW()), ISPICKVAL(PRIORVALUE(Status__c), &quot;Completed&quot;))</errorConditionFormula>
     <errorMessage
   >A completed data deletion request is an audit record and cannot be changed.</errorMessage>
 </ValidationRule>

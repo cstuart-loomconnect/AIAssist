@@ -5,7 +5,7 @@
     <description
   >Flow API Name may contain only letters, numbers and underscores, and must start with a letter.</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(FlowAPIName__c)), NOT(REGEX(FlowAPIName__c, "^[A-Za-z][A-Za-z0-9_]*$")))</errorConditionFormula>
+  >AND(NOT(ISBLANK(FlowAPIName__c)), NOT(REGEX(FlowAPIName__c, &quot;^[A-Za-z][A-Za-z0-9_]*$&quot;)))</errorConditionFormula>
     <errorDisplayField>FlowAPIName__c</errorDisplayField>
     <errorMessage
   >Flow API Name may contain only letters, numbers and underscores, and must start with a letter.</errorMessage>

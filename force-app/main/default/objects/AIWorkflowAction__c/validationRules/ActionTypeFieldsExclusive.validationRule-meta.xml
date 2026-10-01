@@ -5,7 +5,7 @@
     <description
   >Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</description>
     <errorConditionFormula
-  >OR(AND(ISPICKVAL(ActionType__c, "Apex"), NOT(ISBLANK(FlowAPIName__c))), AND(ISPICKVAL(ActionType__c, "Flow"), NOT(ISBLANK(ApexClassName__c))))</errorConditionFormula>
+  >OR(AND(ISPICKVAL(ActionType__c, &quot;Apex&quot;), NOT(ISBLANK(FlowAPIName__c))), AND(ISPICKVAL(ActionType__c, &quot;Flow&quot;), NOT(ISBLANK(ApexClassName__c))))</errorConditionFormula>
     <errorDisplayField>ActionType__c</errorDisplayField>
     <errorMessage
   >Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</errorMessage>

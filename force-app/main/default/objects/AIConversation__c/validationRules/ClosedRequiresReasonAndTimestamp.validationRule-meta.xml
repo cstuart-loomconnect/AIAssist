@@ -5,7 +5,7 @@
     <description
   >Keeps close-reason reporting trustworthy: every closed conversation says why and when.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(Status__c, "Closed"), OR(ISPICKVAL(ConversationCloseReason__c, ""), ISBLANK(ConversationClosedTimestamp__c)))</errorConditionFormula>
+  >AND(ISPICKVAL(Status__c, &quot;Closed&quot;), OR(ISPICKVAL(ConversationCloseReason__c, &quot;&quot;), ISBLANK(ConversationClosedTimestamp__c)))</errorConditionFormula>
     <errorDisplayField>ConversationCloseReason__c</errorDisplayField>
     <errorMessage
   >A closed conversation must have a Close Reason and a Closed Timestamp.</errorMessage>

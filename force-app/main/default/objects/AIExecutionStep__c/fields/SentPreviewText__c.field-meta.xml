@@ -3,7 +3,7 @@
     <fullName>SentPreviewText__c</fullName>
     <complianceGroup>PII</complianceGroup>
     <description
-  >Only set on a "Provider callout" step - a short excerpt of the newest user-role message actually sent on that callout, already pseudonymised (e.g. showing ‹PERSON_1› in place of a name).</description>
+  >Only set on a &quot;Provider callout&quot; step - a short excerpt of the newest user-role message actually sent on that callout, already pseudonymised (e.g. showing ‹PERSON_1› in place of a name).</description>
     <externalId>false</externalId>
     <inlineHelpText
   >Truncated - a preview, not the full request. See Request JSON for that. Only captured when the running user has AIUserSettings__c.DebugModeEnabled__c.</inlineHelpText>

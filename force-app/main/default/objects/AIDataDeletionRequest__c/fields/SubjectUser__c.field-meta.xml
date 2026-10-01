@@ -11,5 +11,7 @@
     <relationshipLabel>AI Data Deletion Requests</relationshipLabel>
     <relationshipName>AIDataDeletionRequests</relationshipName>
     <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

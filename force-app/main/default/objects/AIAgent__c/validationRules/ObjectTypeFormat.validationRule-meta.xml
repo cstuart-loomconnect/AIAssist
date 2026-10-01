@@ -5,7 +5,7 @@
     <description
   >Object Type must be an object API name: letters, numbers and underscores only.</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(ObjectType__c)), NOT(REGEX(ObjectType__c, "^[A-Za-z][A-Za-z0-9_]*$")))</errorConditionFormula>
+  >AND(NOT(ISBLANK(ObjectType__c)), NOT(REGEX(ObjectType__c, &quot;^[A-Za-z][A-Za-z0-9_]*$&quot;)))</errorConditionFormula>
     <errorDisplayField>ObjectType__c</errorDisplayField>
     <errorMessage
   >Object Type must be an object API name: letters, numbers and underscores only.</errorMessage>

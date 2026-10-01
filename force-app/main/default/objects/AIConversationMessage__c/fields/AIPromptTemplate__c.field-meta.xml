@@ -11,5 +11,6 @@
     <relationshipLabel>AI Conversation Messages</relationshipLabel>
     <relationshipName>AIConversationMessages</relationshipName>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>
