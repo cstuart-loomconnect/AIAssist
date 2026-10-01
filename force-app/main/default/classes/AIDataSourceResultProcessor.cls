@@ -50,7 +50,8 @@ public inherited sharing class AIDataSourceResultProcessor {
       Map<Schema.SObjectType, Schema.DescribeSObjectResult> describeByType = new Map<Schema.SObjectType, Schema.DescribeSObjectResult>();
       for (
         Schema.DescribeSObjectResult describeResult : Schema.describeSObjects(
-          new List<String>(objectApiNames)
+          new List<String>(objectApiNames),
+          SObjectDescribeOptions.DEFERRED
         )
       )
         describeByType.put(describeResult.getSObjectType(), describeResult);

@@ -92,6 +92,9 @@ public inherited sharing class AISchemaHelper {
   }
 
   @TestVisible
+  private static Boolean isPersistentCacheUnavailable = false;
+
+  @TestVisible
   private static ICache persistentCache = new OrgPartitionCache();
   @TestVisible
   private static Map<String, ObjectInfo> infoByLowerName = new Map<String, ObjectInfo>();
@@ -122,7 +125,9 @@ public inherited sharing class AISchemaHelper {
     ObjectInfo objectInfo = null;
 
     try {
-      String cachedJson = persistentCache.get(cacheKey);
+      String cachedJson = isPersistentCacheUnavailable
+        ? null
+        : persistentCache.get(cacheKey);
       objectInfo = String.isBlank(cachedJson)
         ? null
         : (ObjectInfo) JSON.deserialize(cachedJson, ObjectInfo.class);
@@ -140,7 +145,9 @@ public inherited sharing class AISchemaHelper {
 
       describeCount++;
 
-      Schema.DescribeSObjectResult describeResult = objectType.getDescribe();
+      Schema.DescribeSObjectResult describeResult = objectType.getDescribe(
+        SObjectDescribeOptions.DEFERRED
+      );
       objectInfo = new ObjectInfo();
       objectInfo.apiName = describeResult.getName();
       objectInfo.label = describeResult.getLabel();
@@ -169,13 +176,16 @@ public inherited sharing class AISchemaHelper {
       }
 
       try {
-        persistentCache.put(
-          cacheKey,
-          JSON.serialize(objectInfo),
-          SCHEMA_CACHE_TTL_SECONDS
-        );
+        if (!isPersistentCacheUnavailable) {
+          persistentCache.put(
+            cacheKey,
+            JSON.serialize(objectInfo),
+            SCHEMA_CACHE_TTL_SECONDS
+          );
+        }
       } catch (Exception cacheWriteFailure) {
-        // Too large for the cache, or no cache: the static map still serves the rest of the transaction.
+        // Too large for the cache, or no cache: stop using it for the rest of the transaction; the static map still serves it.
+        isPersistentCacheUnavailable = true;
       }
     }
 
@@ -256,7 +266,8 @@ public inherited sharing class AISchemaHelper {
           'obj' + EncodingUtil.convertToHex(Blob.valueOf(lowerName))
         );
       } catch (Exception cacheClearFailure) {
-        /* Platform Cache is an optimisation; never a reason to fail. */
+        // Platform Cache is an optimisation, never a reason to fail.
+        isPersistentCacheUnavailable = true;
       }
     }
   }

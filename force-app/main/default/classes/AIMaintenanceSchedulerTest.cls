@@ -21,6 +21,7 @@ private class AIMaintenanceSchedulerTest {
   // testScenario1: A scheduled run starts the four housekeeping batches.
   // testScenario2: It can be scheduled and fires through the platform's scheduler.
   // testScenario3: Switched off, it starts nothing.
+  // testScenario4: A batch that cannot be started is logged and the others still start.
 
   @TestSetup
   static void setup() {
@@ -113,6 +114,29 @@ private class AIMaintenanceSchedulerTest {
           )
       ],
       'Nothing while off.'
+    );
+  }
+
+  @IsTest
+  static void testScenario4() {
+    AIMaintenanceScheduler.isTestCustomExceptionThrown = true;
+
+    Test.startTest();
+    try {
+      new AIMaintenanceScheduler().execute(null);
+    } catch (Exception ex) {
+      Assert.fail('The scheduler must never throw: ' + ex.getMessage());
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      4,
+      [
+        SELECT COUNT()
+        FROM AIPlatformLog__c
+        WHERE ClassName__c = 'AIMaintenanceScheduler'
+      ],
+      'One log for each batch that could not start.'
     );
   }
 }

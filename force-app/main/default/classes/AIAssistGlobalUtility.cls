@@ -72,7 +72,9 @@ public inherited sharing class AIAssistGlobalUtility {
         // The identifier field on this object, or a description with a null token when the object does not have it. The package stamps as itself, so the running user's field-level access is irrelevant. The key is the plain name, or the same name behind a namespace prefix (namespace__Field__c); only the match is described.
         if (!publicIdFieldByType.containsKey(recordType)) {
           IdentifierFieldDescription publicIdDescription = new IdentifierFieldDescription();
-          Map<String, Schema.SObjectField> recordFieldsByName = recordType.getDescribe()
+          Map<String, Schema.SObjectField> recordFieldsByName = recordType.getDescribe(
+              SObjectDescribeOptions.DEFERRED
+            )
             .fields.getMap();
           String wantedFieldName = AIAssistApplicationConstants.PUBLIC_ID_FIELD_API_NAME.toLowerCase();
           for (String fieldKey : recordFieldsByName.keySet()) {
@@ -151,7 +153,9 @@ public inherited sharing class AIAssistGlobalUtility {
         // The Developer Name field on this object, or a description with a null token when the object does not have it. Same lookup as the Public Id field above.
         if (!developerNameFieldByType.containsKey(sObjectType)) {
           IdentifierFieldDescription developerNameDescription = new IdentifierFieldDescription();
-          Map<String, Schema.SObjectField> objectFieldsByName = sObjectType.getDescribe()
+          Map<String, Schema.SObjectField> objectFieldsByName = sObjectType.getDescribe(
+              SObjectDescribeOptions.DEFERRED
+            )
             .fields.getMap();
           String wantedDeveloperNameField = AIAssistApplicationConstants.DEVELOPER_NAME_FIELD_API_NAME.toLowerCase();
           for (String objectFieldKey : objectFieldsByName.keySet()) {
@@ -185,7 +189,9 @@ public inherited sharing class AIAssistGlobalUtility {
         if (!sourceFieldsByType.containsKey(sObjectType)) {
           List<Schema.SObjectField> sourceFields = new List<Schema.SObjectField>();
           for (String sourceFieldName : DEVELOPER_NAME_SOURCE_FIELDS) {
-            Map<String, Schema.SObjectField> sourceCandidatesByName = sObjectType.getDescribe()
+            Map<String, Schema.SObjectField> sourceCandidatesByName = sObjectType.getDescribe(
+                SObjectDescribeOptions.DEFERRED
+              )
               .fields.getMap();
             String wantedSourceField = sourceFieldName.toLowerCase();
             for (String candidateKey : sourceCandidatesByName.keySet()) {
@@ -305,7 +311,7 @@ public inherited sharing class AIAssistGlobalUtility {
           'SELECT ' +
             fieldName +
             ' FROM ' +
-            sObjectType.getDescribe().getName() +
+            sObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getName() +
             ' WHERE ' +
             fieldName +
             ' IN :lowerCaseNames',

@@ -20,57 +20,43 @@ Version      Author                   Description
 */
 
 public inherited sharing class AIMaintenanceScheduler implements Schedulable {
+  public class AIMaintenanceSchedulerException extends Exception {
+  }
+
+  @TestVisible
+  private static Boolean isTestCustomExceptionThrown = false;
+
   public void execute(SchedulableContext context) {
     if (!AIAssistSettingsService.isEnabled())
       return;
 
-    try {
-      Database.executeBatch(
-        new AIConversationIdleBatch(),
-        AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-      );
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIMaintenanceScheduler',
-        'execute'
-      );
-    }
-    try {
-      Database.executeBatch(
-        new AIConversationRetentionBatch(),
-        AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-      );
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIMaintenanceScheduler',
-        'execute'
-      );
-    }
-    try {
-      Database.executeBatch(
-        new AIRecordRetentionBatch(AIRecordRetentionBatch.LOGS),
-        AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-      );
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIMaintenanceScheduler',
-        'execute'
-      );
-    }
-    try {
-      Database.executeBatch(
-        new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS),
-        AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-      );
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIMaintenanceScheduler',
-        'execute'
-      );
+    // Each task is its own batch, started on its own, so one failing to start does not stop the others.
+    List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
+      new AIConversationIdleBatch(),
+      new AIConversationRetentionBatch(),
+      new AIRecordRetentionBatch(AIRecordRetentionBatch.LOGS),
+      new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS)
+    };
+
+    for (Database.Batchable<SObject> housekeepingBatch : housekeepingBatches) {
+      try {
+        if (isTestCustomExceptionThrown) {
+          throw new AIMaintenanceSchedulerException(
+            'Test exception for AIMaintenanceScheduler.execute'
+          );
+        }
+
+        Database.executeBatch(
+          housekeepingBatch,
+          AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
+        );
+      } catch (Exception caughtException) {
+        AIPlatformLogManager.logException(
+          caughtException,
+          'AIMaintenanceScheduler',
+          'execute'
+        );
+      }
     }
 
     AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
