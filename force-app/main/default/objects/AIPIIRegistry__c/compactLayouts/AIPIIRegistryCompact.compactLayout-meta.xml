@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIPIIRegistryCompact</fullName>
+    <fields>Name</fields>
+    <fields>ObjectAPIName__c</fields>
+    <fields>Active__c</fields>
+    <fields>SyncStatus__c</fields>
+    <fields>FieldCount__c</fields>
+    <fields>LastSynced__c</fields>
+    <label>AIPIIRegistry Compact</label>
+</CompactLayout>

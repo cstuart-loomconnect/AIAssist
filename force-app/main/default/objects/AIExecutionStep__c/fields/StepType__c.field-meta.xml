@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>StepType__c</fullName>
+    <description
+  >What kind of step this is, so steps can be filtered and reported on.</description>
+    <inlineHelpText>Set by the platform.</inlineHelpText>
+    <label>Step Type</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Prompt Assembly</fullName>
+                <default>false</default>
+                <label>Prompt Assembly</label>
+            </value>
+            <value>
+                <fullName>Template Match</fullName>
+                <default>false</default>
+                <label>Template Match</label>
+            </value>
+            <value>
+                <fullName>Data Source</fullName>
+                <default>false</default>
+                <label>Data Source</label>
+            </value>
+            <value>
+                <fullName>Provider Call</fullName>
+                <default>false</default>
+                <label>Provider Call</label>
+            </value>
+            <value>
+                <fullName>Workflow Action</fullName>
+                <default>false</default>
+                <label>Workflow Action</label>
+            </value>
+            <value>
+                <fullName>PII Masking</fullName>
+                <default>false</default>
+                <label>PII Masking</label>
+            </value>
+            <value>
+                <fullName>Violation Check</fullName>
+                <default>false</default>
+                <label>Violation Check</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

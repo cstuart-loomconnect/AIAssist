@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>NeedsAttention</fullName>
+    <columns>NAME</columns>
+    <columns>ObjectAPIName__c</columns>
+    <columns>SyncStatus__c</columns>
+    <columns>LastSynced__c</columns>
+    <columns>Active__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>SyncStatus__c</field>
+        <operation>equals</operation>
+        <value>Failed,Not Synced</value>
+    </filters>
+    <label>Needs Attention</label>
+</ListView>

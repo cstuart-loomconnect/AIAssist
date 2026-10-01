@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ActiveRequiresModelConfiguration</fullName>
+    <active>true</active>
+    <description
+  >An AI Model Configuration is required before an Agent can be activated.</description>
+    <errorConditionFormula
+  >AND(IsActive__c, ISBLANK(AIModelConfiguration__c))</errorConditionFormula>
+    <errorDisplayField>AIModelConfiguration__c</errorDisplayField>
+    <errorMessage
+  >An AI Model Configuration is required before an Agent can be activated.</errorMessage>
+</ValidationRule>

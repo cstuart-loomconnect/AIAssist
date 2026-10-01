@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SubjectRecordIdFormat</fullName>
+    <active>true</active>
+    <description
+  >Subject Record Id must be a 15 or 18 character Salesforce Id.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(SubjectRecordId__c)), NOT(REGEX(SubjectRecordId__c, &quot;^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$&quot;)))</errorConditionFormula>
+    <errorDisplayField>SubjectRecordId__c</errorDisplayField>
+    <errorMessage
+  >Subject Record Id must be a 15 or 18 character Salesforce Id.</errorMessage>
+</ValidationRule>

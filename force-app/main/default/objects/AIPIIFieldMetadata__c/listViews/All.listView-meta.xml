@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All</fullName>
+    <columns>NAME</columns>
+    <columns>PIIRegistry__c</columns>
+    <columns>FieldAPIName__c</columns>
+    <columns>DataType__c</columns>
+    <columns>IsPII__c</columns>
+    <columns>PIIFieldType__c</columns>
+    <columns>ComplianceGroup__c</columns>
+    <columns>LastSynced__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All</label>
+</ListView>

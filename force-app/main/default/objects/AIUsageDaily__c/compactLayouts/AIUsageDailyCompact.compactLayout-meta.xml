@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIUsageDailyCompact</fullName>
+    <fields>Name</fields>
+    <fields>UsageDate__c</fields>
+    <fields>User__c</fields>
+    <fields>AIAgent__c</fields>
+    <fields>TotalTokens__c</fields>
+    <fields>EstimatedCost__c</fields>
+    <label>AIUsage Daily Compact</label>
+</CompactLayout>

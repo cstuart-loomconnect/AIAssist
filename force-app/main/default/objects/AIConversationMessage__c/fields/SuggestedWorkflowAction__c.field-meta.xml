@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SuggestedWorkflowAction__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description
+  >The AI Workflow Action the model suggested in this reply, if any - parsed out of a trailing structured block in the model&apos;s response. Never executed automatically; the chat UI reads this to offer a button, and the action only runs when the user explicitly confirms it.</description>
+    <inlineHelpText
+  >Set only when the model&apos;s reply suggests running a Workflow Action. The action still requires explicit user confirmation to run.</inlineHelpText>
+    <label>Suggested Workflow Action</label>
+    <referenceTo>AIWorkflowAction__c</referenceTo>
+    <relationshipLabel>AI Conversation Messages</relationshipLabel>
+    <relationshipName>AIConversationMessages</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

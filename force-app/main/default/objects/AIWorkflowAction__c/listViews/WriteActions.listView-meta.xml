@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>WriteActions</fullName>
+    <columns>NAME</columns>
+    <columns>ActionName__c</columns>
+    <columns>IsActive__c</columns>
+    <columns>ActionType__c</columns>
+    <columns>RequiresConfirmation__c</columns>
+    <columns>TargetObject__c</columns>
+    <columns>LAST_UPDATE</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>ExecutionType__c</field>
+        <operation>equals</operation>
+        <value>Write</value>
+    </filters>
+    <label>Write Actions</label>
+</ListView>

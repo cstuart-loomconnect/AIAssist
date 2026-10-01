@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SignedRecordImmutable</fullName>
+    <active>true</active>
+    <description
+  >A signed acknowledgment is legal evidence. Once written it is never edited.</description>
+    <errorConditionFormula
+  >AND(NOT(ISNEW()), OR(ISCHANGED(User__c), ISCHANGED(TermsVersion__c), ISCHANGED(SignatureText__c), ISCHANGED(AcknowledgedDate__c), ISCHANGED(LoginHistoryId__c)))</errorConditionFormula>
+    <errorMessage
+  >A signed terms acknowledgment cannot be changed.</errorMessage>
+</ValidationRule>
