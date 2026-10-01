@@ -5,7 +5,7 @@
     <description
   >Flow API Name is required when Action Type is Flow.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(ActionType__c, "Flow"), ISBLANK(FlowAPIName__c))</errorConditionFormula>
+  >AND(ISPICKVAL(ActionType__c, &quot;Flow&quot;), ISBLANK(FlowAPIName__c))</errorConditionFormula>
     <errorDisplayField>FlowAPIName__c</errorDisplayField>
     <errorMessage
   >Flow API Name is required when Action Type is Flow.</errorMessage>

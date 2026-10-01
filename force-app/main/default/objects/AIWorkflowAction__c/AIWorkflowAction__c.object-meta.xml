@@ -159,6 +159,7 @@
     <nameField>
         <displayFormat>AI Action - {000000}</displayFormat>
         <label>AI Workflow Action Name</label>
+        <trackHistory>false</trackHistory>
         <type>AutoNumber</type>
     </nameField>
     <pluralLabel>AI Workflow Actions</pluralLabel>

@@ -5,7 +5,7 @@
     <description
   >Signal Tag is required when Detection Method is AI Evaluated.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(DetectionMethod__c, "AI_Evaluated"), ISBLANK(SignalTag__c))</errorConditionFormula>
+  >AND(ISPICKVAL(DetectionMethod__c, &quot;AI_Evaluated&quot;), ISBLANK(SignalTag__c))</errorConditionFormula>
     <errorDisplayField>SignalTag__c</errorDisplayField>
     <errorMessage
   >Signal Tag is required when Detection Method is AI Evaluated.</errorMessage>

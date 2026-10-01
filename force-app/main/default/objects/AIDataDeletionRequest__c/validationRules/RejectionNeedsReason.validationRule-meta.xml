@@ -4,7 +4,7 @@
     <active>true</active>
     <description>Give a reason when rejecting a request.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(ApprovalDecision__c, "Rejected"), ISBLANK(RejectionReason__c))</errorConditionFormula>
+  >AND(ISPICKVAL(ApprovalDecision__c, &quot;Rejected&quot;), ISBLANK(RejectionReason__c))</errorConditionFormula>
     <errorDisplayField>RejectionReason__c</errorDisplayField>
     <errorMessage>Give a reason when rejecting a request.</errorMessage>
 </ValidationRule>

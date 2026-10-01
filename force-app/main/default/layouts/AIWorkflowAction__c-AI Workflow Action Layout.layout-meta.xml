@@ -55,7 +55,7 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Edit</behavior>
+                <behavior>Required</behavior>
                 <field>ActionType__c</field>
             </layoutItems>
             <layoutItems>
@@ -63,7 +63,7 @@
                 <field>ActionName__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Edit</behavior>
+                <behavior>Required</behavior>
                 <field>ExecutionType__c</field>
             </layoutItems>
         </layoutColumns>

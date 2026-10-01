@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description
-  >Where an AI Assist conversation takes place. Shared by AI Conversation.Channel and AI User Settings.Allowed Channels so the two can never drift apart.</description>
-    <masterLabel>AI Channel</masterLabel>
-    <sorted>false</sorted>
     <customValue>
         <fullName>Record Page Chat</fullName>
         <default>false</default>
@@ -19,4 +15,8 @@
         <default>false</default>
         <label>Mobile</label>
     </customValue>
+    <description
+  >Where an AI Assist conversation takes place. Shared by AI Conversation.Channel and AI User Settings.Allowed Channels so the two can never drift apart.</description>
+    <masterLabel>AI Channel</masterLabel>
+    <sorted>false</sorted>
 </GlobalValueSet>

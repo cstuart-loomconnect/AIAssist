@@ -7,6 +7,7 @@
   >Pick the closest reason. Leave blank for a Helpful rating.</inlineHelpText>
     <label>Reason</label>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>

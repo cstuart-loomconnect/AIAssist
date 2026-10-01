@@ -5,7 +5,7 @@
     <description
   >Subject Record Id must be a 15 or 18 character Salesforce Id.</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(SubjectRecordId__c)), NOT(REGEX(SubjectRecordId__c, "^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$")))</errorConditionFormula>
+  >AND(NOT(ISBLANK(SubjectRecordId__c)), NOT(REGEX(SubjectRecordId__c, &quot;^[A-Za-z0-9]{15}([A-Za-z0-9]{3})?$&quot;)))</errorConditionFormula>
     <errorDisplayField>SubjectRecordId__c</errorDisplayField>
     <errorMessage
   >Subject Record Id must be a 15 or 18 character Salesforce Id.</errorMessage>

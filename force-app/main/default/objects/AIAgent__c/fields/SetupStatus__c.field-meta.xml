@@ -4,9 +4,10 @@
     <description
   >The overall build state of this agent within the Agent Builder wizard.</description>
     <inlineHelpText
-  >Reflects how far along this agent's configuration is. Updates automatically as each wizard step is saved.</inlineHelpText>
+  >Reflects how far along this agent&apos;s configuration is. Updates automatically as each wizard step is saved.</inlineHelpText>
     <label>Setup Status</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>

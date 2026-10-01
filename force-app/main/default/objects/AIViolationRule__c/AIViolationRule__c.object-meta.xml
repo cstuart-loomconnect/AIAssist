@@ -158,6 +158,7 @@
     <label>AI Violation Rule</label>
     <nameField>
         <label>AI Violation Rule Name</label>
+        <trackHistory>false</trackHistory>
         <type>Text</type>
     </nameField>
     <pluralLabel>AI Violation Rules</pluralLabel>

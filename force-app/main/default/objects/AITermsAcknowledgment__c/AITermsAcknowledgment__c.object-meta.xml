@@ -145,7 +145,7 @@
   >AITermsAcknowledgmentCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >A signed record of a user's acknowledgment of the AI Assist usage terms, including a typed electronic signature and a link to the authenticated session it was signed under, used as hard proof of consent.</description>
+  >A signed record of a user&apos;s acknowledgment of the AI Assist usage terms, including a typed electronic signature and a link to the authenticated session it was signed under, used as hard proof of consent.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

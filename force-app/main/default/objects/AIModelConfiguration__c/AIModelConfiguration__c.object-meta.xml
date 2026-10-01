@@ -159,6 +159,7 @@
     <label>AI Model Configuration</label>
     <nameField>
         <label>AI Model Configuration Name</label>
+        <trackHistory>false</trackHistory>
         <type>Text</type>
     </nameField>
     <pluralLabel>AI Model Configurations</pluralLabel>

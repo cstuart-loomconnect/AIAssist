@@ -159,6 +159,7 @@
     <nameField>
         <displayFormat>AI Violation - {000000}</displayFormat>
         <label>AI Violation Name</label>
+        <trackHistory>false</trackHistory>
         <type>AutoNumber</type>
     </nameField>
     <pluralLabel>AI Violations</pluralLabel>

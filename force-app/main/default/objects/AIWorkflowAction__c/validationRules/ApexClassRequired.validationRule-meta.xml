@@ -5,7 +5,7 @@
     <description
   >Apex Class Name is required when Action Type is Apex.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(ActionType__c, "Apex"), ISBLANK(ApexClassName__c))</errorConditionFormula>
+  >AND(ISPICKVAL(ActionType__c, &quot;Apex&quot;), ISBLANK(ApexClassName__c))</errorConditionFormula>
     <errorDisplayField>ApexClassName__c</errorDisplayField>
     <errorMessage
   >Apex Class Name is required when Action Type is Apex.</errorMessage>

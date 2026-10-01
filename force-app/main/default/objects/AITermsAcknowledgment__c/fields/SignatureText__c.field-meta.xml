@@ -6,7 +6,7 @@
   >The typed full name entered as an electronic signature.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >This constitutes the user's electronic signature — enter your full legal name.</inlineHelpText>
+  >This constitutes the user&apos;s electronic signature — enter your full legal name.</inlineHelpText>
     <label>Signature Text</label>
     <length>120</length>
     <required>false</required>

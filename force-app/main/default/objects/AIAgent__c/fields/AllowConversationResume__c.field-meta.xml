@@ -7,6 +7,7 @@
     <inlineHelpText
   >Turn this on to let users pick up where they left off.</inlineHelpText>
     <label>Allow Conversation Resume</label>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

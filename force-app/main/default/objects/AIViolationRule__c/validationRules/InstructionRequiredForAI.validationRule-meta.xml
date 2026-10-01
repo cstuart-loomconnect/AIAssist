@@ -5,7 +5,7 @@
     <description
   >AI Detection Instruction is required when Detection Method is AI Evaluated.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(DetectionMethod__c, "AI_Evaluated"), ISBLANK(AIDetectionInstruction__c))</errorConditionFormula>
+  >AND(ISPICKVAL(DetectionMethod__c, &quot;AI_Evaluated&quot;), ISBLANK(AIDetectionInstruction__c))</errorConditionFormula>
     <errorDisplayField>AIDetectionInstruction__c</errorDisplayField>
     <errorMessage
   >AI Detection Instruction is required when Detection Method is AI Evaluated.</errorMessage>

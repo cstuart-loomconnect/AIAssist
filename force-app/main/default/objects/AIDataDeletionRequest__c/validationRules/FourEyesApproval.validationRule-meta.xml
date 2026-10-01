@@ -5,7 +5,7 @@
     <description
   >Four-eyes control: the requester cannot approve their own data deletion request.</description>
     <errorConditionFormula
-  >AND(ISCHANGED(ApprovalDecision__c), ISPICKVAL(ApprovalDecision__c, "Approved"), $User.Id = CreatedById)</errorConditionFormula>
+  >AND(ISCHANGED(ApprovalDecision__c), ISPICKVAL(ApprovalDecision__c, &quot;Approved&quot;), $User.Id = CreatedById)</errorConditionFormula>
     <errorDisplayField>ApprovalDecision__c</errorDisplayField>
     <errorMessage
   >A request must be approved by someone other than the person who raised it.</errorMessage>

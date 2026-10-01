@@ -7,5 +7,6 @@
     <inlineHelpText
   >Untick to switch AI Assist off. Ticked by default so AI Assist works out of the box.</inlineHelpText>
     <label>Is Enabled</label>
+    <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

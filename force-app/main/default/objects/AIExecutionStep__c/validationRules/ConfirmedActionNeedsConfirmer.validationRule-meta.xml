@@ -5,7 +5,7 @@
     <description
   >The step itself proves the user confirmed before a write action ran.</description>
     <errorConditionFormula
-  >AND(ISNEW(), ISPICKVAL(StepType__c, "Workflow Action"), RequiredConfirmation__c, ISPICKVAL(Status__c, "Success"), OR(ISBLANK(ConfirmedBy__c), ISBLANK(ConfirmedDate__c)))</errorConditionFormula>
+  >AND(ISNEW(), ISPICKVAL(StepType__c, &quot;Workflow Action&quot;), RequiredConfirmation__c, ISPICKVAL(Status__c, &quot;Success&quot;), OR(ISBLANK(ConfirmedBy__c), ISBLANK(ConfirmedDate__c)))</errorConditionFormula>
     <errorDisplayField>ConfirmedBy__c</errorDisplayField>
     <errorMessage
   >An action that required confirmation cannot be recorded as successful without who confirmed it and when.</errorMessage>

@@ -5,10 +5,11 @@
   >The display name of this action, shown to the AI for tool selection and to the user as a suggested action.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Give this action a clear, action-oriented name, such as "Resend Document Request."</inlineHelpText>
+  >Give this action a clear, action-oriented name, such as &quot;Resend Document Request.&quot;</inlineHelpText>
     <label>Action Name</label>
     <length>50</length>
     <required>true</required>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>false</unique>

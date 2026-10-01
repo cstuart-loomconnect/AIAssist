@@ -10,5 +10,6 @@
     <relationshipLabel>AI Execution Steps Confirmed</relationshipLabel>
     <relationshipName>AIExecutionStepsConfirmed</relationshipName>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

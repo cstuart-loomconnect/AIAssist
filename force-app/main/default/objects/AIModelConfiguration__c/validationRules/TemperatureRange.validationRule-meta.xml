@@ -5,7 +5,7 @@
     <description
   >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(Temperature__c)), OR(Temperature__c &lt; 0, Temperature__c &gt; 2, AND(ISPICKVAL(AIProvider__c, "Anthropic"), Temperature__c &gt; 1)))</errorConditionFormula>
+  >AND(NOT(ISBLANK(Temperature__c)), OR(Temperature__c &lt; 0, Temperature__c &gt; 2, AND(ISPICKVAL(AIProvider__c, &quot;Anthropic&quot;), Temperature__c &gt; 1)))</errorConditionFormula>
     <errorDisplayField>Temperature__c</errorDisplayField>
     <errorMessage
   >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</errorMessage>

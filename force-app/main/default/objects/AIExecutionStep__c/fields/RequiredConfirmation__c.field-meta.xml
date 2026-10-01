@@ -6,5 +6,6 @@
   >Whether the workflow action needed the user to confirm before it ran.</description>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Required Confirmation</label>
+    <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

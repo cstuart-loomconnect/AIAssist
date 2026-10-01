@@ -7,6 +7,7 @@
   >Set by the platform as the reply is produced.</inlineHelpText>
     <label>Processing Status</label>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>

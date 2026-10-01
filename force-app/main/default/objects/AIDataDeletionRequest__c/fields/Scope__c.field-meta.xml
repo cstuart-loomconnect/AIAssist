@@ -4,10 +4,11 @@
     <description
   >What to delete: everything a Salesforce user created, or everything about one related record (for example one customer record).</description>
     <inlineHelpText
-  >Choose User to delete one person's conversations, or Related Record to erase all conversations about one record.</inlineHelpText>
+  >Choose User to delete one person&apos;s conversations, or Related Record to erase all conversations about one record.</inlineHelpText>
     <label>Scope</label>
     <required>false</required>
     <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>

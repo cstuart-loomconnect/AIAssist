@@ -6,7 +6,7 @@
     <externalId>false</externalId>
     <fieldManageability>DeveloperControlled</fieldManageability>
     <inlineHelpText
-  >Enter an AI Agent's Developer Name to offer this command only with that Agent, or leave blank for all Agents.</inlineHelpText>
+  >Enter an AI Agent&apos;s Developer Name to offer this command only with that Agent, or leave blank for all Agents.</inlineHelpText>
     <label>Agent Developer Name</label>
     <length>80</length>
     <required>false</required>

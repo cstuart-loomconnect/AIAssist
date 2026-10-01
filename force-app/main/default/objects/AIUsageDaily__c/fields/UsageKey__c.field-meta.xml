@@ -10,6 +10,7 @@
     <label>Usage Key</label>
     <length>80</length>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>true</unique>
 </CustomField>

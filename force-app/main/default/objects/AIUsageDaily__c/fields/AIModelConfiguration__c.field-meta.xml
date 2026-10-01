@@ -10,5 +10,6 @@
     <relationshipLabel>AI Usage Daily Records</relationshipLabel>
     <relationshipName>AIUsageDailyRecords</relationshipName>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

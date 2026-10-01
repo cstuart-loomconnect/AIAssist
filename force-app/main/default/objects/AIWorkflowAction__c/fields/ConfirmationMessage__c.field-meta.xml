@@ -4,7 +4,7 @@
     <description
   >The message shown to the user when confirming this action, if Requires Confirmation is enabled.</description>
     <inlineHelpText
-  >Write a short message explaining what will happen if the user confirms, such as "This will resend the document request to the applicant's email on file."</inlineHelpText>
+  >Write a short message explaining what will happen if the user confirms, such as &quot;This will resend the document request to the applicant&apos;s email on file.&quot;</inlineHelpText>
     <label>Confirmation Message</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

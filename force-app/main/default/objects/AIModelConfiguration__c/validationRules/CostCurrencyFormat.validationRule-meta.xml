@@ -5,7 +5,7 @@
     <description
   >Cost Currency must be a three-letter code in capitals, for example USD.</description>
     <errorConditionFormula
-  >AND(NOT(ISBLANK(CostCurrency__c)), NOT(REGEX(CostCurrency__c, "^[A-Z]{3}$")))</errorConditionFormula>
+  >AND(NOT(ISBLANK(CostCurrency__c)), NOT(REGEX(CostCurrency__c, &quot;^[A-Z]{3}$&quot;)))</errorConditionFormula>
     <errorDisplayField>CostCurrency__c</errorDisplayField>
     <errorMessage
   >Cost Currency must be a three-letter code in capitals, for example USD.</errorMessage>

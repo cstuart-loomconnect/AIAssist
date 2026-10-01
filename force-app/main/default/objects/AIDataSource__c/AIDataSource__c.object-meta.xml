@@ -159,6 +159,7 @@
     <nameField>
         <displayFormat>AI Data Source - {000000}</displayFormat>
         <label>AI Data Source Name</label>
+        <trackHistory>false</trackHistory>
         <type>AutoNumber</type>
     </nameField>
     <pluralLabel>AI Data Sources</pluralLabel>

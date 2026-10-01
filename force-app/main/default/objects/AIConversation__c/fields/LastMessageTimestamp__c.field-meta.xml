@@ -7,5 +7,6 @@
   >Updated automatically each time a message is added to the conversation.</inlineHelpText>
     <label>Last Message Timestamp</label>
     <required>false</required>
+    <trackTrending>false</trackTrending>
     <type>DateTime</type>
 </CustomField>

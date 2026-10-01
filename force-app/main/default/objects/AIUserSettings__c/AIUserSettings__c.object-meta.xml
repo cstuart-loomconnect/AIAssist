@@ -159,6 +159,7 @@
     <nameField>
         <displayFormat>AI User Settings - {00000}</displayFormat>
         <label>AI User Settings Name</label>
+        <trackHistory>false</trackHistory>
         <type>AutoNumber</type>
     </nameField>
     <pluralLabel>AI User Settings</pluralLabel>

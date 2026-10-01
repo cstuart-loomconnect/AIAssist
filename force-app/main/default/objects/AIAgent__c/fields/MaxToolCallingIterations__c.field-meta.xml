@@ -3,7 +3,7 @@
     <fullName>MaxToolCallingIterations__c</fullName>
     <defaultValue>5</defaultValue>
     <description
-  >Caps how many callout/tool-call round trips AIAgentManager will make in a single turn before giving up, so a model that keeps requesting tools can't loop indefinitely. Agents configured with more tools, or tools that often chain together, may need a higher ceiling than a simple single-lookup agent.</description>
+  >Caps how many callout/tool-call round trips AIAgentManager will make in a single turn before giving up, so a model that keeps requesting tools can&apos;t loop indefinitely. Agents configured with more tools, or tools that often chain together, may need a higher ceiling than a simple single-lookup agent.</description>
     <externalId>false</externalId>
     <inlineHelpText
   >Set a ceiling on tool-calling round trips per turn for this Agent.</inlineHelpText>

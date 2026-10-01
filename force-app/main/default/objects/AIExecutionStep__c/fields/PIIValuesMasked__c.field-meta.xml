@@ -9,5 +9,6 @@
     <summaryForeignKey
   >AIPIIMaskingRecord__c.AIExecutionStep__c</summaryForeignKey>
     <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
     <type>Summary</type>
 </CustomField>

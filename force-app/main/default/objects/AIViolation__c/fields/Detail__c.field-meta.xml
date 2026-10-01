@@ -7,6 +7,7 @@
   >Describe what triggered this violation. Avoid including raw PII or prohibited content itself in this field.</inlineHelpText>
     <label>Detail</label>
     <required>false</required>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>TextArea</type>
 </CustomField>

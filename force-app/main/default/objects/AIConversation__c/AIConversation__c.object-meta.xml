@@ -144,7 +144,7 @@
     <compactLayoutAssignment>AIConversationCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >Represents a single chat session between a user and an AI Agent, scoped to a specific record. Stores session-level state, usage, and outcome data used for reporting, cost tracking, and enforcing the Agent's configured limits and retention rules.</description>
+  >Represents a single chat session between a user and an AI Agent, scoped to a specific record. Stores session-level state, usage, and outcome data used for reporting, cost tracking, and enforcing the Agent&apos;s configured limits and retention rules.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

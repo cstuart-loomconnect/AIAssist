@@ -5,7 +5,7 @@
     <description
   >Fill in only the field that matches the Source Type: SOQL Template for SOQL, Apex Class Name for Apex.</description>
     <errorConditionFormula
-  >OR(AND(ISPICKVAL(SourceType__c, "SOQL"), NOT(ISBLANK(ApexClassName__c))), AND(ISPICKVAL(SourceType__c, "Apex"), NOT(ISBLANK(SOQLTemplate__c))))</errorConditionFormula>
+  >OR(AND(ISPICKVAL(SourceType__c, &quot;SOQL&quot;), NOT(ISBLANK(ApexClassName__c))), AND(ISPICKVAL(SourceType__c, &quot;Apex&quot;), NOT(ISBLANK(SOQLTemplate__c))))</errorConditionFormula>
     <errorDisplayField>SourceType__c</errorDisplayField>
     <errorMessage
   >Fill in only the field that matches the Source Type: SOQL Template for SOQL, Apex Class Name for Apex.</errorMessage>

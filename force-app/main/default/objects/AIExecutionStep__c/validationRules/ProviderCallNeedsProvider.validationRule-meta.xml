@@ -5,7 +5,7 @@
     <description
   >A provider call step must record the provider and model that received the data.</description>
     <errorConditionFormula
-  >AND(ISNEW(), ISPICKVAL(StepType__c, "Provider Call"), OR(ISBLANK(Provider__c), ISBLANK(ModelIdentifier__c)))</errorConditionFormula>
+  >AND(ISNEW(), ISPICKVAL(StepType__c, &quot;Provider Call&quot;), OR(ISBLANK(Provider__c), ISBLANK(ModelIdentifier__c)))</errorConditionFormula>
     <errorDisplayField>Provider__c</errorDisplayField>
     <errorMessage
   >A provider call step must record the provider and model that received the data.</errorMessage>

@@ -158,6 +158,7 @@
     <label>AI PII Registry</label>
     <nameField>
         <label>AI PII Registry Name</label>
+        <trackHistory>false</trackHistory>
         <type>Text</type>
     </nameField>
     <pluralLabel>AI PII Registry Entries</pluralLabel>
