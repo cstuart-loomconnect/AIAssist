@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ApiPathFormat</fullName>
     <active>true</active>
-    <description>The path is appended to the Named Credential endpoint. Forbidding hosts and traversal keeps every call pinned to the credential the admin chose.</description>
-    <errorConditionFormula>AND(NOT(ISBLANK(ApiPath__c)), OR(NOT(REGEX(ApiPath__c, "^/[A-Za-z0-9/_.~%?=&amp;:-]*$")), CONTAINS(ApiPath__c, ".."), CONTAINS(ApiPath__c, "//")))</errorConditionFormula>
+    <description
+  >The path is appended to the Named Credential endpoint. Forbidding hosts and traversal keeps every call pinned to the credential the admin chose.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(ApiPath__c)), OR(NOT(REGEX(ApiPath__c, "^/[A-Za-z0-9/_.~%?=&amp;:-]*$")), CONTAINS(ApiPath__c, ".."), CONTAINS(ApiPath__c, "//")))</errorConditionFormula>
     <errorDisplayField>ApiPath__c</errorDisplayField>
-    <errorMessage>API Path must start with a single / and contain only path characters - no host name, spaces, ".." or "//".</errorMessage>
+    <errorMessage
+  >API Path must start with a single / and contain only path characters - no host name, spaces, ".." or "//".</errorMessage>
 </ValidationRule>

@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>SetupStatus__c</fullName>
-    <description>The overall build state of this agent within the Agent Builder wizard.</description>
-    <inlineHelpText>Reflects how far along this agent's configuration is. Updates automatically as each wizard step is saved.</inlineHelpText>
+    <description
+  >The overall build state of this agent within the Agent Builder wizard.</description>
+    <inlineHelpText
+  >Reflects how far along this agent's configuration is. Updates automatically as each wizard step is saved.</inlineHelpText>
     <label>Setup Status</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

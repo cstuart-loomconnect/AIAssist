@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>FieldLabel__c</fullName>
-    <description>The field&apos;s human-readable label, cached from Setup.</description>
+    <description
+  >The field&apos;s human-readable label, cached from Setup.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set automatically during sync.</inlineHelpText>
     <label>Field Label</label>

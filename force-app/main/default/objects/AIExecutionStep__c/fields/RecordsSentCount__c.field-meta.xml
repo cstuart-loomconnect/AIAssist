@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>RecordsSentCount__c</fullName>
-    <description>How many records' data was sent to the provider in this call.</description>
+    <description
+  >How many records' data was sent to the provider in this call.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Records Sent Count</label>

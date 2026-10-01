@@ -1,10 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>DeveloperName__c</fullName>
     <caseSensitive>false</caseSensitive>
-    <description>A stable, unique name for this template, used to move templates between orgs without depending on record Ids.</description>
+    <description
+  >A stable, unique name for this template, used to move templates between orgs without depending on record Ids.</description>
     <externalId>true</externalId>
-    <inlineHelpText>Filled in from the template name. Used to move templates between orgs.</inlineHelpText>
+    <inlineHelpText
+  >Filled in from the template name. Used to move templates between orgs.</inlineHelpText>
     <label>Developer Name</label>
     <length>75</length>
     <required>false</required>

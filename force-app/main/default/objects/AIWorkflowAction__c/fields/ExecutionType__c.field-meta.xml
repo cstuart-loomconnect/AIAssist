@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ExecutionType__c</fullName>
-    <description>Indicates whether this action only retrieves information or makes a change.</description>
-    <inlineHelpText>Read Only actions can generally run without confirmation. Write actions change data and should typically require confirmation.</inlineHelpText>
+    <description
+  >Indicates whether this action only retrieves information or makes a change.</description>
+    <inlineHelpText
+  >Read Only actions can generally run without confirmation. Write actions change data and should typically require confirmation.</inlineHelpText>
     <label>Execution Type</label>
     <required>true</required>
     <trackHistory>true</trackHistory>

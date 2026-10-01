@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIViolationRuleCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Defines a rule used to detect a guarded behavior or risky intent in an AI-assisted workflow, either by deterministic Apex logic or by AI evaluation. Each rule can trigger violations and optionally block a response.</description>
+    <description
+  >Defines a rule used to detect a guarded behavior or risky intent in an AI-assisted workflow, either by deterministic Apex logic or by AI evaluation. Each rule can trigger violations and optionally block a response.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

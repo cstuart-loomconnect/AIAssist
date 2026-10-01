@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIViolationCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>A permanent, auditable record of a rule condition being met during AI Assist processing. Written asynchronously via a Platform Event subscriber, decoupled from the live conversation transaction, so logging volume never affects response time or creates record locking on frequently-accessed objects.</description>
+    <description
+  >A permanent, auditable record of a rule condition being met during AI Assist processing. Written asynchronously via a Platform Event subscriber, decoupled from the live conversation transaction, so logging volume never affects response time or creates record locking on frequently-accessed objects.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

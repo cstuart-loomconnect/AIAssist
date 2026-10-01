@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>CostCurrency__c</fullName>
     <defaultValue>"USD"</defaultValue>
-    <description>ISO currency code the two token prices are entered in.</description>
+    <description
+  >ISO currency code the two token prices are entered in.</description>
     <externalId>false</externalId>
     <inlineHelpText>Three-letter code, for example USD or GBP.</inlineHelpText>
     <label>Cost Currency</label>

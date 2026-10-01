@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -141,9 +141,11 @@
         <type>Default</type>
     </actionOverrides>
     <allowInChatterGroups>false</allowInChatterGroups>
-    <compactLayoutAssignment>AIModelConfigurationCompact</compactLayoutAssignment>
+    <compactLayoutAssignment
+  >AIModelConfigurationCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Defines a specific AI model configuration,  provider, model version, and generation parameters, that can be assigned to one or more Agents, allowing model choice and tuning to be managed centrally rather than duplicated per agent.</description>
+    <description
+  >Defines a specific AI model configuration,  provider, model version, and generation parameters, that can be assigned to one or more Agents, allowing model choice and tuning to be managed centrally rather than duplicated per agent.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

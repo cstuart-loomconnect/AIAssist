@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>InstructionRequiredForAI</fullName>
     <active>true</active>
-    <description>AI Detection Instruction is required when Detection Method is AI Evaluated.</description>
-    <errorConditionFormula>AND(ISPICKVAL(DetectionMethod__c, "AI_Evaluated"), ISBLANK(AIDetectionInstruction__c))</errorConditionFormula>
+    <description
+  >AI Detection Instruction is required when Detection Method is AI Evaluated.</description>
+    <errorConditionFormula
+  >AND(ISPICKVAL(DetectionMethod__c, "AI_Evaluated"), ISBLANK(AIDetectionInstruction__c))</errorConditionFormula>
     <errorDisplayField>AIDetectionInstruction__c</errorDisplayField>
-    <errorMessage>AI Detection Instruction is required when Detection Method is AI Evaluated.</errorMessage>
+    <errorMessage
+  >AI Detection Instruction is required when Detection Method is AI Evaluated.</errorMessage>
 </ValidationRule>

@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ComplianceGroup__c</fullName>
-    <description>The compliance group of the field at the time, for example PII or GDPR.</description>
+    <description
+  >The compliance group of the field at the time, for example PII or GDPR.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Compliance Group</label>

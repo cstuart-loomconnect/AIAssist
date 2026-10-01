@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIPIIMappingCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Storage of the real-value-to-fake-value PII mapping for one conversation, Master-Detail to AIConversation__c. One row per conversation. Pure storage - has no opinion about what makes a value PII, it only remembers pairings AIPiiPseudonymizationService hands it.</description>
+    <description
+  >Storage of the real-value-to-fake-value PII mapping for one conversation, Master-Detail to AIConversation__c. One row per conversation. Pure storage - has no opinion about what makes a value PII, it only remembers pairings AIPiiPseudonymizationService hands it.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

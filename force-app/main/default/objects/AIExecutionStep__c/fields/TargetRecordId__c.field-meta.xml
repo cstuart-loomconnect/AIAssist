@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>TargetRecordId__c</fullName>
     <caseSensitive>false</caseSensitive>
-    <description>Id of the record a Workflow Action step changed. Indexed so you can ask what the AI did to a given record.</description>
+    <description
+  >Id of the record a Workflow Action step changed. Indexed so you can ask what the AI did to a given record.</description>
     <externalId>true</externalId>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Target Record Id</label>

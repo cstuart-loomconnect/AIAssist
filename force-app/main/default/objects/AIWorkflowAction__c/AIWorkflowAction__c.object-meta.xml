@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIWorkflowActionCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Defines a reusable, configurable action, backed by a Flow or Apex class, that can be assigned to one or more AI Agents via AIAgentWorkflowAction__c. Represents a capability the AI can suggest to a user, who reviews and triggers it manually rather than the AI executing it autonomously.</description>
+    <description
+  >Defines a reusable, configurable action, backed by a Flow or Apex class, that can be assigned to one or more AI Agents via AIAgentWorkflowAction__c. Represents a capability the AI can suggest to a user, who reviews and triggers it manually rather than the AI executing it autonomously.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

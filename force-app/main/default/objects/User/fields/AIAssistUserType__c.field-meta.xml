@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIAssistUserType__c</fullName>
-    <description>This user&apos;s role within AI Assist. Drives automatic AIUserSettings__c creation and Permission Set assignment.</description>
-    <inlineHelpText>Select this user&apos;s AI Assist role. Changing it later re-evaluates their Permission Set assignment.</inlineHelpText>
+    <description
+  >This user&apos;s role within AI Assist. Drives automatic AIUserSettings__c creation and Permission Set assignment.</description>
+    <inlineHelpText
+  >Select this user&apos;s AI Assist role. Changing it later re-evaluates their Permission Set assignment.</inlineHelpText>
     <label>AI Assist User Type</label>
     <required>false</required>
     <trackFeedHistory>false</trackFeedHistory>

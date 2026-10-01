@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIWorkflowAction__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>The workflow action involved, if this step was an action suggestion.</description>
-    <inlineHelpText>Left blank if this step wasn&apos;t a workflow action suggestion.</inlineHelpText>
+    <description
+  >The workflow action involved, if this step was an action suggestion.</description>
+    <inlineHelpText
+  >Left blank if this step wasn&apos;t a workflow action suggestion.</inlineHelpText>
     <label>AI Workflow Action</label>
     <referenceTo>AIWorkflowAction__c</referenceTo>
     <relationshipLabel>AI Execution Steps</relationshipLabel>

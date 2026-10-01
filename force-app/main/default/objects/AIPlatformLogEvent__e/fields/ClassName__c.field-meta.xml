@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ClassName__c</fullName>
     <description>Where the exception occurred.</description>
     <externalId>false</externalId>
-    <inlineHelpText>Populated automatically by AiPlatformLogManager at the point the exception is caught.</inlineHelpText>
+    <inlineHelpText
+  >Populated automatically by AiPlatformLogManager at the point the exception is caught.</inlineHelpText>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>

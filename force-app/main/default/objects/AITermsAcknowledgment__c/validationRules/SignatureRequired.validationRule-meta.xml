@@ -1,8 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>SignatureRequired</fullName>
     <active>true</active>
-    <description>A user, terms version and signature are all required to record an acknowledgment.</description>
-    <errorConditionFormula>AND(ISNEW(), OR(ISBLANK(SignatureText__c), ISBLANK(TermsVersion__c), ISBLANK(User__c)))</errorConditionFormula>
-    <errorMessage>A user, terms version and signature are all required to record an acknowledgment.</errorMessage>
+    <description
+  >A user, terms version and signature are all required to record an acknowledgment.</description>
+    <errorConditionFormula
+  >AND(ISNEW(), OR(ISBLANK(SignatureText__c), ISBLANK(TermsVersion__c), ISBLANK(User__c)))</errorConditionFormula>
+    <errorMessage
+  >A user, terms version and signature are all required to record an acknowledgment.</errorMessage>
 </ValidationRule>

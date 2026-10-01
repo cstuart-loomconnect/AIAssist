@@ -1,8 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ConversationLimitsMustBePositive</fullName>
     <active>true</active>
-    <description>Retention days, token, message, idle timeout and tool-calling limits must each be 1 or more, or left blank.</description>
-    <errorConditionFormula>OR(AND(NOT(ISBLANK(ConversationRetentionDays__c)), ConversationRetentionDays__c &lt; 1), AND(NOT(ISBLANK(MaxTokensPerConversation__c)), MaxTokensPerConversation__c &lt; 1), AND(NOT(ISBLANK(MaxMessagesPerConversation__c)), MaxMessagesPerConversation__c &lt; 1), AND(NOT(ISBLANK(IdleTimeoutMinutes__c)), IdleTimeoutMinutes__c &lt; 1), AND(NOT(ISBLANK(MaxToolCallingIterations__c)), MaxToolCallingIterations__c &lt; 1))</errorConditionFormula>
-    <errorMessage>Retention days, token, message, idle timeout and tool-calling limits must each be 1 or more, or left blank.</errorMessage>
+    <description
+  >Retention days, token, message, idle timeout and tool-calling limits must each be 1 or more, or left blank.</description>
+    <errorConditionFormula
+  >OR(AND(NOT(ISBLANK(ConversationRetentionDays__c)), ConversationRetentionDays__c &lt; 1), AND(NOT(ISBLANK(MaxTokensPerConversation__c)), MaxTokensPerConversation__c &lt; 1), AND(NOT(ISBLANK(MaxMessagesPerConversation__c)), MaxMessagesPerConversation__c &lt; 1), AND(NOT(ISBLANK(IdleTimeoutMinutes__c)), IdleTimeoutMinutes__c &lt; 1), AND(NOT(ISBLANK(MaxToolCallingIterations__c)), MaxToolCallingIterations__c &lt; 1))</errorConditionFormula>
+    <errorMessage
+  >Retention days, token, message, idle timeout and tool-calling limits must each be 1 or more, or left blank.</errorMessage>
 </ValidationRule>

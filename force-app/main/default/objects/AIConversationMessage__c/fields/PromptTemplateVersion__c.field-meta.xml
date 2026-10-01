@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>PromptTemplateVersion__c</fullName>
-    <description>The version of the Prompt Template at the moment this reply was produced. Kept even if the template is later edited or deleted.</description>
+    <description
+  >The version of the Prompt Template at the moment this reply was produced. Kept even if the template is later edited or deleted.</description>
     <externalId>false</externalId>
-    <inlineHelpText>Set by the platform when the reply is generated.</inlineHelpText>
+    <inlineHelpText
+  >Set by the platform when the reply is generated.</inlineHelpText>
     <label>Prompt Template Version</label>
     <precision>5</precision>
     <required>false</required>

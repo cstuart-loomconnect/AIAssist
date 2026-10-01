@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIPlatformLogCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>General-purpose exception logging for the whole application, separate from AIExecutionStep__c which is scoped only to normal AI reasoning steps. Written asynchronously via a Platform Event subscriber so a logging call never fails or is lost to the caller's transaction rollback.</description>
+    <description
+  >General-purpose exception logging for the whole application, separate from AIExecutionStep__c which is scoped only to normal AI reasoning steps. Written asynchronously via a Platform Event subscriber so a logging call never fails or is lost to the caller's transaction rollback.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

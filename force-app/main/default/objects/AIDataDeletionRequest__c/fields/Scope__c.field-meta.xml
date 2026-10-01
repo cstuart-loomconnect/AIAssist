@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Scope__c</fullName>
-    <description>What to delete: everything a Salesforce user created, or everything about one related record (for example one customer record).</description>
-    <inlineHelpText>Choose User to delete one person's conversations, or Related Record to erase all conversations about one record.</inlineHelpText>
+    <description
+  >What to delete: everything a Salesforce user created, or everything about one related record (for example one customer record).</description>
+    <inlineHelpText
+  >Choose User to delete one person's conversations, or Related Record to erase all conversations about one record.</inlineHelpText>
     <label>Scope</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

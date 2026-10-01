@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Reason__c</fullName>
-    <description>Why the user rated a response Not Helpful. Drives prompt and data-source tuning far better than free-text comments.</description>
-    <inlineHelpText>Pick the closest reason. Leave blank for a Helpful rating.</inlineHelpText>
+    <description
+  >Why the user rated a response Not Helpful. Drives prompt and data-source tuning far better than free-text comments.</description>
+    <inlineHelpText
+  >Pick the closest reason. Leave blank for a Helpful rating.</inlineHelpText>
     <label>Reason</label>
     <required>false</required>
     <type>Picklist</type>

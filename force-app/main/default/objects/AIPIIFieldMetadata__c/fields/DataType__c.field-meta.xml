@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>DataType__c</fullName>
-    <description>The field&apos;s data type, cached from FieldDefinition.</description>
+    <description
+  >The field&apos;s data type, cached from FieldDefinition.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set automatically during sync.</inlineHelpText>
     <label>Data Type</label>

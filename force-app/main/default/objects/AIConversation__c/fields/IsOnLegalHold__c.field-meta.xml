@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>IsOnLegalHold__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>When checked, retention and idle clean-up never delete this conversation or its messages. Set by the platform when a hold is applied.</description>
-    <inlineHelpText>A conversation on legal hold is kept even after its retention date. Only the platform sets this.</inlineHelpText>
+    <description
+  >When checked, retention and idle clean-up never delete this conversation or its messages. Set by the platform when a hold is applied.</description>
+    <inlineHelpText
+  >A conversation on legal hold is kept even after its retention date. Only the platform sets this.</inlineHelpText>
     <label>Is On Legal Hold</label>
     <trackHistory>false</trackHistory>
     <type>Checkbox</type>

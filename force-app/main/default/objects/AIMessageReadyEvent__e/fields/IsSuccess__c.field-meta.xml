@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>IsSuccess__c</fullName>
     <defaultValue>true</defaultValue>
-    <description>Whether AiMessageProcessingQueueable finished this turn successfully. False means ErrorMessage__c is populated and no reply message exists.</description>
-    <inlineHelpText>Checked when a reply was produced; unchecked when the turn failed.</inlineHelpText>
+    <description
+  >Whether AiMessageProcessingQueueable finished this turn successfully. False means ErrorMessage__c is populated and no reply message exists.</description>
+    <inlineHelpText
+  >Checked when a reply was produced; unchecked when the turn failed.</inlineHelpText>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>

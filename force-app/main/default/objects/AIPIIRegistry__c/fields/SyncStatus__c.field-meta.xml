@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>SyncStatus__c</fullName>
     <description>The current sync state.</description>
-    <inlineHelpText>Reflects where this object is in the sync process.</inlineHelpText>
+    <inlineHelpText
+  >Reflects where this object is in the sync process.</inlineHelpText>
     <label>Sync Status</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

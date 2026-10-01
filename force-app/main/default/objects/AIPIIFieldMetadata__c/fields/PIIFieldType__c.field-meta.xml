@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>PIIFieldType__c</fullName>
-    <description>The PII type assigned to this field, matching the PII Field Type value of an AI PII Field Type custom metadata record (for example Email, SSN or a type added by the subscriber).</description>
+    <description
+  >The PII type assigned to this field, matching the PII Field Type value of an AI PII Field Type custom metadata record (for example Email, SSN or a type added by the subscriber).</description>
     <externalId>false</externalId>
-    <inlineHelpText>Set automatically during sync based on the field's name, label, data type, and Compliance Group. Blank means the field isn't recognized as a specific PII type.</inlineHelpText>
+    <inlineHelpText
+  >Set automatically during sync based on the field's name, label, data type, and Compliance Group. Blank means the field isn't recognized as a specific PII type.</inlineHelpText>
     <label>PII Field Type</label>
     <length>50</length>
     <required>false</required>

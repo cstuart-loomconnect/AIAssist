@@ -14,35 +14,35 @@ Status: layer 1 (object model and access). Validated with a check-only deploy to
 
 CRED = create / read / edit / delete. `+all` = View All Records. Field-level access is in the permission set files (User 37 field permissions, Super User 213, Admin 226).
 
-| Object | OWD | User | Super User | Admin |
-|---|---|---|---|---|
-| AIAgentAssignment__c | ControlledByParent | - | R | CRED |
-| AIAgentDataSource__c | ControlledByParent | - | R | CRED |
-| AIAgentWorkflowAction__c | ControlledByParent | - | R | CRED |
-| AIAgent__c | ReadWrite | R | R | CRED |
-| AIConversationMessage__c | ControlledByParent | CR | CR +all | CR |
-| AIConversation__c | Private | CRE | CRE +all | CRE +all |
-| AIDataDeletionRequest__c | ReadWrite | - | - | CRE |
-| AIDataSource__c | ReadWrite | - | R | CRED |
-| AIExecutionStep__c | ControlledByParent | - | R +all | R +all |
-| AIFeedback__c | Private | CR | CR +all | CR +all |
-| AIModelConfiguration__c | ReadWrite | - | R | CRED |
-| AIPIIFieldMetadata__c | ControlledByParent | - | R | R |
-| AIPIIMapping__c | ControlledByParent | - | - | - |
-| AIPIIMaskingRecord__c | ControlledByParent | - | R +all | R +all |
-| AIPIIRegistry__c | ReadWrite | - | R | CRED |
-| AIPlatformLog__c | Private | - | R +all | R +all |
-| AIPromptTemplate__c | ReadWrite | - | R | CRED |
-| AITermsAcknowledgment__c | Private | CR | CR | CR +all |
-| AIUsageDaily__c | Private | - | R +all | R +all |
-| AIUserSettings__c | ReadWrite | - | R | CRE |
-| AIViolationRule__c | ControlledByParent | - | R | CRED |
-| AIViolation__c | ReadWrite | - | RE | R |
-| AIWorkflowAction__c | ReadWrite | - | R | CRED |
-| AIAgentProgressEvent__e | - | CR | CR | CR |
-| AIMessageReadyEvent__e | - | CR | CR | CR |
-| AIPlatformLogEvent__e | - | CR | CR | CR |
-| AIViolationEvent__e | - | CR | CR | CR |
+| Object                   | OWD                | User | Super User | Admin    |
+| ------------------------ | ------------------ | ---- | ---------- | -------- |
+| AIAgentAssignment__c     | ControlledByParent | -    | R          | CRED     |
+| AIAgentDataSource__c     | ControlledByParent | -    | R          | CRED     |
+| AIAgentWorkflowAction__c | ControlledByParent | -    | R          | CRED     |
+| AIAgent__c               | ReadWrite          | R    | R          | CRED     |
+| AIConversationMessage__c | ControlledByParent | CR   | CR +all    | CR       |
+| AIConversation__c        | Private            | CRE  | CRE +all   | CRE +all |
+| AIDataDeletionRequest__c | ReadWrite          | -    | -          | CRE      |
+| AIDataSource__c          | ReadWrite          | -    | R          | CRED     |
+| AIExecutionStep__c       | ControlledByParent | -    | R +all     | R +all   |
+| AIFeedback__c            | Private            | CR   | CR +all    | CR +all  |
+| AIModelConfiguration__c  | ReadWrite          | -    | R          | CRED     |
+| AIPIIFieldMetadata__c    | ControlledByParent | -    | R          | R        |
+| AIPIIMapping__c          | ControlledByParent | -    | -          | -        |
+| AIPIIMaskingRecord__c    | ControlledByParent | -    | R +all     | R +all   |
+| AIPIIRegistry__c         | ReadWrite          | -    | R          | CRED     |
+| AIPlatformLog__c         | Private            | -    | R +all     | R +all   |
+| AIPromptTemplate__c      | ReadWrite          | -    | R          | CRED     |
+| AITermsAcknowledgment__c | Private            | CR   | CR         | CR +all  |
+| AIUsageDaily__c          | Private            | -    | R +all     | R +all   |
+| AIUserSettings__c        | ReadWrite          | -    | R          | CRE      |
+| AIViolationRule__c       | ControlledByParent | -    | R          | CRED     |
+| AIViolation__c           | ReadWrite          | -    | RE         | R        |
+| AIWorkflowAction__c      | ReadWrite          | -    | R          | CRED     |
+| AIAgentProgressEvent__e  | -                  | CR   | CR         | CR       |
+| AIMessageReadyEvent__e   | -                  | CR   | CR         | CR       |
+| AIPlatformLogEvent__e    | -                  | CR   | CR         | CR       |
+| AIViolationEvent__e      | -                  | CR   | CR         | CR       |
 
 Custom metadata: `AIChatCommand__mdt` is Protected and developer-controlled, so only the package owner ships or changes chat commands; subscribers cannot see it and no permission set references it. Admin reads the three PII metadata types. Admin alone has access to both custom settings. Object tabs are `Available`, never forced `Visible`.
 
@@ -56,13 +56,13 @@ Each set is self-contained (assign one). It is not additive.
 
 ## 4. Deliberate exclusions (the "cannot")
 
-| Cannot | Why |
-|---|---|
-| Admin read other users' message bodies, step request/response JSON, violation detail | Content can contain customer data. Configuring an agent does not need it. Field permissions are not record-scoped, so Admin has no View All on messages. |
-| Super User read `NamedCredential`, `ApiPath`, API version headers | Support does not need connection details. |
-| Anyone delete conversations, violations, acknowledgments | Retention and deletion run inside the package (retention batch, a delete action in layer 2). |
-| User read prompts, SOQL templates, actions, user settings, execution steps | Config and trace are read by the package in system mode, not by the end user. |
-| Anyone edit Terms Acknowledged on user settings, counters, sync status, Public Id, Developer Name | System-populated. |
+| Cannot                                                                                            | Why                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin read other users' message bodies, step request/response JSON, violation detail              | Content can contain customer data. Configuring an agent does not need it. Field permissions are not record-scoped, so Admin has no View All on messages. |
+| Super User read `NamedCredential`, `ApiPath`, API version headers                                 | Support does not need connection details.                                                                                                                |
+| Anyone delete conversations, violations, acknowledgments                                          | Retention and deletion run inside the package (retention batch, a delete action in layer 2).                                                             |
+| User read prompts, SOQL templates, actions, user settings, execution steps                        | Config and trace are read by the package in system mode, not by the end user.                                                                            |
+| Anyone edit Terms Acknowledged on user settings, counters, sync status, Public Id, Developer Name | System-populated.                                                                                                                                        |
 
 ## 5. What this means for layer 2 (code)
 
@@ -83,6 +83,7 @@ These are contracts the permission model now imposes. The existing Apex (`AI-Ass
 ## 6. Object model changes
 
 **Fixed**
+
 - Reporting: 13 objects were not reportable (including conversations, violations and feedback), while `AIPIIMapping__c` was. Reversed: every object except the PII mapping now supports the standard report Salesforce generates for it. No custom report types are shipped; add them later if a customer needs cross-object reports.
 - `PublicId__c` was 18 characters on two objects but the generator writes 36. Both fields are now removed (below).
 - Sharing: six config objects and user settings moved from Public Read Only (which forced `View All`/`Modify All` on Admin) to Public Read/Write gated by object permission. Violations also, so Super Users can review without `Modify All`.
@@ -102,40 +103,40 @@ These are contracts the permission model now imposes. The existing Apex (`AI-Ass
 
 **UI settings versus debug**: there is no separate debug settings object. Related flags, not duplicates:
 
-| Setting | Scope | Controls |
-|---|---|---|
-| `AIAssistUISettings__c.ShowExecutionTraceToUser__c` (relabelled Show Live Progress Steps To User) | org / profile | Step names while waiting. No content. |
-| `AIUserSettings__c.DebugModeEnabled__c` | one user | Request/response payloads, sent preview, provider call steps. |
-| `AIAssistSettings__c.IsExceptionLoggingEnabled__c` then `IsPlatformLoggingEnabled__c` | org | Step 1 stops publishing log events; step 2 stops saving them. Both are needed, help text clarified. |
-| `AIAgent__c.IsTestModeEnabled__c`, `AIAssistSettings__c.AuditLoggingRecordId__c` | agent / one record | Test access; scoped step logging. |
+| Setting                                                                                           | Scope              | Controls                                                                                            |
+| ------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| `AIAssistUISettings__c.ShowExecutionTraceToUser__c` (relabelled Show Live Progress Steps To User) | org / profile      | Step names while waiting. No content.                                                               |
+| `AIUserSettings__c.DebugModeEnabled__c`                                                           | one user           | Request/response payloads, sent preview, provider call steps.                                       |
+| `AIAssistSettings__c.IsExceptionLoggingEnabled__c` then `IsPlatformLoggingEnabled__c`             | org                | Step 1 stops publishing log events; step 2 stops saving them. Both are needed, help text clarified. |
+| `AIAgent__c.IsTestModeEnabled__c`, `AIAssistSettings__c.AuditLoggingRecordId__c`                  | agent / one record | Test access; scoped step logging.                                                                   |
 
 **Decisions taken on the open items**
 
-| Item | Decision | Plain-English reason |
-|---|---|---|
-| User settings kept three "terms accepted" fields that copy what the signed Terms Acknowledgment record already proves | Removed the three copies. The chat asks "is there an acknowledgment for the current terms version" instead. | Two places saying the same thing can disagree, and only one is legal evidence. |
-| Nothing stopped a user having two settings records, or an agent getting the same data source twice | Added a unique **key** field (`UserKey__c`, `AssignmentKey__c`) that the platform fills in; the database then rejects duplicates. | A lookup cannot be made unique, so the key is the only declarative way. |
-| Each execution step stores two 128 KB JSON fields | No new field. Steps are deleted with their conversation, so conversation retention (default 90 days) bounds storage. Keep retention short. | Nothing more is needed unless storage becomes a problem. |
-| Settings held org-specific record Ids (email template, audit record) | Left as is. | The admin picks those per org in the console; an Id is fine there. |
-| "PII" capitalised differently on two object families | Left. Cosmetic, and a rename breaks code for no security gain. | |
-| Provider value `Open AI` | Changed to `OpenAI`. | Free now, impossible after release. |
-| Custom settings public or protected | Stay **Public**. Only chat commands are Protected. | Admins tune these in the console and support must be able to see them. |
-| Custom settings cannot have validation rules | Accepted. Limits there are checked in Apex. | Platform limitation. |
-| Progress/message-ready events are readable by every chat user | Accepted; payloads are content-free (conversation Id, step name). | Platform events cannot be filtered per user. |
+| Item                                                                                                                  | Decision                                                                                                                                   | Plain-English reason                                                           |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| User settings kept three "terms accepted" fields that copy what the signed Terms Acknowledgment record already proves | Removed the three copies. The chat asks "is there an acknowledgment for the current terms version" instead.                                | Two places saying the same thing can disagree, and only one is legal evidence. |
+| Nothing stopped a user having two settings records, or an agent getting the same data source twice                    | Added a unique **key** field (`UserKey__c`, `AssignmentKey__c`) that the platform fills in; the database then rejects duplicates.          | A lookup cannot be made unique, so the key is the only declarative way.        |
+| Each execution step stores two 128 KB JSON fields                                                                     | No new field. Steps are deleted with their conversation, so conversation retention (default 90 days) bounds storage. Keep retention short. | Nothing more is needed unless storage becomes a problem.                       |
+| Settings held org-specific record Ids (email template, audit record)                                                  | Left as is.                                                                                                                                | The admin picks those per org in the console; an Id is fine there.             |
+| "PII" capitalised differently on two object families                                                                  | Left. Cosmetic, and a rename breaks code for no security gain.                                                                             |                                                                                |
+| Provider value `Open AI`                                                                                              | Changed to `OpenAI`.                                                                                                                       | Free now, impossible after release.                                            |
+| Custom settings public or protected                                                                                   | Stay **Public**. Only chat commands are Protected.                                                                                         | Admins tune these in the console and support must be able to see them.         |
+| Custom settings cannot have validation rules                                                                          | Accepted. Limits there are checked in Apex.                                                                                                | Platform limitation.                                                           |
+| Progress/message-ready events are readable by every chat user                                                         | Accepted; payloads are content-free (conversation Id, step name).                                                                          | Platform events cannot be filtered per user.                                   |
 
 ## 6a. What was missing from the model, and is now added
 
-| Gap | Added | Why it matters |
-|---|---|---|
-| Who may use which agent. Any user with the User set could use any active agent. | `AIAgentAssignment__c` (user or permission set, active flag, unique key, history) and `AIAgent__c.AccessMode__c` (default **Assigned Users Only**). | The only way to limit a sensitive agent to the right people. Default is closed. |
-| Usage history disappeared when conversations were purged, and daily limits meant summing every message | `AIUsageDaily__c`: one row per user, agent, model and day with tokens, counts, failures and estimated cost. Admin and Super User read it; only the package writes it. | Cost and adoption reporting that survives retention, and a cheap limit check. |
-| No price data, so no cost reporting | Input/output price per million tokens and currency on Model Configuration; `EstimatedCost__c` formula on usage rows. | Finance asks "what does this cost" on day one. |
-| Data source could return unlimited rows | `MaxRows__c` (default 20, 1 to 200). | Controls prompt size, cost and how much data reaches the AI service. |
-| No legal hold | `IsOnLegalHold__c` on Conversation. | Retention must never delete held records. |
-| Failed replies invisible in reports | `ProcessingStatus__c` and `FailureReason__c` on Message. | Failure rate by model/agent, and recovery of stuck turns. |
-| Feedback had a rating and free text only | `Reason__c` on Feedback. | Actionable tuning signal. |
-| Violations not linked to the offending message | `AIConversationMessage__c` on Violation. | Reviewer goes straight to the evidence. |
-| Logs had no severity and no retention | `Severity__c` on log and log event; `PlatformLogRetentionDays__c` (30) and `ViolationRetentionDays__c` (365) settings. | Logs are operational, violations are evidence; they need different lifetimes. |
+| Gap                                                                                                    | Added                                                                                                                                                                 | Why it matters                                                                  |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Who may use which agent. Any user with the User set could use any active agent.                        | `AIAgentAssignment__c` (user or permission set, active flag, unique key, history) and `AIAgent__c.AccessMode__c` (default **Assigned Users Only**).                   | The only way to limit a sensitive agent to the right people. Default is closed. |
+| Usage history disappeared when conversations were purged, and daily limits meant summing every message | `AIUsageDaily__c`: one row per user, agent, model and day with tokens, counts, failures and estimated cost. Admin and Super User read it; only the package writes it. | Cost and adoption reporting that survives retention, and a cheap limit check.   |
+| No price data, so no cost reporting                                                                    | Input/output price per million tokens and currency on Model Configuration; `EstimatedCost__c` formula on usage rows.                                                  | Finance asks "what does this cost" on day one.                                  |
+| Data source could return unlimited rows                                                                | `MaxRows__c` (default 20, 1 to 200).                                                                                                                                  | Controls prompt size, cost and how much data reaches the AI service.            |
+| No legal hold                                                                                          | `IsOnLegalHold__c` on Conversation.                                                                                                                                   | Retention must never delete held records.                                       |
+| Failed replies invisible in reports                                                                    | `ProcessingStatus__c` and `FailureReason__c` on Message.                                                                                                              | Failure rate by model/agent, and recovery of stuck turns.                       |
+| Feedback had a rating and free text only                                                               | `Reason__c` on Feedback.                                                                                                                                              | Actionable tuning signal.                                                       |
+| Violations not linked to the offending message                                                         | `AIConversationMessage__c` on Violation.                                                                                                                              | Reviewer goes straight to the evidence.                                         |
+| Logs had no severity and no retention                                                                  | `Severity__c` on log and log event; `PlatformLogRetentionDays__c` (30) and `ViolationRetentionDays__c` (365) settings.                                                | Logs are operational, violations are evidence; they need different lifetimes.   |
 
 | No way to prove what a deletion removed | `AIDataDeletionRequest__c`: scope (user or related record), received date, four-eyes approval (the requester cannot approve their own request, enforced by a validation rule), status, and counts of what was removed. Only the package sets status, approver and counts; a completed request is locked. Admin only. | A regulator or customer can be shown the request, who approved it and what was deleted, without the record holding any deleted content. |
 | Could not tell which prompt wording produced an answer | `Version__c` on Prompt Template (platform-incremented when the wording changes) and `AIPromptTemplate__c` + `PromptTemplateVersion__c` on every Message. | Answers to "why did it say that" and before/after comparisons of a prompt change. |
@@ -146,18 +147,18 @@ These are contracts the permission model now imposes. The existing Apex (`AI-Ass
 
 **Feature Management parameters** (values are placeholders until you define plans; change them per customer in the License Management Org):
 
-| Parameter | Type | Default | Enforced by |
-|---|---|---|---|
-| `MaxActiveAgents` | Integer | 3 | Activating an agent |
-| `MaxActiveDataSources` | Integer | 10 | Activating a data source |
-| `MaxActiveWorkflowActions` | Integer | 5 | Activating a workflow action |
-| `MaxMonthlyMessages` | Integer | 5000 | Each message (count from `AIUsageDaily__c`) |
-| `MaxMonthlyTokens` | Integer | 5,000,000 | Each message (sum from `AIUsageDaily__c`) |
-| `MaxConversationRetentionDays` | Integer | 90 | Saving an agent's retention days |
-| `WorkflowActionsAllowed` | Boolean | false | Activating or running any action |
-| `ApexDataSourcesAllowed` | Boolean | false | Apex-type data sources and actions |
-| `AIEvaluatedRulesAllowed` | Boolean | false | AI-evaluated violation rules |
-| `MultipleProvidersAllowed` | Boolean | false | Activating a second provider's model configuration |
+| Parameter                      | Type    | Default   | Enforced by                                        |
+| ------------------------------ | ------- | --------- | -------------------------------------------------- |
+| `MaxActiveAgents`              | Integer | 3         | Activating an agent                                |
+| `MaxActiveDataSources`         | Integer | 10        | Activating a data source                           |
+| `MaxActiveWorkflowActions`     | Integer | 5         | Activating a workflow action                       |
+| `MaxMonthlyMessages`           | Integer | 5000      | Each message (count from `AIUsageDaily__c`)        |
+| `MaxMonthlyTokens`             | Integer | 5,000,000 | Each message (sum from `AIUsageDaily__c`)          |
+| `MaxConversationRetentionDays` | Integer | 90        | Saving an agent's retention days                   |
+| `WorkflowActionsAllowed`       | Boolean | false     | Activating or running any action                   |
+| `ApexDataSourcesAllowed`       | Boolean | false     | Apex-type data sources and actions                 |
+| `AIEvaluatedRulesAllowed`      | Boolean | false     | AI-evaluated violation rules                       |
+| `MultipleProvidersAllowed`     | Boolean | false     | Activating a second provider's model configuration |
 
 Considered and left out for now: limits on prompt templates, violation rules and model configurations, conversation export, agent assignments and usage reporting. They are easy to add later without renaming anything.
 
@@ -171,19 +172,19 @@ Before: `AIPromptTemplate__c` had history switched on with every field set to of
 
 Now (object limit is 20 fields, all are under):
 
-| Object | Tracked | Count |
-|---|---|---|
-| AIAgent | Access Mode, Is Active, Test Mode, Persona, Model Configuration, Visibility, Retention Days, Max Tokens, Max Messages, Max Tool Iterations, No Match Behavior, Fallback Message, Object Type | 13 |
-| AIDataSource | Is Active, Source Type, SOQL Template, Apex Class, Target Object, Input Schema, Binding Type, Max Rows | 8 |
-| AIWorkflowAction | Is Active, Action Type, Execution Type, Apex Class, Flow API Name, Target Object, Requires Confirmation, Confirmation Message, Input Schema | 9 |
-| AIModelConfiguration | Is Active, Provider, Model Identifier, Named Credential, API Path, Temperature, Max Output Tokens, Retry Attempts, two token prices | 10 |
-| AIPromptTemplate | Is Active, Agent, Prompt, System Context, Tone, Exclusion Rules, Activation Criteria, Trigger Keywords, Max Response Length | 9 |
-| AIViolationRule | Active, Block Request, Detection Method, Detection Instruction, Violation Type, Signal Tag | 6 |
-| AIPIIRegistry | Active, Object API Name, Max Fields To Query | 3 |
-| AIUserSettings | Is Active, Debug Mode, Workflow Actions, Export, Visibility Scope, Allowed Channels, three limits, Limit Behavior | 10 |
-| AIDataDeletionRequest | Scope, Received Date, Approval Decision, Status | 4 |
-| AIAgentAssignment | Assignee Type, User, Permission Set Name, Is Active | 4 |
-| AIViolation | Review Status | 1 |
+| Object                | Tracked                                                                                                                                                                                      | Count |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| AIAgent               | Access Mode, Is Active, Test Mode, Persona, Model Configuration, Visibility, Retention Days, Max Tokens, Max Messages, Max Tool Iterations, No Match Behavior, Fallback Message, Object Type | 13    |
+| AIDataSource          | Is Active, Source Type, SOQL Template, Apex Class, Target Object, Input Schema, Binding Type, Max Rows                                                                                       | 8     |
+| AIWorkflowAction      | Is Active, Action Type, Execution Type, Apex Class, Flow API Name, Target Object, Requires Confirmation, Confirmation Message, Input Schema                                                  | 9     |
+| AIModelConfiguration  | Is Active, Provider, Model Identifier, Named Credential, API Path, Temperature, Max Output Tokens, Retry Attempts, two token prices                                                          | 10    |
+| AIPromptTemplate      | Is Active, Agent, Prompt, System Context, Tone, Exclusion Rules, Activation Criteria, Trigger Keywords, Max Response Length                                                                  | 9     |
+| AIViolationRule       | Active, Block Request, Detection Method, Detection Instruction, Violation Type, Signal Tag                                                                                                   | 6     |
+| AIPIIRegistry         | Active, Object API Name, Max Fields To Query                                                                                                                                                 | 3     |
+| AIUserSettings        | Is Active, Debug Mode, Workflow Actions, Export, Visibility Scope, Allowed Channels, three limits, Limit Behavior                                                                            | 10    |
+| AIDataDeletionRequest | Scope, Received Date, Approval Decision, Status                                                                                                                                              | 4     |
+| AIAgentAssignment     | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          | 4     |
+| AIViolation           | Review Status                                                                                                                                                                                | 1     |
 
 Rationale: these are the fields that change what the AI may see, say or do, or who may do it. Not tracked on purpose: conversations, messages, steps, masking records, logs, feedback and acknowledgments (they are the audit trail; they are write-once), and descriptions, names and setup wizard state (noise). Long text fields show only "changed", not old and new values. If you need the diff, that is Field Audit Trail or a copy of the prior value in a custom audit record.
 
@@ -192,6 +193,7 @@ Rationale: these are the fields that change what the AI may see, say or do, or w
 139 labels in `CustomLabels.labels-meta.xml`, for user-facing text only: errors, chat copy, progress steps, terms, wizard help, and security guidance. Not for picklist values, API values, object or field names (those translate through Translation Workbench, and a label compared to an API value breaks translated users).
 
 Convention, enforced by a label check that lives on the separate branch `feature/ci-label-check` (`npm run check:labels`, not yet in this branch or wired into CI):
+
 - Name `AI_<Area>_<Title_Case_Words>`, Area one of Error, Chat, Step, Terms, Wizard, Guidance, Settings, Console, Common.
 - Category `AI Assist,<Area>`; description 80 characters or fewer; language `en_US`; not protected (protected labels cannot be translated by subscribers).
 - No API names in text. Any label referenced from code must exist.

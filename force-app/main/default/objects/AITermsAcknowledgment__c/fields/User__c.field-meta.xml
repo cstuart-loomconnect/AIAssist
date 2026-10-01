@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>User__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description>Who signed.</description>
-    <inlineHelpText>Set automatically based on the authenticated user completing the acknowledgment.</inlineHelpText>
+    <inlineHelpText
+  >Set automatically based on the authenticated user completing the acknowledgment.</inlineHelpText>
     <label>User</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>AI Terms Acknowledgments</relationshipLabel>

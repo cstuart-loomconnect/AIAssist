@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>NoMatchBehavior__c</fullName>
-    <description>Determines what this agent does when no Prompt Template's Activation Criteria match the current record.</description>
-    <inlineHelpText>Choose how this agent should behave if none of its templates are a clear fit for the current record.</inlineHelpText>
+    <description
+  >Determines what this agent does when no Prompt Template's Activation Criteria match the current record.</description>
+    <inlineHelpText
+  >Choose how this agent should behave if none of its templates are a clear fit for the current record.</inlineHelpText>
     <label>No Match Behavior</label>
     <required>false</required>
     <trackHistory>true</trackHistory>

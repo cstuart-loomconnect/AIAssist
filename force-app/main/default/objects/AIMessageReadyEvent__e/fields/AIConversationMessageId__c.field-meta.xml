@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIConversationMessageId__c</fullName>
-    <description>The Id of the AI Agent's reply AIConversationMessage__c record, already committed by the time this event is received. Blank when IsSuccess__c is false, since no reply message was created.</description>
+    <description
+  >The Id of the AI Agent's reply AIConversationMessage__c record, already committed by the time this event is received. Blank when IsSuccess__c is false, since no reply message was created.</description>
     <externalId>false</externalId>
-    <inlineHelpText>The reply message that is ready to display. Blank when the turn failed.</inlineHelpText>
+    <inlineHelpText
+  >The reply message that is ready to display. Blank when the turn failed.</inlineHelpText>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>

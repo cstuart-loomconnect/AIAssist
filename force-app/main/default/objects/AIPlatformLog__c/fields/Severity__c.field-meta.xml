@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Severity__c</fullName>
-    <description>How serious the logged event is. Lets admins filter to errors and ignore informational entries.</description>
+    <description
+  >How serious the logged event is. Lets admins filter to errors and ignore informational entries.</description>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Severity</label>
     <required>false</required>

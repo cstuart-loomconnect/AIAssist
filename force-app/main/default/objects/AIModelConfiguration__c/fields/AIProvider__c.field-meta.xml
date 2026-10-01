@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIProvider__c</fullName>
     <description>The AI provider this configuration calls.</description>
-    <inlineHelpText>Select which provider this model configuration is for.</inlineHelpText>
+    <inlineHelpText
+  >Select which provider this model configuration is for.</inlineHelpText>
     <label>AI Provider</label>
     <required>true</required>
     <trackHistory>true</trackHistory>

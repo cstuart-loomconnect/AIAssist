@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIAcknowledgeEmailTemplateId__c</fullName>
-    <description>The Id of the Lightning Email Template used when sending the Usage Terms acknowledgment email.</description>
+    <description
+  >The Id of the Lightning Email Template used when sending the Usage Terms acknowledgment email.</description>
     <externalId>false</externalId>
-    <inlineHelpText>Enter the Id of the email template to use for the terms acknowledgment email.</inlineHelpText>
+    <inlineHelpText
+  >Enter the Id of the email template to use for the terms acknowledgment email.</inlineHelpText>
     <label>AI Acknowledge Email Template Id</label>
     <length>18</length>
     <required>false</required>

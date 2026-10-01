@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIPIIMaskingRecordCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Evidence that personal data was masked before a request left Salesforce: one row per object and field masked in one provider call, with the PII type, strategy and how many values were replaced. Holds names and counts only, never the real or the fake values (those are in the PII Mapping, which nobody can read).</description>
+    <description
+  >Evidence that personal data was masked before a request left Salesforce: one row per object and field masked in one provider call, with the PII type, strategy and how many values were replaced. Holds names and counts only, never the real or the fake values (those are in the PII Mapping, which nobody can read).</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

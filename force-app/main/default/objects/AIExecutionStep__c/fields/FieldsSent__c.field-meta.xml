@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>FieldsSent__c</fullName>
-    <description>API names of the fields whose values were sent to the provider. Names only, never values.</description>
+    <description
+  >API names of the fields whose values were sent to the provider. Names only, never values.</description>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Fields Sent</label>
     <length>32768</length>

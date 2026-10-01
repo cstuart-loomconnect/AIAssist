@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>LastTriggeredDate__c</fullName>
-    <description>When this rule last produced a violation. Maintained by the platform.</description>
-    <inlineHelpText>Updated automatically each time this rule raises a violation.</inlineHelpText>
+    <description
+  >When this rule last produced a violation. Maintained by the platform.</description>
+    <inlineHelpText
+  >Updated automatically each time this rule raises a violation.</inlineHelpText>
     <label>Last Triggered</label>
     <required>false</required>
     <type>DateTime</type>

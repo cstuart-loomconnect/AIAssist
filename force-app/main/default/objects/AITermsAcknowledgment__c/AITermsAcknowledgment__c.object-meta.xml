@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -141,9 +141,11 @@
         <type>Default</type>
     </actionOverrides>
     <allowInChatterGroups>false</allowInChatterGroups>
-    <compactLayoutAssignment>AITermsAcknowledgmentCompact</compactLayoutAssignment>
+    <compactLayoutAssignment
+  >AITermsAcknowledgmentCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>A signed record of a user's acknowledgment of the AI Assist usage terms, including a typed electronic signature and a link to the authenticated session it was signed under, used as hard proof of consent.</description>
+    <description
+  >A signed record of a user's acknowledgment of the AI Assist usage terms, including a typed electronic signature and a link to the authenticated session it was signed under, used as hard proof of consent.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

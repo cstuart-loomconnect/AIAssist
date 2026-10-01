@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIPIIFieldMetadataCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Child record per classified field, Master-Detail to AIPIIRegistry__c. This is what the runtime masking logic actually queries — zero callouts at runtime, since classification is synced here ahead of time.</description>
+    <description
+  >Child record per classified field, Master-Detail to AIPIIRegistry__c. This is what the runtime masking logic actually queries — zero callouts at runtime, since classification is synced here ahead of time.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

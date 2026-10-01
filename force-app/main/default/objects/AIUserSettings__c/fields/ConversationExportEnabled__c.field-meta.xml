@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ConversationExportEnabled__c</fullName>
     <defaultValue>false</defaultValue>
-    <description>Whether this user is permitted to use the built-in export feature to download a copy of a conversation.</description>
-    <inlineHelpText>Turn this on to let this user download conversations. This does not control what a user can copy directly from the screen.</inlineHelpText>
+    <description
+  >Whether this user is permitted to use the built-in export feature to download a copy of a conversation.</description>
+    <inlineHelpText
+  >Turn this on to let this user download conversations. This does not control what a user can copy directly from the screen.</inlineHelpText>
     <label>Conversation Export Enabled</label>
     <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <customMetadataTypeAccesses>
         <enabled>true</enabled>
@@ -20,7 +20,8 @@
         <enabled>true</enabled>
         <name>AIAssistUISettings__c</name>
     </customSettingAccesses>
-    <description>Builds and maintains AI Assist. Everything in AI Assist User, plus manage agents, prompts, data sources, actions, models, rules, PII registry and per-user limits. Cannot read other users' messages or PII mappings, or delete audit data.</description>
+    <description
+  >Builds and maintains AI Assist. Everything in AI Assist User, plus manage agents, prompts, data sources, actions, models, rules, PII registry and per-user limits. Cannot read other users' messages or PII mappings, or delete audit data.</description>
     <fieldPermissions>
         <editable>false</editable>
         <field>AIAgentAssignment__c.AssignmentKey__c</field>

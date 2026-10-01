@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ActionTypeFieldsExclusive</fullName>
     <active>true</active>
-    <description>Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</description>
-    <errorConditionFormula>OR(AND(ISPICKVAL(ActionType__c, "Apex"), NOT(ISBLANK(FlowAPIName__c))), AND(ISPICKVAL(ActionType__c, "Flow"), NOT(ISBLANK(ApexClassName__c))))</errorConditionFormula>
+    <description
+  >Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</description>
+    <errorConditionFormula
+  >OR(AND(ISPICKVAL(ActionType__c, "Apex"), NOT(ISBLANK(FlowAPIName__c))), AND(ISPICKVAL(ActionType__c, "Flow"), NOT(ISBLANK(ApexClassName__c))))</errorConditionFormula>
     <errorDisplayField>ActionType__c</errorDisplayField>
-    <errorMessage>Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</errorMessage>
+    <errorMessage
+  >Fill in only the field that matches the Action Type: Apex Class Name for Apex, Flow API Name for Flow.</errorMessage>
 </ValidationRule>

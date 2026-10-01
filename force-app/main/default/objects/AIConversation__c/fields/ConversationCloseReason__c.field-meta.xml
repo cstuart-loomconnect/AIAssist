@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ConversationCloseReason__c</fullName>
-    <description>The reason this conversation was closed, used for reporting on how sessions typically end.</description>
-    <inlineHelpText>Set automatically based on what triggered the conversation to close. Useful for spotting whether limits are being hit too often.</inlineHelpText>
+    <description
+  >The reason this conversation was closed, used for reporting on how sessions typically end.</description>
+    <inlineHelpText
+  >Set automatically based on what triggered the conversation to close. Useful for spotting whether limits are being hit too often.</inlineHelpText>
     <label>Conversation Close Reason</label>
     <required>false</required>
     <trackTrending>false</trackTrending>

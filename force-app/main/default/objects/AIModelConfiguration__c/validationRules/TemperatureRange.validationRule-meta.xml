@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>TemperatureRange</fullName>
     <active>true</active>
-    <description>Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</description>
-    <errorConditionFormula>AND(NOT(ISBLANK(Temperature__c)), OR(Temperature__c &lt; 0, Temperature__c &gt; 2, AND(ISPICKVAL(AIProvider__c, "Anthropic"), Temperature__c &gt; 1)))</errorConditionFormula>
+    <description
+  >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(Temperature__c)), OR(Temperature__c &lt; 0, Temperature__c &gt; 2, AND(ISPICKVAL(AIProvider__c, "Anthropic"), Temperature__c &gt; 1)))</errorConditionFormula>
     <errorDisplayField>Temperature__c</errorDisplayField>
-    <errorMessage>Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</errorMessage>
+    <errorMessage
+  >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</errorMessage>
 </ValidationRule>

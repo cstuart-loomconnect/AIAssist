@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>MaxRows__c</fullName>
     <defaultValue>20</defaultValue>
-    <description>Most records this data source may return to the AI in one call. Stops a broad query flooding the prompt, which costs money and can leak more than intended.</description>
+    <description
+  >Most records this data source may return to the AI in one call. Stops a broad query flooding the prompt, which costs money and can leak more than intended.</description>
     <externalId>false</externalId>
     <inlineHelpText>Keep this as low as works. Default 20.</inlineHelpText>
     <label>Max Rows</label>

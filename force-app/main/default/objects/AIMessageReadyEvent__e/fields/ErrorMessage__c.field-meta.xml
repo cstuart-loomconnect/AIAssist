@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ErrorMessage__c</fullName>
-    <description>A user-facing message to show in the chat UI when IsSuccess__c is false. The underlying exception detail is logged separately via AIPlatformLogManager, not exposed here.</description>
+    <description
+  >A user-facing message to show in the chat UI when IsSuccess__c is false. The underlying exception detail is logged separately via AIPlatformLogManager, not exposed here.</description>
     <externalId>false</externalId>
-    <inlineHelpText>User-safe reason the turn failed. Never contains record data or stack traces.</inlineHelpText>
+    <inlineHelpText
+  >User-safe reason the turn failed. Never contains record data or stack traces.</inlineHelpText>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>

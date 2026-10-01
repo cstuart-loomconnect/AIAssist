@@ -1,9 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ActiveRequiresConnectionDetails</fullName>
     <active>true</active>
-    <description>Named Credential, Model Identifier and API Path are all required before a Model Configuration can be activated.</description>
-    <errorConditionFormula>AND(IsActive__c, OR(ISBLANK(NamedCredential__c), ISBLANK(ModelIdentifier__c), ISBLANK(ApiPath__c)))</errorConditionFormula>
+    <description
+  >Named Credential, Model Identifier and API Path are all required before a Model Configuration can be activated.</description>
+    <errorConditionFormula
+  >AND(IsActive__c, OR(ISBLANK(NamedCredential__c), ISBLANK(ModelIdentifier__c), ISBLANK(ApiPath__c)))</errorConditionFormula>
     <errorDisplayField>IsActive__c</errorDisplayField>
-    <errorMessage>Named Credential, Model Identifier and API Path are all required before a Model Configuration can be activated.</errorMessage>
+    <errorMessage
+  >Named Credential, Model Identifier and API Path are all required before a Model Configuration can be activated.</errorMessage>
 </ValidationRule>

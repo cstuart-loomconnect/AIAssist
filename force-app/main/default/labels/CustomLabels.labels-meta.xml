@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
         <fullName>AI_Chat_Composer_Placeholder</fullName>
@@ -13,8 +13,10 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: confirmation text when the action has no Confirmation Message.</shortDescription>
-        <value>Are you sure you want to run this action? It may change data.</value>
+        <shortDescription
+    >Chat: confirmation text when the action has no Confirmation Message.</shortDescription>
+        <value
+    >Are you sure you want to run this action? It may change data.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Confirm_Cancel</fullName>
@@ -37,7 +39,8 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: execution trace heading (debug mode only).</shortDescription>
+        <shortDescription
+    >Chat: execution trace heading (debug mode only).</shortDescription>
         <value>How this answer was produced</value>
     </labels>
     <labels>
@@ -46,7 +49,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: footer disclaimer.</shortDescription>
-        <value>AI responses can be inaccurate. Check important information before you act on it.</value>
+        <value
+    >AI responses can be inaccurate. Check important information before you act on it.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Empty_State_Body</fullName>
@@ -54,7 +58,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: empty state body.</shortDescription>
-        <value>Ask a question about this record, or type / to see the available commands.</value>
+        <value
+    >Ask a question about this record, or type / to see the available commands.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Empty_State_Title</fullName>
@@ -77,8 +82,10 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: reply when nothing matches and the agent has no Fallback Message.</shortDescription>
-        <value>I'm not able to help with that request. Try rephrasing it, or ask your administrator what this assistant can do.</value>
+        <shortDescription
+    >Chat: reply when nothing matches and the agent has no Fallback Message.</shortDescription>
+        <value
+    >I'm not able to help with that request. Try rephrasing it, or ask your administrator what this assistant can do.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Feedback_Comment_Placeholder</fullName>
@@ -86,7 +93,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: feedback comment placeholder.</shortDescription>
-        <value>Tell us more (optional). Please don't include personal information.</value>
+        <value
+    >Tell us more (optional). Please don't include personal information.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Feedback_Helpful</fullName>
@@ -117,7 +125,8 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: shown after a Not helpful rating.</shortDescription>
+        <shortDescription
+    >Chat: shown after a Not helpful rating.</shortDescription>
         <value>What went wrong?</value>
     </labels>
     <labels>
@@ -125,7 +134,8 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: shown after feedback is submitted.</shortDescription>
+        <shortDescription
+    >Chat: shown after feedback is submitted.</shortDescription>
         <value>Thanks for your feedback.</value>
     </labels>
     <labels>
@@ -133,8 +143,10 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: greeting when the agent has no Greeting Message.</shortDescription>
-        <value>Hi, I'm your AI assistant. How can I help with this record?</value>
+        <shortDescription
+    >Chat: greeting when the agent has no Greeting Message.</shortDescription>
+        <value
+    >Hi, I'm your AI assistant. How can I help with this record?</value>
     </labels>
     <labels>
         <fullName>AI_Chat_History</fullName>
@@ -157,23 +169,28 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Is User Initiated Chat Enabled is off.</shortDescription>
-        <value>New conversations are paused. You can still read your existing ones.</value>
+        <shortDescription
+    >Chat: Is User Initiated Chat Enabled is off.</shortDescription>
+        <value
+    >New conversations are paused. You can still read your existing ones.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_PII_Notice</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: privacy notice shown when PII protection is active for the record.</shortDescription>
-        <value>Personal information is replaced with placeholders before your message is sent to the AI service.</value>
+        <shortDescription
+    >Chat: privacy notice shown when PII protection is active for the record.</shortDescription>
+        <value
+    >Personal information is replaced with placeholders before your message is sent to the AI service.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Retry</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: retry button on an error card.</shortDescription>
+        <shortDescription
+    >Chat: retry button on an error card.</shortDescription>
         <value>Try again</value>
     </labels>
     <labels>
@@ -189,7 +206,8 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: heading above suggested workflow actions.</shortDescription>
+        <shortDescription
+    >Chat: heading above suggested workflow actions.</shortDescription>
         <value>Suggested next steps</value>
     </labels>
     <labels>
@@ -205,7 +223,8 @@
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: usage banner before a limit is hit.</shortDescription>
+        <shortDescription
+    >Chat: usage banner before a limit is hit.</shortDescription>
         <value>You're close to your AI Assist usage limit.</value>
     </labels>
     <labels>
@@ -221,7 +240,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Active.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Active.</shortDescription>
         <value>Active</value>
     </labels>
     <labels>
@@ -237,7 +257,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Cancel.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Cancel.</shortDescription>
         <value>Cancel</value>
     </labels>
     <labels>
@@ -245,7 +266,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Close.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Close.</shortDescription>
         <value>Close</value>
     </labels>
     <labels>
@@ -253,7 +275,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Delete.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Delete.</shortDescription>
         <value>Delete</value>
     </labels>
     <labels>
@@ -269,7 +292,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Finish.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Finish.</shortDescription>
         <value>Finish</value>
     </labels>
     <labels>
@@ -277,7 +301,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Inactive.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Inactive.</shortDescription>
         <value>Inactive</value>
     </labels>
     <labels>
@@ -285,7 +310,8 @@
         <categories>AI Assist,Common</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Shared button or status text: Loading.</shortDescription>
+        <shortDescription
+    >Shared button or status text: Loading.</shortDescription>
         <value>Loading</value>
     </labels>
     <labels>
@@ -349,23 +375,28 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: a Write action was triggered without confirmation.</shortDescription>
-        <value>This action changes data and must be confirmed before it runs.</value>
+        <shortDescription
+    >Chat: a Write action was triggered without confirmation.</shortDescription>
+        <value
+    >This action changes data and must be confirmed before it runs.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Action_Failed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: a workflow action threw an error.</shortDescription>
-        <value>The action could not be completed. Check the record before trying again.</value>
+        <shortDescription
+    >Chat: a workflow action threw an error.</shortDescription>
+        <value
+    >The action could not be completed. Check the record before trying again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Action_Not_Permitted</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: action not enabled for the user or not assigned to the agent.</shortDescription>
+        <shortDescription
+    >Chat: action not enabled for the user or not assigned to the agent.</shortDescription>
         <value>You don't have permission to run this action.</value>
     </labels>
     <labels>
@@ -373,7 +404,8 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: the conversation belongs to an agent that has been deactivated.</shortDescription>
+        <shortDescription
+    >Chat: the conversation belongs to an agent that has been deactivated.</shortDescription>
         <value>This AI agent is not currently active.</value>
     </labels>
     <labels>
@@ -381,39 +413,48 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: agent is Assigned Users Only and the user is not assigned.</shortDescription>
-        <value>You haven't been given access to this AI agent. Ask your administrator to assign it to you.</value>
+        <shortDescription
+    >Chat: agent is Assigned Users Only and the user is not assigned.</shortDescription>
+        <value
+    >You haven't been given access to this AI agent. Ask your administrator to assign it to you.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Agent_Not_Available</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: no active agent matches the current record or channel.</shortDescription>
-        <value>No AI agent is available for this record. Contact your administrator if you think one should be.</value>
+        <shortDescription
+    >Chat: no active agent matches the current record or channel.</shortDescription>
+        <value
+    >No AI agent is available for this record. Contact your administrator if you think one should be.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Application_Inactive</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Is Application Active is off in AI Assist Settings.</shortDescription>
-        <value>AI Assist is switched off for your organisation. Contact your administrator.</value>
+        <shortDescription
+    >Chat: Is Application Active is off in AI Assist Settings.</shortDescription>
+        <value
+    >AI Assist is switched off for your organisation. Contact your administrator.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Concurrent_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Max Concurrent Conversations reached.</shortDescription>
-        <value>You have too many open conversations. Close one before starting another.</value>
+        <shortDescription
+    >Chat: Max Concurrent Conversations reached.</shortDescription>
+        <value
+    >You have too many open conversations. Close one before starting another.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Console_Load_Failed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: a list or detail view failed to load.</shortDescription>
+        <shortDescription
+    >Console: a list or detail view failed to load.</shortDescription>
         <value>This page couldn't be loaded. Refresh and try again.</value>
     </labels>
     <labels>
@@ -421,63 +462,78 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: operation needs the Admin or Super User permission set.</shortDescription>
-        <value>You don't have permission to do that. Ask your administrator for the AI Assist Admin or Super User permission set.</value>
+        <shortDescription
+    >Console: operation needs the Admin or Super User permission set.</shortDescription>
+        <value
+    >You don't have permission to do that. Ask your administrator for the AI Assist Admin or Super User permission set.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Console_Save_Failed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: a save failed validation or DML.</shortDescription>
-        <value>Your changes couldn't be saved. Check the highlighted fields and try again.</value>
+        <shortDescription
+    >Console: a save failed validation or DML.</shortDescription>
+        <value
+    >Your changes couldn't be saved. Check the highlighted fields and try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Busy</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: processing lock held on the conversation.</shortDescription>
-        <value>A response is already being prepared. Please wait for it to finish before sending another message.</value>
+        <shortDescription
+    >Chat: processing lock held on the conversation.</shortDescription>
+        <value
+    >A response is already being prepared. Please wait for it to finish before sending another message.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Closed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: message sent to a Closed or Archived conversation.</shortDescription>
-        <value>This conversation has ended. Start a new conversation to continue.</value>
+        <shortDescription
+    >Chat: message sent to a Closed or Archived conversation.</shortDescription>
+        <value
+    >This conversation has ended. Start a new conversation to continue.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Limit_Daily</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Max Conversations Per 24 Hours reached.</shortDescription>
-        <value>You've reached the number of conversations allowed in 24 hours. Try again later.</value>
+        <shortDescription
+    >Chat: Max Conversations Per 24 Hours reached.</shortDescription>
+        <value
+    >You've reached the number of conversations allowed in 24 hours. Try again later.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: conversation id does not resolve or is not visible to the user.</shortDescription>
-        <value>This conversation could not be found. It may have been closed or removed.</value>
+        <shortDescription
+    >Chat: conversation id does not resolve or is not visible to the user.</shortDescription>
+        <value
+    >This conversation could not be found. It may have been closed or removed.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Daily_Usage_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Max Tokens Per 24 Hours reached.</shortDescription>
-        <value>You've reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
+        <shortDescription
+    >Chat: Max Tokens Per 24 Hours reached.</shortDescription>
+        <value
+    >You've reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Data_Deletion_Not_Approved</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: deletion run attempted before approval.</shortDescription>
+        <shortDescription
+    >Console: deletion run attempted before approval.</shortDescription>
         <value>This data deletion request has not been approved yet.</value>
     </labels>
     <labels>
@@ -485,24 +541,30 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: a data source returned nothing because of access limits.</shortDescription>
-        <value>Some of the information needed to answer wasn't available to you, so the answer may be incomplete.</value>
+        <shortDescription
+    >Chat: a data source returned nothing because of access limits.</shortDescription>
+        <value
+    >Some of the information needed to answer wasn't available to you, so the answer may be incomplete.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Generic</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: fallback for any unexpected failure while producing a reply.</shortDescription>
-        <value>Something went wrong generating a response. Please try again.</value>
+        <shortDescription
+    >Chat: fallback for any unexpected failure while producing a reply.</shortDescription>
+        <value
+    >Something went wrong generating a response. Please try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Maintenance_Mode</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Is Maintenance Mode is on in AI Assist UI Settings.</shortDescription>
-        <value>AI Assist is undergoing maintenance and will be back shortly. Your existing conversations are safe.</value>
+        <shortDescription
+    >Chat: Is Maintenance Mode is on in AI Assist UI Settings.</shortDescription>
+        <value
+    >AI Assist is undergoing maintenance and will be back shortly. Your existing conversations are safe.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Message_Empty</fullName>
@@ -517,72 +579,90 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Max Messages Per Conversation reached.</shortDescription>
-        <value>This conversation has reached its message limit. Start a new conversation to continue.</value>
+        <shortDescription
+    >Chat: Max Messages Per Conversation reached.</shortDescription>
+        <value
+    >This conversation has reached its message limit. Start a new conversation to continue.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Message_Too_Long</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: message exceeds the maximum accepted length.</shortDescription>
-        <value>Your message is too long. Please shorten it and try again.</value>
+        <shortDescription
+    >Chat: message exceeds the maximum accepted length.</shortDescription>
+        <value
+    >Your message is too long. Please shorten it and try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Not_Authorised</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: user lacks the permission set or object access.</shortDescription>
-        <value>You don't have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
+        <shortDescription
+    >Chat: user lacks the permission set or object access.</shortDescription>
+        <value
+    >You don't have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_AI_Rules_Not_Included</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: AI Evaluated rule not licensed.</shortDescription>
-        <value>AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
+        <shortDescription
+    >Console: AI Evaluated rule not licensed.</shortDescription>
+        <value
+    >AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Actions_Not_Included</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console and chat: workflow actions are not licensed.</shortDescription>
-        <value>Workflow actions are not included in your plan. Ask your account team about upgrading.</value>
+        <shortDescription
+    >Console and chat: workflow actions are not licensed.</shortDescription>
+        <value
+    >Workflow actions are not included in your plan. Ask your account team about upgrading.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Apex_Not_Included</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: Apex source or action not licensed.</shortDescription>
-        <value>Apex data sources and actions are not included in your plan. Use a SOQL data source or a Flow action, or ask about upgrading.</value>
+        <shortDescription
+    >Console: Apex source or action not licensed.</shortDescription>
+        <value
+    >Apex data sources and actions are not included in your plan. Use a SOQL data source or a Flow action, or ask about upgrading.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Actions</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: Max Active Workflow Actions reached. {0} is the limit.</shortDescription>
-        <value>Your plan allows {0} active workflow actions. Deactivate one, or ask your account team about a larger plan.</value>
+        <shortDescription
+    >Console: Max Active Workflow Actions reached. {0} is the limit.</shortDescription>
+        <value
+    >Your plan allows {0} active workflow actions. Deactivate one, or ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Agents</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: Max Active Agents reached. {0} is the limit.</shortDescription>
-        <value>Your plan allows {0} active agents. Deactivate one, or ask your account team about a larger plan.</value>
+        <shortDescription
+    >Console: Max Active Agents reached. {0} is the limit.</shortDescription>
+        <value
+    >Your plan allows {0} active agents. Deactivate one, or ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Data_Sources</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: Max Active Data Sources reached. {0} is the limit.</shortDescription>
-        <value>Your plan allows {0} active data sources. Deactivate one, or ask your account team about a larger plan.</value>
+        <shortDescription
+    >Console: Max Active Data Sources reached. {0} is the limit.</shortDescription>
+        <value
+    >Your plan allows {0} active data sources. Deactivate one, or ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Messages</fullName>
@@ -590,7 +670,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Messages reached.</shortDescription>
-        <value>Your organisation has used this month's message allowance. Ask your account team about a larger plan.</value>
+        <value
+    >Your organisation has used this month's message allowance. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Tokens</fullName>
@@ -598,39 +679,48 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Tokens reached.</shortDescription>
-        <value>Your organisation has used this month's token allowance. Ask your account team about a larger plan.</value>
+        <value
+    >Your organisation has used this month's token allowance. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Providers_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: a second provider was activated.</shortDescription>
-        <value>Your plan allows one AI provider. Deactivate the other configurations, or ask about upgrading.</value>
+        <shortDescription
+    >Console: a second provider was activated.</shortDescription>
+        <value
+    >Your plan allows one AI provider. Deactivate the other configurations, or ask about upgrading.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Retention_Cap</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: retention above Max Conversation Retention Days. {0} is the limit.</shortDescription>
-        <value>Your plan allows conversations to be kept for up to {0} days. Choose a shorter period.</value>
+        <shortDescription
+    >Console: retention above Max Conversation Retention Days. {0} is the limit.</shortDescription>
+        <value
+    >Your plan allows conversations to be kept for up to {0} days. Choose a shorter period.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Privacy_Masking_Failed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: PII masking failed. The request is never sent unmasked.</shortDescription>
-        <value>We couldn't safely protect personal information in this request, so it wasn't sent. Please contact your administrator.</value>
+        <shortDescription
+    >Chat: PII masking failed. The request is never sent unmasked.</shortDescription>
+        <value
+    >We couldn't safely protect personal information in this request, so it wasn't sent. Please contact your administrator.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Not_Configured</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: the agent has no active Model Configuration.</shortDescription>
-        <value>AI Assist hasn't been fully set up yet. Ask your administrator to complete the model configuration.</value>
+        <shortDescription
+    >Chat: the agent has no active Model Configuration.</shortDescription>
+        <value
+    >AI Assist hasn't been fully set up yet. Ask your administrator to complete the model configuration.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Timeout</fullName>
@@ -638,63 +728,78 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Chat: provider callout timed out.</shortDescription>
-        <value>The AI service took too long to respond. Please try again.</value>
+        <value
+    >The AI service took too long to respond. Please try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Unavailable</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: provider returned a non-retryable or exhausted-retry error.</shortDescription>
-        <value>The AI service is temporarily unavailable. Please try again in a few moments.</value>
+        <shortDescription
+    >Chat: provider returned a non-retryable or exhausted-retry error.</shortDescription>
+        <value
+    >The AI service is temporarily unavailable. Please try again in a few moments.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Record_Access_Denied</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: the running user cannot read the related record.</shortDescription>
-        <value>You don't have access to the record this conversation is about.</value>
+        <shortDescription
+    >Chat: the running user cannot read the related record.</shortDescription>
+        <value
+    >You don't have access to the record this conversation is about.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Request_Blocked</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: a Violation Rule with Block Request matched.</shortDescription>
-        <value>This request was blocked because it breaks an AI Assist usage rule. If you think this is a mistake, contact your administrator.</value>
+        <shortDescription
+    >Chat: a Violation Rule with Block Request matched.</shortDescription>
+        <value
+    >This request was blocked because it breaks an AI Assist usage rule. If you think this is a mistake, contact your administrator.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Response_Empty</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: provider returned no usable content.</shortDescription>
-        <value>The AI service returned an empty response. Please try again.</value>
+        <shortDescription
+    >Chat: provider returned no usable content.</shortDescription>
+        <value
+    >The AI service returned an empty response. Please try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Terms_Not_Acknowledged</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: user has not acknowledged the current terms.</shortDescription>
-        <value>You need to accept the AI Assist usage terms before you can start a conversation.</value>
+        <shortDescription
+    >Chat: user has not acknowledged the current terms.</shortDescription>
+        <value
+    >You need to accept the AI Assist usage terms before you can start a conversation.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Terms_Version_Changed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: acknowledged version differs from Current Terms Version.</shortDescription>
-        <value>The AI Assist usage terms have been updated. Please review and accept the new version to continue.</value>
+        <shortDescription
+    >Chat: acknowledged version differs from Current Terms Version.</shortDescription>
+        <value
+    >The AI Assist usage terms have been updated. Please review and accept the new version to continue.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Token_Limit_Reached</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Chat: Max Tokens Per Conversation reached.</shortDescription>
-        <value>This conversation has reached its usage limit. Start a new conversation to continue.</value>
+        <shortDescription
+    >Chat: Max Tokens Per Conversation reached.</shortDescription>
+        <value
+    >This conversation has reached its usage limit. Start a new conversation to continue.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Agent_Access</fullName>
@@ -702,7 +807,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: agent Access Mode.</shortDescription>
-        <value>Assigned Users Only limits this agent to the users and permission sets you assign. Use it for any agent that touches sensitive data.</value>
+        <value
+    >Assigned Users Only limits this agent to the users and permission sets you assign. Use it for any agent that touches sensitive data.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Apex_Class</fullName>
@@ -710,7 +816,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: Apex class name help.</shortDescription>
-        <value>The Apex class must implement the AI Assist interface. Classes that do not are rejected.</value>
+        <value
+    >The Apex class must implement the AI Assist interface. Classes that do not are rejected.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Conversation_Export</fullName>
@@ -718,15 +825,18 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: user settings.</shortDescription>
-        <value>Export lets a user take conversation content out of Salesforce. Turn it on only where your policy allows it.</value>
+        <value
+    >Export lets a user take conversation content out of Salesforce. Turn it on only where your policy allows it.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Access</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: data source and agent screens.</shortDescription>
-        <value>AI Assist only reads data the signed-in user already has access to. Sharing rules and field-level security always apply.</value>
+        <shortDescription
+    >Console: data source and agent screens.</shortDescription>
+        <value
+    >AI Assist only reads data the signed-in user already has access to. Sharing rules and field-level security always apply.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Deletion_Kept</fullName>
@@ -734,7 +844,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: data deletion request.</shortDescription>
-        <value>After deletion the request keeps counts only, never the deleted content. Violations and usage totals are kept with the person removed.</value>
+        <value
+    >After deletion the request keeps counts only, never the deleted content. Violations and usage totals are kept with the person removed.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Deletion_Request</fullName>
@@ -742,7 +853,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: data deletion request.</shortDescription>
-        <value>A data deletion request removes a person's conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
+        <value
+    >A data deletion request removes a person's conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Source_Max_Rows</fullName>
@@ -750,7 +862,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: data source.</shortDescription>
-        <value>Limit how many records a data source can return. Fewer rows means lower cost and less data shared with the AI service.</value>
+        <value
+    >Limit how many records a data source can return. Fewer rows means lower cost and less data shared with the AI service.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Debug_Mode</fullName>
@@ -758,7 +871,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: user settings.</shortDescription>
-        <value>Debug mode shows how an answer was produced, including the data sources used. Turn it on only for people who need it.</value>
+        <value
+    >Debug mode shows how an answer was produced, including the data sources used. Turn it on only for people who need it.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Delete_Agent</fullName>
@@ -766,7 +880,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: agent delete confirmation.</shortDescription>
-        <value>Agents that have conversation history cannot be deleted. Deactivate the agent instead.</value>
+        <value
+    >Agents that have conversation history cannot be deleted. Deactivate the agent instead.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Legal_Hold</fullName>
@@ -774,7 +889,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: conversation detail.</shortDescription>
-        <value>A conversation on legal hold is never deleted by retention, even after its retention date.</value>
+        <value
+    >A conversation on legal hold is never deleted by retention, even after its retention date.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Log_Retention</fullName>
@@ -782,7 +898,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: settings.</shortDescription>
-        <value>Logs are kept for the retention period and then deleted. Violations are kept longer because they are audit evidence.</value>
+        <value
+    >Logs are kept for the retention period and then deleted. Violations are kept longer because they are audit evidence.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Named_Credential</fullName>
@@ -790,7 +907,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: model configuration.</shortDescription>
-        <value>Use a Named Credential so API keys are never stored in a field. Only choose a credential that points at your AI provider.</value>
+        <value
+    >Use a Named Credential so API keys are never stored in a field. Only choose a credential that points at your AI provider.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_PII</fullName>
@@ -798,7 +916,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: PII registry.</shortDescription>
-        <value>Fields classified as personal information are replaced with placeholders before data is sent to the AI service.</value>
+        <value
+    >Fields classified as personal information are replaced with placeholders before data is sent to the AI service.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_PII_Masking_Records</fullName>
@@ -806,7 +925,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: PII masking records.</shortDescription>
-        <value>Masking records list which fields were masked and how many values, never the values themselves. Use them to show personal data was protected.</value>
+        <value
+    >Masking records list which fields were masked and how many values, never the values themselves. Use them to show personal data was protected.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Permission_Admin</fullName>
@@ -814,7 +934,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: who-can-do-what summary.</shortDescription>
-        <value>AI Assist Admin: builds and maintains agents, prompts, data sources, actions and settings. Cannot read message content owned by others.</value>
+        <value
+    >AI Assist Admin: builds and maintains agents, prompts, data sources, actions and settings. Cannot read message content owned by others.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Permission_Super_User</fullName>
@@ -822,7 +943,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: who-can-do-what summary.</shortDescription>
-        <value>AI Assist Super User: can read every conversation, violation and log to support users, and review violations. Cannot change configuration.</value>
+        <value
+    >AI Assist Super User: can read every conversation, violation and log to support users, and review violations. Cannot change configuration.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Permission_User</fullName>
@@ -830,15 +952,18 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: who-can-do-what summary.</shortDescription>
-        <value>AI Assist User: can chat, give feedback and accept the usage terms. Cannot see configuration, other people's conversations or logs.</value>
+        <value
+    >AI Assist User: can chat, give feedback and accept the usage terms. Cannot see configuration, other people's conversations or logs.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Retention</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: agent conversation settings.</shortDescription>
-        <value>Conversations are deleted when the retention period ends. Choose the shortest period that meets your needs.</value>
+        <shortDescription
+    >Console: agent conversation settings.</shortDescription>
+        <value
+    >Conversations are deleted when the retention period ends. Choose the shortest period that meets your needs.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_SOQL_Template</fullName>
@@ -846,7 +971,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: SOQL template editor.</shortDescription>
-        <value>Write a SELECT query and use bind variables such as :recordId. Never paste user input into the query text.</value>
+        <value
+    >Write a SELECT query and use bind variables such as :recordId. Never paste user input into the query text.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Temperature</fullName>
@@ -854,7 +980,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: model configuration.</shortDescription>
-        <value>Lower values give more consistent answers. Higher values give more varied ones.</value>
+        <value
+    >Lower values give more consistent answers. Higher values give more varied ones.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Test_Mode</fullName>
@@ -862,23 +989,28 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: agent settings.</shortDescription>
-        <value>Test mode lets administrators try an agent without opening it to users.</value>
+        <value
+    >Test mode lets administrators try an agent without opening it to users.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Usage_Cost</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: usage and model configuration.</shortDescription>
-        <value>Costs are estimates from the prices you enter. Your provider invoice is the source of truth.</value>
+        <shortDescription
+    >Console: usage and model configuration.</shortDescription>
+        <value
+    >Costs are estimates from the prices you enter. Your provider invoice is the source of truth.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Usage_Limits</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: user settings and agent settings.</shortDescription>
-        <value>Limits protect your AI spend. Leave a limit blank only if you intend it to be unlimited.</value>
+        <shortDescription
+    >Console: user settings and agent settings.</shortDescription>
+        <value
+    >Limits protect your AI spend. Leave a limit blank only if you intend it to be unlimited.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Violation_Review</fullName>
@@ -886,7 +1018,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: violation review.</shortDescription>
-        <value>Review each violation and mark it Reviewed or Dismissed. Dismiss only when the rule fired incorrectly.</value>
+        <value
+    >Review each violation and mark it Reviewed or Dismissed. Dismiss only when the rule fired incorrectly.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Write_Actions</fullName>
@@ -894,14 +1027,16 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Console: workflow action screens.</shortDescription>
-        <value>Actions that change data must always be confirmed by the user before they run.</value>
+        <value
+    >Actions that change data must always be confirmed by the user before they run.</value>
     </labels>
     <labels>
         <fullName>AI_Settings_Saved</fullName>
         <categories>AI Assist,Settings</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Console: toast after a settings save.</shortDescription>
+        <shortDescription
+    >Console: toast after a settings save.</shortDescription>
         <value>Settings saved.</value>
     </labels>
     <labels>
@@ -990,14 +1125,16 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Terms panel introduction.</shortDescription>
-        <value>Before you use AI Assist, please read and accept how it works and what you agree to.</value>
+        <value
+    >Before you use AI Assist, please read and accept how it works and what you agree to.</value>
     </labels>
     <labels>
         <fullName>AI_Terms_Link_Text</fullName>
         <categories>AI Assist,Terms</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Terms panel link to the AI Usage Policy URL.</shortDescription>
+        <shortDescription
+    >Terms panel link to the AI Usage Policy URL.</shortDescription>
         <value>Read the full usage policy</value>
     </labels>
     <labels>
@@ -1006,7 +1143,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Terms panel signature help.</shortDescription>
-        <value>Your typed name is your electronic signature. We record the date, time and sign-in session.</value>
+        <value
+    >Your typed name is your electronic signature. We record the date, time and sign-in session.</value>
     </labels>
     <labels>
         <fullName>AI_Terms_Signature_Label</fullName>
@@ -1037,15 +1175,18 @@
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard: shown before activation.</shortDescription>
-        <value>Activating makes this agent available to users straight away.</value>
+        <shortDescription
+    >Agent wizard: shown before activation.</shortDescription>
+        <value
+    >Activating makes this agent available to users straight away.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Draft_Saved</fullName>
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard: toast after auto-save.</shortDescription>
+        <shortDescription
+    >Agent wizard: toast after auto-save.</shortDescription>
         <value>Draft saved.</value>
     </labels>
     <labels>
@@ -1053,8 +1194,10 @@
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard step help: workflow actions.</shortDescription>
-        <value>Choose which actions the agent may suggest. Actions that change data always ask the user to confirm.</value>
+        <shortDescription
+    >Agent wizard step help: workflow actions.</shortDescription>
+        <value
+    >Choose which actions the agent may suggest. Actions that change data always ask the user to confirm.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Step_Basics</fullName>
@@ -1069,23 +1212,28 @@
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard step help: conversation settings.</shortDescription>
-        <value>Set conversation limits, how long conversations are kept, and who can see them.</value>
+        <shortDescription
+    >Agent wizard step help: conversation settings.</shortDescription>
+        <value
+    >Set conversation limits, how long conversations are kept, and who can see them.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Step_Data</fullName>
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard step help: data sources.</shortDescription>
-        <value>Choose which data the agent may read. It can only read what the signed-in user can already see.</value>
+        <shortDescription
+    >Agent wizard step help: data sources.</shortDescription>
+        <value
+    >Choose which data the agent may read. It can only read what the signed-in user can already see.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Step_Guardrails</fullName>
         <categories>AI Assist,Wizard</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription>Agent wizard step help: violation rules.</shortDescription>
+        <shortDescription
+    >Agent wizard step help: violation rules.</shortDescription>
         <value>Add rules that detect or block risky requests.</value>
     </labels>
     <labels>
@@ -1094,7 +1242,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Agent wizard step help: model.</shortDescription>
-        <value>Choose the AI model this agent uses. Only active model configurations are listed.</value>
+        <value
+    >Choose the AI model this agent uses. Only active model configurations are listed.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Step_Prompts</fullName>
@@ -1102,7 +1251,8 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Agent wizard step help: prompts.</shortDescription>
-        <value>Add one or more prompt templates. The agent picks the best match for each record.</value>
+        <value
+    >Add one or more prompt templates. The agent picks the best match for each record.</value>
     </labels>
     <labels>
         <fullName>AI_Wizard_Step_Review</fullName>

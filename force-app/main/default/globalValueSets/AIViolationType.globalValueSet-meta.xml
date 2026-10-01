@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>The category of a detected violation. Shared by AI Violation Rule.Violation Type Produced and AI Violation.Violation Type so a rule and the violation it raises always use the same value.</description>
+    <description
+  >The category of a detected violation. Shared by AI Violation Rule.Violation Type Produced and AI Violation.Violation Type so a rule and the violation it raises always use the same value.</description>
     <masterLabel>AI Violation Type</masterLabel>
     <sorted>false</sorted>
     <customValue>

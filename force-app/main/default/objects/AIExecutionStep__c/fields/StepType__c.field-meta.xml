@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>StepType__c</fullName>
-    <description>What kind of step this is, so steps can be filtered and reported on.</description>
+    <description
+  >What kind of step this is, so steps can be filtered and reported on.</description>
     <inlineHelpText>Set by the platform.</inlineHelpText>
     <label>Step Type</label>
     <required>false</required>

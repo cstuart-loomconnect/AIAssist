@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ApprovedBy__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>The user who approved the request. Stamped by the platform so it cannot be spoofed.</description>
-    <inlineHelpText>Set automatically when the request is approved.</inlineHelpText>
+    <description
+  >The user who approved the request. Stamped by the platform so it cannot be spoofed.</description>
+    <inlineHelpText
+  >Set automatically when the request is approved.</inlineHelpText>
     <label>Approved By</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>AI Data Deletion Requests Approved</relationshipLabel>

@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>IsEnabled__c</fullName>
     <defaultValue>true</defaultValue>
-    <description>Switch for this AI Assist UI Settings record. Unchecked, the record is ignored and the next level up (profile, then org default) applies instead.</description>
-    <inlineHelpText>Untick to turn this set of UI settings off. Ticked by default so the settings are active out of the box.</inlineHelpText>
+    <description
+  >Switch for this AI Assist UI Settings record. Unchecked, the record is ignored and the next level up (profile, then org default) applies instead.</description>
+    <inlineHelpText
+  >Untick to turn this set of UI settings off. Ticked by default so the settings are active out of the box.</inlineHelpText>
     <label>Is Enabled</label>
     <type>Checkbox</type>
 </CustomField>

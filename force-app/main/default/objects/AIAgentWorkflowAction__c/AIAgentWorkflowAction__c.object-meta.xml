@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionOverrides>
         <actionName>Accept</actionName>
@@ -141,9 +141,11 @@
         <type>Default</type>
     </actionOverrides>
     <allowInChatterGroups>false</allowInChatterGroups>
-    <compactLayoutAssignment>AIAgentWorkflowActionCompact</compactLayoutAssignment>
+    <compactLayoutAssignment
+  >AIAgentWorkflowActionCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Junction object assigning Workflow Actions to Agents, allowing one action to be reused across multiple agents and one agent to draw from multiple actions, each independently toggleable without needing to remove or edit the underlying Workflow Action or Agent record.</description>
+    <description
+  >Junction object assigning Workflow Actions to Agents, allowing one action to be reused across multiple agents and one agent to draw from multiple actions, each independently toggleable without needing to remove or edit the underlying Workflow Action or Agent record.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

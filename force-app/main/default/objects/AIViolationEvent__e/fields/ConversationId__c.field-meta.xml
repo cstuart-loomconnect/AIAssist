@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ConversationId__c</fullName>
-    <description>The Id of the conversation this violation occurred in, if applicable.</description>
+    <description
+  >The Id of the conversation this violation occurred in, if applicable.</description>
     <externalId>false</externalId>
-    <inlineHelpText>Populated automatically when the violation occurs within an active conversation. Left blank if not applicable.</inlineHelpText>
+    <inlineHelpText
+  >Populated automatically when the violation occurs within an active conversation. Left blank if not applicable.</inlineHelpText>
     <isFilteringDisabled>false</isFilteringDisabled>
     <isNameField>false</isNameField>
     <isSortingDisabled>false</isSortingDisabled>
