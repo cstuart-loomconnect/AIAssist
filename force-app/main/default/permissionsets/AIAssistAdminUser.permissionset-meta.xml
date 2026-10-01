@@ -22,6 +22,10 @@
     </customSettingAccesses>
     <description
   >Builds and maintains AI Assist. Everything in AI Assist User, plus manage agents, prompts, data sources, actions, models, rules, PII registry and per-user limits. Cannot read other users&apos; messages or PII mappings, or delete audit data.</description>
+    <classAccesses>
+        <apexClass>AIChatController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <fieldPermissions>
         <editable>false</editable>
         <field>AIAgentAssignment__c.AssignmentKey__c</field>

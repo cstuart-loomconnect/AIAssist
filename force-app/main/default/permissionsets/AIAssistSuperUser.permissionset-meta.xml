@@ -2,6 +2,10 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <description
   >Support and oversight. Everything in AI Assist User, plus read-only access to all conversations, messages, steps, feedback, logs and configuration (no connection details), and review of violations. Cannot change configuration, delete, or see PII mappings.</description>
+    <classAccesses>
+        <apexClass>AIChatController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <fieldPermissions>
         <editable>false</editable>
         <field>AIAgentAssignment__c.AssignmentKey__c</field>
