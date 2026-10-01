@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Unmasked</fullName>
+    <booleanFilter>1 AND 2</booleanFilter>
+    <columns>NAME</columns>
+    <columns>CREATED_DATE</columns>
+    <columns>Provider__c</columns>
+    <columns>AIConversationMessage__c</columns>
+    <columns>RecordsSentCount__c</columns>
+    <columns>FieldsSentCount__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>StepType__c</field>
+        <operation>equals</operation>
+        <value>Provider Call</value>
+    </filters>
+    <filters>
+        <field>PIIMaskingApplied__c</field>
+        <operation>equals</operation>
+        <value>0</value>
+    </filters>
+    <label>Sent Without Masking</label>
+</ListView>

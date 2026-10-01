@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SetupIncomplete</fullName>
+    <columns>NAME</columns>
+    <columns>SetupStatus__c</columns>
+    <columns>SetupCurrentStep__c</columns>
+    <columns>SetupLastEdited__c</columns>
+    <columns>IsActive__c</columns>
+    <columns>CREATEDBY_USER</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>SetupStatus__c</field>
+        <operation>notEqual</operation>
+        <value>Complete</value>
+    </filters>
+    <label>Setup Incomplete</label>
+</ListView>

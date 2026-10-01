@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIConversationCompact</fullName>
+    <fields>Name</fields>
+    <fields>AIAgent__c</fields>
+    <fields>Status__c</fields>
+    <fields>Channel__c</fields>
+    <fields>MessageCount__c</fields>
+    <fields>ConversationTokenUsage__c</fields>
+    <label>AIConversation Compact</label>
+</CompactLayout>

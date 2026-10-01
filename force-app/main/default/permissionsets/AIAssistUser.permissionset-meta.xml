@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <classAccesses>
-        <apexClass>AIChatController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <description
   >Chat with AI agents and give feedback. Creates and reads only the user&apos;s own conversations, messages, feedback and terms acknowledgment. No access to configuration, prompts, data sources, logs, violations, PII data or other people&apos;s records.</description>
     <fieldPermissions>

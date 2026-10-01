@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SourceTypeFieldsExclusive</fullName>
+    <active>true</active>
+    <description
+  >Fill in only the field that matches the Source Type: SOQL Template for SOQL, Apex Class Name for Apex.</description>
+    <errorConditionFormula
+  >OR(AND(ISPICKVAL(SourceType__c, &quot;SOQL&quot;), NOT(ISBLANK(ApexClassName__c))), AND(ISPICKVAL(SourceType__c, &quot;Apex&quot;), NOT(ISBLANK(SOQLTemplate__c))))</errorConditionFormula>
+    <errorDisplayField>SourceType__c</errorDisplayField>
+    <errorMessage
+  >Fill in only the field that matches the Source Type: SOQL Template for SOQL, Apex Class Name for Apex.</errorMessage>
+</ValidationRule>

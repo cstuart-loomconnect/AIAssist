@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>OutputTokenCount__c</fullName>
+    <description
+  >Tokens the AI provider generated for this reply, as reported by the provider. Output tokens are usually priced higher than input tokens, so cost reporting needs the split.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Set by the platform from the provider response. Used for cost reporting.</inlineHelpText>
+    <label>Output Token Count</label>
+    <precision>9</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

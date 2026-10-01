@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ProviderCallNeedsProvider</fullName>
+    <active>true</active>
+    <description
+  >A provider call step must record the provider and model that received the data.</description>
+    <errorConditionFormula
+  >AND(ISNEW(), ISPICKVAL(StepType__c, &quot;Provider Call&quot;), OR(ISBLANK(Provider__c), ISBLANK(ModelIdentifier__c)))</errorConditionFormula>
+    <errorDisplayField>Provider__c</errorDisplayField>
+    <errorMessage
+  >A provider call step must record the provider and model that received the data.</errorMessage>
+</ValidationRule>

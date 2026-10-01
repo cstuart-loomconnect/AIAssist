@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MaxFieldsToQueryRange</fullName>
+    <active>true</active>
+    <description>Max Fields To Query must be between 1 and 500.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(MaxFieldsToQuery__c)), OR(MaxFieldsToQuery__c &lt; 1, MaxFieldsToQuery__c &gt; 500))</errorConditionFormula>
+    <errorDisplayField>MaxFieldsToQuery__c</errorDisplayField>
+    <errorMessage>Max Fields To Query must be between 1 and 500.</errorMessage>
+</ValidationRule>

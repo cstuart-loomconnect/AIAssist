@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ApexClassNameFormat</fullName>
+    <active>true</active>
+    <description
+  >Apex Class Name must be a class name, optionally prefixed with its namespace (Namespace.ClassName). Letters, numbers and underscores only.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(ApexClassName__c)), NOT(REGEX(ApexClassName__c, &quot;^[A-Za-z][A-Za-z0-9_]*([.][A-Za-z][A-Za-z0-9_]*)?$&quot;)))</errorConditionFormula>
+    <errorDisplayField>ApexClassName__c</errorDisplayField>
+    <errorMessage
+  >Apex Class Name must be a class name, optionally prefixed with its namespace (Namespace.ClassName). Letters, numbers and underscores only.</errorMessage>
+</ValidationRule>
