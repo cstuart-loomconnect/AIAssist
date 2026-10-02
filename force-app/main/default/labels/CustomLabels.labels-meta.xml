@@ -439,6 +439,16 @@
     >AI Assist is switched off for your organisation. Contact your administrator.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Channel_Not_Allowed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the channel is not enabled for this user.</shortDescription>
+        <value
+    >AI Assist is not available from here for your user. Use a different channel, or ask your administrator to enable this one.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Concurrent_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -545,6 +555,25 @@
     >Chat: a data source returned nothing because of access limits.</shortDescription>
         <value
     >Some of the information needed to answer wasn&apos;t available to you, so the answer may be incomplete.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Feedback_Invalid</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a rating that is not Helpful or Not Helpful.</shortDescription>
+        <value>That rating is not valid. Choose Helpful or Not Helpful.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Command_Unknown</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a slash command that is not offered to this user here.</shortDescription>
+        <value
+    >That command is not available here. Type / to see the commands you can use.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Generic</fullName>

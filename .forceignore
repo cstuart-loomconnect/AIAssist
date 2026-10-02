@@ -12,3 +12,6 @@ package.xml
 **/__tests__/**
 
 node_modules/
+
+# Org-default metadata that comes back on retrieve but is not part of the package
+**/transactionSecurityPolicies/**
