@@ -24,6 +24,7 @@ only, never values.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Masking evidence tallies added. Single-use helpers inlined. Compliance group read with the rule.
+3.0          Chandler Stuart          A missing or exhausted masking rule is logged once per field type per transaction, not once per value.
 */
 
 public inherited sharing class AIPiiPseudonymizationService {
@@ -43,6 +44,7 @@ public inherited sharing class AIPiiPseudonymizationService {
   @TestVisible
   private static Map<String, String> complianceGroupByFieldType;
   private static Map<String, MaskingTally> tallyByKey = new Map<String, MaskingTally>();
+  private static Set<String> fieldTypesAlreadyLogged = new Set<String>(); // A missing rule is reported once per field type per transaction, not once per value masked.
 
   // A field that is not PII comes back unchanged. Otherwise the stand-in already paired with this value in the conversation, or a new one that is remembered. Blank for invalid input.
   public static String pseudonymize(
@@ -135,7 +137,8 @@ public inherited sharing class AIPiiPseudonymizationService {
             fakeValue = candidates[
               Integer.valueOf(Math.floor(Math.random() * candidates.size()))
             ];
-          } else {
+          } else if (!fieldTypesAlreadyLogged.contains(fieldType)) {
+            fieldTypesAlreadyLogged.add(fieldType);
             AIPlatformLogManager.logCustomMessage(
               'Every substitute value for PII field type "' +
                 fieldType +
@@ -146,7 +149,8 @@ public inherited sharing class AIPiiPseudonymizationService {
               conversationId
             );
           }
-        } else {
+        } else if (!fieldTypesAlreadyLogged.contains(fieldType)) {
+          fieldTypesAlreadyLogged.add(fieldType);
           AIPlatformLogManager.logCustomMessage(
             'No usable Substitute From List masking rule for PII field type "' +
               fieldType +

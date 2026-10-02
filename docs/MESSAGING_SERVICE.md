@@ -88,15 +88,35 @@ The package's fields are visible to nobody until a permission set grants them, a
 
 ## 8. Housekeeping, actions, violations, chat and schema (added later)
 
-| Area             | Classes                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Housekeeping     | `AIConversationIdleBatch`, `AIConversationRetentionBatch` (skips legal holds), `AIRecordRetentionBatch` (logs, reviewed violations), `AIMaintenanceScheduler` (the one job an admin schedules) |
-| PII registry     | `AIPiiFieldTypeClassifier`, `AIPiiRegistrySyncDispatcher`, `AIPiiRegistrySyncWorker` (SOQL on FieldDefinition, no callout)                                                                     |
-| Data deletion    | `AIDataDeletionBatch`, `AIDataDeletionRequestTriggerHandler` and trigger (approved requests only)                                                                                              |
-| Workflow actions | `AIWorkflowActionDispatcher`, `IAIWorkflowActionExecutor`: plan, user setting, assignment, confirmation, evidence on every outcome                                                             |
-| Violations       | `AIViolationService`, `AIViolationTriggerHandler`, `AIViolationRuleTriggerHandler` and triggers                                                                                                |
-| Usage            | `AITokenUsageService` on `AIUsageDaily__c`                                                                                                                                                     |
-| Chat             | `AIChatController` and eight `AIChat*Service` classes plus `AIChatDataStructure`. Refusals reach the window as a status chosen from `AIMessagingException.code`, with a Custom Label           |
-| Schema           | `AISchemaHelper`: describe facts cached per transaction and, if the subscriber creates an org cache partition named `AIAssistSchema`, between transactions                                     |
+| Area             | Classes                                                                                                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Housekeeping     | `AIConversationIdleBatch`, `AIConversationRetentionBatch` (skips legal holds), `AIRecordRetentionBatch` (logs, reviewed violations), `AIMaintenanceScheduler` (the one scheduled job; see section 10) |
+| PII registry     | `AIPiiFieldTypeClassifier`, `AIPiiRegistrySyncDispatcher`, `AIPiiRegistrySyncWorker` (SOQL on FieldDefinition, no callout)                                                                            |
+| Data deletion    | `AIDataDeletionBatch`, `AIDataDeletionRequestTriggerHandler` and trigger (approved requests only)                                                                                                     |
+| Workflow actions | `AIWorkflowActionDispatcher`, `IAIWorkflowActionExecutor`: plan, user setting, assignment, confirmation, evidence on every outcome                                                                    |
+| Violations       | `AIViolationService`, `AIViolationTriggerHandler`, `AIViolationRuleTriggerHandler` and triggers                                                                                                       |
+| Usage            | `AITokenUsageService` on `AIUsageDaily__c`                                                                                                                                                            |
+| Chat             | `AIChatController` and eight `AIChat*Service` classes plus `AIChatDataStructure`. Refusals reach the window as a status chosen from `AIMessagingException.code`, with a Custom Label                  |
+| Schema           | `AISchemaHelper`: describe facts cached per transaction and, if the subscriber creates an org cache partition named `AIAssistSchema`, between transactions                                            |
 
 Not ported: `AIAssistUserTrigger`, its handler and `User.AIAssistUserType__c` (removed by the security model); the console (the wizard must catch `AIMessagingException` and read `.code`). `runSuggestedAction` keeps its two arguments, with the window's own confirmation counted as confirmed; `declineSuggestedAction` is new.
+
+## 9. Plan limits at activation, unique keys and masking of non-text values (added later)
+
+| Area            | Classes                                                                                                                                                  | What it does                                                                                                                                                                                                                                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan activation | `AIPlanActivationService`, called before insert and before update by the Agent, Data Source, Workflow Action and Model Configuration trigger handlers    | Enforces the five parameters that were defined but not read: `MaxActiveAgents`, `MaxActiveDataSources`, `MaxActiveWorkflowActions`, `MaxConversationRetentionDays`, `MultipleProvidersAllowed`. Also refuses activating an action when `WorkflowActionsAllowed` is off, or an Apex source or action when `ApexDataSourcesAllowed` is off. |
+| Unique keys     | `AIAgentAssignmentTriggerHandler`, `AIAgentDataSourceTriggerHandler`, `AIAgentWorkflowActionTriggerHandler`, `AIUserSettingsTriggerHandler` and triggers | Fill in `AssignmentKey__c` and `UserKey__c`, which nothing populated, so the unique setting on those fields now rejects a duplicate assignment, link or settings record.                                                                                                                                                                  |
+| Masking         | `AIDataSourceResultProcessor`, `AIPiiPseudonymizationService`                                                                                            | A value in a field registered as personal data is masked whatever its type (a date or number used to be passed on as it was). A missing masking rule is logged once per field type per transaction, not once per value.                                                                                                                   |
+
+Rules of the plan check:
+
+- Only what is being switched on is refused. A record that was already active can still be edited after a plan is reduced.
+- Blank retention means keep indefinitely, so it is refused when the plan has a retention cap.
+- It is not behind `IsEnabled__c`, and neither are the key triggers: switching the application off must not be a way round either.
+- A scratch or developer org answers Feature Management with the package defaults (three agents, no Apex), so in a test the activation checks apply only when the test sets `AIPlanLimitService.isActivationCheckedInTest`.
+
+## 10. Extension interfaces and the scheduled job (added later)
+
+- `IAIDataSourceExecutor` and `IAIWorkflowActionExecutor` are `global`, so a class in the subscriber's org can implement them. They are the package's only global API; once a version is released their methods cannot be changed or removed.
+- The post-install script schedules `AIMaintenanceScheduler` daily at 02:00 on a first install, under the name `AI Assist Maintenance`. An upgrade does not reschedule it, so an administrator who deletes or moves the job keeps their choice.

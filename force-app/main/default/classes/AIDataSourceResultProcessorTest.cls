@@ -24,6 +24,7 @@ private class AIDataSourceResultProcessorTest {
   // testScenario4: A parent lookup is followed and flattened under its relationship name.
   // testScenario5: A field the running user cannot read is left out, so a user is never given more through the model than they could read themselves.
   // testScenario6: Null input and an empty list return an empty list, and a null record in the list becomes an empty map.
+  // testScenario7: Personal data that is not text (a number here) is masked too, and a missing masking rule is reported once however many values are masked.
 
   @TestSetup
   static void setup() {
@@ -246,6 +247,77 @@ private class AIDataSourceResultProcessorTest {
     Assert.isTrue(
       ((Map<String, Object>) withNullRecord[0]).isEmpty(),
       'And is empty.'
+    );
+  }
+
+  @IsTest
+  static void testScenario7() {
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      1,
+      true
+    )[0];
+    AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
+      1,
+      'Account',
+      true
+    )[0];
+    AIAssistTestDataFactory.createAIPIIFieldMetadata(
+      registry.Id,
+      'Account',
+      'NumberOfEmployees',
+      AIAssistApplicationConstants.PII_FIELD_TYPE_OTHER,
+      true
+    );
+    AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>(); // No rule for the type.
+    AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>();
+    List<Account> accounts = AIAssistTestDataFactory.createAccounts(3, false);
+    accounts[0].NumberOfEmployees = 1201;
+    accounts[1].NumberOfEmployees = 1202;
+    accounts[2].NumberOfEmployees = 1203;
+    insert accounts;
+    List<Account> queried = [
+      SELECT Id, NumberOfEmployees
+      FROM Account
+      WHERE Id IN :accounts
+    ];
+
+    Test.startTest();
+    List<Object> processed = AIDataSourceResultProcessor.processResults(
+      queried,
+      conversation.Id
+    );
+    Test.stopTest();
+
+    Set<String> standIns = new Set<String>();
+    for (Object processedRecord : processed) {
+      Object sentValue = ((Map<String, Object>) processedRecord)
+        .get('NumberOfEmployees');
+      Assert.isTrue(
+        sentValue instanceof String &&
+        ((String) sentValue).startsWith('REDACTED-'),
+        'The number is replaced, not passed on.'
+      );
+      standIns.add((String) sentValue);
+    }
+    Assert.areEqual(3, standIns.size(), 'Each value has its own stand-in.');
+    String restoredValue = AIPiiPseudonymizationService.restore(
+      conversation.Id,
+      (String) ((Map<String, Object>) processed[0]).get('NumberOfEmployees')
+    );
+    Assert.isTrue(
+      new Set<String>{ '1201', '1202', '1203' }.contains(restoredValue),
+      'The real value can be restored from its text form.'
+    );
+    Assert.areEqual(
+      1,
+      [
+        SELECT COUNT()
+        FROM AIPlatformLog__c
+        WHERE ClassName__c = 'AIPiiPseudonymizationService'
+      ],
+      'The missing rule is reported once, not once per value.'
     );
   }
 }

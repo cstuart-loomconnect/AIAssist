@@ -13,6 +13,9 @@ On a first install this creates the organisation-level AIAssistSettings__c and
 AIAssistUISettings__c rows from the fields' default values. On an upgrade, or when a row already
 exists, it does nothing: it never overwrites what the subscriber has configured.
 
+A first install also schedules the daily housekeeping job (AIMaintenanceScheduler.scheduleDaily).
+An upgrade does not, so a job the administrator deleted or moved stays as they left it.
+
 Nothing subscriber-specific is created. Named Credentials, API keys, agents and model
 configurations are the subscriber's to set up.
 
@@ -24,6 +27,7 @@ would become part of the package's permanent API for no benefit.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Schedules the daily housekeeping job on a first install.
 */
 
 public with sharing class AIAssistInstallHandler implements InstallHandler {
@@ -48,6 +52,17 @@ public with sharing class AIAssistInstallHandler implements InstallHandler {
         );
         uiSettings.SetupOwnerId = UserInfo.getOrganizationId();
         insert uiSettings;
+      }
+
+      // On its own, so a job that cannot be scheduled (the subscriber is at their scheduled job limit) leaves the settings in place.
+      try {
+        AIMaintenanceScheduler.scheduleDaily();
+      } catch (Exception scheduleException) {
+        AIPlatformLogManager.logException(
+          scheduleException,
+          'AIAssistInstallHandler',
+          'onInstall'
+        );
       }
     } catch (Exception caughtException) {
       // An install must not fail because a settings row could not be created; an admin can still create it, and the application reads field defaults until then.
