@@ -146,6 +146,11 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String FEATURE_APEX_DATA_SOURCES_ALLOWED = 'ApexDataSourcesAllowed';
   public static final String FEATURE_WORKFLOW_ACTIONS_ALLOWED = 'WorkflowActionsAllowed';
   public static final String FEATURE_AI_EVALUATED_RULES_ALLOWED = 'AIEvaluatedRulesAllowed';
+  public static final String FEATURE_MAX_ACTIVE_AGENTS = 'MaxActiveAgents';
+  public static final String FEATURE_MAX_ACTIVE_DATA_SOURCES = 'MaxActiveDataSources';
+  public static final String FEATURE_MAX_ACTIVE_WORKFLOW_ACTIONS = 'MaxActiveWorkflowActions';
+  public static final String FEATURE_MAX_CONVERSATION_RETENTION_DAYS = 'MaxConversationRetentionDays';
+  public static final String FEATURE_MULTIPLE_PROVIDERS_ALLOWED = 'MultipleProvidersAllowed';
 
   // AIMessagingException.code - stable values, so the UI never has to parse a translated message.
   public static final String ERROR_GENERIC = 'GENERIC';

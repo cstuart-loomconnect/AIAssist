@@ -46,3 +46,7 @@ $RECYCLE.BIN/
 **/__pycache__/
 **/.venv/
 **/venv/
+
+# Org-default metadata that shows up in source tracking but is not part of the package
+**/digitalExperiences/**
+**/profiles/**

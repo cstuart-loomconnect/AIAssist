@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <description
   >Slash commands offered in the AI Assist chat window - the command the user types (for example /risk-check), the hidden prompt it sends, where it is offered (object, Agent) and who can use it. Shipped and updated only by the package owner; subscribers cannot see or change these records. Read by AIChatController.</description>

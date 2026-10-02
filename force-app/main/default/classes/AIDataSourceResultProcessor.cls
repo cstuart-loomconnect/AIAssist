@@ -7,8 +7,9 @@ Class Name: AIDataSourceResultProcessor
 Description: Turns the records a data source returned into plain maps and lists that are safe to
 hand to the model:
 [1] Fields the running user cannot read are left out.
-[2] Text in a field registered as personal data is replaced with a stand-in
-    (AIPiiPseudonymizationService), consistently within the conversation.
+[2] A value in a field registered as personal data is replaced with a stand-in
+    (AIPiiPseudonymizationService), consistently within the conversation. Text, dates and numbers
+    alike: the stand-in replaces the value's text form.
 [3] Parent lookups (up to 4 deep) and child subqueries (up to 3 deep) are followed.
 
 It fails closed: a field or record it cannot process is omitted or redacted, never passed on
@@ -23,6 +24,7 @@ for every record and every level of recursion.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          The conversation is a parameter, not a static the caller must remember to set. User-mode field check always applies. Single-use helpers inlined.
+3.0          Chandler Stuart          Personal data that is not text (dates, numbers) is masked too, instead of being passed on as it was.
 */
 
 public inherited sharing class AIDataSourceResultProcessor {
@@ -135,17 +137,18 @@ public inherited sharing class AIDataSourceResultProcessor {
             )
           );
         } else if (
-          rawValue instanceof String &&
-          String.isNotBlank((String) rawValue) &&
+          rawValue != null &&
+          String.isNotBlank(String.valueOf(rawValue)) &&
           AIPiiFieldRegistry.isPii(objectApiName, fieldApiName)
         ) {
+          // Whatever its type: a date of birth or an account number is personal data too, and is masked by its text form.
           flattened.put(
             fieldApiName,
             AIPiiPseudonymizationService.pseudonymize(
               conversationId,
               objectApiName,
               fieldApiName,
-              (String) rawValue
+              String.valueOf(rawValue)
             )
           );
         } else {

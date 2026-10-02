@@ -13,12 +13,13 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 */
-trigger AIAgentTrigger on AIAgent__c(before insert) {
+trigger AIAgentTrigger on AIAgent__c(before insert, before update) {
   // Before Context
   if (Trigger.isBefore) {
     if (Trigger.isInsert) {
       AIAgentTriggerHandler.handleBeforeInsert(Trigger.new);
+    } else if (Trigger.isUpdate) {
+      AIAgentTriggerHandler.handleBeforeUpdate(Trigger.oldMap, Trigger.new);
     }
   }
-
 }

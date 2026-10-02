@@ -19,6 +19,7 @@ Tests cannot change Feature Management parameters, so they use setLimitForTest.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as AIPlanLimits.
 2.0          Chandler Stuart          Renamed AIPlanLimitService. Method names shortened. Boolean parameters added for plan-gated features.
+3.0          Chandler Stuart          The five activation parameters added: active agents, data sources and workflow actions, the retention cap and multiple providers.
 */
 
 public inherited sharing class AIPlanLimitService {
@@ -65,6 +66,55 @@ public inherited sharing class AIPlanLimitService {
       true
     );
     return featureValue == null ? true : (Boolean) featureValue;
+  }
+
+  // The most agents the plan lets be active at once, or null for unlimited.
+  public static Integer getActiveAgentLimit() {
+    return (Integer) read(
+      AIAssistApplicationConstants.FEATURE_MAX_ACTIVE_AGENTS,
+      false
+    );
+  }
+
+  // The most data sources the plan lets be active at once, or null for unlimited.
+  public static Integer getActiveDataSourceLimit() {
+    return (Integer) read(
+      AIAssistApplicationConstants.FEATURE_MAX_ACTIVE_DATA_SOURCES,
+      false
+    );
+  }
+
+  // The most workflow actions the plan lets be active at once, or null for unlimited.
+  public static Integer getActiveActionLimit() {
+    return (Integer) read(
+      AIAssistApplicationConstants.FEATURE_MAX_ACTIVE_WORKFLOW_ACTIONS,
+      false
+    );
+  }
+
+  // The longest an agent may keep its conversations, in days, or null for no cap.
+  public static Integer getRetentionDayCap() {
+    return (Integer) read(
+      AIAssistApplicationConstants.FEATURE_MAX_CONVERSATION_RETENTION_DAYS,
+      false
+    );
+  }
+
+  // Whether the plan lets model configurations of more than one provider be active. Allowed when the parameter cannot be read.
+  public static Boolean isMultipleProvidersAllowed() {
+    Object featureValue = read(
+      AIAssistApplicationConstants.FEATURE_MULTIPLE_PROVIDERS_ALLOWED,
+      true
+    );
+    return featureValue == null ? true : (Boolean) featureValue;
+  }
+
+  // A scratch or developer org answers with the package's default limits (three agents, no Apex), which would refuse the configuration almost every test builds. The activation checks therefore apply in a test only when it asks for them.
+  @TestVisible
+  private static Boolean isActivationCheckedInTest = false;
+
+  public static Boolean isActivationChecked() {
+    return !Test.isRunningTest() || isActivationCheckedInTest;
   }
 
   @TestVisible

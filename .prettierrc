@@ -1,5 +1,6 @@
 {
   "trailingComma": "none",
+  "xmlSelfClosingSpace": false,
   "plugins": [
     "prettier-plugin-apex",
     "@prettier/plugin-xml"

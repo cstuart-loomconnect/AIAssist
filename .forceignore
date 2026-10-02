@@ -15,3 +15,7 @@ node_modules/
 
 # Org-default metadata that comes back on retrieve but is not part of the package
 **/transactionSecurityPolicies/**
+
+# Org-default metadata that shows up in source tracking but is not part of the package
+**/digitalExperiences/**
+**/profiles/**
