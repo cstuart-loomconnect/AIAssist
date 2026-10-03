@@ -1,12 +1,14 @@
 name: PR Validation
 
-# Runs on pull requests into development or master, on pushes to feature branches, and on every
-# merge into development (post-merge integration run).
+# Runs on pull requests into development, master or integration-testing, on pushes to feature
+# branches, and on every push to development or integration-testing. The integration-testing branch
+# combines all work (classes, objects, layouts, labels) and the scratch org job deploys all of
+# force-app in one go.
 on:
   pull_request:
-    branches: [development, master]
+    branches: [development, master, integration-testing]
   push:
-    branches: ['feature/**', development]
+    branches: ['feature/**', development, integration-testing]
 
 concurrency:
   group: pr-validation-${{ github.ref }}
