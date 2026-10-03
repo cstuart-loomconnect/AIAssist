@@ -26,6 +26,9 @@ private class AIMessagingSelectorTest {
   // testScenario6: isAssigned is true for an active assignment to the user or to a permission set they hold, and false for an inactive one, another user or no agent.
   // testScenario7: getTermsStatus distinguishes a user who accepted the current version, one who accepted only an earlier version, one who never accepted, and no terms configured.
   // testScenario8: The usage queries count a user's active conversations, sum their usage for a day, sum the organisation's day and month, and lock a usage row by key.
+  // testScenario10: A rule reaches an agent through an active assignment or because it applies to all agents; an inactive assignment, an inactive rule and another agent's rule do not.
+  // testScenario11: getUserSettings combines the usage policies of a user (assigned to them, to a permission set they hold, or the default) with their own row as an personalSettings.
+  // testScenario12: An agent is offered on its own Object Type and on every object added to it, a general agent on any object, and an agent added to other objects only is not general.
   // testScenario9: countPendingJobs answers with a count, and the trigger queries return nothing for no input and the rows asked for otherwise.
 
   @TestSetup
@@ -477,6 +480,230 @@ private class AIMessagingSelectorTest {
     Assert.isTrue(
       noRetention.isEmpty() && noTargets.isEmpty(),
       'Nothing asked for, nothing returned.'
+    );
+  }
+
+  @IsTest
+  static void testScenario10() {
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_AI_EVALUATED_RULES_ALLOWED,
+      true
+    );
+    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, true);
+    List<AIViolationRule__c> rules = AIAssistTestDataFactory.createAIViolationRules(
+      null,
+      4,
+      AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED,
+      false
+    );
+    rules[1].AppliesToAllAgents__c = true;
+    rules[3].IsActive__c = false;
+    insert rules;
+    List<AIAgentViolationRule__c> links = AIAssistTestDataFactory.createAIAgentViolationRules(
+      agents[0].Id,
+      new List<AIViolationRule__c>{ rules[0], rules[2], rules[3] },
+      false
+    );
+    links[1].IsActive__c = false;
+    insert links;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      agents[1].Id,
+      new List<AIViolationRule__c>{ rules[0] },
+      true
+    );
+
+    Test.startTest();
+    Map<Id, AIViolationRule__c> forFirst = new Map<Id, AIViolationRule__c>(
+      AIMessagingSelector.getActiveAiEvaluatedRules(agents[0].Id)
+    );
+    Map<Id, AIViolationRule__c> forSecond = new Map<Id, AIViolationRule__c>(
+      AIMessagingSelector.getActiveAiEvaluatedRules(agents[1].Id)
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<Id>{ rules[0].Id, rules[1].Id },
+      forFirst.keySet(),
+      'The assigned rule and the rule for all agents; not the inactive assignment or the inactive rule.'
+    );
+    Assert.areEqual(
+      new Set<Id>{ rules[0].Id, rules[1].Id },
+      forSecond.keySet(),
+      'One rule is shared by two agents.'
+    );
+  }
+
+  @IsTest
+  static void testScenario11() {
+    List<User> users = AIAssistTestDataFactory.createUsers(3, true);
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ users[1] },
+      AIAssistApplicationConstants.PERMISSION_SET_USER
+    );
+    List<AIUsagePolicy__c> policies = AIAssistTestDataFactory.createAIUsagePolicies(
+      3,
+      false
+    );
+    policies[0].MaxTokensPer24Hours__c = 1000;
+    policies[0].IsDefault__c = true;
+    policies[1].MaxTokensPer24Hours__c = 5000;
+    policies[2].MaxTokensPer24Hours__c = 7000;
+    policies[2].IsActive__c = false;
+    insert policies;
+    AIAssistTestDataFactory.createAIUsagePolicyAssignments(
+      policies[1].Id,
+      new List<User>{ users[0] },
+      null,
+      true
+    );
+    AIAssistTestDataFactory.createAIUsagePolicyAssignments(
+      policies[1].Id,
+      null,
+      AIAssistApplicationConstants.PERMISSION_SET_USER,
+      true
+    );
+    AIAssistTestDataFactory.createAIUsagePolicyAssignments(
+      policies[2].Id,
+      new List<User>{ users[2] },
+      null,
+      true
+    );
+    AIUserSettings__c personalSettings = AIAssistTestDataFactory.createAIUserSettings(
+      users[0].Id,
+      false
+    )[0];
+    personalSettings.MaxTokensPer24Hours__c = 9000;
+    insert personalSettings;
+
+    Test.startTest();
+    AIUserSettings__c byUserAndOverride = AIMessagingSelector.getUserSettings(
+      users[0].Id
+    );
+    AIUserSettings__c byPermissionSet = AIMessagingSelector.getUserSettings(
+      users[1].Id
+    );
+    AIUserSettings__c byDefault = AIMessagingSelector.getUserSettings(
+      users[2].Id
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      9000,
+      byUserAndOverride.MaxTokensPer24Hours__c,
+      'The personal row overrides the assigned policy.'
+    );
+    Assert.areEqual(
+      5000,
+      byPermissionSet.MaxTokensPer24Hours__c,
+      'A policy assigned to a permission set the user holds.'
+    );
+    Assert.areEqual(
+      1000,
+      byDefault.MaxTokensPer24Hours__c,
+      'An inactive policy is ignored, so the default covers the user.'
+    );
+  }
+
+  @IsTest
+  static void testScenario12() {
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
+    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
+      3,
+      model.Id,
+      false
+    );
+    agents[0].ObjectType__c = 'Account'; // Added to Contact as well.
+    // agents[1] is general; agents[2] has no Object Type and is added to Contact only.
+    insert agents;
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[0].Id,
+      new List<String>{ 'Contact' },
+      true
+    );
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[2].Id,
+      new List<String>{ 'Contact' },
+      true
+    );
+
+    Test.startTest();
+    Set<Id> onContact = new Map<Id, AIAgent__c>(
+        AIMessagingSelector.getAgentsAvailableForChat(
+          'Contact',
+          UserInfo.getUserId()
+        )
+      )
+      .keySet();
+    Set<Id> onAccount = new Map<Id, AIAgent__c>(
+        AIMessagingSelector.getAgentsAvailableForChat(
+          'Account',
+          UserInfo.getUserId()
+        )
+      )
+      .keySet();
+    Set<Id> onCase = new Map<Id, AIAgent__c>(
+        AIMessagingSelector.getAgentsAvailableForChat(
+          'Case',
+          UserInfo.getUserId()
+        )
+      )
+      .keySet();
+    Boolean ownType = AIMessagingSelector.agentSupportsObject(
+      agents[0].Id,
+      'Account',
+      'Account',
+      'Account'
+    );
+    Boolean addedType = AIMessagingSelector.agentSupportsObject(
+      agents[0].Id,
+      'Account',
+      'Contact',
+      'Contact'
+    );
+    Boolean otherType = AIMessagingSelector.agentSupportsObject(
+      agents[0].Id,
+      'Account',
+      'Case',
+      'Case'
+    );
+    Boolean general = AIMessagingSelector.agentSupportsObject(
+      agents[1].Id,
+      null,
+      'Case',
+      'Case'
+    );
+    Boolean addedOnly = AIMessagingSelector.agentSupportsObject(
+      agents[2].Id,
+      null,
+      'Case',
+      'Case'
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<Id>{ agents[0].Id, agents[1].Id, agents[2].Id },
+      onContact,
+      'The agent added to Contact, the one added only to Contact, and the general one.'
+    );
+    Assert.areEqual(
+      new Set<Id>{ agents[0].Id, agents[1].Id },
+      onAccount,
+      'Its own Object Type and the general agent; the Contact-only agent is not general.'
+    );
+    Assert.areEqual(
+      new Set<Id>{ agents[1].Id },
+      onCase,
+      'Only the general agent.'
+    );
+    Assert.isTrue(ownType && addedType, 'Own and added objects.');
+    Assert.isFalse(otherType, 'An object it was never given.');
+    Assert.isTrue(general, 'No object configured means every object.');
+    Assert.isFalse(
+      addedOnly,
+      'Objects were configured and this is not one of them.'
     );
   }
 }

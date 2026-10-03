@@ -3,7 +3,7 @@
     <fullName>All</fullName>
     <columns>MasterLabel</columns>
     <columns>DeveloperName</columns>
-    <columns>Active__c</columns>
+    <columns>IsActive__c</columns>
     <columns>Strategy__c</columns>
     <columns>ReplacementPattern__c</columns>
     <columns>ReplacementCharacterCount__c</columns>

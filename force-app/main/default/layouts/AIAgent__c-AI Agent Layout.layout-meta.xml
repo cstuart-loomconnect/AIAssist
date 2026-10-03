@@ -224,11 +224,15 @@
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>
-        <fields>Active__c</fields>
-        <fields>DetectionMethod__c</fields>
-        <fields>BlockRequest__c</fields>
-        <fields>ViolationTypeProduced__c</fields>
-        <relatedList>AIViolationRule__c.Agent__c</relatedList>
+        <fields>AIViolationRule__c</fields>
+        <fields>IsActive__c</fields>
+        <relatedList>AIAgentViolationRule__c.AIAgent__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>ObjectApiName__c</fields>
+        <fields>IsActive__c</fields>
+        <relatedList>AIAgentObject__c.AIAgent__c</relatedList>
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>

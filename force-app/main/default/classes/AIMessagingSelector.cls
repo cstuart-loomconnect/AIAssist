@@ -25,6 +25,7 @@ filter, never as a permission check.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the read half of AIMessagingRepository.
+2.0          Chandler Stuart          Rules reach an agent through AIAgentViolationRule__c or AppliesToAllAgents__c; an agent can be offered on several objects (AIAgentObject__c); user settings are the user row over the usage policies that apply to them.
 */
 
 public without sharing class AIMessagingSelector {
@@ -157,10 +158,28 @@ public without sharing class AIMessagingSelector {
     ];
   }
 
+  // The rules assigned to an agent through an active AI Agent Violation Rule. A rule that applies to every agent needs no assignment and is matched by its own flag.
+  private static Set<Id> getAssignedRuleIds(Id agentId) {
+    Set<Id> ruleIds = new Set<Id>();
+
+    for (AIAgentViolationRule__c assignment : [
+      SELECT AIViolationRule__c
+      FROM AIAgentViolationRule__c
+      WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
+      WITH SYSTEM_MODE
+      LIMIT 2000
+    ])
+      ruleIds.add(assignment.AIViolationRule__c);
+
+    return ruleIds;
+  }
+
   // The active AI evaluated rules of an agent, capped so their instructions cannot bloat every request.
   public static List<AIViolationRule__c> getActiveAiEvaluatedRules(Id agentId) {
     if (agentId == null)
       return new List<AIViolationRule__c>();
+
+    Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
 
     return [
       SELECT
@@ -172,8 +191,9 @@ public without sharing class AIMessagingSelector {
         ViolationTypeProduced__c
       FROM AIViolationRule__c
       WHERE
-        Agent__c = :agentId
-        AND Active__c = TRUE
+        (AppliesToAllAgents__c = TRUE
+        OR Id IN :assignedRuleIds)
+        AND IsActive__c = TRUE
         AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED
         AND SignalTag__c != NULL
       WITH SYSTEM_MODE
@@ -190,12 +210,15 @@ public without sharing class AIMessagingSelector {
     if (agentId == null || violationType == null)
       return new List<AIViolationRule__c>();
 
+    Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
+
     return [
       SELECT Id, Name, BlockRequest__c, ViolationTypeProduced__c
       FROM AIViolationRule__c
       WHERE
-        Agent__c = :agentId
-        AND Active__c = TRUE
+        (AppliesToAllAgents__c = TRUE
+        OR Id IN :assignedRuleIds)
+        AND IsActive__c = TRUE
         AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_DETERMINISTIC
         AND ViolationTypeProduced__c = :violationType
       WITH SYSTEM_MODE
@@ -265,7 +288,7 @@ public without sharing class AIMessagingSelector {
   // Who may chat
   // =============================================================
 
-  // Null when the user has no settings record, which callers treat as "no personal limits".
+  // What this user is allowed: their own settings row as an override, over the usage policies that apply to them (see AIUsagePolicyResolver). Null when they have neither, which callers treat as "no personal limits".
   public static AIUserSettings__c getUserSettings(Id userId) {
     if (userId == null)
       return null;
@@ -273,6 +296,7 @@ public without sharing class AIMessagingSelector {
     List<AIUserSettings__c> userSettingsRows = [
       SELECT
         Id,
+        User__c,
         IsActive__c,
         AllowedChannels__c,
         MaxConcurrentConversations__c,
@@ -289,7 +313,80 @@ public without sharing class AIMessagingSelector {
       LIMIT 1
     ];
 
-    return userSettingsRows.isEmpty() ? null : userSettingsRows[0];
+    return AIUsagePolicyResolver.resolve(
+      userSettingsRows.isEmpty() ? null : userSettingsRows[0],
+      getUsagePoliciesForUser(userId)
+    );
+  }
+
+  // The active policies that apply to a user: those assigned to them or to a permission set they hold, or, when there are none, the default policies.
+  public static List<AIUsagePolicy__c> getUsagePoliciesForUser(Id userId) {
+    if (userId == null)
+      return new List<AIUsagePolicy__c>();
+
+    Set<String> heldPermissionSets = new Set<String>();
+    for (PermissionSetAssignment heldAssignment : [
+      SELECT PermissionSet.Name
+      FROM PermissionSetAssignment
+      WHERE AssigneeId = :userId
+      WITH SYSTEM_MODE
+    ])
+      heldPermissionSets.add(heldAssignment.PermissionSet.Name);
+
+    Set<Id> policyIds = new Set<Id>();
+    for (AIUsagePolicyAssignment__c assignment : [
+      SELECT AIUsagePolicy__c
+      FROM AIUsagePolicyAssignment__c
+      WHERE
+        IsActive__c = TRUE
+        AND AIUsagePolicy__r.IsActive__c = TRUE
+        AND ((AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_USER
+        AND User__c = :userId)
+        OR (AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET
+        AND PermissionSetName__c IN :heldPermissionSets))
+      WITH SYSTEM_MODE
+      LIMIT 200
+    ])
+      policyIds.add(assignment.AIUsagePolicy__c);
+
+    // Nothing assigned: the default policies cover the user instead.
+    if (policyIds.isEmpty()) {
+      return [
+        SELECT
+          Id,
+          AllowedChannels__c,
+          ConversationExportEnabled__c,
+          ConversationVisibilityScope__c,
+          DebugModeEnabled__c,
+          MaxConcurrentConversations__c,
+          MaxConversationsPer24Hours__c,
+          MaxTokensPer24Hours__c,
+          UsageLimitReachedBehavior__c,
+          WorkflowActionsEnabled__c
+        FROM AIUsagePolicy__c
+        WHERE IsActive__c = TRUE AND IsDefault__c = TRUE
+        WITH SYSTEM_MODE
+        LIMIT 200
+      ];
+    }
+
+    return [
+      SELECT
+        Id,
+        AllowedChannels__c,
+        ConversationExportEnabled__c,
+        ConversationVisibilityScope__c,
+        DebugModeEnabled__c,
+        MaxConcurrentConversations__c,
+        MaxConversationsPer24Hours__c,
+        MaxTokensPer24Hours__c,
+        UsageLimitReachedBehavior__c,
+        WorkflowActionsEnabled__c
+      FROM AIUsagePolicy__c
+      WHERE IsActive__c = TRUE AND Id IN :policyIds
+      WITH SYSTEM_MODE
+      LIMIT 200
+    ];
   }
 
   // True when an active assignment names the user, or names a permission set (or permission set group) the user holds.
@@ -372,11 +469,80 @@ public without sharing class AIMessagingSelector {
     return assignedIds;
   }
 
-  // The active agents this user can chat with for an object, agents for the object first. An Assigned Users Only agent is included only when the user is assigned.
+  // The objects each active agent has been added to through AI Agent Object records, by agent. Agents with none are not in the map.
+  private static Map<Id, Set<String>> getExtraObjectsByAgent() {
+    Map<Id, Set<String>> objectsByAgent = new Map<Id, Set<String>>();
+
+    for (AIAgentObject__c agentObject : [
+      SELECT AIAgent__c, ObjectApiName__c
+      FROM AIAgentObject__c
+      WHERE IsActive__c = TRUE AND AIAgent__r.IsActive__c = TRUE
+      WITH SYSTEM_MODE
+      LIMIT 5000
+    ]) {
+      if (!objectsByAgent.containsKey(agentObject.AIAgent__c))
+        objectsByAgent.put(agentObject.AIAgent__c, new Set<String>());
+      objectsByAgent.get(agentObject.AIAgent__c)
+        .add(agentObject.ObjectApiName__c.toLowerCase());
+    }
+
+    return objectsByAgent;
+  }
+
+  // True when the agent is offered on the object: its own Object Type, any object added to it, or, for an agent with neither, every object.
+  public static Boolean agentSupportsObject(
+    Id agentId,
+    String agentObjectType,
+    String objectApiName,
+    String objectLocalName
+  ) {
+    Set<String> extraObjects = new Set<String>();
+
+    if (agentId != null) {
+      for (AIAgentObject__c agentObject : [
+        SELECT ObjectApiName__c
+        FROM AIAgentObject__c
+        WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
+        WITH SYSTEM_MODE
+        LIMIT 200
+      ])
+        extraObjects.add(agentObject.ObjectApiName__c.toLowerCase());
+    }
+
+    if (String.isBlank(agentObjectType) && extraObjects.isEmpty())
+      return true;
+
+    return matchesObject(agentObjectType, objectApiName, objectLocalName) ||
+      extraObjects.contains(String.valueOf(objectApiName).toLowerCase()) ||
+      extraObjects.contains(String.valueOf(objectLocalName).toLowerCase());
+  }
+
+  private static Boolean matchesObject(
+    String configuredObject,
+    String objectApiName,
+    String objectLocalName
+  ) {
+    return String.isNotBlank(configuredObject) &&
+      (configuredObject.equalsIgnoreCase(objectApiName) ||
+      configuredObject.equalsIgnoreCase(objectLocalName));
+  }
+
+  // The active agents this user can chat with for an object, agents for the object first. An agent is for the object through its Object Type or an AI Agent Object record; one with neither is general and comes last. An Assigned Users Only agent is included only when the user is assigned.
   public static List<AIAgent__c> getAgentsAvailableForChat(
     String objectApiName,
     Id userId
   ) {
+    Map<Id, Set<String>> extraObjectsByAgent = getExtraObjectsByAgent();
+    Set<Id> agentsAddedToObject = new Set<Id>();
+    for (Id extraAgentId : extraObjectsByAgent.keySet()) {
+      if (
+        objectApiName != null &&
+        extraObjectsByAgent.get(extraAgentId)
+          .contains(objectApiName.toLowerCase())
+      )
+        agentsAddedToObject.add(extraAgentId);
+    }
+
     List<AIAgent__c> candidates = [
       SELECT
         Id,
@@ -392,7 +558,8 @@ public without sharing class AIMessagingSelector {
       WHERE
         IsActive__c = TRUE
         AND (ObjectType__c = NULL
-        OR ObjectType__c = :objectApiName)
+        OR ObjectType__c = :objectApiName
+        OR Id IN :agentsAddedToObject)
       WITH SYSTEM_MODE
       ORDER BY Name
       LIMIT :AIAssistApplicationConstants.CHAT_MAX_AGENTS
@@ -417,10 +584,19 @@ public without sharing class AIMessagingSelector {
         !assignedIds.contains(candidate.Id)
       )
         continue;
-      if (String.isNotBlank(candidate.ObjectType__c))
+
+      Boolean isForObject =
+        agentsAddedToObject.contains(candidate.Id) ||
+        (String.isNotBlank(candidate.ObjectType__c) &&
+        candidate.ObjectType__c.equalsIgnoreCase(objectApiName));
+
+      if (isForObject)
         agentsForObject.add(candidate);
-      else
-        generalAgents.add(candidate);
+      else if (
+        String.isBlank(candidate.ObjectType__c) &&
+        !extraObjectsByAgent.containsKey(candidate.Id)
+      )
+        generalAgents.add(candidate); // Added to other objects only: not general.
     }
 
     agentsForObject.addAll(generalAgents);

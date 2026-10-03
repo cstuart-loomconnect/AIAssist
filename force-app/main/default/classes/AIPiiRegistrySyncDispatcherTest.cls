@@ -43,7 +43,7 @@ private class AIPiiRegistrySyncDispatcherTest {
       'Account',
       false
     )[0];
-    registry.Active__c = true;
+    registry.IsActive__c = true;
     registry.MaxFieldsToQuery__c = 5;
     insert registry;
     Integer dispatched;
@@ -68,12 +68,12 @@ private class AIPiiRegistrySyncDispatcherTest {
       'Account',
       false
     );
-    registries[0].Active__c = true;
+    registries[0].IsActive__c = true;
     registries[0].LastSynced__c = System.now().addDays(-1);
     registries[0]
       .SyncStatus__c = AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED;
-    registries[1].Active__c = false;
-    registries[2].Active__c = true;
+    registries[1].IsActive__c = false;
+    registries[2].IsActive__c = true;
     registries[2]
       .SyncStatus__c = AIAssistApplicationConstants.PII_SYNC_STATUS_QUEUED;
     insert registries;
@@ -96,7 +96,7 @@ private class AIPiiRegistrySyncDispatcherTest {
       false
     );
     for (AIPIIRegistry__c registry : registries) {
-      registry.Active__c = true;
+      registry.IsActive__c = true;
       registry.MaxFieldsToQuery__c = 3;
       registry.LastSynced__c = System.now().addDays(-3);
     }
@@ -129,7 +129,7 @@ private class AIPiiRegistrySyncDispatcherTest {
       false
     );
     for (AIPIIRegistry__c registry : registries) {
-      registry.Active__c = true;
+      registry.IsActive__c = true;
       registry.MaxFieldsToQuery__c = 1;
     }
     insert registries;
@@ -166,7 +166,7 @@ private class AIPiiRegistrySyncDispatcherTest {
       false
     );
     for (AIPIIRegistry__c registry : registries) {
-      registry.Active__c = true;
+      registry.IsActive__c = true;
       registry.MaxFieldsToQuery__c = 1;
     }
     insert registries;
@@ -194,7 +194,7 @@ private class AIPiiRegistrySyncDispatcherTest {
       'Account',
       false
     )[0];
-    registry.Active__c = true;
+    registry.IsActive__c = true;
     insert registry;
     Integer dispatched;
 

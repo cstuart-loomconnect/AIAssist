@@ -14,35 +14,39 @@ Status: layer 1 (object model and access). Validated with a check-only deploy to
 
 CRED = create / read / edit / delete. `+all` = View All Records. Field-level access is in the permission set files (User 37 field permissions, Super User 213, Admin 226).
 
-| Object                   | OWD                | User | Super User | Admin    |
-| ------------------------ | ------------------ | ---- | ---------- | -------- |
-| AIAgentAssignment__c     | ControlledByParent | -    | R          | CRED     |
-| AIAgentDataSource__c     | ControlledByParent | -    | R          | CRED     |
-| AIAgentWorkflowAction__c | ControlledByParent | -    | R          | CRED     |
-| AIAgent__c               | ReadWrite          | R    | R          | CRED     |
-| AIConversationMessage__c | ControlledByParent | CR   | CR +all    | CR       |
-| AIConversation__c        | Private            | CRE  | CRE +all   | CRE +all |
-| AIDataDeletionRequest__c | ReadWrite          | -    | -          | CRE      |
-| AIDataSource__c          | ReadWrite          | -    | R          | CRED     |
-| AIExecutionStep__c       | ControlledByParent | -    | R +all     | R +all   |
-| AIFeedback__c            | Private            | CR   | CR +all    | CR +all  |
-| AIModelConfiguration__c  | ReadWrite          | -    | R          | CRED     |
-| AIPIIFieldMetadata__c    | ControlledByParent | -    | R          | R        |
-| AIPIIMapping__c          | ControlledByParent | -    | -          | -        |
-| AIPIIMaskingRecord__c    | ControlledByParent | -    | R +all     | R +all   |
-| AIPIIRegistry__c         | ReadWrite          | -    | R          | CRED     |
-| AIPlatformLog__c         | Private            | -    | R +all     | R +all   |
-| AIPromptTemplate__c      | ReadWrite          | -    | R          | CRED     |
-| AITermsAcknowledgment__c | Private            | CR   | CR         | CR +all  |
-| AIUsageDaily__c          | Private            | -    | R +all     | R +all   |
-| AIUserSettings__c        | ReadWrite          | -    | R          | CRE      |
-| AIViolationRule__c       | ControlledByParent | -    | R          | CRED     |
-| AIViolation__c           | ReadWrite          | -    | RE         | R        |
-| AIWorkflowAction__c      | ReadWrite          | -    | R          | CRED     |
-| AIAgentProgressEvent__e  | -                  | CR   | CR         | CR       |
-| AIMessageReadyEvent__e   | -                  | CR   | CR         | CR       |
-| AIPlatformLogEvent__e    | -                  | CR   | CR         | CR       |
-| AIViolationEvent__e      | -                  | CR   | CR         | CR       |
+| Object                     | OWD                | User | Super User | Admin    |
+| -------------------------- | ------------------ | ---- | ---------- | -------- |
+| AIAgentAssignment__c       | ControlledByParent | -    | R          | CRED     |
+| AIAgentDataSource__c       | ControlledByParent | -    | R          | CRED     |
+| AIAgentObject__c           | ControlledByParent | -    | R          | CRED     |
+| AIAgentViolationRule__c    | ControlledByParent | -    | R          | CRED     |
+| AIAgentWorkflowAction__c   | ControlledByParent | -    | R          | CRED     |
+| AIAgent__c                 | ReadWrite          | R    | R          | CRED     |
+| AIConversationMessage__c   | ControlledByParent | CR   | CR +all    | CR       |
+| AIConversation__c          | Private            | CRE  | CRE +all   | CRE +all |
+| AIDataDeletionRequest__c   | ReadWrite          | -    | -          | CRE      |
+| AIDataSource__c            | ReadWrite          | -    | R          | CRED     |
+| AIExecutionStep__c         | ControlledByParent | -    | R +all     | R +all   |
+| AIFeedback__c              | Private            | CR   | CR +all    | CR +all  |
+| AIModelConfiguration__c    | ReadWrite          | -    | R          | CRED     |
+| AIPIIFieldMetadata__c      | ControlledByParent | -    | R          | R        |
+| AIPIIMapping__c            | ControlledByParent | -    | -          | -        |
+| AIPIIMaskingRecord__c      | ControlledByParent | -    | R +all     | R +all   |
+| AIPIIRegistry__c           | ReadWrite          | -    | R          | CRED     |
+| AIPlatformLog__c           | Private            | -    | R +all     | R +all   |
+| AIPromptTemplate__c        | ReadWrite          | -    | R          | CRED     |
+| AITermsAcknowledgment__c   | Private            | CR   | CR         | CR +all  |
+| AIUsageDaily__c            | Private            | -    | R +all     | R +all   |
+| AIUsagePolicyAssignment__c | ControlledByParent | -    | R          | CRED     |
+| AIUsagePolicy__c           | ReadOnly           | -    | R          | CRED     |
+| AIUserSettings__c          | ReadWrite          | -    | R          | CRE      |
+| AIViolationRule__c         | ReadOnly           | -    | R          | CRED     |
+| AIViolation__c             | ReadWrite          | -    | RE         | R        |
+| AIWorkflowAction__c        | ReadWrite          | -    | R          | CRED     |
+| AIAgentProgressEvent__e    | -                  | CR   | CR         | CR       |
+| AIMessageReadyEvent__e     | -                  | CR   | CR         | CR       |
+| AIPlatformLogEvent__e      | -                  | CR   | CR         | CR       |
+| AIViolationEvent__e        | -                  | CR   | CR         | CR       |
 
 Custom metadata: `AIChatCommand__mdt` is Protected and developer-controlled, so only the package owner ships or changes chat commands; subscribers cannot see it and no permission set references it. Admin reads the three PII metadata types. Admin alone has access to both custom settings. Object tabs are `Available`, never forced `Visible`.
 
@@ -166,25 +170,52 @@ Considered and left out for now: limits on prompt templates, violation rules and
 
 **Considered and not built**: per-agent record filters (build when a customer asks), full prompt versioning with restore (later; the version stamp above is the first step), and a Big Object archive for messages (decided against; export to external storage instead if storage becomes a problem).
 
+## 6b. Phase 1 model changes (permanent at the first managed release)
+
+Field and object API names cannot change once a managed package is released, so these were settled before it.
+
+| Change                                                                                                                                                                                                                                                                         | Why                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `Active__c` is now `IsActive__c` on `AIViolationRule__c`, `AIPIIRegistry__c`, `AIPiiFieldType__mdt`, `AIPiiComplianceGroup__mdt` and `AIPiiDataMaskingRule__mdt`.                                                                                                              | Every other object already used `IsActive__c`.                                                                    |
+| `AIViolationRule__c` is no longer Master-Detail to an agent. It has `PublicId__c`, `DeveloperName__c` and `AppliesToAllAgents__c`; OWD is Public Read Only internally and Private externally.                                                                                  | A rule such as "never disclose PII" is defined once.                                                              |
+| New junction `AIAgentViolationRule__c` (agent, rule, `IsActive__c`, unique `AssignmentKey__c`).                                                                                                                                                                                | Assigns a rule to many agents. A rule with `AppliesToAllAgents__c` needs no junction row.                         |
+| New child `AIAgentObject__c` (agent, `ObjectApiName__c`, `IsActive__c`, unique key). `AIAgent__c.ObjectType__c` stays as the primary object.                                                                                                                                   | One agent can serve several objects. The name is checked against the org on save and stored as the org spells it. |
+| New `AIUsagePolicy__c` and `AIUsagePolicyAssignment__c` (user or permission set, same pattern as `AIAgentAssignment__c`). `AIUserSettings__c` becomes a per-user override. The three limit fields on `AIUserSettings__c` lost their defaults, so blank means "use the policy". | Limits are set once per group, not once per user.                                                                 |
+
+How an agent is offered on an object: its own Object Type or any active `AIAgentObject__c` makes it an agent for that object; an agent with neither is general and is offered on every object; an agent added to other objects only is not general.
+
+How a user's settings are worked out (`AIUsagePolicyResolver`, called from `AIMessagingSelector.getUserSettings`):
+
+1. Policies apply when assigned to the user, or to a permission set the user holds. With none, the active default policies apply.
+2. Limits are strictest-wins across policies (lowest number, behavior that blocks most), so adding a policy never loosens a limit.
+3. Capabilities (channels, workflow actions, export, debug mode, visibility) are additive across policies.
+4. The user's own `AIUserSettings__c` row overrides any value it sets. A ticked box on the row switches a capability on for that user; it cannot switch off one a policy grants.
+
+`IAIDataSourceExecutor` and `IAIWorkflowActionExecutor` are `global` so a subscriber's Apex can implement them. Their method signatures are now permanent. The dispatchers look the class up with `Type.forName('', name)` so the subscriber's unprefixed classes resolve from managed code.
+
+Access: all new objects are read-only for Super User and full for Admin, and none is granted to the User set. The package reads them in system mode.
+
 ## 7. History tracking
 
 Before: `AIPromptTemplate__c` had history switched on with every field set to off (so it tracked nothing). No other object tracked anything.
 
 Now (object limit is 20 fields, all are under):
 
-| Object                | Tracked                                                                                                                                                                                      | Count |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| AIAgent               | Access Mode, Is Active, Test Mode, Persona, Model Configuration, Visibility, Retention Days, Max Tokens, Max Messages, Max Tool Iterations, No Match Behavior, Fallback Message, Object Type | 13    |
-| AIDataSource          | Is Active, Source Type, SOQL Template, Apex Class, Target Object, Input Schema, Binding Type, Max Rows                                                                                       | 8     |
-| AIWorkflowAction      | Is Active, Action Type, Execution Type, Apex Class, Flow API Name, Target Object, Requires Confirmation, Confirmation Message, Input Schema                                                  | 9     |
-| AIModelConfiguration  | Is Active, Provider, Model Identifier, Named Credential, API Path, Temperature, Max Output Tokens, Retry Attempts, two token prices                                                          | 10    |
-| AIPromptTemplate      | Is Active, Agent, Prompt, System Context, Tone, Exclusion Rules, Activation Criteria, Trigger Keywords, Max Response Length                                                                  | 9     |
-| AIViolationRule       | Active, Block Request, Detection Method, Detection Instruction, Violation Type, Signal Tag                                                                                                   | 6     |
-| AIPIIRegistry         | Active, Object API Name, Max Fields To Query                                                                                                                                                 | 3     |
-| AIUserSettings        | Is Active, Debug Mode, Workflow Actions, Export, Visibility Scope, Allowed Channels, three limits, Limit Behavior                                                                            | 10    |
-| AIDataDeletionRequest | Scope, Received Date, Approval Decision, Status                                                                                                                                              | 4     |
-| AIAgentAssignment     | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          | 4     |
-| AIViolation           | Review Status                                                                                                                                                                                | 1     |
+| Object                  | Tracked                                                                                                                                                                                      | Count |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| AIAgent                 | Access Mode, Is Active, Test Mode, Persona, Model Configuration, Visibility, Retention Days, Max Tokens, Max Messages, Max Tool Iterations, No Match Behavior, Fallback Message, Object Type | 13    |
+| AIDataSource            | Is Active, Source Type, SOQL Template, Apex Class, Target Object, Input Schema, Binding Type, Max Rows                                                                                       | 8     |
+| AIWorkflowAction        | Is Active, Action Type, Execution Type, Apex Class, Flow API Name, Target Object, Requires Confirmation, Confirmation Message, Input Schema                                                  | 9     |
+| AIModelConfiguration    | Is Active, Provider, Model Identifier, Named Credential, API Path, Temperature, Max Output Tokens, Retry Attempts, two token prices                                                          | 10    |
+| AIPromptTemplate        | Is Active, Agent, Prompt, System Context, Tone, Exclusion Rules, Activation Criteria, Trigger Keywords, Max Response Length                                                                  | 9     |
+| AIViolationRule         | Is Active, Applies To All Agents, Block Request, Detection Method, Detection Instruction, Violation Type, Signal Tag                                                                         | 6     |
+| AIPIIRegistry           | Is Active, Object API Name, Max Fields To Query                                                                                                                                              | 3     |
+| AIUserSettings          | Is Active, Debug Mode, Workflow Actions, Export, Visibility Scope, Allowed Channels, three limits, Limit Behavior                                                                            | 10    |
+| AIDataDeletionRequest   | Scope, Received Date, Approval Decision, Status                                                                                                                                              | 4     |
+| AIUsagePolicy           | Is Active, Is Default, three limits, Limit Behavior, Visibility Scope, Allowed Channels, Workflow Actions, Export, Debug Mode                                                                |
+| AIUsagePolicyAssignment | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          |
+| AIAgentAssignment       | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          | 4     |
+| AIViolation             | Review Status                                                                                                                                                                                | 1     |
 
 Rationale: these are the fields that change what the AI may see, say or do, or who may do it. Not tracked on purpose: conversations, messages, steps, masking records, logs, feedback and acknowledgments (they are the audit trail; they are write-once), and descriptions, names and setup wizard state (noise). Long text fields show only "changed", not old and new values. If you need the diff, that is Field Audit Trail or a copy of the prior value in a custom audit record.
 
@@ -202,5 +233,7 @@ Convention, enforced by a label check that lives on the separate branch `feature
 The validator currently reports all 139 as unused, which is expected until layer 2 uses them. Add it to CI once code references labels.
 
 ## 9. Existing scratch orgs
+
+The phase 1 changes remove `AIViolationRule__c.Agent__c` (a Master-Detail) and the five `Active__c` fields, which cannot be deployed over an org that has them. Create a fresh scratch org, or delete those fields with a destructive change after the Apex that used them is gone.
 
 Several changes cannot be deployed over the first layer-1 deploy in place: switching a picklist to a global value set, renaming a picklist value, changing a field's type, and removing fields. A scratch org that already has the first layer-1 deploy should be recreated from source rather than patched. CI always starts from a fresh scratch org, so it is unaffected. Nothing in this repo is needed to migrate an old org.

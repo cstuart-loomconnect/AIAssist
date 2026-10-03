@@ -5,7 +5,7 @@
     <columns>ObjectAPIName__c</columns>
     <columns>SyncStatus__c</columns>
     <columns>LastSynced__c</columns>
-    <columns>Active__c</columns>
+    <columns>IsActive__c</columns>
     <filterScope>Everything</filterScope>
     <filters>
         <field>SyncStatus__c</field>

@@ -25,6 +25,7 @@ confirmation was required and who confirmed it. cancel records that the user dec
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from AIWorkflowActionDispatcher. Adds the plan and user gates, system-mode read of the definition, the assignment check, confirmation, the interface check before instantiation, and evidence on every outcome.
+2.0          Chandler Stuart          Apex class lookup uses Type.forName with an empty namespace so a subscriber's own class is found from managed code.
 */
 
 public inherited sharing class AIWorkflowActionDispatcher {
@@ -105,8 +106,8 @@ public inherited sharing class AIWorkflowActionDispatcher {
             null
           );
 
-        // Checked before anything in the class runs: the name was typed by a subscriber, and even constructing a class runs its code.
-        Type apexType = Type.forName(action.ApexClassName__c.trim());
+        // Checked before anything in the class runs: the name was typed by a subscriber, and even constructing a class runs its code. The empty namespace makes the lookup find the subscriber's own unprefixed classes; the one-argument form looks only in the package's namespace once this is managed code.
+        Type apexType = Type.forName('', action.ApexClassName__c.trim());
         if (
           apexType == null ||
           !IAIWorkflowActionExecutor.class.isAssignableFrom(apexType)

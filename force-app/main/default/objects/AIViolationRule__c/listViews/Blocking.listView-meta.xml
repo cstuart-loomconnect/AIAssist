@@ -3,7 +3,7 @@
     <fullName>Blocking</fullName>
     <booleanFilter>1 AND 2</booleanFilter>
     <columns>NAME</columns>
-    <columns>Agent__c</columns>
+    <columns>AppliesToAllAgents__c</columns>
     <columns>DetectionMethod__c</columns>
     <columns>ViolationTypeProduced__c</columns>
     <columns>SignalTag__c</columns>
@@ -11,7 +11,7 @@
     <columns>LastTriggeredDate__c</columns>
     <filterScope>Everything</filterScope>
     <filters>
-        <field>Active__c</field>
+        <field>IsActive__c</field>
         <operation>equals</operation>
         <value>1</value>
     </filters>

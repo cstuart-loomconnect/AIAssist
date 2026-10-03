@@ -263,7 +263,7 @@ private class AIPiiFieldTypeClassifierTest {
       IsComplianceGroupFallback__c = true
     );
     AIPiiComplianceGroup__mdt hipaa = (AIPiiComplianceGroup__mdt) JSON.deserialize(
-      '{"attributes":{"type":"LoomConnect__AIPiiComplianceGroup__mdt"},"Id":"m01000000000001AAA","MasterLabel":"HIPAA","LoomConnect__Active__c":true}',
+      '{"attributes":{"type":"LoomConnect__AIPiiComplianceGroup__mdt"},"Id":"m01000000000001AAA","MasterLabel":"HIPAA","LoomConnect__IsActive__c":true}',
       AIPiiComplianceGroup__mdt.class
     );
     fallback = (AIPiiFieldType__mdt) JSON.deserialize(

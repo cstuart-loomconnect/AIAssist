@@ -1291,4 +1291,14 @@
         <shortDescription>Agent wizard step help: review.</shortDescription>
         <value>Review your choices, then activate the agent.</value>
     </labels>
+    <labels>
+        <fullName>AI_Error_Object_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent object: the object API name does not exist in this org.</shortDescription>
+        <value
+    >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
+    </labels>
 </CustomLabels>

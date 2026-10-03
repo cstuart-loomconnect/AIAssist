@@ -228,6 +228,11 @@ private class AIViolationServiceTest {
     )[0];
     rule.BlockRequest__c = true;
     insert rule;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      agent.Id,
+      new List<AIViolationRule__c>{ rule },
+      true
+    );
     responseContext.aiRules = new List<AIViolationRule__c>{ rule };
     AIViolationService.Inspection inspection;
 
@@ -289,6 +294,11 @@ private class AIViolationServiceTest {
     )[0];
     rule.SignalTag__c = 'EXPORT';
     insert rule;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      agent.Id,
+      new List<AIViolationRule__c>{ rule },
+      true
+    );
     responseContext.aiRules = new List<AIViolationRule__c>{ rule };
     List<Integer> counts = new List<Integer>();
 
@@ -420,8 +430,9 @@ private class AIViolationServiceTest {
     for (AIViolationRule__c rule : rules)
       rule.ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_USAGE_LIMIT_EXCEEDED;
     rules[1].BlockRequest__c = true;
-    rules[2].Active__c = false;
+    rules[2].IsActive__c = false;
     insert rules;
+    AIAssistTestDataFactory.createAIAgentViolationRules(agent.Id, rules, true);
     AIAgent__c otherAgent = AIAssistTestDataFactory.createAIAgents(
       1,
       agent.AIModelConfiguration__c,
@@ -435,6 +446,11 @@ private class AIViolationServiceTest {
     )[0];
     otherRule.ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_USAGE_LIMIT_EXCEEDED;
     insert otherRule;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      otherAgent.Id,
+      new List<AIViolationRule__c>{ otherRule },
+      true
+    );
     Boolean isBlocking;
     Boolean noRule;
 
@@ -507,6 +523,11 @@ private class AIViolationServiceTest {
     )[0];
     rule.ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_PII_MASKING_FAILURE;
     insert rule;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      agent.Id,
+      new List<AIViolationRule__c>{ rule },
+      true
+    );
 
     Test.startTest();
     AIViolationService.recordDeterministicViolation(
