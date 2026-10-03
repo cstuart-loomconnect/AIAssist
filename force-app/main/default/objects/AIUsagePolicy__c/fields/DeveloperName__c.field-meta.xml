@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DeveloperName__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description
+  >A unique, code-friendly identifier for this usage policy, used to match the policy across orgs when configuration is exported and imported.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Set automatically from the name. Keep it stable once other orgs depend on it.</inlineHelpText>
+    <label>Developer Name</label>
+    <length>75</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

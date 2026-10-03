@@ -71,7 +71,7 @@ public with sharing class AIChatContextService {
         FROM AIPIIRegistry__c
         WHERE
           ObjectAPIName__c = :recordContext.objectApiName
-          AND Active__c = TRUE
+          AND IsActive__c = TRUE
           AND SyncStatus__c = :AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED
         WITH SYSTEM_MODE
       ] > 0;

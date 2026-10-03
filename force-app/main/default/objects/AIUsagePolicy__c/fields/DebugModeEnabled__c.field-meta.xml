@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DebugModeEnabled__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Shows users covered by this policy the full request and response detail of each step.</description>
+    <inlineHelpText
+  >Leave off for ordinary users. Where several policies apply, debug mode allowed by any of them is allowed.</inlineHelpText>
+    <label>Debug Mode Enabled</label>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

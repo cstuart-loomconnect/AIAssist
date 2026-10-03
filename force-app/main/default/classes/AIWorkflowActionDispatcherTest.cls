@@ -298,6 +298,11 @@ private class AIWorkflowActionDispatcherTest {
     )[0];
     rule.ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION;
     insert rule;
+    AIAssistTestDataFactory.createAIAgentViolationRules(
+      agent.Id,
+      new List<AIViolationRule__c>{ rule },
+      true
+    );
     userSettings.WorkflowActionsEnabled__c = false;
     update userSettings;
     List<String> codes = new List<String>();

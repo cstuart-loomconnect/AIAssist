@@ -144,7 +144,7 @@
     <compactLayoutAssignment>AIViolationRuleCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >Defines a rule used to detect a guarded behavior or risky intent in an AI-assisted workflow, either by deterministic Apex logic or by AI evaluation. Each rule can trigger violations and optionally block a response.</description>
+  >Defines a rule used to detect a guarded behavior or risky intent in an AI-assisted workflow, either by deterministic Apex logic or by AI evaluation. Each rule can trigger violations and optionally block a response. A rule is defined once and applied to agents through AI Agent Violation Rule records, or to every agent when Applies To All Agents is ticked.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>
@@ -154,7 +154,7 @@
     <enableSearch>true</enableSearch>
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
-    <externalSharingModel>ControlledByParent</externalSharingModel>
+    <externalSharingModel>Private</externalSharingModel>
     <label>AI Violation Rule</label>
     <nameField>
         <label>AI Violation Rule Name</label>
@@ -163,6 +163,6 @@
     </nameField>
     <pluralLabel>AI Violation Rules</pluralLabel>
     <searchLayouts/>
-    <sharingModel>ControlledByParent</sharingModel>
+    <sharingModel>Read</sharingModel>
     <visibility>Public</visibility>
 </CustomObject>

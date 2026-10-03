@@ -232,7 +232,7 @@ private class AIAssistTestDataFactoryTest {
     Assert.isNotNull(piiFields[0].Id, 'The PII field metadata is saved.');
     Assert.isNotNull(mappings[0].Id, 'The PII mapping is saved.');
     Assert.isTrue(
-      rule.Active__c,
+      rule.IsActive__c,
       'The in-memory masking rule is built active.'
     );
   }

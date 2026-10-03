@@ -82,6 +82,11 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String TRACKING_METHOD_PRE_REQUEST_CHECK = 'Pre-Request Usage Check';
 
   // AIAgentAssignment__c.AssigneeType__c
+  // AIUserSettings__c / AIUsagePolicy__c.ConversationVisibilityScope__c
+  public static final String VISIBILITY_SCOPE_OWN = 'My Conversations Only';
+  public static final String VISIBILITY_SCOPE_SUBORDINATES = 'My Subordinates Conversations';
+  public static final String VISIBILITY_SCOPE_ALL = 'All Conversations';
+
   public static final String ASSIGNEE_TYPE_USER = 'User';
   public static final String ASSIGNEE_TYPE_PERMISSION_SET = 'Permission Set';
 

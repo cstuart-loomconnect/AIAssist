@@ -3,7 +3,7 @@
     <fullName>All</fullName>
     <columns>MasterLabel</columns>
     <columns>DeveloperName</columns>
-    <columns>Active__c</columns>
+    <columns>IsActive__c</columns>
     <columns>DisplayOrder__c</columns>
     <columns>MatchField__c</columns>
     <columns>Keyword__c</columns>

@@ -43,7 +43,7 @@ public inherited sharing class AIPiiRegistrySyncDispatcher {
         SELECT Id
         FROM AIPIIRegistry__c
         WHERE
-          Active__c = TRUE
+          IsActive__c = TRUE
           AND (LastSynced__c = NULL
           OR SyncStatus__c = :AIAssistApplicationConstants.PII_SYNC_STATUS_FAILED
           OR (CacheResetDate__c != NULL

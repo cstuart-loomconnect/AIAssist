@@ -27,6 +27,7 @@ that user proves the security model rather than the code alone.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: users without AIAssistUserType__c, usage, assignment, terms and execution step builders, active agents and models that satisfy the validation rules.
+3.0          Chandler Stuart          Violation rules are assigned to an agent through AIAgentViolationRule__c; builders for agent objects, usage policies and their assignments.
 */
 
 @IsTest
@@ -670,7 +671,7 @@ public class AIAssistTestDataFactory {
     return new AIPiiDataMaskingRule__mdt(
       Strategy__c = strategy,
       SubstituteValues__c = substituteValues,
-      Active__c = isActive
+      IsActive__c = isActive
     );
   }
 
@@ -689,8 +690,7 @@ public class AIAssistTestDataFactory {
     for (Integer itemIndex = 0; itemIndex < numberOfRules; itemIndex++) {
       AIViolationRule__c violationRule = new AIViolationRule__c(
         Name = uniqueName('AI Assist Test Violation Rule').left(80),
-        Agent__c = agentId,
-        Active__c = true,
+        IsActive__c = true,
         DetectionMethod__c = detectionMethod,
         ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_AI_FLAGGED_INTENT,
         SignalTag__c = 'TAG_' +
@@ -706,10 +706,111 @@ public class AIAssistTestDataFactory {
       rules.add(violationRule);
     }
 
-    if (shouldDoInsert && !rules.isEmpty())
+    if (shouldDoInsert && !rules.isEmpty()) {
       insert rules;
+      if (agentId != null)
+        createAIAgentViolationRules(agentId, rules, true);
+    }
 
     return rules;
+  }
+
+  // Assigns existing rules to an agent, so the agent applies them.
+  public static List<AIAgentViolationRule__c> createAIAgentViolationRules(
+    Id agentId,
+    List<AIViolationRule__c> rules,
+    Boolean shouldDoInsert
+  ) {
+    List<AIAgentViolationRule__c> links = new List<AIAgentViolationRule__c>();
+    for (AIViolationRule__c rule : rules)
+      links.add(
+        new AIAgentViolationRule__c(
+          AIAgent__c = agentId,
+          AIViolationRule__c = rule.Id,
+          IsActive__c = true
+        )
+      );
+
+    if (shouldDoInsert && !links.isEmpty())
+      insert links;
+
+    return links;
+  }
+
+  // Adds objects to an agent, one record per object API name.
+  public static List<AIAgentObject__c> createAIAgentObjects(
+    Id agentId,
+    List<String> objectApiNames,
+    Boolean shouldDoInsert
+  ) {
+    List<AIAgentObject__c> agentObjects = new List<AIAgentObject__c>();
+    for (String objectApiName : objectApiNames)
+      agentObjects.add(
+        new AIAgentObject__c(
+          AIAgent__c = agentId,
+          ObjectApiName__c = objectApiName,
+          IsActive__c = true
+        )
+      );
+
+    if (shouldDoInsert && !agentObjects.isEmpty())
+      insert agentObjects;
+
+    return agentObjects;
+  }
+
+  public static List<AIUsagePolicy__c> createAIUsagePolicies(
+    Integer numberOfPolicies,
+    Boolean shouldDoInsert
+  ) {
+    List<AIUsagePolicy__c> policies = new List<AIUsagePolicy__c>();
+    for (Integer itemIndex = 0; itemIndex < numberOfPolicies; itemIndex++)
+      policies.add(
+        new AIUsagePolicy__c(
+          Name = uniqueName('AI Assist Test Usage Policy').left(80),
+          IsActive__c = true
+        )
+      );
+
+    if (shouldDoInsert && !policies.isEmpty())
+      insert policies;
+
+    return policies;
+  }
+
+  // Assigns a policy to users (one record each), or to a permission set by name when the user list is null.
+  public static List<AIUsagePolicyAssignment__c> createAIUsagePolicyAssignments(
+    Id policyId,
+    List<User> users,
+    String permissionSetName,
+    Boolean shouldDoInsert
+  ) {
+    List<AIUsagePolicyAssignment__c> assignments = new List<AIUsagePolicyAssignment__c>();
+    if (users != null) {
+      for (User assignedUser : users)
+        assignments.add(
+          new AIUsagePolicyAssignment__c(
+            AIUsagePolicy__c = policyId,
+            AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER,
+            User__c = assignedUser.Id,
+            IsActive__c = true
+          )
+        );
+    } else {
+      assignments.add(
+        new AIUsagePolicyAssignment__c(
+          AIUsagePolicy__c = policyId,
+          AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET,
+          PermissionSetName__c = permissionSetName,
+          IsActive__c = true
+        )
+      );
+    }
+
+    if (shouldDoInsert && !assignments.isEmpty())
+      insert assignments;
+
+    return assignments;
   }
 
   // Violations are written by the package, so they are inserted in system mode.

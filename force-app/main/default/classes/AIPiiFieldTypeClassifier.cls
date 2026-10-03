@@ -58,7 +58,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
             ComplianceGroup__c,
             IsComplianceGroupFallback__c
           FROM AIPiiFieldType__mdt
-          WHERE Active__c = TRUE
+          WHERE IsActive__c = TRUE
           WITH SYSTEM_MODE
           ORDER BY DisplayOrder__c ASC
         ];
@@ -67,7 +67,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
       if (complianceGroupsById == null) {
         complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>(
           [
-            SELECT MasterLabel, Active__c
+            SELECT MasterLabel, IsActive__c
             FROM AIPiiComplianceGroup__mdt
             WITH SYSTEM_MODE
           ]
@@ -116,7 +116,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
           );
           if (
             fieldGroup != null &&
-            fieldGroup.Active__c == true &&
+            fieldGroup.IsActive__c == true &&
             complianceGroup.equalsIgnoreCase(fieldGroup.MasterLabel)
           )
             fallback = fieldType;

@@ -28,6 +28,7 @@ exists. The checks that need data the user cannot read go through AIMessagingSel
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the first half of AIMessageGuard.
+2.0          Chandler Stuart          The agent/object check also honours objects added through AIAgentObject__c.
 */
 
 public inherited sharing class AIMessageValidator {
@@ -188,13 +189,12 @@ public inherited sharing class AIMessageValidator {
         );
       }
 
-      // An agent built for one kind of record is not offered for another.
+      // An agent built for one kind of record is not offered for another. It is built for the object on the agent itself and for any added to it.
       if (
-        String.isNotBlank(chatContext.agent.ObjectType__c) &&
-        !chatContext.agent.ObjectType__c.equalsIgnoreCase(
-          relatedRecordType.getName()
-        ) &&
-        !chatContext.agent.ObjectType__c.equalsIgnoreCase(
+        !AIMessagingSelector.agentSupportsObject(
+          chatContext.agent.Id,
+          chatContext.agent.ObjectType__c,
+          relatedRecordType.getName(),
           relatedRecordType.getLocalName()
         )
       ) {

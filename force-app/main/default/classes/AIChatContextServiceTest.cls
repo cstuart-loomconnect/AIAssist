@@ -68,7 +68,7 @@ private class AIChatContextServiceTest {
       'Account',
       false
     )[0];
-    registry.Active__c = true;
+    registry.IsActive__c = true;
     registry.SyncStatus__c = AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED;
     insert registry;
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsDefault__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Applies this policy to every user who is not covered by another active policy assignment.</description>
+    <inlineHelpText
+  >Tick this for the policy that should apply to everyone who has no assignment of their own.</inlineHelpText>
+    <label>Is Default</label>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

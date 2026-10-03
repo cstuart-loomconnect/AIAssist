@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIAgent__c</fullName>
+    <description>The Agent that can run against this object.</description>
+    <inlineHelpText
+  >This record is deleted automatically if the Agent is deleted.</inlineHelpText>
+    <label>AI Agent</label>
+    <referenceTo>AIAgent__c</referenceTo>
+    <relationshipLabel>AI Agent Objects</relationshipLabel>
+    <relationshipName>AIAgentObjects</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

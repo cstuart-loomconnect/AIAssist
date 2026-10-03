@@ -129,7 +129,7 @@ private class AIViolationRuleTriggerHandlerTest {
       AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED,
       false
     )[0];
-    rule.Active__c = false;
+    rule.IsActive__c = false;
     AIPlanLimitService.setLimitForTest(
       AIAssistApplicationConstants.FEATURE_AI_EVALUATED_RULES_ALLOWED,
       false
@@ -139,7 +139,7 @@ private class AIViolationRuleTriggerHandlerTest {
     Test.startTest();
     insert rule;
     activation = Database.update(
-      new AIViolationRule__c(Id = rule.Id, Active__c = true),
+      new AIViolationRule__c(Id = rule.Id, IsActive__c = true),
       false
     );
     Test.stopTest();
