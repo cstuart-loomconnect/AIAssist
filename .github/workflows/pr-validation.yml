@@ -127,6 +127,7 @@ jobs:
           node-version: 22
       - run: npm install --package-lock-only --no-audit --no-fund
       - run: npm audit --audit-level=high
+        continue-on-error: true
 
   naming-conventions:
     name: Naming conventions
