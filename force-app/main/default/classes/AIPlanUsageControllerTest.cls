@@ -40,15 +40,16 @@ private class AIPlanUsageControllerTest {
   private static void storeUsage(Decimal monthMessages, Decimal monthTokens) {
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.OrgUsageStateJson__c =
-      '{"day":"' +
+      '{"since":"' +
       String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
-      '","dayMessages":0,"dayTokens":0,"monthMessages":' +
+      '","messages":' +
       monthMessages +
-      ',"monthTokens":' +
+      ',"tokens":' +
       monthTokens +
       '}';
     update settings;
     AIAssistSettingsService.clearCache();
+    AIOrgUsageService.forgetForTransaction();
   }
 
   private static Map<String, AIPlanUsageController.Allowance> byName(

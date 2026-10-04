@@ -150,7 +150,7 @@ public inherited sharing class AIUsageLimitService {
       dailyBudget != null ||
       dailyMessageBudget != null
     ) {
-      // The running totals AI Assist keeps (AIOrgUsageService), not a sum of the month's usage rows on every send.
+      // The stored closed days and today's usage rows (AIOrgUsageService), not a sum of the month's usage rows on every send.
       AIMessagingSelector.OrgUsage orgUsage = AIOrgUsageService.getUsage();
 
       if (messageLimit != null && orgUsage.month.messages >= messageLimit)

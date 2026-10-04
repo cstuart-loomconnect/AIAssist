@@ -4,116 +4,84 @@ Class Name: AIOrgUsageService
 =================================================================
 =================================================================
 
-Description: The organisation's running usage totals for the current day and the current month:
-messages and tokens. They are kept in AIAssistSettings__c.OrgUsageStateJson__c so that the limit check
-on every send (AIUsageLimitService) reads one value instead of adding up every AIUsageDaily__c row, which
-in a busy org is tens of thousands of rows and past the query row limit.
+Description: The organisation's usage totals for the current day and the current month: messages and
+tokens. The limit check on every send (AIUsageLimitService) reads them from here.
 
-Kept current two ways:
-[1] Every write to a usage row (AIMessagingDataService.addToDailyUsage, in the job that ran the turn or
-    its finalizer) adds the same amounts here, under a lock on the settings row.
-[2] The maintenance job recalculates the totals exactly from the usage rows (AIOrgUsageTotalsBatch) and
-    replaces what is stored, which corrects anything [1] missed.
+A SUM over AIUsageDaily__c counts every row it adds up against the query row limit, so the month is never
+added up on a send. The total has two parts:
+[1] The month's closed days (every day before today), counted exactly by the maintenance job
+    (AIOrgUsageTotalsBatch) and stored in AIAssistSettings__c.OrgUsageStateJson__c with the day they
+    were counted up to. Written once a night, never by a turn.
+[2] The days since then, normally today alone, added up from the usage rows by one grouped query.
 
-A total for a day or month that has passed counts as zero: the day and month it belongs to are stored
-with it. Until the totals have been stored once (a new install, or no settings row), they are read from
-the usage rows the old way, so a limit is never skipped.
+The result is kept for USAGE_CACHE_TTL_SECONDS in the org cache partition the subscriber may have created
+(AISchemaHelper.PARTITION_NAME), and for the rest of the transaction in any case. Nothing is written or
+locked when a turn ends, so turns ending together do not wait for each other; the totals can be up to
+that many seconds behind, which a plan limit can bear.
 
-"Today" is the day in the org's time zone, as on the usage rows. Nothing here throws: usage bookkeeping must never fail the
-turn it describes.
+Until the maintenance job has stored [1] (a new install, no settings row, a value that cannot be read,
+or one for a month that has passed), [2] covers the whole month so far, so a limit is never skipped.
+
+"Today" is the day in the org's time zone, as on the usage rows.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          No write or lock per turn: closed days are stored nightly, today is counted from the usage rows and cached.
 */
 
 public inherited sharing class AIOrgUsageService {
-  // What is stored. Short names because the field holds 255 characters.
+  public static final Integer USAGE_CACHE_TTL_SECONDS = 60;
+  private static final String CACHE_KEY_PREFIX = 'orgusage'; // Cache keys must be alphanumeric.
+
+  // What is stored: this month's totals for the days before "since". Short names because the field holds 255 characters.
   @TestVisible
   private class State {
-    String day; // yyyy-MM-dd, in the org's time zone
-    Decimal dayMessages = 0;
-    Decimal dayTokens = 0;
-    Decimal monthMessages = 0;
-    Decimal monthTokens = 0;
+    String since; // yyyy-MM-dd, in the org's time zone: the first day that is not in the totals.
+    Decimal messages = 0;
+    Decimal tokens = 0;
   }
 
-  // The totals for today and this month. Reads no usage row once the totals have been stored.
+  // Not in a test unless the test supplies one: an org's own partition would carry totals from one test into the next.
+  @TestVisible
+  private static AISchemaHelper.ICache persistentCache = Test.isRunningTest()
+    ? null
+    : new AISchemaHelper.OrgPartitionCache();
+  private static AIMessagingSelector.OrgUsage transactionUsage;
+  private static Date transactionUsageDay;
+
+  // The totals for today and this month, at most USAGE_CACHE_TTL_SECONDS old.
   public static AIMessagingSelector.OrgUsage getUsage() {
     Date today = AIAssistGlobalUtility.getOrgToday();
-    State state = parse(
-      AIAssistSettingsService.getSettings().OrgUsageStateJson__c
-    );
 
-    if (state == null)
-      return AIMessagingSelector.getOrganisationUsage(today);
+    if (transactionUsage == null || transactionUsageDay != today) {
+      String cacheKey = cacheKey(today);
+      AIMessagingSelector.OrgUsage orgUsage = readCached(cacheKey);
 
-    return toUsage(rollForward(state, today));
-  }
-
-  // Adds one write to a usage row to the totals. The settings row is locked so two turns ending together both count. Never throws.
-  public static void add(AIMessagingDataService.UsageDelta usageDelta) {
-    try {
-      if (usageDelta == null)
-        return;
-
-      Date today = AIAssistGlobalUtility.getOrgToday();
-      List<AIAssistSettings__c> settingsRows = [
-        SELECT Id, OrgUsageStateJson__c
-        FROM AIAssistSettings__c
-        WHERE SetupOwnerId = :UserInfo.getOrganizationId()
-        WITH SYSTEM_MODE
-        LIMIT 1
-        FOR UPDATE
-      ];
-      if (settingsRows.isEmpty())
-        return; // No settings row to keep the totals in: they are read from the usage rows instead.
-
-      State state = parse(settingsRows[0].OrgUsageStateJson__c);
-      if (state == null) {
-        // First use: start from what the usage rows say, which already includes this write.
-        AIMessagingSelector.OrgUsage counted = AIMessagingSelector.getOrganisationUsage(
-          today
-        );
-        save(
-          settingsRows[0].Id,
-          today,
-          counted.today.messages,
-          counted.today.tokens,
-          counted.month.messages,
-          counted.month.tokens
-        );
-        return;
+      if (orgUsage == null) {
+        orgUsage = count(today);
+        writeCached(cacheKey, orgUsage);
       }
 
-      state = rollForward(state, today);
-      Decimal tokens =
-        (usageDelta.inputTokens == null ? 0 : usageDelta.inputTokens) +
-        (usageDelta.outputTokens == null ? 0 : usageDelta.outputTokens);
-      Integer messages = usageDelta.messages == null ? 0 : usageDelta.messages;
-      save(
-        settingsRows[0].Id,
-        today,
-        state.dayMessages + messages,
-        state.dayTokens + tokens,
-        state.monthMessages + messages,
-        state.monthTokens + tokens
-      );
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIOrgUsageService',
-        'add'
-      );
+      transactionUsage = orgUsage;
+      transactionUsageDay = today;
     }
+
+    return copy(transactionUsage);
   }
 
-  // Replaces the stored totals with ones counted exactly from the usage rows (AIOrgUsageTotalsBatch). Never throws.
+  // After this transaction has written usage, its next read counts again instead of using its own earlier answer.
+  public static void forgetForTransaction() {
+    transactionUsage = null;
+    transactionUsageDay = null;
+  }
+
+  // Stores this month's totals for the days before countedBefore, counted exactly from the usage rows (AIOrgUsageTotalsBatch). Never throws.
   public static void replace(
-    Date countedOn,
-    AIMessagingSelector.OrgUsage counted
+    Date countedBefore,
+    AIMessagingSelector.UsageTotals closedDays
   ) {
     try {
       List<AIAssistSettings__c> settingsRows = [
@@ -122,19 +90,26 @@ public inherited sharing class AIOrgUsageService {
         WHERE SetupOwnerId = :UserInfo.getOrganizationId()
         WITH SYSTEM_MODE
         LIMIT 1
-        FOR UPDATE
       ];
       if (settingsRows.isEmpty())
-        return;
+        return; // No settings row to keep them in: the whole month is counted from the usage rows instead.
 
-      save(
-        settingsRows[0].Id,
-        countedOn,
-        counted.today.messages,
-        counted.today.tokens,
-        counted.month.messages,
-        counted.month.tokens
+      State state = new State();
+      state.since = String.valueOf(countedBefore);
+      state.messages = closedDays.messages;
+      state.tokens = closedDays.tokens;
+
+      Database.update(
+        new AIAssistSettings__c(
+          Id = settingsRows[0].Id,
+          OrgUsageStateJson__c = JSON.serialize(state)
+        ),
+        true,
+        AccessLevel.SYSTEM_MODE
       );
+      AIAssistSettingsService.clearCache();
+      forgetForTransaction();
+      clearCached(cacheKey(AIAssistGlobalUtility.getOrgToday()));
     } catch (Exception caughtException) {
       AIPlatformLogManager.logException(
         caughtException,
@@ -144,69 +119,111 @@ public inherited sharing class AIOrgUsageService {
     }
   }
 
-  private static void save(
-    Id settingsId,
-    Date day,
-    Decimal dayMessages,
-    Decimal dayTokens,
-    Decimal monthMessages,
-    Decimal monthTokens
-  ) {
-    State state = new State();
-    state.day = String.valueOf(day);
-    state.dayMessages = dayMessages;
-    state.dayTokens = dayTokens;
-    state.monthMessages = monthMessages;
-    state.monthTokens = monthTokens;
-
-    Database.update(
-      new AIAssistSettings__c(
-        Id = settingsId,
-        OrgUsageStateJson__c = JSON.serialize(state)
-      ),
-      true,
-      AccessLevel.SYSTEM_MODE
+  // The stored closed days, when they are of this month, and the usage rows of every day since.
+  private static AIMessagingSelector.OrgUsage count(Date today) {
+    Date monthStart = today.toStartOfMonth();
+    Date countFrom = monthStart;
+    State state = parse(
+      AIAssistSettingsService.getSettings().OrgUsageStateJson__c
     );
-    AIAssistSettingsService.clearCache();
+
+    if (state != null) {
+      Date storedSince = Date.valueOf(state.since);
+      // A value for a month that has passed, or for a day still to come, says nothing about this month.
+      if (storedSince >= monthStart && storedSince <= today)
+        countFrom = storedSince;
+      else
+        state = null;
+    }
+
+    AIMessagingSelector.OrgUsage orgUsage = AIMessagingSelector.getOrganisationUsage(
+      today,
+      countFrom
+    );
+    if (state != null) {
+      orgUsage.month.messages += state.messages == null ? 0 : state.messages;
+      orgUsage.month.tokens += state.tokens == null ? 0 : state.tokens;
+    }
+
+    return orgUsage;
   }
 
-  // Null for a blank or malformed value: the totals have never been stored.
+  // Null for a blank or malformed value: the closed days have never been stored.
   private static State parse(String stored) {
     if (String.isBlank(stored))
       return null;
 
     try {
       State state = (State) JSON.deserialize(stored, State.class);
-      return state == null || String.isBlank(state.day) ? null : state;
+      if (state == null || String.isBlank(state.since))
+        return null;
+
+      Date.valueOf(state.since);
+      return state;
     } catch (Exception malformed) {
       return null;
     }
   }
 
-  // A stored day that has passed leaves nothing for today, and a stored month that has passed leaves nothing for this month.
-  private static State rollForward(State state, Date today) {
-    Date storedDay = Date.valueOf(state.day);
-
-    if (storedDay != today) {
-      state.dayMessages = 0;
-      state.dayTokens = 0;
-    }
-    if (storedDay.toStartOfMonth() != today.toStartOfMonth()) {
-      state.monthMessages = 0;
-      state.monthTokens = 0;
-    }
-    state.day = String.valueOf(today);
-
-    return state;
+  private static String cacheKey(Date day) {
+    return CACHE_KEY_PREFIX +
+      Datetime.newInstanceGmt(day.year(), day.month(), day.day())
+        .formatGmt('yyyyMMdd');
   }
 
-  private static AIMessagingSelector.OrgUsage toUsage(State state) {
-    AIMessagingSelector.OrgUsage orgUsage = new AIMessagingSelector.OrgUsage();
-    orgUsage.today.messages = state.dayMessages;
-    orgUsage.today.tokens = state.dayTokens;
-    orgUsage.month.messages = state.monthMessages;
-    orgUsage.month.tokens = state.monthTokens;
+  // A cache that is missing, full or unreadable just means counting.
+  private static AIMessagingSelector.OrgUsage readCached(String cacheKey) {
+    try {
+      String cachedJson = persistentCache == null
+        ? null
+        : persistentCache.get(cacheKey);
 
-    return orgUsage;
+      return String.isBlank(cachedJson)
+        ? null
+        : (AIMessagingSelector.OrgUsage) JSON.deserialize(
+            cachedJson,
+            AIMessagingSelector.OrgUsage.class
+          );
+    } catch (Exception cacheReadFailure) {
+      return null;
+    }
+  }
+
+  private static void writeCached(
+    String cacheKey,
+    AIMessagingSelector.OrgUsage orgUsage
+  ) {
+    try {
+      if (persistentCache != null)
+        persistentCache.put(
+          cacheKey,
+          JSON.serialize(orgUsage),
+          USAGE_CACHE_TTL_SECONDS
+        );
+    } catch (Exception cacheWriteFailure) {
+      persistentCache = null; // No capacity or no partition: once per transaction instead.
+    }
+  }
+
+  private static void clearCached(String cacheKey) {
+    try {
+      if (persistentCache != null)
+        persistentCache.clear(cacheKey);
+    } catch (Exception cacheClearFailure) {
+      persistentCache = null;
+    }
+  }
+
+  // A caller gets totals of its own, so changing them cannot change what the next caller reads.
+  private static AIMessagingSelector.OrgUsage copy(
+    AIMessagingSelector.OrgUsage orgUsage
+  ) {
+    AIMessagingSelector.OrgUsage copied = new AIMessagingSelector.OrgUsage();
+    copied.month.messages = orgUsage.month.messages;
+    copied.month.tokens = orgUsage.month.tokens;
+    copied.today.messages = orgUsage.today.messages;
+    copied.today.tokens = orgUsage.today.tokens;
+
+    return copied;
   }
 }

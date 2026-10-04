@@ -3,7 +3,7 @@
     <fullName>IsAwaitingCapacity__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >Set by AI Assist on a user message that was sent while the org-wide cap on messages in flight was reached. The message stays Queued and is started when a place is free.</description>
+  >Set by AI Assist on a user message that was sent while the org-wide cap on messages in flight was reached. The message stays Queued and is started when a place is free, or failed as Service Busy when none is within a few minutes.</description>
     <inlineHelpText
   >Checked while the message waits for a free place under the org-wide cap. Set automatically.</inlineHelpText>
     <label>Is Awaiting Capacity</label>

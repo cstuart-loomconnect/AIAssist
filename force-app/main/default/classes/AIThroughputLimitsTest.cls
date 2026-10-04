@@ -23,6 +23,7 @@ private class AIThroughputLimitsTest {
   // testScenario3: A user at the messages-per-minute limit is refused, and another user is not.
   // testScenario4: A message longer than the configured maximum is refused, and one at the maximum is accepted.
   // testScenario5: The daily message budget refuses once the day's messages reach it.
+  // testScenario6: A message that has waited at the cap for longer than the timeout is failed as Service Busy by any user's poll or by the maintenance job, is not started afterwards, and one still inside the timeout is left waiting.
 
   @TestSetup
   static void setup() {
@@ -253,12 +254,17 @@ private class AIThroughputLimitsTest {
     World world = createWorld();
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.DailyMessageBudget__c = 100;
-    settings.OrgUsageStateJson__c =
-      '{"day":"' +
-      String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
-      '","dayMessages":99,"dayTokens":0,"monthMessages":99,"monthTokens":0}';
     update settings;
     AIAssistSettingsService.clearCache();
+    AIUsageDaily__c usedToday = AIAssistTestDataFactory.createAIUsageDailies(
+      world.users[1].Id,
+      world.agent.Id,
+      null,
+      1,
+      false
+    )[0];
+    usedToday.MessageCount__c = 99;
+    insert usedToday;
     String underBudget;
     String atBudget;
 
@@ -266,12 +272,9 @@ private class AIThroughputLimitsTest {
     System.runAs(world.users[0]) {
       underBudget = refusalCode(world, 'The hundredth');
     }
-    settings.OrgUsageStateJson__c = settings.OrgUsageStateJson__c.replace(
-      '"dayMessages":99',
-      '"dayMessages":100'
-    );
-    update settings;
-    AIAssistSettingsService.clearCache();
+    usedToday.MessageCount__c = 100;
+    update usedToday;
+    AIOrgUsageService.forgetForTransaction();
     System.runAs(world.users[0]) {
       atBudget = refusalCode(world, 'One too many');
     }
@@ -282,6 +285,107 @@ private class AIThroughputLimitsTest {
       AIAssistApplicationConstants.ERROR_DAILY_MESSAGE_BUDGET,
       atBudget,
       'The budget for the day is used up.'
+    );
+  }
+
+  @IsTest
+  static void testScenario6() {
+    World world = createWorld();
+    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
+      world.agent.Id,
+      world.users[0].Id,
+      3,
+      true
+    );
+    List<AIConversationMessage__c> waiting = new List<AIConversationMessage__c>();
+    System.runAs(world.users[0]) {
+      for (AIConversation__c conversation : conversations) {
+        AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
+          conversation.Id,
+          0,
+          1,
+          false
+        )[0];
+        message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+        message.IsAwaitingCapacity__c = true;
+        waiting.add(message);
+      }
+      AIMessagingDataService.insertAsPackage(waiting);
+    }
+    Datetime longAgo = System.now()
+      .addMinutes(
+        -AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES - 1
+      );
+    Test.setCreatedDate(waiting[0].Id, longAgo);
+    Test.setCreatedDate(waiting[1].Id, longAgo.addDays(-3));
+    configure('MaxMessagesInFlight__c', 5);
+    Boolean startedByAnother;
+    Boolean startedBySender;
+    Integer failedByMaintenance;
+
+    Test.startTest();
+    AIUsageLimitService.inFlightForTest = 5;
+    System.runAs(world.users[1]) {
+      startedByAnother = AIConversationMessageService.startHeldMessage();
+    }
+    Map<Id, AIConversationMessage__c> afterPoll = new Map<Id, AIConversationMessage__c>(
+      [
+        SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c
+        FROM AIConversationMessage__c
+        WHERE Id IN :waiting
+      ]
+    );
+    failedByMaintenance = AIConversationMessageService.failExpiredHeldMessages(
+      false
+    );
+    AIUsageLimitService.inFlightForTest = null;
+    System.runAs(world.users[0]) {
+      startedBySender = AIConversationMessageService.startHeldMessage();
+    }
+    Test.stopTest();
+
+    Map<Id, AIConversationMessage__c> afterAll = new Map<Id, AIConversationMessage__c>(
+      [
+        SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c
+        FROM AIConversationMessage__c
+        WHERE Id IN :waiting
+      ]
+    );
+    Assert.isFalse(startedByAnother, 'Another user starts nothing.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+      afterPoll.get(waiting[0].Id).ProcessingStatus__c,
+      'But their poll fails the message that waited too long.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY,
+      afterPoll.get(waiting[0].Id).FailureReason__c,
+      'As busy, which offers Try again.'
+    );
+    Assert.isFalse(
+      afterPoll.get(waiting[0].Id).IsAwaitingCapacity__c,
+      'No longer waiting.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
+      afterPoll.get(waiting[1].Id).ProcessingStatus__c,
+      'A poll looks at the last day only.'
+    );
+    Assert.areEqual(1, failedByMaintenance, 'The maintenance job at them all.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+      afterAll.get(waiting[1].Id).ProcessingStatus__c,
+      'The one from three days ago.'
+    );
+    Assert.isTrue(startedBySender, 'The message inside the timeout started.');
+    Assert.isFalse(
+      afterAll.get(waiting[2].Id).IsAwaitingCapacity__c,
+      'It is the one that was started.'
+    );
+    Assert.areNotEqual(
+      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+      afterAll.get(waiting[2].Id).ProcessingStatus__c,
+      'And it was not failed.'
     );
   }
 }

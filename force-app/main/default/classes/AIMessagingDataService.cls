@@ -154,7 +154,7 @@ public without sharing class AIMessagingDataService {
         AccessLevel.SYSTEM_MODE
       );
       if (insertResult.isSuccess()) {
-        AIOrgUsageService.add(usageDelta);
+        AIOrgUsageService.forgetForTransaction();
         return;
       }
 
@@ -190,7 +190,7 @@ public without sharing class AIMessagingDataService {
       usageDelta.outputTokens;
 
     updateAsPackage(new List<SObject>{ usageRow });
-    AIOrgUsageService.add(usageDelta);
+    AIOrgUsageService.forgetForTransaction();
   }
 
   private static void write(

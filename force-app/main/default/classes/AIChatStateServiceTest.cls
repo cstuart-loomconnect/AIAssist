@@ -262,11 +262,12 @@ private class AIChatStateServiceTest {
     AIChatStateService.setBlockedState(usageContext);
 
     settings.OrgUsageStateJson__c =
-      '{"day":"' +
+      '{"since":"' +
       String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
-      '","dayMessages":0,"dayTokens":0,"monthMessages":100,"monthTokens":500}';
+      '","messages":100,"tokens":500}';
     update settings;
     AIAssistSettingsService.clearCache();
+    AIOrgUsageService.forgetForTransaction();
     AIPlanLimitService.setLimitForTest(
       AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
       100
@@ -363,11 +364,12 @@ private class AIChatStateServiceTest {
     );
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.OrgUsageStateJson__c =
-      '{"day":"' +
+      '{"since":"' +
       String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
-      '","dayMessages":0,"dayTokens":0,"monthMessages":850,"monthTokens":0}';
+      '","messages":850,"tokens":0}';
     update settings;
     AIAssistSettingsService.clearCache();
+    AIOrgUsageService.forgetForTransaction();
     String ready = AIAssistApplicationConstants.CHAT_STATE_READY;
 
     Test.startTest();

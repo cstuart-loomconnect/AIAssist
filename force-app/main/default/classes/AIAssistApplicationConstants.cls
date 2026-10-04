@@ -129,6 +129,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String FAILURE_REASON_AUTHENTICATION_FAILED = 'Authentication Failed';
   public static final String FAILURE_REASON_MODEL_RETIRED = 'Model Retired';
   public static final String FAILURE_REASON_RATE_LIMITED = 'Rate Limited';
+  public static final String FAILURE_REASON_SERVICE_BUSY = 'Service Busy'; // Held at the cap on messages in flight for too long, and never started.
   // HTTP statuses that will fail the same way however often they are sent again. Never retried, whatever AIAssistSettings__c.RetryableStatusCodes__c says.
   public static final Set<Integer> NEVER_RETRIED_STATUS_CODES = new Set<Integer>{
     400,
@@ -428,6 +429,8 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer DEFAULT_MAX_PII_FIELDS_TO_QUERY = 200;
   public static final Integer MAX_PII_REGISTRIES_PER_RUN = 20; // One queueable syncs them all, so this bounds its queries and DML.
   public static final Integer HOUSEKEEPING_BATCH_SIZE = 200;
+  public static final Integer HELD_MESSAGE_TIMEOUT_MINUTES = 5; // How long a message waits for a place under the cap on messages in flight before it is failed.
+  public static final Integer HELD_MESSAGE_SWEEP_SIZE = 20; // How many are failed in one go: each tells its chat window.
   public static final Integer DATA_DELETION_BATCH_SIZE = 100; // Each conversation takes its messages, steps and mappings with it.
 
   public static final String DELETION_STATUS_REQUESTED = 'Requested';

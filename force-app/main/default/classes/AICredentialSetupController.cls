@@ -266,11 +266,15 @@ public with sharing class AICredentialSetupController {
             )
           : accessSets[0];
         if (accessSet.Id == null)
-          insert accessSet;
+          Database.insert(accessSet, true, AccessLevel.SYSTEM_MODE);
 
-        insert new SetupEntityAccess(
-          ParentId = accessSet.Id,
-          SetupEntityId = principalId
+        Database.insert(
+          new SetupEntityAccess(
+            ParentId = accessSet.Id,
+            SetupEntityId = principalId
+          ),
+          true,
+          AccessLevel.SYSTEM_MODE
         );
         result.permissionSetName = accessSet.Name;
       }

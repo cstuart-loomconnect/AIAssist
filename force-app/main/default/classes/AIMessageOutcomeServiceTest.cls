@@ -536,6 +536,7 @@ private class AIMessageOutcomeServiceTest {
       AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED => Label.AI_Error_Provider_Authentication,
       AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED => Label.AI_Error_Provider_Model_Retired,
       AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED => Label.AI_Error_Provider_Rate_Limited,
+      AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY => Label.AI_Error_Service_Busy,
       AIAssistApplicationConstants.FAILURE_REASON_OTHER => Label.AI_Error_Generic
     };
     Map<String, String> actual = new Map<String, String>();

@@ -811,16 +811,20 @@ public without sharing class AIMessagingSelector {
     return totals;
   }
 
-  // One grouped query (at most 31 rows) gives the month and the day. CreatedDate is the indexed filter that keeps it selective as the table grows: a row is created on the first use of its day, so a month's rows are always created inside that month.
+  // The month so far and the day, added up from every usage row of the month.
   public static OrgUsage getOrganisationUsage(Date today) {
+    return getOrganisationUsage(today, today.toStartOfMonth());
+  }
+
+  // One grouped query gives the usage from countFrom (a day of this month) to today, and today's on its own. Every row it adds up counts against the query row limit, so a caller on a send passes a recent day (AIOrgUsageService). CreatedDate is the indexed filter that keeps it selective as the table grows: a row is created on the first use of its day, so the rows of a day are never created before it.
+  public static OrgUsage getOrganisationUsage(Date today, Date countFrom) {
     OrgUsage orgUsage = new OrgUsage();
 
-    Date monthStart = Date.newInstance(today.year(), today.month(), 1);
-    // A day early: the month starts at the org's midnight, which can be up to 14 hours before the UTC one. UsageDate__c is the exact filter.
-    Datetime monthStartDatetime = Datetime.newInstanceGmt(
-        monthStart.year(),
-        monthStart.month(),
-        monthStart.day()
+    // A day early: the day starts at the org's midnight, which can be up to 14 hours before the UTC one. UsageDate__c is the exact filter.
+    Datetime countFromDatetime = Datetime.newInstanceGmt(
+        countFrom.year(),
+        countFrom.month(),
+        countFrom.day()
       )
       .addDays(-1);
 
@@ -831,7 +835,7 @@ public without sharing class AIMessagingSelector {
         SUM(InputTokens__c) inputTokens,
         SUM(OutputTokens__c) outputTokens
       FROM AIUsageDaily__c
-      WHERE CreatedDate >= :monthStartDatetime AND UsageDate__c >= :monthStart
+      WHERE CreatedDate >= :countFromDatetime AND UsageDate__c >= :countFrom
       WITH SYSTEM_MODE
       GROUP BY UsageDate__c
     ]) {
@@ -894,6 +898,30 @@ public without sharing class AIMessagingSelector {
         AND Status IN ('Queued', 'Preparing', 'Processing')
         AND CreatedDate >= :oneDayAgo
       WITH SYSTEM_MODE
+    ];
+  }
+
+  // Messages still held at the cap on messages in flight that were sent before heldBefore, whoever sent them. heldSince, when given, keeps the query to a range of the CreatedDate index. Locked and read again by the caller's check, so one its sender is starting at this moment is seen as it ends up.
+  public static List<AIConversationMessage__c> lockExpiredHeldMessages(
+    Datetime heldBefore,
+    Datetime heldSince,
+    Integer maximum
+  ) {
+    Datetime earliest = heldSince == null
+      ? Datetime.newInstanceGmt(2000, 1, 1)
+      : heldSince;
+
+    return [
+      SELECT Id, AIConversation__c, IsAwaitingCapacity__c, ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE
+        IsAwaitingCapacity__c = TRUE
+        AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+        AND CreatedDate < :heldBefore
+        AND CreatedDate >= :earliest
+      WITH SYSTEM_MODE
+      LIMIT :maximum
+      FOR UPDATE
     ];
   }
 

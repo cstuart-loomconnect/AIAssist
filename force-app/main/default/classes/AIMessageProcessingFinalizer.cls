@@ -22,7 +22,8 @@ once and always:
 [4] Otherwise hand the lock on: start the user's newest message if one arrived during this turn,
     or release it.
 [5] With nothing to hand on, start a message of the same user's that was held at the org-wide cap on
-    messages in flight (AIConversationMessageService.startHeldMessage).
+    messages in flight (AIConversationMessageService.startHeldMessage), after failing any user's
+    message that has waited there too long.
 
 If the next job cannot be enqueued (the org is at its asynchronous limit, or this is a trial or
 developer org, where chained jobs stop at a fixed depth), the finalizer does not leave the user
