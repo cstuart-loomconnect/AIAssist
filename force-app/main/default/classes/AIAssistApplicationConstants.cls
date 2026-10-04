@@ -494,6 +494,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String STEP_CAPTURE_OFF = 'Off';
   public static final String STEP_CAPTURE_SUMMARY = 'Summary';
   public static final String STEP_CAPTURE_FULL = 'Full';
+  public static final Integer CONNECTION_TEST_TIMEOUT_MILLISECONDS = 20000;
   public static final Integer LIMIT_HARD_FLOOR_PAUSED_PERCENT = 95; // A feature pauses at this share of any limit whatever the settings say.
   public static final Integer LIMIT_MINIMUM_SHARE_PERCENT = 5; // A share budget below this would pause AI Assist almost at once.
   public static final Integer APP_FOOTPRINT_REFRESH_MINUTES = 60; // How often AI Assist's own usage is measured outside the maintenance job.
@@ -519,6 +520,17 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String CHAT_STATE_CHANNEL_DISABLED = 'CHANNEL_DISABLED';
   public static final String CHAT_STATE_NO_AGENT = 'NO_AGENT';
   public static final String CHAT_STATE_TERMS = 'TERMS';
+  // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
+  public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
+  public static final String CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED = 'SANDBOX_NOT_ACTIVATED';
+  public static final String CHAT_BLOCKED_PAUSED = 'PAUSED';
+  public static final String CHAT_BLOCKED_BUSY = 'BUSY';
+  public static final String CHAT_BLOCKED_NO_LICENCE = 'NO_LICENCE';
+  public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
+  public static final String CHAT_BLOCKED_TERMS = 'TERMS';
+  public static final String CHAT_BLOCKED_USAGE_LIMIT = 'USAGE_LIMIT';
+  public static final String CHAT_BLOCKED_PLAN_CAP = 'PLAN_CAP';
+  public static final Integer PLAN_CAP_WARNING_PERCENT = 80; // The chat window warns once this much of a monthly allowance is used.
   public static final String CHAT_SEND_STATUS_SENT = 'SENT';
   public static final String CHAT_SEND_STATUS_BLOCKED = 'BLOCKED';
   public static final String CHAT_SEND_STATUS_LIMIT = 'LIMIT';

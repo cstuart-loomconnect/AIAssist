@@ -616,12 +616,11 @@ private class AIMessagingSelectorTest {
       model.Id,
       false
     );
-    agents[0].ObjectType__c = 'Account'; // Added to Contact as well.
-    // agents[1] is general; agents[2] has no Object Type and is added to Contact only.
+    // agents[0] is for Account and Contact; agents[1] is general; agents[2] is for Contact only.
     insert agents;
     AIAssistTestDataFactory.createAIAgentObjects(
       agents[0].Id,
-      new List<String>{ 'Contact' },
+      new List<String>{ 'Account', 'Contact' },
       true
     );
     AIAssistTestDataFactory.createAIAgentObjects(
@@ -655,30 +654,25 @@ private class AIMessagingSelectorTest {
     Boolean ownType = AIMessagingSelector.agentSupportsObject(
       agents[0].Id,
       'Account',
-      'Account',
       'Account'
     );
     Boolean addedType = AIMessagingSelector.agentSupportsObject(
       agents[0].Id,
-      'Account',
       'Contact',
       'Contact'
     );
     Boolean otherType = AIMessagingSelector.agentSupportsObject(
       agents[0].Id,
-      'Account',
       'Case',
       'Case'
     );
     Boolean general = AIMessagingSelector.agentSupportsObject(
       agents[1].Id,
-      null,
       'Case',
       'Case'
     );
     Boolean addedOnly = AIMessagingSelector.agentSupportsObject(
       agents[2].Id,
-      null,
       'Case',
       'Case'
     );
@@ -692,14 +686,14 @@ private class AIMessagingSelectorTest {
     Assert.areEqual(
       new Set<Id>{ agents[0].Id, agents[1].Id },
       onAccount,
-      'Its own Object Type and the general agent; the Contact-only agent is not general.'
+      'The agent for Account and the general agent; the Contact-only agent is not general.'
     );
     Assert.areEqual(
       new Set<Id>{ agents[1].Id },
       onCase,
       'Only the general agent.'
     );
-    Assert.isTrue(ownType && addedType, 'Own and added objects.');
+    Assert.isTrue(ownType && addedType, 'Each object it was added to.');
     Assert.isFalse(otherType, 'An object it was never given.');
     Assert.isTrue(general, 'No object configured means every object.');
     Assert.isFalse(

@@ -22,6 +22,8 @@ private class AIChatStateServiceTest {
   // testScenario2: With no settings row a user has no debug, export or Workflow Actions, and with a row each follows its flag.
   // testScenario3: A channel is allowed with no row, no list or no channel, and otherwise only when it is on the list.
   // testScenario4: Terms are required until the current version is signed, and not when none is configured.
+  // testScenario5: Each blocked state is named with its message: inactive, sandbox not activated, paused, no licence, not assigned, terms, usage limit and plan cap; a ready user is not blocked.
+  // testScenario6: Busy when the queue is full, and the plan-cap warning from 80 percent of a monthly allowance until the cap itself.
 
   @TestSetup
   static void setup() {
@@ -179,5 +181,223 @@ private class AIChatStateServiceTest {
     );
     Assert.isFalse(signed.required, 'Signed.');
     Assert.isFalse(none.required, 'Nothing configured.');
+  }
+
+  private static AIChatDataStructure.ChatContext blocked(String state) {
+    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
+    context.state = state;
+    context.usage = new AIChatDataStructure.UsageState();
+    AIChatStateService.setBlockedState(context);
+    return context;
+  }
+
+  @IsTest
+  static void testScenario5() {
+    AIChatStateService.isLicensedForTest = true;
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
+      null
+    );
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_USAGE,
+      null
+    );
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    String ready = AIAssistApplicationConstants.CHAT_STATE_READY;
+
+    Test.startTest();
+    AIChatDataStructure.ChatContext notBlocked = blocked(ready);
+
+    settings.IsEnabled__c = false;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIChatDataStructure.ChatContext inactive = blocked(
+      AIAssistApplicationConstants.CHAT_STATE_INACTIVE
+    );
+
+    settings.IsEnabled__c = true;
+    settings.ActivatedOrgId__c = '00D000000000001AAA';
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIChatDataStructure.ChatContext sandbox = blocked(
+      AIAssistApplicationConstants.CHAT_STATE_INACTIVE
+    );
+
+    settings.ActivatedOrgId__c = null;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIOrgLimitMonitor.State pausedState = new AIOrgLimitMonitor.State();
+    pausedState.checkedAt = System.currentTimeMillis();
+    AIOrgLimitMonitor.FeatureState chatPaused = new AIOrgLimitMonitor.FeatureState();
+    chatPaused.mode = AIAssistApplicationConstants.LIMIT_MODE_PAUSED;
+    pausedState.byFeature.put(
+      AIAssistApplicationConstants.LIMIT_FEATURE_CHAT,
+      chatPaused
+    );
+    AIOrgLimitMonitor.transactionState = pausedState;
+    AIChatDataStructure.ChatContext paused = blocked(ready);
+    AIOrgLimitMonitor.transactionState = new AIOrgLimitMonitor.State();
+    AIOrgLimitMonitor.transactionState.checkedAt = System.currentTimeMillis();
+
+    AIChatStateService.isLicensedForTest = false;
+    AIChatDataStructure.ChatContext noLicence = blocked(ready);
+    AIChatStateService.isLicensedForTest = null;
+    AIChatDataStructure.ChatContext realLicenceCheck = blocked(ready);
+    AIChatStateService.isLicensedForTest = true;
+
+    AIChatDataStructure.ChatContext notAssigned = blocked(
+      AIAssistApplicationConstants.CHAT_STATE_NO_AGENT
+    );
+
+    AIChatDataStructure.ChatContext termsContext = new AIChatDataStructure.ChatContext();
+    termsContext.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
+    termsContext.terms = new AIChatDataStructure.TermsState();
+    termsContext.terms.required = true;
+    AIChatStateService.setBlockedState(termsContext);
+
+    AIChatDataStructure.ChatContext usageContext = new AIChatDataStructure.ChatContext();
+    usageContext.state = ready;
+    usageContext.usage = new AIChatDataStructure.UsageState();
+    usageContext.usage.blockMessages = true;
+    AIChatStateService.setBlockedState(usageContext);
+
+    settings.OrgUsageStateJson__c =
+      '{"day":"' +
+      String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
+      '","dayMessages":0,"dayTokens":0,"monthMessages":100,"monthTokens":500}';
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
+      100
+    );
+    AIChatDataStructure.ChatContext messageCap = blocked(ready);
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
+      null
+    );
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_USAGE,
+      500
+    );
+    AIChatDataStructure.ChatContext tokenCap = blocked(ready);
+    Test.stopTest();
+
+    Assert.isNull(notBlocked.blockedState, 'A ready user is not blocked.');
+    Assert.isNull(notBlocked.planCapWarning, 'And is not warned.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE,
+      inactive.blockedState,
+      'Switched off.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Application_Inactive,
+      inactive.blockedMessage,
+      'With its message.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED,
+      sandbox.blockedState,
+      'Activated in another org.'
+    );
+    Assert.areEqual(
+      Label.AI_Chat_Blocked_Sandbox,
+      sandbox.blockedMessage,
+      'With its message.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_PAUSED,
+      paused.blockedState,
+      'Paused for the org\'s limits.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE,
+      noLicence.blockedState,
+      'No licence.'
+    );
+    Assert.isNull(
+      realLicenceCheck.blockedState,
+      'Outside a managed package there is no licence to lack.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED,
+      notAssigned.blockedState,
+      'No agent for this user.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_TERMS,
+      termsContext.blockedState,
+      'Terms to accept.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_USAGE_LIMIT,
+      usageContext.blockedState,
+      'The user\'s own limit.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP,
+      messageCap.blockedState,
+      'The plan\'s messages.'
+    );
+    Assert.isTrue(
+      messageCap.blockedMessage.contains('100'),
+      'Says how much the plan allows: ' + messageCap.blockedMessage
+    );
+    Assert.isNull(
+      messageCap.planCapWarning,
+      'At the cap it is a block, not a warning.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP,
+      tokenCap.blockedState,
+      'The plan\'s tokens.'
+    );
+  }
+
+  @IsTest
+  static void testScenario6() {
+    AIChatStateService.isLicensedForTest = true;
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_USAGE,
+      null
+    );
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.OrgUsageStateJson__c =
+      '{"day":"' +
+      String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
+      '","dayMessages":0,"dayTokens":0,"monthMessages":850,"monthTokens":0}';
+    update settings;
+    AIAssistSettingsService.clearCache();
+    String ready = AIAssistApplicationConstants.CHAT_STATE_READY;
+
+    Test.startTest();
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
+      1000
+    );
+    AIChatDataStructure.ChatContext warned = blocked(ready);
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_MAX_MONTHLY_MESSAGES,
+      2000
+    );
+    AIChatDataStructure.ChatContext notYet = blocked(ready);
+    AIChatDataStructure.ChatContext busy = new AIChatDataStructure.ChatContext();
+    busy.state = ready;
+    Integer queued = AIMessagingSelector.countQueuedMessageJobs();
+    AIChatStateService.setBlockedState(busy);
+    Test.stopTest();
+
+    Assert.isNull(warned.blockedState, 'Not blocked at 85 percent.');
+    Assert.areEqual(
+      String.format(Label.AI_Chat_Plan_Cap_Warning, new List<String>{ '85' }),
+      warned.planCapWarning,
+      'Warned, with the percentage.'
+    );
+    Assert.isNull(notYet.planCapWarning, 'No warning under 80 percent.');
+    Assert.areEqual(0, queued, 'Nothing is queued in this test.');
+    Assert.isNull(
+      busy.blockedState,
+      'So it is not busy; busy needs the queue to be full.'
+    );
   }
 }

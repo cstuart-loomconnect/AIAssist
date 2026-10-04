@@ -65,7 +65,6 @@ public without sharing class AIMessagingSelector {
         AIAgentPersona__c,
         IsActive__c,
         AccessMode__c,
-        ObjectType__c,
         AIModelConfiguration__c,
         MaxMessagesPerConversation__c,
         MaxTokensPerConversation__c,
@@ -567,7 +566,7 @@ public without sharing class AIMessagingSelector {
     return assignedIds;
   }
 
-  // The objects each active agent has been added to through AI Agent Object records, by agent. Agents with none are not in the map.
+  // The objects each active agent is for (its active AI Agent Object records), by agent. Agents with none are general and are not in the map.
   private static Map<Id, Set<String>> getExtraObjectsByAgent() {
     Map<Id, Set<String>> objectsByAgent = new Map<Id, Set<String>>();
 
@@ -587,14 +586,13 @@ public without sharing class AIMessagingSelector {
     return objectsByAgent;
   }
 
-  // True when the agent is offered on the object: its own Object Type, any object added to it, or, for an agent with neither, every object.
+  // True when the agent is offered on the object: an active AI Agent Object record names it, or the agent has none and is general, offered on every object.
   public static Boolean agentSupportsObject(
     Id agentId,
-    String agentObjectType,
     String objectApiName,
     String objectLocalName
   ) {
-    Set<String> extraObjects = new Set<String>();
+    Set<String> agentObjects = new Set<String>();
 
     if (agentId != null) {
       for (AIAgentObject__c agentObject : [
@@ -604,28 +602,37 @@ public without sharing class AIMessagingSelector {
         WITH SYSTEM_MODE
         LIMIT 200
       ])
-        extraObjects.add(agentObject.ObjectApiName__c.toLowerCase());
+        agentObjects.add(agentObject.ObjectApiName__c.toLowerCase());
     }
 
-    if (String.isBlank(agentObjectType) && extraObjects.isEmpty())
-      return true;
-
-    return matchesObject(agentObjectType, objectApiName, objectLocalName) ||
-      extraObjects.contains(String.valueOf(objectApiName).toLowerCase()) ||
-      extraObjects.contains(String.valueOf(objectLocalName).toLowerCase());
+    return agentObjects.isEmpty() ||
+      agentObjects.contains(String.valueOf(objectApiName).toLowerCase()) ||
+      agentObjects.contains(String.valueOf(objectLocalName).toLowerCase());
   }
 
-  private static Boolean matchesObject(
-    String configuredObject,
-    String objectApiName,
-    String objectLocalName
-  ) {
-    return String.isNotBlank(configuredObject) &&
-      (configuredObject.equalsIgnoreCase(objectApiName) ||
-      configuredObject.equalsIgnoreCase(objectLocalName));
+  // The active agents that have an active AI Agent Object record for the object.
+  public static Set<Id> getAgentIdsForObject(String objectApiName) {
+    Set<Id> agentIds = new Set<Id>();
+
+    if (String.isBlank(objectApiName))
+      return agentIds;
+
+    for (AIAgentObject__c agentObject : [
+      SELECT AIAgent__c
+      FROM AIAgentObject__c
+      WHERE
+        ObjectApiName__c = :objectApiName
+        AND IsActive__c = TRUE
+        AND AIAgent__r.IsActive__c = TRUE
+      WITH SYSTEM_MODE
+      LIMIT 5000
+    ])
+      agentIds.add(agentObject.AIAgent__c);
+
+    return agentIds;
   }
 
-  // The active agents this user can chat with for an object, agents for the object first. An agent is for the object through its Object Type or an AI Agent Object record; one with neither is general and comes last. An Assigned Users Only agent is included only when the user is assigned.
+  // The active agents this user can chat with for an object, agents for the object first. An agent is for the object through an AI Agent Object record; one with no such record at all is general and comes last. An Assigned Users Only agent is included only when the user is assigned.
   public static List<AIAgent__c> getAgentsAvailableForChat(
     String objectApiName,
     Id userId
@@ -648,16 +655,14 @@ public without sharing class AIMessagingSelector {
         DeveloperName__c,
         Description__c,
         GreetingMessage__c,
-        ObjectType__c,
         ConversationLoadTrigger__c,
         AllowConversationResume__c,
         AccessMode__c
       FROM AIAgent__c
       WHERE
         IsActive__c = TRUE
-        AND (ObjectType__c = NULL
-        OR ObjectType__c = :objectApiName
-        OR Id IN :agentsAddedToObject)
+        AND (Id IN :agentsAddedToObject
+        OR Id NOT IN :extraObjectsByAgent.keySet())
       WITH SYSTEM_MODE
       ORDER BY Name
       LIMIT :AIAssistApplicationConstants.CHAT_MAX_AGENTS
@@ -683,18 +688,11 @@ public without sharing class AIMessagingSelector {
       )
         continue;
 
-      Boolean isForObject =
-        agentsAddedToObject.contains(candidate.Id) ||
-        (String.isNotBlank(candidate.ObjectType__c) &&
-        candidate.ObjectType__c.equalsIgnoreCase(objectApiName));
-
-      if (isForObject)
+      // The query left out agents added to other objects only: what remains is for this object or general.
+      if (agentsAddedToObject.contains(candidate.Id))
         agentsForObject.add(candidate);
-      else if (
-        String.isBlank(candidate.ObjectType__c) &&
-        !extraObjectsByAgent.containsKey(candidate.Id)
-      )
-        generalAgents.add(candidate); // Added to other objects only: not general.
+      else
+        generalAgents.add(candidate);
     }
 
     agentsForObject.addAll(generalAgents);

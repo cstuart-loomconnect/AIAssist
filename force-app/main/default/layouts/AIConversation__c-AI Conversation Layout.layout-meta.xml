@@ -133,10 +133,6 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>ExternalReference__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
                 <field>PublicId__c</field>
             </layoutItems>
         </layoutColumns>

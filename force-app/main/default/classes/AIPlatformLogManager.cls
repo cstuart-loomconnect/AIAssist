@@ -257,6 +257,30 @@ public inherited sharing class AIPlatformLogManager {
     );
   }
 
+  private static Boolean isAuditEntry = false;
+
+  // An audit entry: a change to a credential or to who may use one. Info, not an error, and published even under org limit pressure, because a gap in the audit trail is worse than one more event.
+  public static void logAudit(
+    String message,
+    String logDetail,
+    String className,
+    String methodName
+  ) {
+    isAuditEntry = true;
+    try {
+      logCustomMessage(
+        message,
+        logDetail,
+        className,
+        methodName,
+        null,
+        AIAssistApplicationConstants.LOG_SEVERITY_INFO
+      );
+    } finally {
+      isAuditEntry = false;
+    }
+  }
+
   // As above with a severity. Under org limit pressure (AIOrgLimitMonitor) only an Error is published: a log entry is itself an event, and the allowance is the thing running out.
   public static void logCustomMessage(
     String message,
@@ -271,6 +295,7 @@ public inherited sharing class AIPlatformLogManager {
         return;
       if (
         severity != AIAssistApplicationConstants.LOG_SEVERITY_ERROR &&
+        !isAuditEntry &&
         AIOrgLimitMonitor.isErrorOnlyLogging()
       )
         return;

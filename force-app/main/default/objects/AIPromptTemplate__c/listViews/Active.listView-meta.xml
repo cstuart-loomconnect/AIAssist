@@ -4,7 +4,6 @@
     <columns>NAME</columns>
     <columns>AIAgent__c</columns>
     <columns>MaxResponseLength__c</columns>
-    <columns>TriggerKeywords__c</columns>
     <columns>Description__c</columns>
     <columns>LAST_UPDATE</columns>
     <filterScope>Everything</filterScope>

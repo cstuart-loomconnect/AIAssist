@@ -71,13 +71,15 @@ public inherited sharing class AIOrgUsageTotalsBatch implements Database.Batchab
     AIOrgUsageService.replace(today, counted);
 
     // The month's messages and failed turns go back to the License Management Org. In a job of its own: a feature parameter is a setup object, and the totals above were just saved to a custom setting in this transaction.
+    // Not from a test: feature parameters are org-wide, and tests running side by side contend for the same row.
     try {
-      System.enqueueJob(
-        new AILicenceUsageReporter(
-          counted.month.messages.intValue(),
-          monthFailedTurns.intValue()
-        )
-      );
+      if (!Test.isRunningTest())
+        System.enqueueJob(
+          new AILicenceUsageReporter(
+            counted.month.messages.intValue(),
+            monthFailedTurns.intValue()
+          )
+        );
     } catch (Exception notQueued) {
       AIPlatformLogManager.logException(
         notQueued,

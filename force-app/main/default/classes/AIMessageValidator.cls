@@ -208,11 +208,10 @@ public inherited sharing class AIMessageValidator {
         );
       }
 
-      // An agent built for one kind of record is not offered for another. It is built for the object on the agent itself and for any added to it.
+      // An agent built for one kind of record is not offered for another. It is built for the objects added to it (AI Agent Object); one with none is general.
       if (
         !AIMessagingSelector.agentSupportsObject(
           chatContext.agent.Id,
-          chatContext.agent.ObjectType__c,
           relatedRecordType.getName(),
           relatedRecordType.getLocalName()
         )

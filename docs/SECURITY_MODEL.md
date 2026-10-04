@@ -1,18 +1,20 @@
-# AI Assist security and object model
+# AI Assist security model
 
-Status: layer 1 (object model and access). Validated with a check-only deploy to `dev` (578 components, 0 errors). Nothing has been deployed by this review. Latest check: 724 components, 0 errors.
+How AI Assist decides who may see and do what, where it runs with more access than the user and why, and what protects the org it is installed in. Companion documents: [DATA_FLOW.md](DATA_FLOW.md) for what leaves Salesforce, [INSTALL.md](INSTALL.md) for set-up, [OPERATIONS.md](OPERATIONS.md) for running it.
 
 ## 1. Principles
 
-1. **Nothing is granted by default.** The three permission sets are generated from one access matrix; every field is listed on purpose. No permission set has any system permission (`userPermissions` is empty), no `Modify All`, and no `Delete` on conversations, violations or terms acknowledgments.
-2. **Object permission gates config; ownership gates conversations.** Configuration objects are Public Read/Write so admins can co-edit without `Modify All`, but only the Admin set can read or write them (the User set reads 11 agent fields). Conversation data is Private.
-3. **Separation of duties.** Admin builds; Super User supports and reviews; neither can read the other's sensitive data by accident (see section 4).
-4. **Nobody sees PII mappings.** `AIPIIMapping__c` (real value to fake value) is granted to no permission set and is no longer reportable. Only the package, in system mode, reads it.
-5. **Audit records are write-once.** Violations (except Review Status) and terms acknowledgments are locked by validation rules as well as field permissions.
+1. **Nothing is granted by default.** The three permission sets list every field on purpose. None carries a system permission, Modify All, or Delete on conversations, violations or terms acknowledgments.
+2. **Object permission gates configuration; ownership gates conversations.** Configuration objects are Public Read/Write, but only the Admin set can write them. Conversation data is Private.
+3. **Sharing decides first.** A setting inside AI Assist can narrow what the org's sharing allows. It never widens it.
+4. **Configuration is read in system mode, the user's data in user mode.** The user is never given access to prompts, connection details or other users' usage in order to chat.
+5. **Nobody reads PII mappings.** `AIPIIMapping__c` (real value to stand-in value) is granted to no permission set.
+6. **Audit records are write-once.** Violations (except Review Status) and terms acknowledgments are locked by validation rules as well as field permissions.
+7. **The key is never held.** A provider API key goes straight to the platform's credential store. AI Assist does not store, log or return it.
 
 ## 2. Access matrix
 
-CRED = create / read / edit / delete. `+all` = View All Records. Field-level access is in the permission set files (User 38 field permissions, Super User 213, Admin 226).
+CRED = create / read / edit / delete. `+all` = View All Records.
 
 | Object                     | OWD                | User | Super User | Admin    |
 | -------------------------- | ------------------ | ---- | ---------- | -------- |
@@ -43,243 +45,134 @@ CRED = create / read / edit / delete. `+all` = View All Records. Field-level acc
 | AIViolationRule__c         | ReadOnly           | -    | R          | CRED     |
 | AIViolation__c             | ReadWrite          | -    | RE         | R        |
 | AIWorkflowAction__c        | ReadWrite          | -    | R          | CRED     |
-| AIAgentProgressEvent__e    | -                  | CR   | CR         | CR       |
-| AIMessageReadyEvent__e     | -                  | CR   | CR         | CR       |
-| AIPlatformLogEvent__e      | -                  | CR   | CR         | CR       |
-| AIViolationEvent__e        | -                  | CR   | CR         | CR       |
+| The four platform events   | -                  | CR   | CR         | CR       |
 
-Custom metadata: `AIChatCommand__mdt` is Protected and developer-controlled, so only the package owner ships or changes chat commands; subscribers cannot see it and no permission set references it. Admin reads the three PII metadata types. Admin alone has access to both custom settings. Object tabs are `Available`, never forced `Visible`.
+Field permissions: User 39, Super User 233, Admin 246. `AIChatCommand__mdt` is Protected, so only the package ships chat commands. The two custom settings are Public; only an administrator edits them.
 
-## 3. Roles in one line each
+**Roles.** Each permission set is self-contained: assign one.
 
-- **AI Assist User**: chats. Creates and reads only their own conversations, messages, feedback and terms acknowledgment. Edits seven conversation fields (agent, channel, related record, status, close reason, closed time). Cannot edit a message after it is written.
-- **AI Assist Super User**: includes User. Reads every conversation, message, step, feedback and log; reads configuration except connection details; marks violations Reviewed/Dismissed (Review Status only).
-- **AI Assist Admin**: includes User. Creates/edits/deletes configuration and sets per-user limits and feature gates (debug, workflow actions, export). Sees all conversations, feedback, logs and acknowledgments, plus step timings.
+- **AI Assist User** chats. Creates and reads their own conversations, messages, feedback and terms acknowledgment. Cannot edit a message once written.
+- **AI Assist Super User** reads every conversation, message, step, feedback and log, reads configuration except connection details, and reviews violations.
+- **AI Assist Admin** builds configuration and sets per-user limits. Sees all conversations, feedback, logs and acknowledgments. Admin has no View All on messages, so cannot read other users' message bodies.
 
-Each set is self-contained (assign one). It is not additive.
+**Custom permissions.**
 
-## 4. Deliberate exclusions (the "cannot")
+| Permission                        | Grants                                                                                             | In           |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- | ------------ |
+| `AIAssistManageConfiguration`     | The set-up controllers: credentials, connection test, health check, plan usage, checklist.         | Admin        |
+| `AIAssistViewSharedConversations` | Lets the All Conversations scope take effect without View All. Never widens sharing.               | Super, Admin |
+| `AIAssistDebugMode`               | The debug trace of the user's own replies, as Debug Mode Enabled on a policy does.                 | Super, Admin |
+| `AIAssistRunActions`              | Running suggested Workflow Actions, as Workflow Actions Enabled on a policy does. Plan permitting. | Admin        |
 
-| Cannot                                                                                            | Why                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Admin read other users' message bodies, step request/response JSON, violation detail              | Content can contain customer data. Configuring an agent does not need it. Field permissions are not record-scoped, so Admin has no View All on messages. |
-| Super User read `NamedCredential`, `ApiPath`, API version headers                                 | Support does not need connection details.                                                                                                                |
-| Anyone delete conversations, violations, acknowledgments                                          | Retention and deletion run inside the package (retention batch, a delete action in layer 2).                                                             |
-| User read prompts, SOQL templates, actions, user settings, execution steps                        | Config and trace are read by the package in system mode, not by the end user.                                                                            |
-| Anyone edit Terms Acknowledged on user settings, counters, sync status, Public Id, Developer Name | System-populated.                                                                                                                                        |
+## 3. Where AI Assist runs with more access than the user
 
-## 5. What this means for layer 2 (code)
+Four classes are `without sharing`. Every statement in them names its access level, and none decides who may do something: the caller authorises the user first.
 
-These are contracts the permission model now imposes. The existing Apex (`AI-Assist` repo) does not meet all of them:
+| Class                                    | Why it cannot run with sharing                                                                                                                                                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AIMessagingSelector`                    | Reads the configuration a turn runs on (model connection, prompt, data sources, user settings, assignments, usage). Only Admin and Super User may read those; a chat user must not be given that access in order to chat.           |
+| `AIMessagingDataService`                 | Writes system-managed data the user cannot write: a message's status and tokens, the reply, usage rows, evidence. It also marks a write as the package's own, which is what stops a user creating a message that looks like the AI. |
+| `AIConversationLockService`              | Sets and clears the processing lock on a conversation, a system-managed field the user cannot edit, including when a finalizer hands the lock on.                                                                                   |
+| `AIAssistGlobalUtility.UniquenessLookup` | Checks a Developer Name against every record of the object. The unique index is global, so a check limited to what the user can see would let a clash through and fail the save.                                                    |
 
-1. **Config reads run in system mode, data reads in user mode.** `AiDataSourceDispatcher` and `AiWorkflowActionDispatcher` load `AIDataSource__c` / `AIWorkflowAction__c` `WITH USER_MODE`; the User set no longer has that access. Load the definition in system mode, check it is assigned to the agent and active, then run the actual query/Apex/Flow in user mode.
-2. **49 classes are `without sharing`.** Expect the security review to question each one. Give every one a written reason or switch to `inherited sharing`/`with sharing`.
-3. **Remove `User.AIAssistUserType__c` and `AIAssistUserTriggerHandler`.** A field on User that auto-assigns permission sets is a privilege-escalation path (anyone who can edit it can make themselves Admin) and a trigger on User in a managed package. Admins assign permission sets directly. The field and layout are excluded from this model.
-4. **Stamp Reviewed By / Reviewed Date** in a trigger when Review Status leaves New.
-5. **Publish `AIPlatformLogEvent__e` and `AIViolationEvent__e` and check if Create is still required.** Salesforce forces Read with Create on platform events, which also lets a holder subscribe. Both events can carry exception text and violation detail. Test whether Apex publishing works with no event permission; if it does, remove both from all three sets.
-6. **Data deletion and versioning.** A deletion action runs in system mode only when `ApprovalDecision__c` is Approved, stamps `Status__c`, `ApprovedBy__c`, `ApprovedDate__c`, `CompletedDate__c` and the counts, skips conversations on legal hold, deletes conversations/messages/feedback, and anonymises (does not delete) violations and usage rows. A Prompt Template trigger increments `Version__c` when prompt wording changes, and the reply path stamps the template and version on each message.
-7. **Record evidence and honour plan limits.** For every Provider Call step set provider, model, counts, `ObjectsSent__c`, `FieldsSent__c` and `PIIMaskingApplied__c`, and write one `AIPIIMaskingRecord__c` per field masked; for every Workflow Action step (including blocked and cancelled) set target, confirmation and outcome. Do this regardless of debug mode, with no payload. Never send a request whose masking outcome is Failed. Before creating or activating agents, data sources or actions, and before each message, read the ten feature parameters with `System.FeatureManagement` and refuse with the `AI_Error_Plan_*` labels. Cache the values per transaction.
-8. **Enforce the new access model.** Check `AIAgent__c.AccessMode__c` and `AIAgentAssignment__c` before a chat starts; write `AIUsageDaily__c` (upsert on `UsageKey__c`) and `UserKey__c` / `AssignmentKey__c`; check terms through `AITermsAcknowledgment__c`; honour `IsOnLegalHold__c`, `MaxRows__c`, and the two retention settings in the clean-up jobs; stamp `ProcessingStatus__c`, `FailureReason__c`, `Severity__c`.
-9. **Constants to update** because picklist values changed: `My Subordinates Conversations` (no apostrophe), `Closest Match`, violation types now `UnauthorizedDataAccess` etc. on both rule and violation, `SingleActiveConversationPerRecord__c`, `SuggestedWorkflowAction__c` (lookup), `LastTriggeredDate__c` (Date/Time), `IsEnabled__c` replaces `IsApplicationActive__c`, `OpenAI` replaces `Open AI`. PII field types are free text now (they include types the picklist never had).
-10. **`Type.forName` on subscriber-entered class names** (3 places) must check `instanceof` the interface before calling it. The format rules only stop junk.
-11. **Named Credential calls**: `ApiPath__c` is validated to a single-host path, but keep the call pinned to the credential on the Model Configuration and never to a user-supplied one.
+Everything else is `with sharing` or `inherited sharing`. `AIConversationVisibilityService` was `without sharing` and is now `with sharing` (section 4). Batches and the scheduler run in system mode because retention and housekeeping apply to every user's records.
 
-## 6. Object model changes
+## 4. Who may read a conversation
 
-**Fixed**
+A conversation can be sent to, retried, closed, resumed, exported and acted on only by the user who started it. Reading someone else's is decided by `AIConversationVisibilityService`, which is `with sharing` and reads in user mode:
 
-- Reporting: 13 objects were not reportable (including conversations, violations and feedback), while `AIPIIMapping__c` was. Reversed: every object except the PII mapping now supports the standard report Salesforce generates for it. No custom report types are shipped; add them later if a customer needs cross-object reports.
-- `PublicId__c` was 18 characters on two objects but the generator writes 36. Both fields are now removed (below).
-- Sharing: six config objects and user settings moved from Public Read Only (which forced `View All`/`Modify All` on Admin) to Public Read/Write gated by object permission. Violations also, so Super Users can review without `Modify All`.
-- `AIViolationEvent__e` published after commit although described as decoupled. Now publishes immediately so audit events survive a rollback.
-- Validation rules used `$Label` to compare picklist API values. Labels are translated per user, so those rules break for non-English users. Replaced with literals, and the six labels removed.
-- Duplicated value sets: Channel (`Mobile` missing on conversations) and Violation Type (two spellings) now share global value sets.
-- Typos and conventions: `Closet Match`, `SingleActiveConversationPer_Record__c`, `Api Path` labels, emoji in plural labels, apostrophe in a picklist API value.
-- Types: `SuggestedWorkflowActionId__c` (text Id) became a lookup; `LastTriggeredDate__c` Date became Date/Time; `PIIFieldType__c` picklist became text; `ApexClassName__c`, `FlowAPIName__c`, `NamedCredential__c` and similar lengthened (a namespaced class name did not fit in 50).
-- Defaults now safe: 90 day retention, message/token/iteration caps, private visibility, workflow actions off, inline actions off, block on limit.
-- Integrity: restrict-delete on agent, prompt template and junction lookups; required `Source Type`, `Action Type`, `Execution Type`, `Detection Method`; 39 validation rules (Write actions must require confirmation, formats for class/flow/credential/path/signal tag, ranges, required-when-active).
-- Data classification added on the 17 sensitive fields.
-- 46 list views (every object that lacked one, sensible columns, and review queues), 21 compact layouts, layouts corrected (system fields read-only, every field now placed, related lists rebuilt).
+1. **Sharing.** The viewer must already be able to read the record: ownership, the role hierarchy, or View All.
+2. **The agent.** `ConversationVisibility__c` must be Global. Private (the default) means the starter only, whatever the viewer holds.
+3. **The viewer's scope** (`ConversationVisibilityScope__c`, from their usage policies and user settings):
 
-**Identifier fields.** `PublicId__c` exists only where a record is referenced from outside the org or the UI: Agent and Conversation. Config that needs to move between orgs (sandbox to production) uses its unique `DeveloperName__c` as the External Id: Agent, Data Source, Workflow Action, Model Configuration and Prompt Template (restored for this reason); Violation Rule uses its unique Signal Tag. Per-user and junction records do not have an external identity, so they get a unique **key** field instead, which also stops duplicates (see the next section). Sixteen other identifier fields are removed. Nothing is auto-added elsewhere.
+| Scope                           | Reaches                                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| My Conversations Only (default) | Nobody else.                                                                                                         |
+| My Subordinates Conversations   | Starters in a role below the viewer's.                                                                               |
+| All Conversations               | Whatever sharing gives, and only for a viewer with View All on AI Conversation or `AIAssistViewSharedConversations`. |
 
-**Is Enabled**: `IsEnabled__c` (default true) added to both settings objects. It replaces `IsApplicationActive__c`, which was the same switch.
+4. **The record.** A conversation about a record is shown only to a viewer who can read that record.
 
-**UI settings versus debug**: there is no separate debug settings object. Related flags, not duplicates:
+A blank or unrecognised setting is the narrowest one. A conversation the viewer may not read gets the same answer as one that does not exist.
 
-| Setting                                                                                           | Scope              | Controls                                                                                            |
-| ------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------- |
-| `AIAssistUISettings__c.ShowExecutionTraceToUser__c` (relabelled Show Live Progress Steps To User) | org / profile      | Step names while waiting. No content.                                                               |
-| `AIUserSettings__c.DebugModeEnabled__c`                                                           | one user           | Request/response payloads, sent preview, provider call steps.                                       |
-| `AIAssistSettings__c.IsExceptionLoggingEnabled__c` then `IsPlatformLoggingEnabled__c`             | org                | Step 1 stops publishing log events; step 2 stops saving them. Both are needed, help text clarified. |
-| `AIAgent__c.IsTestModeEnabled__c`, `AIAssistSettings__c.AuditLoggingRecordId__c`                  | agent / one record | Test access; scoped step logging.                                                                   |
+## 5. Workflow Actions, Flows and Apex
 
-**Decisions taken on the open items**
+An action runs only when all of these hold, checked in `AIWorkflowActionDispatcher`: the plan includes actions, the application is on, the user may run actions, the agent still admits the user, the action is active and assigned to the agent, and a Write action has been confirmed. Every outcome, including a refusal, is recorded as an execution step.
 
-| Item                                                                                                                  | Decision                                                                                                                                   | Plain-English reason                                                           |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| User settings kept three "terms accepted" fields that copy what the signed Terms Acknowledgment record already proves | Removed the three copies. The chat asks "is there an acknowledgment for the current terms version" instead.                                | Two places saying the same thing can disagree, and only one is legal evidence. |
-| Nothing stopped a user having two settings records, or an agent getting the same data source twice                    | Added a unique **key** field (`UserKey__c`, `AssignmentKey__c`) that the platform fills in; the database then rejects duplicates.          | A lookup cannot be made unique, so the key is the only declarative way.        |
-| Each execution step stores two 128 KB JSON fields                                                                     | No new field. Steps are deleted with their conversation, so conversation retention (default 90 days) bounds storage. Keep retention short. | Nothing more is needed unless storage becomes a problem.                       |
-| Settings held org-specific record Ids (email template, audit record)                                                  | Left as is.                                                                                                                                | The admin picks those per org in the console; an Id is fine there.             |
-| "PII" capitalised differently on two object families                                                                  | Left. Cosmetic, and a rename breaks code for no security gain.                                                                             |                                                                                |
-| Provider value `Open AI`                                                                                              | Changed to `OpenAI`.                                                                                                                       | Free now, impossible after release.                                            |
-| Custom settings public or protected                                                                                   | Stay **Public**. Only chat commands are Protected.                                                                                         | Admins tune these in the console and support must be able to see them.         |
-| Custom settings cannot have validation rules                                                                          | Accepted. Limits there are checked in Apex.                                                                                                | Platform limitation.                                                           |
-| Progress/message-ready events are readable by every chat user                                                         | Accepted; payloads are content-free (conversation Id, step name).                                                                          | Platform events cannot be filtered per user.                                   |
+**A Flow does not run as the user.** A Flow started from Apex runs in system context: the user's object and field permissions are not applied. AI Assist therefore controls what a Flow is handed:
 
-## 6a. What was missing from the model, and is now added
+| Rule                           | Detail                                                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Only declared inputs           | An input the action's schema does not declare is dropped and logged by name.                                                                                |
+| `recordId` is the server's     | It is the conversation's own record. A `recordId` from the browser is dropped. This applies to Apex actions too.                                            |
+| Record access is checked       | Every record Id passed to a Flow is checked with `UserRecordAccess`: read access, or edit access for a Write action. One missing record refuses the action. |
+| System context without sharing | A Flow in that mode is refused, when the action is saved and again when it runs.                                                                            |
 
-| Gap                                                                                                    | Added                                                                                                                                                                 | Why it matters                                                                  |
-| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Who may use which agent. Any user with the User set could use any active agent.                        | `AIAgentAssignment__c` (user or permission set, active flag, unique key, history) and `AIAgent__c.AccessMode__c` (default **Assigned Users Only**).                   | The only way to limit a sensitive agent to the right people. Default is closed. |
-| Usage history disappeared when conversations were purged, and daily limits meant summing every message | `AIUsageDaily__c`: one row per user, agent, model and day with tokens, counts, failures and estimated cost. Admin and Super User read it; only the package writes it. | Cost and adoption reporting that survives retention, and a cheap limit check.   |
-| No price data, so no cost reporting                                                                    | Input/output price per million tokens and currency on Model Configuration; `EstimatedCost__c` formula on usage rows.                                                  | Finance asks "what does this cost" on day one.                                  |
-| Data source could return unlimited rows                                                                | `MaxRows__c` (default 20, 1 to 200).                                                                                                                                  | Controls prompt size, cost and how much data reaches the AI service.            |
-| No legal hold                                                                                          | `IsOnLegalHold__c` on Conversation.                                                                                                                                   | Retention must never delete held records.                                       |
-| Failed replies invisible in reports                                                                    | `ProcessingStatus__c` and `FailureReason__c` on Message.                                                                                                              | Failure rate by model/agent, and recovery of stuck turns.                       |
-| Feedback had a rating and free text only                                                               | `Reason__c` on Feedback.                                                                                                                                              | Actionable tuning signal.                                                       |
-| Violations not linked to the offending message                                                         | `AIConversationMessage__c` on Violation.                                                                                                                              | Reviewer goes straight to the evidence.                                         |
-| Logs had no severity and no retention                                                                  | `Severity__c` on log and log event; `PlatformLogRetentionDays__c` (30) and `ViolationRetentionDays__c` (365) settings.                                                | Logs are operational, violations are evidence; they need different lifetimes.   |
+An Id that is not a shareable record (a record type, a queue) has no access row and is refused. Pass a name instead.
 
-| No way to prove what a deletion removed | `AIDataDeletionRequest__c`: scope (user or related record), received date, four-eyes approval (the requester cannot approve their own request, enforced by a validation rule), status, and counts of what was removed. Only the package sets status, approver and counts; a completed request is locked. Admin only. | A regulator or customer can be shown the request, who approved it and what was deleted, without the record holding any deleted content. |
-| Could not tell which prompt wording produced an answer | `Version__c` on Prompt Template (platform-incremented when the wording changes) and `AIPromptTemplate__c` + `PromptTemplateVersion__c` on every Message. | Answers to "why did it say that" and before/after comparisons of a prompt change. |
+**Apex.** A class named on a data source or action is checked to exist and implement the package's interface before it is instantiated, at save and at run time. It runs in the user's transaction with the sharing it declares. A data source that writes to the database fails the turn and is rolled back.
 
-| Execution steps could not prove who ran a write action, or what was sent to the provider | **Kept on the existing `AIExecutionStep__c`** (one concern, one object). Added: `StepType__c`; for Workflow Action steps the target object and record, whether confirmation was required, who confirmed and when; for Provider Call steps the provider, model, record and field counts, object and field **names** sent, and whether masking ran. Status gains `Blocked` and `Cancelled`. Validation rules refuse a confirmed action recorded as successful without a confirmer, and stop stamped evidence being rewritten. | "Who changed this record through the AI" and "what did we send" are answered on the step that did it. **Trade-off:** steps are children of the message, so they are deleted with the conversation (retention, or a data deletion request). Keep agent retention as long as your audit policy needs. |
-| No evidence that personal data was masked | `AIPIIMaskingRecord__c`: a write-once child of the Provider Call step, one row per object and field masked (PII type, compliance group, strategy, values masked, outcome). Names and counts only; the real and fake values stay in the PII Mapping that nobody can read. `PIIValuesMasked__c` on the step rolls the counts up, and `PIIMaskingApplied__c` separates "masking ran and found nothing" from "masking did not run". The list view **Sent Without Masking** finds the second case. Admin and Super User read it; only the package writes it. | The answer to the reviewer's question "prove masking happens before data leaves Salesforce". |
-| Every customer would get the same unlimited package | Ten Feature Management parameters, set per customer from the License Management Org (table below). Security features (PII masking, violations, data deletion requests, evidence on steps) are deliberately not gated. | Needed to sell tiers and trials, and to give each customer the settings that suit them. Enforced in code. |
+## 6. Provider credentials
 
-**Feature Management parameters** (values are placeholders until you define plans; change them per customer in the License Management Org):
+- Calls go through a Named Credential and nowhere else. The endpoint is the credential named on the model configuration plus its API path; there is no free URL field.
+- `AICredentialSetupController` creates the External Credential, stores the key and creates the Named Credential. It needs `AIAssistManageConfiguration` **and** Customize Application.
+- The key is passed to the platform's credential store. It is never written to a record or a log, never returned, and is removed from any error text before that is logged or shown. Tests assert this.
+- The header that carries the key is a formula on the External Credential, so the key is added by the platform at callout time.
+- Users reach the credential through a named principal mapped to a permission set (`AI Assist Credential Access`, created on request).
+- Every credential change is written to the Platform Log by name and user, even while logging is reduced under limit pressure.
 
-| Parameter                      | Type    | Default   | Enforced by                                        |
-| ------------------------------ | ------- | --------- | -------------------------------------------------- |
-| `MaxActiveAgents`              | Integer | 3         | Activating an agent                                |
-| `MaxActiveDataSources`         | Integer | 10        | Activating a data source                           |
-| `MaxActiveWorkflowActions`     | Integer | 5         | Activating a workflow action                       |
-| `MaxMonthlyMessages`           | Integer | 5000      | Each message (count from `AIUsageDaily__c`)        |
-| `MaxMonthlyTokens`             | Integer | 5,000,000 | Each message (sum from `AIUsageDaily__c`)          |
-| `MaxConversationRetentionDays` | Integer | 90        | Saving an agent's retention days                   |
-| `WorkflowActionsAllowed`       | Boolean | false     | Activating or running any action                   |
-| `ApexDataSourcesAllowed`       | Boolean | false     | Apex-type data sources and actions                 |
-| `AIEvaluatedRulesAllowed`      | Boolean | false     | AI-evaluated violation rules                       |
-| `MultipleProvidersAllowed`     | Boolean | false     | Activating a second provider's model configuration |
+## 7. Protecting the org's limits
 
-Considered and left out for now: limits on prompt templates, violation rules and model configurations, conversation export, agent assignments and usage reporting. They are easy to add later without renaming anything.
+`AIOrgLimitMonitor` gives each of three features (Chat, Events, Logging) a mode: Normal, Degraded or Paused.
 
-**Parked** (needs thought before any design): who is notified when a violation happens.
+| Control              | Setting on `AIAssistSettings__c`                       | Behaviour                                                                                          |
+| -------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Org headroom         | `{Group}DegradedPercent__c`, `{Group}PausedPercent__c` | How full the org's own limit is. Blank uses the `OrgLimit*` fields, then 70 and 85.                |
+| AI Assist's share    | `{Group}AppSharePercent__c`, `StorageBudgetPercent__c` | AI Assist's own usage of the limit. Reaching it pauses the feature even when the org has headroom. |
+| Hard floor           | none                                                   | A feature pauses at 95 percent of any limit whatever the settings say.                             |
+| Messages in flight   | `MaxMessagesInFlight__c`                               | Extra messages wait as Queued and start when a place is free. Never more than 200 jobs.            |
+| Daily message budget | `DailyMessageBudget__c`                                | New messages are refused for the rest of the org's day.                                            |
+| Rate limit           | `MaxMessagesPerUserPerMinute__c`                       | One user's messages in any 60 seconds.                                                             |
+| Message length       | `MaxMessageLength__c`                                  | At most 8,000 characters.                                                                          |
 
-**Considered and not built**: per-agent record filters (build when a customer asks), full prompt versioning with restore (later; the version stamp above is the first step), and a Big Object archive for messages (decided against; export to external storage instead if storage becomes a problem).
+Custom settings cannot have validation rules, so a value out of range is replaced by a safe one when read, and `AIOrgLimitMonitor.validateSettings` reports it. The stricter of headroom and share always applies. Violation events stop only while Events is Paused; the violation record is always saved.
 
-## 6b. Phase 1 model changes (permanent at the first managed release)
+## 8. Sandbox guard
 
-Field and object API names cannot change once a managed package is released, so these were settled before it.
+`ActivatedOrgId__c` records the org AI Assist was switched on in. Settings copied into another org (a sandbox refreshed from production) carry production's Id, so AI Assist treats itself as off there: no provider is called with production's configuration until an administrator activates it. Retention still runs. A new install in a sandbox or scratch org starts switched off.
 
-| Change                                                                                                                                                                                                                                                                         | Why                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `Active__c` is now `IsActive__c` on `AIViolationRule__c`, `AIPIIRegistry__c`, `AIPiiFieldType__mdt`, `AIPiiComplianceGroup__mdt` and `AIPiiDataMaskingRule__mdt`.                                                                                                              | Every other object already used `IsActive__c`.                                                                    |
-| `AIViolationRule__c` is no longer Master-Detail to an agent. It has `PublicId__c`, `DeveloperName__c` and `AppliesToAllAgents__c`; OWD is Public Read Only internally and Private externally.                                                                                  | A rule such as "never disclose PII" is defined once.                                                              |
-| New junction `AIAgentViolationRule__c` (agent, rule, `IsActive__c`, unique `AssignmentKey__c`).                                                                                                                                                                                | Assigns a rule to many agents. A rule with `AppliesToAllAgents__c` needs no junction row.                         |
-| New child `AIAgentObject__c` (agent, `ObjectApiName__c`, `IsActive__c`, unique key). `AIAgent__c.ObjectType__c` stays as the primary object.                                                                                                                                   | One agent can serve several objects. The name is checked against the org on save and stored as the org spells it. |
-| New `AIUsagePolicy__c` and `AIUsagePolicyAssignment__c` (user or permission set, same pattern as `AIAgentAssignment__c`). `AIUserSettings__c` becomes a per-user override. The three limit fields on `AIUserSettings__c` lost their defaults, so blank means "use the policy". | Limits are set once per group, not once per user.                                                                 |
+## 9. Retention, deletion and legal hold
 
-How an agent is offered on an object: its own Object Type or any active `AIAgentObject__c` makes it an agent for that object; an agent with neither is general and is offered on every object; an agent added to other objects only is not general.
+- Deletion happens only inside the package. No user holds Delete on conversations, violations or acknowledgments.
+- Conversations expire by their agent's retention. Steps, messages, logs and violations also have their own lifetimes (section 3 of OPERATIONS.md).
+- A conversation on legal hold is never deleted, and neither are its messages or steps.
+- Retention runs while the application is off.
+- A data deletion request needs a second person's approval, deletes conversations, messages and feedback, anonymises violations and usage, and records what it removed.
 
-How a user's settings are worked out (`AIUsagePolicyResolver`, called from `AIMessagingSelector.getUserSettings`):
+## 10. Plan and features
 
-1. Policies apply when assigned to the user, or to a permission set the user holds. With none, the active default policies apply.
-2. Limits are strictest-wins across policies (lowest number, behavior that blocks most), so adding a policy never loosens a limit.
-3. Capabilities (channels, workflow actions, export, debug mode, visibility) are additive across policies.
-4. The user's own `AIUserSettings__c` row overrides any value it sets. A ticked box on the row switches a capability on for that user; it cannot switch off one a policy grants.
+One check, `AIFeatureService.isFeatureEnabled`, answers whether a feature may be used: the plan (Feature Management parameter), then the org (application on), then the user (custom permission or usage policy). Security features are never gated by plan: masking, violations, deletion requests and evidence.
 
-`IAIDataSourceExecutor` and `IAIWorkflowActionExecutor` are `global` so a subscriber's Apex can implement them. Their method signatures are now permanent. The dispatchers look the class up with `Type.forName('', name)` so the subscriber's unprefixed classes resolve from managed code.
+| Parameter                                                                                                 | Direction         | Purpose                                       |
+| --------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------- |
+| `MaxActiveAgents`, `MaxActiveDataSources`, `MaxActiveWorkflowActions`                                     | LMO to subscriber | Activation limits.                            |
+| `MaxMonthlyMessages`, `MaxMonthlyTokens`                                                                  | LMO to subscriber | Monthly allowances.                           |
+| `MaxConversationRetentionDays`                                                                            | LMO to subscriber | Cap on an agent's retention.                  |
+| `WorkflowActionsAllowed`, `ApexDataSourcesAllowed`, `AIEvaluatedRulesAllowed`, `MultipleProvidersAllowed` | LMO to subscriber | Features in the plan.                         |
+| `BetaFeaturesEnabled`, `ContinuationChatEnabled`, `ReservedInteger1`                                      | LMO to subscriber | Spare; nothing reads them yet.                |
+| `MonthlyMessagesUsed`, `MonthlyErrors`                                                                    | Subscriber to LMO | Counts only, reported by the maintenance job. |
 
-Access: all new objects are read-only for Super User and full for Admin, and none is granted to the User set. The package reads them in system mode.
+## 11. Integrity rules
 
-## 7. History tracking
+- **One active prompt template per agent.** A unique key (`ActiveAgentKey__c`) plus a trigger check that names the template to deactivate. It holds while the application is off.
+- **Unique assignments.** Junction and per-user records carry a unique key the package stamps, so the same grant cannot be made twice.
+- **Names are checked on save.** An Apex class, Named Credential or permission set that does not exist is refused with an error on the field.
+- **Field history** is on for the fields that change what the AI may see, say or do: on agents, prompt templates, Workflow Actions, data sources, model configurations, violation rules, policies and assignments.
+- **Identifiers.** `PublicId__c` on Agent and Conversation; `DeveloperName__c` as the External Id on configuration that moves between orgs.
 
-Before: `AIPromptTemplate__c` had history switched on with every field set to off (so it tracked nothing). No other object tracked anything.
+## 12. Known limits of this model
 
-Now (object limit is 20 fields, all are under):
-
-| Object                  | Tracked                                                                                                                                                                                      | Count |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| AIAgent                 | Access Mode, Is Active, Test Mode, Persona, Model Configuration, Visibility, Retention Days, Max Tokens, Max Messages, Max Tool Iterations, No Match Behavior, Fallback Message, Object Type | 13    |
-| AIDataSource            | Is Active, Source Type, SOQL Template, Apex Class, Target Object, Input Schema, Binding Type, Max Rows                                                                                       | 8     |
-| AIWorkflowAction        | Is Active, Action Type, Execution Type, Apex Class, Flow API Name, Target Object, Requires Confirmation, Confirmation Message, Input Schema                                                  | 9     |
-| AIModelConfiguration    | Is Active, Provider, Model Identifier, Named Credential, API Path, Temperature, Max Output Tokens, Retry Attempts, two token prices                                                          | 10    |
-| AIPromptTemplate        | Is Active, Agent, Prompt, System Context, Tone, Exclusion Rules, Activation Criteria, Trigger Keywords, Max Response Length                                                                  | 9     |
-| AIViolationRule         | Is Active, Applies To All Agents, Block Request, Detection Method, Detection Instruction, Violation Type, Signal Tag                                                                         | 6     |
-| AIPIIRegistry           | Is Active, Object API Name, Max Fields To Query                                                                                                                                              | 3     |
-| AIUserSettings          | Is Active, Debug Mode, Workflow Actions, Export, Visibility Scope, Allowed Channels, three limits, Limit Behavior                                                                            | 10    |
-| AIDataDeletionRequest   | Scope, Received Date, Approval Decision, Status                                                                                                                                              | 4     |
-| AIUsagePolicy           | Is Active, Is Default, three limits, Limit Behavior, Visibility Scope, Allowed Channels, Workflow Actions, Export, Debug Mode                                                                |
-| AIUsagePolicyAssignment | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          |
-| AIAgentAssignment       | Assignee Type, User, Permission Set Name, Is Active                                                                                                                                          | 4     |
-| AIViolation             | Review Status                                                                                                                                                                                | 1     |
-
-Rationale: these are the fields that change what the AI may see, say or do, or who may do it. Not tracked on purpose: conversations, messages, steps, masking records, logs, feedback and acknowledgments (they are the audit trail; they are write-once), and descriptions, names and setup wizard state (noise). Long text fields show only "changed", not old and new values. If you need the diff, that is Field Audit Trail or a copy of the prior value in a custom audit record.
-
-## 8. Custom labels
-
-139 labels in `CustomLabels.labels-meta.xml`, for user-facing text only: errors, chat copy, progress steps, terms, wizard help, and security guidance. Not for picklist values, API values, object or field names (those translate through Translation Workbench, and a label compared to an API value breaks translated users).
-
-Convention, enforced by a label check that lives on the separate branch `feature/ci-label-check` (`npm run check:labels`, not yet in this branch or wired into CI):
-
-- Name `AI_<Area>_<Title_Case_Words>`, Area one of Error, Chat, Step, Terms, Wizard, Guidance, Settings, Console, Common.
-- Category `AI Assist,<Area>`; description 80 characters or fewer; language `en_US`; not protected (protected labels cannot be translated by subscribers).
-- No API names in text. Any label referenced from code must exist.
-- New user-facing string in Apex or LWC means a new label in the same change. Model-facing text (prompts, tool results) is not a label.
-
-The validator currently reports all 139 as unused, which is expected until layer 2 uses them. Add it to CI once code references labels.
-
-## 9. Existing scratch orgs
-
-The phase 1 changes remove `AIViolationRule__c.Agent__c` (a Master-Detail) and the five `Active__c` fields, which cannot be deployed over an org that has them. Create a fresh scratch org, or delete those fields with a destructive change after the Apex that used them is gone.
-
-Several changes cannot be deployed over the first layer-1 deploy in place: switching a picklist to a global value set, renaming a picklist value, changing a field's type, and removing fields. A scratch org that already has the first layer-1 deploy should be recreated from source rather than patched. CI always starts from a fresh scratch org, so it is unaffected. Nothing in this repo is needed to migrate an old org.
-
-## 10. Flow actions, conversation visibility and the request classes
-
-**Flow actions.** A Flow started from Apex does not run as the user. It runs in system context: the user's object and field permissions are not applied, and record sharing follows the Apex that started it (`with sharing`, from the chat controller). The package therefore decides what a Flow may be handed, in `AIWorkflowActionDispatcher`:
-
-| Rule                                      | Detail                                                                                                                                                                                                                                                                                          |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `recordId` is the server's                | It is the conversation's own record. A `recordId` sent by the browser is dropped (any capitalisation), even when the action's input schema declares it. This applies to Apex actions too.                                                                                                       |
-| Record access is checked                  | Every input whose value is a record Id, and `recordId`, is checked against `UserRecordAccess` for the signed-in user before the Flow starts: read access, or edit access when the action's Execution Type is Write. One missing record refuses the action. More than 200 record Ids refuses it. |
-| A refusal is recorded                     | The user sees the Action Not Permitted label. The step is recorded as Blocked, an Unauthorized Workflow Action violation is raised, and a Platform Log entry names the action, the user, the input and the record to share.                                                                     |
-| System context without sharing is refused | Unchanged (`AIFlowRunModeService`), at save and again at run time.                                                                                                                                                                                                                              |
-
-An input holding the Id of something that is not a shareable record (a record type, a queue) has no `UserRecordAccess` row and is refused. Pass a name or developer name to the Flow instead.
-
-**Conversation visibility.** `AIConversationVisibilityService` is `with sharing` and reads conversations in user mode. Sharing decides first; the two settings only narrow it:
-
-| Viewer's scope                                       | Reaches, on a Global agent                                                                                                                                                    |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| My Conversations Only (default, blank, unrecognised) | Nobody else.                                                                                                                                                                  |
-| My Subordinates Conversations                        | Starters in a role below the viewer's, which the role hierarchy already shares with the viewer.                                                                               |
-| All Conversations                                    | Whatever sharing gives the viewer, and only if the viewer holds View All on AI Conversation or the `AIAssistViewSharedConversations` custom permission. With neither, nobody. |
-
-A Private agent's conversations are readable by the starter only, whatever the viewer holds. A conversation about a record is shown only to a viewer who can read that record. `AIAssistViewSharedConversations` is in the Super User and Admin permission sets; it never widens sharing. The User permission set gained read access to `AIConversation__c.ProcessingLockedUntil__c` (a timestamp) so the user-mode read can return it.
-
-**Global request classes.** `AIDataSourceRequest` and `AIWorkflowActionRequest` have explicit `global` no-argument constructors, so a subscriber's test can build one to call its own class.
-
-## 11. Functional fixes that touch the model
-
-| Change                                     | Detail                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One active prompt template per agent       | New `AIPromptTemplate__c.ActiveAgentKey__c` (unique, set by the package: the agent's Id while the template is active). A validation rule cannot see other records, so the rule is this unique key plus a trigger check that names the template to deactivate (`AI_Error_Template_Already_Active`). It holds while the application is switched off and fails closed. Read-only for Super User and Admin. |
-| Provider failures have their own reasons   | `AIConversationMessage__c.FailureReason__c` gains Authentication Failed, Model Retired and Rate Limited, each with its own message to the user. The log entry names the Model Configuration and Named Credential to fix.                                                                                                                                                                                |
-| No retry for a request that cannot succeed | HTTP 400, 401, 403, 404, 410, 413 and 422, a rejected credential, an exhausted quota, a retired model, a missing Named Credential and an endpoint the org does not allow are never retried, whatever `RetryableStatusCodes__c` lists.                                                                                                                                                                   |
-| Persona                                    | `AIAgent__c.AIAgentPersona__c` opens the system prompt. It is configuration, read in system mode, and is sent to the provider.                                                                                                                                                                                                                                                                          |
-| Org limits                                 | Chat no longer reads `DailyApiRequests` (a turn uses none). `AIViolationEvent__e` is not published while the Events feature is Paused; the `AIViolation__c` record is always saved.                                                                                                                                                                                                                     |
-
-## 12. Bug fixes that touch the model
-
-| Change                                     | Detail                                                                                                                                                                                                         |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AIConversationMessage__c.IsSuperseded__c` | Set by the package when a regenerated reply replaces this one. Read-only for all three permission sets (the User set needs it because the turn reads its history in user mode).                                |
-| `AIConversationMessage__c.InReplyTo__c`    | On a reply, the user message it answers. Set by the package. Read-only for Super User and Admin.                                                                                                               |
-| `AIAssistSettings__c.OrgUsageStateJson__c` | The organisation's running usage totals, written by the package. Counts only, no content.                                                                                                                      |
-| Retention while off                        | `AIConversationRetentionBatch` and `AIRecordRetentionBatch` no longer stop when `IsEnabled__c` is off, so switching the application off does not keep data past its retention. Legal hold is still honoured.   |
-| Feedback                                   | Deleted with its conversation by the retention batch (it was left behind with a blank conversation) and, as before, by the data deletion batch.                                                                |
-| Retention changes                          | A change to an agent's retention days or trigger is applied to its existing conversations (`AIConversationRetentionRecalcBatch`, system mode, started by the agent trigger). Blank retention clears the dates. |
+- Steps are the evidence of what was sent and which actions ran. They default to 7 days. Raise `StepRetentionDays__c` if your audit policy needs longer.
+- With `StepCaptureMode__c` set to Off, no steps are stored for a turn, so there is no masking evidence for it. Workflow Action steps are always stored.
+- The four platform events are readable by every chat user. Their payloads carry Ids and step names, no content.
+- `User.AIAssistUserType__c` is still in source and should be removed before release: a field that could assign permission sets is a privilege-escalation path.

@@ -17,6 +17,7 @@ user has no debug, no export and no Workflow Actions, matching AIWorkflowActionD
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old state service. The user type and the terms copy on user settings are gone; Workflow Actions are off without a settings row.
+2.0          Chandler Stuart          setBlockedState: every state the chat window can be blocked in, and the plan-cap warning. The user state comes from AIFeatureService.
 */
 
 public with sharing class AIChatStateService {
@@ -116,5 +117,118 @@ public with sharing class AIChatStateService {
       ) != AIMessagingSelector.TERMS_ACCEPTED;
 
     return termsState;
+  }
+
+  // A test cannot change who holds a licence.
+  @TestVisible
+  private static Boolean isLicensedForTest;
+
+  // Fills in why the user cannot send a message right now, and the plan-cap warning. One reason is given, the first that applies, most fundamental first: the application, the org's limits, the user's licence and access, the terms, then usage. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
+  public static void setBlockedState(AIChatDataStructure.ChatContext context) {
+    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
+    Date today = AIAssistGlobalUtility.getOrgToday();
+    Integer messageLimit = AIPlanLimitService.getMessageLimit();
+    Integer usageLimit = AIPlanLimitService.getUsageLimit();
+    AIMessagingSelector.OrgUsage orgUsage = messageLimit == null &&
+      usageLimit == null
+      ? new AIMessagingSelector.OrgUsage()
+      : AIOrgUsageService.getUsage();
+
+    Boolean isLicensed = true;
+    if (isLicensedForTest != null) {
+      isLicensed = isLicensedForTest;
+    } else {
+      try {
+        isLicensed = UserInfo.isCurrentUserLicensed(
+          AIMessagingSelector.getPackageNamespace()
+        );
+      } catch (Exception notAManagedPackage) {
+        isLicensed = true; // Not installed as a managed package (a development org): there is no licence to hold.
+      }
+    }
+
+    if (AIAssistSettingsService.isActivatedElsewhere()) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED;
+      context.blockedMessage = Label.AI_Chat_Blocked_Sandbox;
+    } else if (appSettings.IsEnabled__c == false) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE;
+      context.blockedMessage = Label.AI_Error_Application_Inactive;
+    } else if (AIOrgLimitMonitor.isChatPaused()) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PAUSED;
+      context.blockedMessage = Label.AI_Error_Org_Limits_Paused;
+    } else if (!isLicensed) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE;
+      context.blockedMessage = Label.AI_Chat_Blocked_No_Licence;
+    } else if (context.terms != null && context.terms.required) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_TERMS;
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_NO_AGENT
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED;
+      context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
+      messageLimit != null &&
+      orgUsage.month.messages >= messageLimit
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP;
+      context.blockedMessage = String.format(
+        Label.AI_Error_Plan_Limit_Messages,
+        new List<String>{
+          String.valueOf(messageLimit),
+          today.toStartOfMonth().addMonths(1).format()
+        }
+      );
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
+      usageLimit != null &&
+      orgUsage.month.tokens >= usageLimit
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP;
+      context.blockedMessage = String.format(
+        Label.AI_Error_Plan_Limit_Tokens,
+        new List<String>{
+          String.valueOf(usageLimit),
+          today.toStartOfMonth().addMonths(1).format()
+        }
+      );
+    } else if (context.usage != null && context.usage.blockMessages) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_USAGE_LIMIT;
+      context.blockedMessage = Label.AI_Error_Daily_Usage_Limit;
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
+      AIMessagingSelector.countQueuedMessageJobs() >=
+      AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_BUSY;
+      context.blockedMessage = Label.AI_Error_Service_Busy;
+    }
+
+    // Close to the plan's allowance but not at it: the window can say so before messages start being refused.
+    if (
+      context.blockedState != AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP
+    ) {
+      Decimal highestPercent = Math.max(
+        messageLimit == null ||
+          messageLimit <= 0
+          ? 0
+          : 100 * orgUsage.month.messages / messageLimit,
+        usageLimit == null ||
+          usageLimit <= 0
+          ? 0
+          : 100 * orgUsage.month.tokens / usageLimit
+      );
+      if (
+        highestPercent >= AIAssistApplicationConstants.PLAN_CAP_WARNING_PERCENT
+      )
+        context.planCapWarning = String.format(
+          Label.AI_Chat_Plan_Cap_Warning,
+          new List<String>{
+            String.valueOf(
+              highestPercent.round(System.RoundingMode.DOWN).intValue()
+            )
+          }
+        );
+    }
   }
 }

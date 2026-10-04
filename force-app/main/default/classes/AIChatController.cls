@@ -34,84 +34,101 @@ public with sharing class AIChatController {
     String agentKey
   ) {
     try {
-      AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
-      context.channel = channel;
-
-      AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
-      AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-      AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
-
-      context.ui = AIChatStateService.buildUiSettings(uiSettings);
-      context.user = AIChatStateService.buildUserState(userSettings);
-
-      if (appSettings.IsEnabled__c == false) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
-        return context;
-      }
-      if (uiSettings.IsMaintenanceMode__c == true) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
-        return context;
-      }
-      if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
-        return context;
-      }
-
-      context.terms = AIChatStateService.buildTermsState(appSettings);
-      if (context.terms.required) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
-        return context;
-      }
-
-      context.record = AIChatContextService.buildRecordContext(
+      AIChatDataStructure.ChatContext context = buildChatContext(
         recordId,
-        objectApiName
-      );
-      context.agents = AIChatContextService.getAvailableAgents(
-        context.record.objectApiName
-      );
-      context.agent = AIChatContextService.selectAgent(
-        context.agents,
+        objectApiName,
+        channel,
         agentKey
       );
-
-      if (context.agent == null) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
-        return context;
-      }
-
-      context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
-      context.usage = AIChatUsageService.buildUsageState(userSettings);
-      context.commands = AIChatCommandService.getAvailableCommands(
-        context.agent.id,
-        context.record
-      );
-
-      AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
-        context.agent.id,
-        context.record.recordId
-      );
-
-      if (activeConversation != null) {
-        context.openConversation = AIChatConversationService.toConversationSummary(
-          activeConversation
-        );
-        if (
-          context.agent.loadTrigger !=
-          AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
-        )
-          context.conversation = AIChatConversationService.buildConversationView(
-            activeConversation.Id,
-            context.ui.messagePageSize,
-            context.user,
-            context.ui
-          );
-      }
+      // Why the user cannot send right now, if they cannot, and the plan-cap warning: named for the window rather than left for it to work out.
+      AIChatStateService.setBlockedState(context);
 
       return context;
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getChatContext');
     }
+  }
+
+  // Everything the window needs to open, up to the first state that stops it.
+  private static AIChatDataStructure.ChatContext buildChatContext(
+    String recordId,
+    String objectApiName,
+    String channel,
+    String agentKey
+  ) {
+    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
+    context.channel = channel;
+
+    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
+    AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
+    AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+
+    context.ui = AIChatStateService.buildUiSettings(uiSettings);
+    context.user = AIChatStateService.buildUserState(userSettings);
+
+    // Switched off, or switched on in another org (a copied sandbox).
+    if (!AIAssistSettingsService.isEnabled()) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
+      return context;
+    }
+    if (uiSettings.IsMaintenanceMode__c == true) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
+      return context;
+    }
+    if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
+      return context;
+    }
+
+    context.terms = AIChatStateService.buildTermsState(appSettings);
+    if (context.terms.required) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
+      return context;
+    }
+
+    context.record = AIChatContextService.buildRecordContext(
+      recordId,
+      objectApiName
+    );
+    context.agents = AIChatContextService.getAvailableAgents(
+      context.record.objectApiName
+    );
+    context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
+
+    if (context.agent == null) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
+      return context;
+    }
+
+    context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
+    context.usage = AIChatUsageService.buildUsageState(userSettings);
+    context.commands = AIChatCommandService.getAvailableCommands(
+      context.agent.id,
+      context.record
+    );
+
+    AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
+      context.agent.id,
+      context.record.recordId
+    );
+
+    if (activeConversation != null) {
+      context.openConversation = AIChatConversationService.toConversationSummary(
+        activeConversation
+      );
+      if (
+        context.agent.loadTrigger !=
+        AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
+      )
+        context.conversation = AIChatConversationService.buildConversationView(
+          activeConversation.Id,
+          context.ui.messagePageSize,
+          context.user,
+          context.ui
+        );
+    }
+
+    return context;
   }
 
   @AuraEnabled
