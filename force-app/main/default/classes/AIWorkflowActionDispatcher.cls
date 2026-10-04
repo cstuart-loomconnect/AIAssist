@@ -16,11 +16,17 @@ In order, and each refusal is an AIMessagingException with a Custom Label and a 
     active and assigned to the agent through an active assignment.
 [3] An action that requires confirmation runs only when the user has confirmed.
 [4] Only the inputs the action declares in InputSchema__c reach the Apex class or the Flow; any other key
-    the browser sent is dropped and logged by name. A Flow that runs in system context without sharing
-    is refused (AIFlowRunModeService). The Apex class (checked to implement IAIWorkflowActionExecutor
-    before it is instantiated) or the Flow runs as the signed-in user. A failure is logged in full and the user sees the Action Failed
-    label, never class or flow names.
-Whatever happens at [1] to [4] is recorded as a Workflow Action step on the reply the action was
+    the browser sent is dropped and logged by name. recordId is never taken from the browser: it is the
+    conversation's own record, set here.
+[5] An Apex class (checked to implement IAIWorkflowActionExecutor before it is instantiated) runs in the
+    user's transaction with the sharing it declares for itself. A Flow does not run as the user: a Flow
+    started from Apex runs in system context, so the user's object and field permissions are not applied,
+    and only record sharing is (this class is called from the with sharing chat controller). So before a
+    Flow starts, the user must have access to every record Id passed to it (UserRecordAccess: read, or
+    edit when the action's Execution Type is Write), and a Flow set to run in system context without
+    sharing is refused (AIFlowRunModeService). A failure is logged in full and the user sees the Action
+    Failed label, never class or flow names.
+Whatever happens at [1] to [5] is recorded as a Workflow Action step on the reply the action was
 suggested on: Success, Failed, or Blocked (refused before it ran), with the target, whether
 confirmation was required and who confirmed it. cancel records that the user declined.
 
@@ -31,6 +37,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from AIWorkflowActionDispatcher. Adds the plan and user gates, system-mode read of the definition, the assignment check, confirmation, the interface check before instantiation, and evidence on every outcome.
 2.0          Chandler Stuart          Apex class lookup uses Type.forName with an empty namespace so a subscriber's own class is found from managed code.
 3.0          Chandler Stuart          The agent must still admit the user; inputs not declared in InputSchema__c are dropped; a Flow in system context without sharing is refused at run time.
+4.0          Chandler Stuart          recordId is always the server's. The user's access to every record Id passed to a Flow is checked before it starts. Comments corrected: a Flow started from Apex runs in system context, not as the user.
 */
 
 public inherited sharing class AIWorkflowActionDispatcher {
@@ -106,6 +113,11 @@ public inherited sharing class AIWorkflowActionDispatcher {
         inputParameters,
         workflowActionId
       );
+      // recordId is the conversation's record and nothing else, even when the schema declares an input of that name.
+      for (String declaredName : parameters.keySet().clone()) {
+        if (declaredName.equalsIgnoreCase('recordId'))
+          parameters.remove(declaredName);
+      }
       hasRun = true;
 
       if (
@@ -176,6 +188,67 @@ public inherited sharing class AIWorkflowActionDispatcher {
         Map<String, Object> flowInputs = new Map<String, Object>(parameters);
         if (recordId != null)
           flowInputs.put('recordId', recordId);
+
+        // The Flow runs in system context, so the user's access to each record it is handed is checked here. A value that is not a record Id is not a record and is passed as it is.
+        Map<Id, String> inputNameByRecordId = new Map<Id, String>();
+        for (String inputName : flowInputs.keySet()) {
+          Id passedId = flowInputs.get(inputName) instanceof Id ||
+            flowInputs.get(inputName) instanceof String
+            ? AIChatDataStructure.toIdOrNull(
+                String.valueOf(flowInputs.get(inputName))
+              )
+            : null;
+          if (passedId != null)
+            inputNameByRecordId.put(passedId, inputName);
+        }
+
+        Boolean isWrite =
+          action.ExecutionType__c ==
+          AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
+        Set<Id> refusedRecordIds = inputNameByRecordId.keySet().clone();
+        if (
+          refusedRecordIds.size() <=
+          AIAssistApplicationConstants.MAX_FLOW_RECORD_INPUTS
+        ) {
+          for (UserRecordAccess access : [
+            SELECT RecordId, HasReadAccess, HasEditAccess
+            FROM UserRecordAccess
+            WHERE
+              UserId = :UserInfo.getUserId()
+              AND RecordId IN :inputNameByRecordId.keySet()
+            WITH SYSTEM_MODE
+          ]) {
+            if (isWrite ? access.HasEditAccess : access.HasReadAccess)
+              refusedRecordIds.remove(access.RecordId);
+          }
+        }
+
+        if (!refusedRecordIds.isEmpty()) {
+          List<String> refusedInputs = new List<String>();
+          for (Id refusedRecordId : refusedRecordIds)
+            refusedInputs.add(
+              inputNameByRecordId.get(refusedRecordId) + ' = ' + refusedRecordId
+            );
+          AIPlatformLogManager.logCustomMessage(
+            'Flow action ' +
+              action.DeveloperName__c +
+              ' was not run: user ' +
+              UserInfo.getUserId() +
+              ' has no ' +
+              (isWrite ? 'edit' : 'read') +
+              ' access to a record passed to the Flow.',
+            'Share the record with the user, or change the action so it does not pass it. Inputs refused: ' +
+            String.join(refusedInputs, ', ').abbreviate(900),
+            'AIWorkflowActionDispatcher',
+            'runWorkflowAction',
+            workflowActionId
+          );
+          hasRun = false;
+          throw AIMessagingException.newRefusal(
+            AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+            Label.AI_Error_Action_Not_Permitted
+          );
+        }
 
         Flow.Interview interview = Flow.Interview.createInterview(
           action.FlowAPIName__c,

@@ -25,6 +25,7 @@ private class AIPromptTemplateTriggerHandlerTest {
   // testScenario5: Bulk: 201 templates are all named, and a bulk wording change versions every one once.
   // testScenario6: Switched off, nothing is stamped or versioned, and the handler ignores empty input.
   // testScenario7: An unexpected failure inside the handler is logged and never stops the save.
+  // testScenario8: A second active template for an agent is refused with a message naming the first, on insert, on activation and within one save; an inactive one saves, and the active one can be swapped in a single update.
 
   @TestSetup
   static void setup() {
@@ -49,6 +50,7 @@ private class AIPromptTemplateTriggerHandlerTest {
     );
     templates[0].Name = 'Friendly Support Tone';
     templates[1].DeveloperName__c = 'Fixed_Template';
+    templates[1].IsActive__c = false; // An agent has one active template.
 
     Test.startTest();
     insert templates;
@@ -275,6 +277,91 @@ private class AIPromptTemplateTriggerHandlerTest {
         WHERE ClassName__c = 'AIPromptTemplateTriggerHandler'
       ],
       'Logged once.'
+    );
+  }
+
+  @IsTest
+  static void testScenario8() {
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      true
+    )[0];
+    AIPromptTemplate__c first = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      true
+    )[0];
+    first = [
+      SELECT Name, ActiveAgentKey__c
+      FROM AIPromptTemplate__c
+      WHERE Id = :first.Id
+    ];
+    AIPromptTemplate__c second = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    // The rule is an integrity rule: it holds while the application is switched off.
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.IsEnabled__c = false;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    Test.startTest();
+    Database.SaveResult secondActive = Database.insert(second, false);
+    second.IsActive__c = false;
+    Database.SaveResult secondInactive = Database.insert(second, false);
+    second.IsActive__c = true;
+    Database.SaveResult activated = Database.update(second, false);
+    List<Database.SaveResult> twoAtOnce = Database.insert(
+      AIAssistTestDataFactory.createAIPromptTemplates(
+        AIAssistTestDataFactory.createAIAgents(
+            1,
+            agent.AIModelConfiguration__c,
+            true
+          )[0]
+          .Id,
+        2,
+        false
+      ),
+      false
+    );
+    first.IsActive__c = false;
+    List<Database.SaveResult> swapped = Database.update(
+      new List<AIPromptTemplate__c>{ first, second },
+      false
+    );
+    Test.stopTest();
+
+    Assert.areEqual(
+      String.valueOf(agent.Id),
+      first.ActiveAgentKey__c,
+      'An active template carries its agent as the key.'
+    );
+    Assert.isFalse(secondActive.isSuccess(), 'A second active one is refused.');
+    Assert.isTrue(
+      secondActive.getErrors()[0].getMessage().contains(first.Name),
+      'The message names the template to deactivate: ' +
+      secondActive.getErrors()[0].getMessage()
+    );
+    Assert.isTrue(secondInactive.isSuccess(), 'An inactive one saves.');
+    Assert.isFalse(activated.isSuccess(), 'Activating it is refused.');
+    Assert.isTrue(twoAtOnce[0].isSuccess(), 'The first of two in one save.');
+    Assert.isFalse(twoAtOnce[1].isSuccess(), 'The second of two is refused.');
+    Assert.isTrue(
+      swapped[0].isSuccess() && swapped[1].isSuccess(),
+      'Deactivating one and activating the other in one update is allowed.'
+    );
+    Assert.areEqual(
+      second.Id,
+      [
+        SELECT Id
+        FROM AIPromptTemplate__c
+        WHERE ActiveAgentKey__c = :String.valueOf(agent.Id)
+      ]
+      .Id,
+      'The key moved to the new active template.'
     );
   }
 }

@@ -18,9 +18,9 @@ Version      Author                   Description
 
 @IsTest
 private class AIMaintenanceSchedulerTest {
-  // testScenario1: A scheduled run starts the four housekeeping batches.
+  // testScenario1: A scheduled run starts the five housekeeping batches.
   // testScenario2: It can be scheduled and fires through the platform's scheduler.
-  // testScenario3: Switched off, it starts nothing.
+  // testScenario3: Switched off, retention and the usage totals still run and only the idle batch does not.
   // testScenario4: A batch that cannot be started is logged and the others still start.
 
   @TestSetup
@@ -65,6 +65,15 @@ private class AIMaintenanceSchedulerTest {
       ],
       'Logs and violations.'
     );
+    Assert.areEqual(
+      1,
+      [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE ApexClass.Name = 'AIOrgUsageTotalsBatch'
+      ],
+      'Usage totals.'
+    );
   }
 
   @IsTest
@@ -106,14 +115,23 @@ private class AIMaintenanceSchedulerTest {
       [
         SELECT COUNT()
         FROM AsyncApexJob
+        WHERE ApexClass.Name = 'AIConversationIdleBatch'
+      ],
+      'Idle closing waits for the application to be on.'
+    );
+    Assert.areEqual(
+      4,
+      [
+        SELECT COUNT()
+        FROM AsyncApexJob
         WHERE
           ApexClass.Name IN (
-            'AIConversationIdleBatch',
             'AIConversationRetentionBatch',
-            'AIRecordRetentionBatch'
+            'AIRecordRetentionBatch',
+            'AIOrgUsageTotalsBatch'
           )
       ],
-      'Nothing while off.'
+      'Retention (conversations, logs, violations) and the usage totals run while off.'
     );
   }
 
@@ -130,7 +148,7 @@ private class AIMaintenanceSchedulerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      4,
+      5,
       [
         SELECT COUNT()
         FROM AIPlatformLog__c

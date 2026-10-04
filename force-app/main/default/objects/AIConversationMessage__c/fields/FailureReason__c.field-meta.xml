@@ -43,6 +43,21 @@
                 <label>Configuration Error</label>
             </value>
             <value>
+                <fullName>Authentication Failed</fullName>
+                <default>false</default>
+                <label>Authentication Failed</label>
+            </value>
+            <value>
+                <fullName>Model Retired</fullName>
+                <default>false</default>
+                <label>Model Retired</label>
+            </value>
+            <value>
+                <fullName>Rate Limited</fullName>
+                <default>false</default>
+                <label>Rate Limited</label>
+            </value>
+            <value>
                 <fullName>Other</fullName>
                 <default>false</default>
                 <label>Other</label>

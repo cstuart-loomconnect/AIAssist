@@ -10,13 +10,15 @@ keeps the records indefinitely. A violation that is still New is kept whatever i
 deleting evidence nobody has reviewed would hide it.
 
 One instance handles one object, chosen by the constructor, so each runs in its own transactions.
-System mode: no user holds Delete on either object. It does nothing while the application is off.
+System mode: no user holds Delete on either object. It runs whether or not the
+application is switched on.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development. Applies the two retention settings the object model added.
+2.0          Chandler Stuart          Runs while the application is off.
 */
 
 public inherited sharing class AIRecordRetentionBatch implements Database.Batchable<SObject> {
@@ -63,9 +65,6 @@ public inherited sharing class AIRecordRetentionBatch implements Database.Batcha
   }
 
   public void execute(Database.BatchableContext context, List<SObject> scope) {
-    if (!AIAssistSettingsService.isEnabled())
-      return;
-
     AIMessagingDataService.deleteAndLogFailures(
       scope,
       'AIRecordRetentionBatch',

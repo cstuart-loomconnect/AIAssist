@@ -133,26 +133,40 @@ public inherited sharing class AIMessageOutcomeService {
             AIModelConfiguration__c = responseContext.modelConfigurationId,
             AIPromptTemplate__c = responseContext.promptTemplateId,
             PromptTemplateVersion__c = responseContext.promptTemplateVersion,
-            SuggestedWorkflowAction__c = suggestedActionId
+            SuggestedWorkflowAction__c = suggestedActionId,
+            InReplyTo__c = responseContext.triggeringMessageId
           );
 
           AIMessagingDataService.insertAsPackage(
             new List<SObject>{ replyMessage }
           );
 
+          // Regenerate: an earlier reply to the same message is replaced now that the new one is saved, so a regenerate that failed would have left the old answer standing.
           if (responseContext.triggeringMessageId != null) {
+            List<AIConversationMessage__c> replacedReplies = [
+              SELECT Id
+              FROM AIConversationMessage__c
+              WHERE
+                InReplyTo__c = :responseContext.triggeringMessageId
+                AND Id != :replyMessage.Id
+                AND IsSuperseded__c = FALSE
+              WITH SYSTEM_MODE
+            ];
+            for (AIConversationMessage__c replacedReply : replacedReplies)
+              replacedReply.IsSuperseded__c = true;
             AIMessagingDataService.updateAndLogFailures(
-              new List<SObject>{
-                new AIConversationMessage__c(
-                  Id = responseContext.triggeringMessageId,
-                  ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
-                  FailureReason__c = null
-                )
-              },
+              replacedReplies,
               'AIMessageOutcomeService',
               'recordAiResponseOutcome'
             );
           }
+
+          closeWaitingMessages(
+            responseContext,
+            AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
+            null,
+            'recordAiResponseOutcome'
+          );
 
           AIExecutionStepRecorder.recordExecutionSteps(
             replyMessage.Id,
@@ -305,6 +319,19 @@ public inherited sharing class AIMessageOutcomeService {
       AIAssistApplicationConstants.FAILURE_REASON_MESSAGE_MISSING
     )
       userMessage = Label.AI_Error_Conversation_Not_Found;
+    else if (
+      failureReason ==
+      AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED
+    )
+      userMessage = Label.AI_Error_Provider_Authentication;
+    else if (
+      failureReason == AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED
+    )
+      userMessage = Label.AI_Error_Provider_Model_Retired;
+    else if (
+      failureReason == AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED
+    )
+      userMessage = Label.AI_Error_Provider_Rate_Limited;
 
     try {
       if (conversationId != null) {
@@ -416,19 +443,12 @@ public inherited sharing class AIMessageOutcomeService {
         responseContext.triggeringMessageId
       );
 
-    if (responseContext.triggeringMessageId != null) {
-      AIMessagingDataService.updateAndLogFailures(
-        new List<SObject>{
-          new AIConversationMessage__c(
-            Id = responseContext.triggeringMessageId,
-            ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-            FailureReason__c = reason
-          )
-        },
-        'AIMessageOutcomeService',
-        'fail'
-      );
-    }
+    closeWaitingMessages(
+      responseContext,
+      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+      reason,
+      'fail'
+    );
 
     AIExecutionStepRecorder.recordExecutionSteps(
       responseContext.triggeringMessageId,
@@ -460,5 +480,64 @@ public inherited sharing class AIMessageOutcomeService {
     }
 
     publishMessageFailure(responseContext.conversationId, reason);
+  }
+
+  // Ends the turn's message, and with it every user message in the conversation still Queued that was sent at or before it. Only the newest waiting message is answered (the finalizer hands the lock to the newest), so an older one sent while a reply was being prepared would otherwise stay Queued for ever. Bookkeeping: a failure is logged, never thrown.
+  private static void closeWaitingMessages(
+    AIResponseContext responseContext,
+    String processingStatus,
+    String failureReason,
+    String methodName
+  ) {
+    try {
+      if (responseContext.triggeringMessageId == null)
+        return;
+
+      // "At or before" by time and, within the same second, by Id: the order the history is read in.
+      List<AIConversationMessage__c> endedMessages = new List<AIConversationMessage__c>();
+      Datetime triggeredAt;
+      List<AIConversationMessage__c> candidates = [
+        SELECT Id, CreatedDate
+        FROM AIConversationMessage__c
+        WHERE
+          Id = :responseContext.triggeringMessageId
+          OR (AIConversation__c = :responseContext.conversationId
+          AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
+          AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED)
+        WITH SYSTEM_MODE
+      ];
+      for (AIConversationMessage__c candidate : candidates) {
+        if (candidate.Id == responseContext.triggeringMessageId)
+          triggeredAt = candidate.CreatedDate;
+      }
+      for (AIConversationMessage__c candidate : candidates) {
+        if (
+          candidate.Id == responseContext.triggeringMessageId ||
+          (triggeredAt != null &&
+          (candidate.CreatedDate < triggeredAt ||
+          (candidate.CreatedDate == triggeredAt &&
+          candidate.Id < responseContext.triggeringMessageId)))
+        )
+          endedMessages.add(
+            new AIConversationMessage__c(
+              Id = candidate.Id,
+              ProcessingStatus__c = processingStatus,
+              FailureReason__c = failureReason
+            )
+          );
+      }
+
+      AIMessagingDataService.updateAndLogFailures(
+        endedMessages,
+        'AIMessageOutcomeService',
+        methodName
+      );
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIMessageOutcomeService',
+        methodName
+      );
+    }
   }
 }

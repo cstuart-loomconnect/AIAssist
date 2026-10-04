@@ -257,8 +257,11 @@ public inherited sharing class AIAgentManager {
         );
       }
 
-      // The system prompt: the template plus a compact list of workflow actions the model may suggest, never run.
+      // The system prompt: who the agent is, the template, then a compact list of workflow actions the model may suggest, never run.
       List<String> systemPromptParts = new List<String>();
+
+      if (String.isNotBlank(agent.AIAgentPersona__c))
+        systemPromptParts.add('Persona: ' + agent.AIAgentPersona__c);
 
       if (promptTemplate != null) {
         if (String.isNotBlank(promptTemplate.AISystemContext__c))
@@ -506,13 +509,28 @@ public inherited sharing class AIAgentManager {
             'AIAgentManager',
             'executeAiMessage'
           );
-          calloutErrorMessage =
-            'AI provider callout failed: ' + calloutException.getMessage();
-          calloutFailureReason = String.isNotBlank(
-              calloutException.getMessage()
-            ) && calloutException.getMessage().containsIgnoreCase('timed out')
-            ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
-            : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+          String calloutDetail = calloutException.getMessage() == null
+            ? ''
+            : calloutException.getMessage();
+          // An endpoint the org does not allow, or a Named Credential that is missing, fails the same way every time: a setup problem, not retried.
+          Boolean isSetupProblem =
+            calloutDetail.containsIgnoreCase('unauthorized endpoint') ||
+            calloutDetail.containsIgnoreCase('named credential');
+          calloutErrorMessage = isSetupProblem
+            ? 'The AI provider could not be called: ' +
+              calloutDetail +
+              ' Check Named Credential "' +
+              modelConfiguration.NamedCredential__c +
+              '" on AI Model Configuration ' +
+              modelConfiguration.Id +
+              '.'
+            : 'AI provider callout failed: ' + calloutDetail;
+          calloutFailureReason = isSetupProblem
+            ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR
+            : (calloutDetail.containsIgnoreCase('timed out')
+                ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
+                : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR);
+          isCalloutErrorRetryable = !isSetupProblem;
           break;
         }
 
@@ -540,23 +558,59 @@ public inherited sharing class AIAgentManager {
         if (trace.captureFullDetail)
           trace.lastResponseJson = httpResponse.getBody();
 
-        // A retryable status (AIAssistSettings__c.RetryableStatusCodes__c) ends this attempt so the caller can retry with fresh limits.
+        // Any status that is not a success ends this attempt with a reason the user can be told and a message that says which record to fix. It is retried only when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could succeed next time: a rejected credential, a retired model, an exhausted quota and a bad request never are.
+        Integer statusCode = httpResponse.getStatusCode();
         if (
-          AIAssistSettingsService.getRetryStatusCodes()
-            .contains(httpResponse.getStatusCode())
+          !AIAssistSettingsService.getSuccessStatusCodes().contains(statusCode)
         ) {
           providerStep.isSuccess = false;
+          calloutFailureReason = AIProvider.getFailureReason(
+            statusCode,
+            httpResponse.getBody()
+          );
+          Boolean isCredentialRejected =
+            calloutFailureReason ==
+            AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
+          Boolean isModelRetired =
+            calloutFailureReason ==
+            AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
+          isCalloutErrorRetryable =
+            AIAssistSettingsService.getRetryStatusCodes()
+              .contains(statusCode) &&
+            !AIAssistApplicationConstants.NEVER_RETRIED_STATUS_CODES.contains(
+              statusCode
+            ) &&
+            !isCredentialRejected &&
+            !isModelRetired;
           calloutErrorMessage =
-            'AI provider returned a retryable HTTP status: ' +
-            httpResponse.getStatusCode();
-          calloutFailureReason = httpResponse.getStatusCode() == 408 ||
-            httpResponse.getStatusCode() == 504
-            ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
-            : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+            'AI provider returned ' +
+            (isCalloutErrorRetryable ? 'a retryable ' : '') +
+            'HTTP status ' +
+            statusCode +
+            ' (' +
+            calloutFailureReason +
+            '). ' +
+            (isCredentialRejected
+              ? 'The credential or the account was rejected: check the API key and billing behind Named Credential "' +
+                modelConfiguration.NamedCredential__c +
+                '" on AI Model Configuration ' +
+                modelConfiguration.Id +
+                '. '
+              : (isModelRetired
+                  ? 'Model "' +
+                    modelConfiguration.ModelIdentifier__c +
+                    '" is not available: update Model Identifier on AI Model Configuration ' +
+                    modelConfiguration.Id +
+                    '. '
+                  : '')) +
+            'Provider said: ' +
+            (String.isBlank(httpResponse.getBody())
+              ? '(nothing)'
+              : httpResponse.getBody().abbreviate(1000));
           break;
         }
 
-        // Parse the reply. Throws for any other non-success status: a hard failure, caught and logged below.
+        // Parse the reply. A malformed body throws: a hard failure, caught and logged below.
         AIProvider.Response modelResponse = providerResponseHandler.handleResponse(
           providerMessages,
           httpResponse,

@@ -223,12 +223,10 @@ public with sharing class AIChatConversationService {
 
   // Conversations other people started that the user may read (see AIConversationVisibilityService), newest activity first. Read-only: none of them can be sent to, closed, resumed, exported or acted on.
   public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
-    Id viewerId = UserInfo.getUserId();
     List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
 
     for (
       AIConversation__c conversation : AIConversationVisibilityService.getSharedConversations(
-        viewerId,
         AIConversationVisibilityService.getEffectiveScope(
           AIChatStateService.getUserSettings()
         ),
@@ -399,7 +397,7 @@ public with sharing class AIChatConversationService {
     List<AIConversationMessage__c> newestFirst = (List<AIConversationMessage__c>) Database.queryWithBinds(
       'SELECT ' +
         MESSAGE_FIELDS +
-        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders' +
+        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders AND IsSuperseded__c = FALSE' +
         boundaryFilter +
         ' ORDER BY CreatedDate DESC, Id DESC LIMIT :maxRows',
       new Map<String, Object>{
@@ -516,7 +514,7 @@ public with sharing class AIChatConversationService {
     List<AIConversationMessage__c> newerMessages = (List<AIConversationMessage__c>) Database.queryWithBinds(
       'SELECT ' +
         MESSAGE_FIELDS +
-        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders' +
+        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders AND IsSuperseded__c = FALSE' +
         boundaryFilter +
         ' ORDER BY CreatedDate ASC, Id ASC LIMIT :maxRows',
       new Map<String, Object>{

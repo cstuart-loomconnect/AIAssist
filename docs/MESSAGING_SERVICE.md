@@ -41,11 +41,15 @@ A user sends a message; the layer decides whether they may, records it, and hand
 - Triggers run only on the package's own objects.
 - No DML before the callout (an uncommitted write blocks every later callout). The job checks the lock read-only and does not mark the message "Processing".
 - Bounded work per turn: 8,000 characters per user message, 50 messages and 100,000 characters of history, 64 tools of each kind.
-- The asynchronous queue is shared with the subscriber. New turns are refused when 200 of ours are already queued or running.
+- The asynchronous queue is shared with the subscriber. New turns are refused, with "AI Assist is busy, try again shortly", when 200 of ours are already queued or running. Only this package's jobs are counted (`ApexClass.NamespacePrefix`).
 - Retries after the first wait one minute, so a rate-limited provider is not hit again at once.
 - A job that cannot enqueue its successor (asynchronous limit, or the fixed chain depth of trial and developer orgs) fails the turn, frees the lock and tells the user, instead of leaving them waiting.
 - A job that waited in the queue longer than the lock lasts stands down instead of running beside whatever took the conversation over.
-- Usage limits read `AIUsageDaily__c` (a handful of rows) instead of summing conversations. The plan's monthly allowance sums one month of rows, filtered on the indexed `CreatedDate`; it is skipped when no limit is set.
+- A user's limits read that user's `AIUsageDaily__c` rows for the day. The organisation's limits (the plan's monthly messages and tokens, the daily token budget) read running totals kept in `AIAssistSettings__c.OrgUsageStateJson__c` by `AIOrgUsageService`: each usage write adds to them, and the maintenance job recounts them exactly (`AIOrgUsageTotalsBatch`). No usage row is read on a send, however many there are.
+- When a reply is saved or a turn fails, every user message in the conversation still Queued and sent at or before the one answered is ended with it (Complete or Failed). The finalizer hands the lock to the newest waiting message only, so an older one would otherwise stay Queued.
+- Regenerate replaces the answer: each reply records the message it answers (`InReplyTo__c`), and saving a new reply marks the earlier one `IsSuperseded__c`. A superseded reply is left out of the chat and of what the model is sent; it still counts in usage and is still exported and retained. A regenerate that fails leaves the earlier reply in place.
+- The concurrent conversation limit counts Active conversations with activity inside their agent's idle timeout; an agent with no timeout counts all of them.
+- Retention (conversations with their feedback, logs, violations), the org limit reading and the usage totals run from the maintenance job even while the application is off. Changing an agent's retention days or trigger recalculates the expiry date of its existing conversations in a batch.
 
 ## 4. What layer 2 needs from layer 1
 

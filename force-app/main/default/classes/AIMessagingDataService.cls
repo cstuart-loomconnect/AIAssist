@@ -153,8 +153,10 @@ public without sharing class AIMessagingDataService {
         false,
         AccessLevel.SYSTEM_MODE
       );
-      if (insertResult.isSuccess())
+      if (insertResult.isSuccess()) {
+        AIOrgUsageService.add(usageDelta);
         return;
+      }
 
       usageRow = AIMessagingSelector.lockDailyUsageRow(usageKey);
       if (usageRow == null)
@@ -188,6 +190,7 @@ public without sharing class AIMessagingDataService {
       usageDelta.outputTokens;
 
     updateAsPackage(new List<SObject>{ usageRow });
+    AIOrgUsageService.add(usageDelta);
   }
 
   private static void write(

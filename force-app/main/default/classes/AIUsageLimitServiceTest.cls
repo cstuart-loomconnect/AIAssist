@@ -27,6 +27,7 @@ private class AIUsageLimitServiceTest {
   // testScenario7: The plan's monthly token limit refuses once the month's tokens reach it.
   // testScenario8: The organisation's daily token budget refuses once today's tokens, from every user, reach it.
   // testScenario9: A full shared queue refuses the message as service busy, and room in the queue allows it.
+  // testScenario10: A conversation idle for longer than its agent's timeout does not count towards the concurrent limit; one inside the timeout, and one on an agent with no timeout, do.
 
   @TestSetup
   static void setup() {
@@ -508,9 +509,9 @@ private class AIUsageLimitServiceTest {
     } catch (AIMessagingException ex) {
       code = ex.code;
       Assert.areEqual(
-        Label.AI_Error_Provider_Unavailable,
+        Label.AI_Error_Service_Busy,
         ex.getMessage(),
-        'The text is the Custom Label.'
+        'The text says AI Assist is busy, not that the provider is unavailable.'
       );
     }
     Test.stopTest();
@@ -519,6 +520,79 @@ private class AIUsageLimitServiceTest {
       AIAssistApplicationConstants.ERROR_SERVICE_BUSY,
       code,
       'Service busy.'
+    );
+  }
+
+  @IsTest
+  static void testScenario10() {
+    User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
+    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
+      2,
+      model.Id,
+      false
+    );
+    agents[0].IdleTimeoutMinutes__c = 30;
+    agents[1].IdleTimeoutMinutes__c = null;
+    insert agents;
+    List<AIConversation__c> timed = AIAssistTestDataFactory.createAIConversations(
+      agents[0].Id,
+      chatUser.Id,
+      2,
+      true
+    );
+    AIConversation__c untimed = AIAssistTestDataFactory.createAIConversations(
+      agents[1].Id,
+      chatUser.Id,
+      1,
+      true
+    )[0];
+    // One conversation on the timed agent went quiet two hours ago; the one with no timeout went quiet two days ago.
+    timed[0].LastMessageTimestamp__c = System.now().addHours(-2);
+    timed[1].LastMessageTimestamp__c = System.now().addMinutes(-5);
+    untimed.LastMessageTimestamp__c = System.now().addDays(-2);
+    update new List<AIConversation__c>{ timed[0], timed[1], untimed };
+    AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(
+      chatUser.Id,
+      false
+    )[0];
+    settings.MaxConcurrentConversations__c = 3;
+    settings.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES;
+    insert settings;
+    AIMessageValidator.ChatContext context = new AIMessageValidator.ChatContext();
+    context.userId = chatUser.Id;
+    context.agent = agents[0];
+    context.userSettings = settings;
+    String refusedCode;
+
+    Test.startTest();
+    Integer counted = AIMessagingSelector.countActiveConversations(chatUser.Id);
+    try {
+      AIUsageLimitService.enforceUsageLimits(context, true, 0);
+    } catch (AIMessagingException ex) {
+      Assert.fail('Two of three places are taken: ' + ex.code);
+    }
+    timed[0].LastMessageTimestamp__c = System.now();
+    update timed[0];
+    try {
+      AIUsageLimitService.enforceUsageLimits(context, true, 0);
+    } catch (AIMessagingException ex) {
+      refusedCode = ex.code;
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      2,
+      counted,
+      'The idle conversation is not counted; the recent one and the one with no timeout are.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
+      refusedCode,
+      'Once it is active again all three places are taken.'
     );
   }
 }

@@ -6,7 +6,7 @@
   >Comma-separated list of HTTP status codes AIAgentManager treats as retryable - a callout returning one of these, with attempts remaining, comes back as retryable instead of failing the turn.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Example: 408,429,500,502,503,504,529. Leave blank to never retry.</inlineHelpText>
+  >Example: 408,429,500,502,503,504,529. Leave blank to never retry. 400, 401, 403, 404, 410, 413 and 422 are never retried even if listed here: they fail the same way every time.</inlineHelpText>
     <label>Retryable Status Codes</label>
     <length>255</length>
     <required>false</required>

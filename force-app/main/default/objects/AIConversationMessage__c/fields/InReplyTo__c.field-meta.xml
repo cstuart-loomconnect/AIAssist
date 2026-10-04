@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>InReplyTo__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description
+  >On an AI reply, the user message it answers. Lets a regenerated reply find the reply it replaces. Set by AI Assist.</description>
+    <inlineHelpText
+  >The user message this reply answers. Set automatically.</inlineHelpText>
+    <label>In Reply To</label>
+    <referenceTo>AIConversationMessage__c</referenceTo>
+    <relationshipLabel>Replies</relationshipLabel>
+    <relationshipName>Replies</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

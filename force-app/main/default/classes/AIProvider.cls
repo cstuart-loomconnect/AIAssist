@@ -116,6 +116,41 @@ public inherited sharing class AIProvider {
       .newInstance();
   }
 
+  // Why a provider refused a request, from its HTTP status and what its error body says, as an AIConversationMessage__c.FailureReason__c value. The body is checked because providers reuse statuses: OpenAI answers 429 for an exhausted quota (which waiting does not fix) and 404 for a retired model.
+  public static String getFailureReason(
+    Integer statusCode,
+    String responseBody
+  ) {
+    String body = responseBody == null ? '' : responseBody.toLowerCase();
+
+    if (
+      statusCode == 401 ||
+      statusCode == 403 ||
+      body.contains('invalid_api_key') ||
+      body.contains('authentication_error') ||
+      body.contains('permission_error') ||
+      body.contains('insufficient_quota')
+    )
+      return AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
+
+    if (
+      statusCode == 410 ||
+      body.contains('model_not_found') ||
+      body.contains('deprecated') ||
+      body.contains('decommissioned') ||
+      (statusCode == 404 && body.contains('model'))
+    )
+      return AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
+
+    if (statusCode == 429)
+      return AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED;
+
+    if (statusCode == 408 || statusCode == 504)
+      return AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
+
+    return AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+  }
+
   // Tool results are fed back to the provider as text either way - a String passes through untouched, anything else is JSON-serialized.
   public static String stringifyToolResult(Object toolResult) {
     if (toolResult instanceof String)

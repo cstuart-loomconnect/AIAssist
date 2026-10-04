@@ -7,7 +7,7 @@ Class Name: IAIWorkflowActionExecutor
 Description: Contract for the Apex class named in AIWorkflowAction__c.ApexClassName__c when the action type is
 Apex. The class performs the action and returns an AIWorkflowActionResponse whose message is shown to the user as text. The AIWorkflowActionRequest carries the record, the declared inputs and who is asking.
 
-The class runs as the signed-in user, in the sharing mode it declares for itself, so it should be
+The class runs in the signed-in user's transaction, in system context and in the sharing mode it declares for itself, so it should be
 "with sharing" and use user mode for its own queries and DML. The dispatcher checks that the class
 implements this interface before it is instantiated.
 

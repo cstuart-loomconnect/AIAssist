@@ -19,6 +19,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
+5.0          Chandler Stuart          After update: a change to the retention settings recalculates the expiry date of the agent's conversations in a batch.
 */
 
 public inherited sharing class AIAgentTriggerHandler {
@@ -60,5 +61,46 @@ public inherited sharing class AIAgentTriggerHandler {
     List<AIAgent__c> newRecords
   ) {
     AIPlanActivationService.checkAgents(newRecords, oldRecordsById);
+  }
+
+  // A change to an agent's retention settings is applied to the conversations it already has, in a batch (AIConversationRetentionRecalcBatch). Not behind the application switch: retention is housekeeping. A failure to start the batch is logged and the agent still saves.
+  public static void handleAfterUpdate(
+    Map<Id, AIAgent__c> oldRecordsById,
+    List<AIAgent__c> newRecords
+  ) {
+    try {
+      if (isTestCustomExceptionThrown) {
+        throw new AIAgentTriggerHandlerException(
+          'Test exception for AIAgentTriggerHandler.handleAfterUpdate'
+        );
+      }
+
+      if (oldRecordsById == null || newRecords == null)
+        return;
+
+      Set<Id> changedAgentIds = new Set<Id>();
+      for (AIAgent__c agent : newRecords) {
+        AIAgent__c previous = oldRecordsById.get(agent.Id);
+        if (
+          previous != null &&
+          (agent.ConversationRetentionDays__c !=
+          previous.ConversationRetentionDays__c ||
+          agent.RetentionTrigger__c != previous.RetentionTrigger__c)
+        )
+          changedAgentIds.add(agent.Id);
+      }
+
+      if (!changedAgentIds.isEmpty())
+        Database.executeBatch(
+          new AIConversationRetentionRecalcBatch(changedAgentIds),
+          AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
+        );
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIAgentTriggerHandler',
+        'handleAfterUpdate'
+      );
+    }
   }
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsSuperseded__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Set by AI Assist when the user asked for this reply to be regenerated and the new reply was saved. A superseded reply is left out of the chat and of what the model is sent, and is kept for usage totals, export and retention.</description>
+    <inlineHelpText
+  >Checked when a newer reply to the same message replaced this one. Set automatically.</inlineHelpText>
+    <label>Is Superseded</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

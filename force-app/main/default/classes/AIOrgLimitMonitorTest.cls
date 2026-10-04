@@ -18,11 +18,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIOrgLimitMonitorTest {
-  // testScenario1: Usage below the degraded threshold is Normal, at it Degraded, at the paused threshold Paused; each feature reads only its own limits.
+  // testScenario1: Usage below the degraded threshold is Normal, at it Degraded, at the paused threshold Paused; each feature reads only its own limits, and none reads API requests.
   // testScenario2: A feature that was Paused stays Paused until usage is below the threshold by the margin, then steps down through Degraded to Normal the same way.
   // testScenario3: The maximum share replaces a higher paused threshold, and blank, out of range or contradictory thresholds fall back to safe values.
   // testScenario4: Chat Paused refuses a new message with the paused label and its own code, and a message is accepted again once usage falls.
-  // testScenario5: Events are used only when an administrator turned them on and the Events feature is Normal; otherwise the window polls.
+  // testScenario5: Events are used only when an administrator turned them on and the Events feature is Normal; otherwise the window polls. Violation events stop only while Events is Paused.
   // testScenario6: Only errors are logged while Logging is not Normal.
   // testScenario7: The reading is kept as a short string and read back, and a malformed or blank one is treated as never read.
   // testScenario8: Refreshing keeps the reading, tells the administrators once when a feature changes mode, and does nothing while the reading is fresh.
@@ -44,12 +44,12 @@ private class AIOrgLimitMonitorTest {
     AIAssistSettingsService.clearCache();
   }
 
-  // Sets the usage of the limits the features read. Chat reads API requests, Events reads hourly published events.
-  private static void setUsage(Integer apiPercent, Integer eventPercent) {
+  // Sets the usage of the limits the features read. Chat reads asynchronous Apex, Events reads hourly published events. API requests are full throughout, and no feature reads them.
+  private static void setUsage(Integer asyncPercent, Integer eventPercent) {
     AIOrgLimitMonitor.transactionState = null;
     AIOrgLimitMonitor.testLimits = new Map<String, List<Decimal>>{
-      'DailyApiRequests' => new List<Decimal>{ apiPercent, 100 },
-      'DailyAsyncApexExecutions' => new List<Decimal>{ 0, 100 },
+      'DailyApiRequests' => new List<Decimal>{ 100, 100 },
+      'DailyAsyncApexExecutions' => new List<Decimal>{ asyncPercent, 100 },
       'DataStorageMB' => new List<Decimal>{ 0, 100 },
       'HourlyPublishedPlatformEvents' => new List<Decimal>{ eventPercent, 100 },
       'ZeroLimit' => new List<Decimal>{ 5, 0 }
@@ -109,7 +109,7 @@ private class AIOrgLimitMonitorTest {
       'At the paused threshold.'
     );
     Assert.areEqual(
-      'DailyApiRequests',
+      'DailyAsyncApexExecutions',
       paused.byFeature.get(AIAssistApplicationConstants.LIMIT_FEATURE_CHAT)
         .limitName,
       'The limit that decided it is known.'
@@ -302,7 +302,19 @@ private class AIOrgLimitMonitorTest {
     Boolean isAllowed = AIOrgLimitMonitor.isEventNotificationAllowed();
     setUsage(0, 75);
     String nearLimit = AIOrgLimitMonitor.getNotificationMode();
+    Boolean isViolationEventSentDegraded = AIOrgLimitMonitor.isViolationEventAllowed();
+    setUsage(0, 90);
+    Boolean isViolationEventSentPaused = AIOrgLimitMonitor.isViolationEventAllowed();
     Test.stopTest();
+
+    Assert.isTrue(
+      isViolationEventSentDegraded,
+      'Violation events keep going while Events is Degraded.'
+    );
+    Assert.isFalse(
+      isViolationEventSentPaused,
+      'Violation events stop while Events is Paused.'
+    );
 
     Assert.areEqual(
       AIAssistApplicationConstants.NOTIFICATION_MODE_POLLING,
