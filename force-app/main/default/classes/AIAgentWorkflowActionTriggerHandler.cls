@@ -12,13 +12,14 @@ Safe in the subscriber's transactions: the trigger is on the package's own objec
 no DML, and cannot recurse. Not behind the application switch: a duplicate created while the
 application is off would still be there when it is switched back on.
 
-A failure is logged and the record still saves.
+A failure of the check itself is logged and the save is refused (AI_Error_Integrity_Check): a record saved without its unique key would allow duplicates.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Fails closed: if the key or name check cannot run, the save is refused instead of letting an unchecked record through.
 */
 
 public inherited sharing class AIAgentWorkflowActionTriggerHandler {
@@ -65,6 +66,7 @@ public inherited sharing class AIAgentWorkflowActionTriggerHandler {
         'AIAgentWorkflowActionTriggerHandler',
         methodName
       );
+      AIAssistGlobalUtility.refuseSave(newRecords); // Fails closed: an unchecked record must not be saved.
     }
   }
 }

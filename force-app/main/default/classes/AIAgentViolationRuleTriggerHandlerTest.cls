@@ -20,7 +20,7 @@ Version      Author                   Description
 private class AIAgentViolationRuleTriggerHandlerTest {
   // testScenario1: A new assignment gets a key made of its agent and its rule.
   // testScenario2: The same rule cannot be assigned to one agent twice; another agent can have it, and one rule can serve many agents.
-  // testScenario3: An unexpected failure inside the handler is logged and never throws.
+  // testScenario3: An unexpected failure inside the handler is logged and the save is refused, never allowed unchecked.
 
   @TestSetup
   static void setup() {
@@ -108,16 +108,24 @@ private class AIAgentViolationRuleTriggerHandlerTest {
     AIAgentViolationRuleTriggerHandler.isTestCustomExceptionThrown = true;
 
     Test.startTest();
-    List<AIAgentViolationRule__c> links = AIAssistTestDataFactory.createAIAgentViolationRules(
-      agent.Id,
-      new List<AIViolationRule__c>{ rule },
-      true
+    List<Database.SaveResult> results = Database.insert(
+      AIAssistTestDataFactory.createAIAgentViolationRules(
+        agent.Id,
+        new List<AIViolationRule__c>{ rule },
+        false
+      ),
+      false
     );
     Test.stopTest();
 
-    Assert.isNotNull(
-      links[0].Id,
-      'The save went through; the failure was logged.'
+    Assert.isFalse(
+      results[0].isSuccess(),
+      'The check could not run, so the save is refused rather than allowed unchecked.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Integrity_Check,
+      results[0].getErrors()[0].getMessage(),
+      'With the integrity label.'
     );
   }
 }

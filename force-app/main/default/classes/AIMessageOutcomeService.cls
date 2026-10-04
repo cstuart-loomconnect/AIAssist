@@ -183,15 +183,17 @@ public inherited sharing class AIMessageOutcomeService {
             );
           }
 
-          // Published and checked: a refused publish (event limits) would leave the chat window waiting for a reply that never announces itself.
-          Database.SaveResult replyPublishResult = EventBus.publish(
-            new AIMessageReadyEvent__e(
-              AIConversationId__c = responseContext.conversationId,
-              AIConversationMessageId__c = replyMessage.Id,
-              IsSuccess__c = true
-            )
-          );
-          if (!replyPublishResult.isSuccess())
+          // Published and checked: a refused publish (event limits) would leave the chat window waiting for a reply that never announces itself. Events are optional: when they are off, or the org is near a limit, the window polls and nothing is published.
+          Database.SaveResult replyPublishResult = AIOrgLimitMonitor.isEventNotificationAllowed()
+            ? EventBus.publish(
+                new AIMessageReadyEvent__e(
+                  AIConversationId__c = responseContext.conversationId,
+                  AIConversationMessageId__c = replyMessage.Id,
+                  IsSuccess__c = true
+                )
+              )
+            : null;
+          if (replyPublishResult != null && !replyPublishResult.isSuccess())
             AIPlatformLogManager.logCustomMessage(
               'AIMessageReadyEvent__e was not published.',
               replyPublishResult.getErrors()[0].getMessage(),
@@ -307,16 +309,18 @@ public inherited sharing class AIMessageOutcomeService {
     try {
       if (conversationId != null) {
         // Published and checked: a refused publish (event limits) would leave the chat window waiting.
-        Database.SaveResult failurePublishResult = EventBus.publish(
-          new AIMessageReadyEvent__e(
-            AIConversationId__c = conversationId,
-            IsSuccess__c = false,
-            ErrorMessage__c = userMessage.left(
-              AIAssistApplicationConstants.EVENT_ERROR_MESSAGE_LENGTH
+        Database.SaveResult failurePublishResult = AIOrgLimitMonitor.isEventNotificationAllowed()
+          ? EventBus.publish(
+              new AIMessageReadyEvent__e(
+                AIConversationId__c = conversationId,
+                IsSuccess__c = false,
+                ErrorMessage__c = userMessage.left(
+                  AIAssistApplicationConstants.EVENT_ERROR_MESSAGE_LENGTH
+                )
+              )
             )
-          )
-        );
-        if (!failurePublishResult.isSuccess())
+          : null;
+        if (failurePublishResult != null && !failurePublishResult.isSuccess())
           AIPlatformLogManager.logCustomMessage(
             'AIMessageReadyEvent__e was not published.',
             failurePublishResult.getErrors()[0].getMessage(),

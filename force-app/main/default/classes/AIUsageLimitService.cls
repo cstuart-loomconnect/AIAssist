@@ -32,6 +32,7 @@ that would break it is refused before its request is made. Nothing here writes.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the second half of AIMessageGuard.
+2.0          Chandler Stuart          The monthly message and token cap messages say how much the plan allows and when it renews.
 */
 
 public inherited sharing class AIUsageLimitService {
@@ -130,13 +131,17 @@ public inherited sharing class AIUsageLimitService {
         throw limitReached(
           chatContext,
           AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-          Label.AI_Error_Plan_Limit_Messages
+          planLimitMessage(
+            Label.AI_Error_Plan_Limit_Messages,
+            messageLimit,
+            today
+          )
         );
       if (usageLimit != null && orgUsage.month.tokens >= usageLimit)
         throw limitReached(
           chatContext,
           AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE,
-          Label.AI_Error_Plan_Limit_Tokens
+          planLimitMessage(Label.AI_Error_Plan_Limit_Tokens, usageLimit, today)
         );
       if (dailyBudget != null && orgUsage.today.tokens >= dailyBudget)
         throw limitReached(
@@ -174,5 +179,21 @@ public inherited sharing class AIUsageLimitService {
       null
     );
     return AIMessagingException.newRefusal(errorCode, userMessageLabel);
+  }
+
+  // The plan's cap, in words: how much the plan allows and when it renews (the first of next month, the month the usage rows are counted in). Without it a cap looks like a fault.
+  @TestVisible
+  private static String planLimitMessage(
+    String template,
+    Integer allowance,
+    Date today
+  ) {
+    return String.format(
+      template,
+      new List<String>{
+        String.valueOf(allowance),
+        today.toStartOfMonth().addMonths(1).format()
+      }
+    );
   }
 }

@@ -394,7 +394,6 @@ private class AIChatControllerTest {
     AIChatDataStructure.DebugTrace trace = AIChatController.getDebugTrace(
       reply.Id
     );
-    String pairs = AIChatController.getPiiMappings(reply.Id);
     String exported = AIChatController.exportConversation(conversation.Id);
     AIChatDataStructure.FailureDetail detail = AIChatController.getFailureDetail(
       conversation.Id
@@ -407,7 +406,6 @@ private class AIChatControllerTest {
       'The text is the Custom Label.'
     );
     Assert.areEqual(reply.Id, trace.replyMessageId, 'The trace.');
-    Assert.areEqual('{ }', pairs, 'No masking.');
     Assert.isTrue(exported.contains('Test message'), 'The transcript.');
     Assert.isNotNull(detail, 'The failure detail.');
   }

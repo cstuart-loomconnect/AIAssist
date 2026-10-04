@@ -336,9 +336,13 @@ private class AIUsageLimitServiceTest {
     } catch (AIMessagingException ex) {
       code = ex.code;
       Assert.areEqual(
-        Label.AI_Error_Plan_Limit_Messages,
+        AIUsageLimitService.planLimitMessage(
+          Label.AI_Error_Plan_Limit_Messages,
+          10,
+          Datetime.now().dateGmt()
+        ),
         ex.getMessage(),
-        'The text is the Custom Label.'
+        'The text is the Custom Label, with the allowance and when it renews.'
       );
     }
     Test.stopTest();
@@ -396,9 +400,13 @@ private class AIUsageLimitServiceTest {
     } catch (AIMessagingException ex) {
       code = ex.code;
       Assert.areEqual(
-        Label.AI_Error_Plan_Limit_Tokens,
+        AIUsageLimitService.planLimitMessage(
+          Label.AI_Error_Plan_Limit_Tokens,
+          100,
+          Datetime.now().dateGmt()
+        ),
         ex.getMessage(),
-        'The text is the Custom Label.'
+        'The text is the Custom Label, with the allowance and when it renews.'
       );
     }
     Test.stopTest();

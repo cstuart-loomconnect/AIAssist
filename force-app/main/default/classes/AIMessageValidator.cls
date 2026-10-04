@@ -8,7 +8,8 @@ Description: Decides whether a request to chat is allowed at all, before anythin
 Every refusal is an AIMessagingException whose message is a Custom Label (so it translates) and
 whose code is a stable AIAssistApplicationConstants.ERROR_* value, checked in this order, cheapest
 first:
-[1] The application is switched on (AIAssistSettings__c.IsEnabled__c) and not in maintenance.
+[1] The application is switched on (AIAssistSettings__c.IsEnabled__c), not in maintenance, and not
+    paused to protect the org's limits (AIOrgLimitMonitor).
 [2] The message has text and is no longer than MAX_USER_MESSAGE_CHARACTERS.
 [3] The agent exists, is active, and the user may use it: an agent set to Assigned Users Only
     needs an active AIAgentAssignment__c for the user or a permission set they hold.
@@ -29,6 +30,8 @@ exists. The checks that need data the user cannot read go through AIMessagingSel
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the first half of AIMessageGuard.
 2.0          Chandler Stuart          The agent/object check also honours objects added through AIAgentObject__c.
+3.0          Chandler Stuart          The agent access check is a public method, isUserAllowedOnAgent, shared with AIWorkflowActionDispatcher.
+4.0          Chandler Stuart          A message is refused while chat is paused to protect the org's limits.
 */
 
 public inherited sharing class AIMessageValidator {
@@ -37,6 +40,14 @@ public inherited sharing class AIMessageValidator {
     public Id userId;
     public AIAgent__c agent;
     public AIUserSettings__c userSettings;
+  }
+
+  // The agent's access check, shared with the Workflow Action dispatcher so an action cannot be run by a user the agent no longer admits. True for an agent open to all users, otherwise when an active assignment names the user or a permission set (or group) they hold.
+  public static Boolean isUserAllowedOnAgent(AIAgent__c agent, Id userId) {
+    return agent != null &&
+      (agent.AccessMode__c ==
+      AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS ||
+      AIMessagingSelector.isUserAssignedToAgent(agent.Id, userId));
   }
 
   // Returns the context for the limit checks. Throws a refusal if the request is not allowed.
@@ -57,6 +68,13 @@ public inherited sharing class AIMessageValidator {
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_MAINTENANCE_MODE,
         Label.AI_Error_Maintenance_Mode
+      );
+
+    // Paused to protect the org's limits: refused with a plain message, and resumes by itself (AIOrgLimitMonitor).
+    if (AIOrgLimitMonitor.isChatPaused())
+      throw AIMessagingException.newRefusal(
+        AIAssistApplicationConstants.ERROR_ORG_LIMITS_PAUSED,
+        Label.AI_Error_Org_Limits_Paused
       );
 
     // [2]
@@ -98,14 +116,7 @@ public inherited sharing class AIMessageValidator {
       );
 
     // The default access mode is Assigned Users Only: an agent nobody is assigned to is closed to everyone.
-    if (
-      chatContext.agent.AccessMode__c !=
-      AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS &&
-      !AIMessagingSelector.isUserAssignedToAgent(
-        chatContext.agent.Id,
-        chatContext.userId
-      )
-    ) {
+    if (!isUserAllowedOnAgent(chatContext.agent, chatContext.userId)) {
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_AGENT_NOT_ASSIGNED,
         Label.AI_Error_Agent_Not_Assigned

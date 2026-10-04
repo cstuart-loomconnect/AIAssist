@@ -26,12 +26,15 @@ filter, never as a permission check.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the read half of AIMessagingRepository.
 2.0          Chandler Stuart          Rules reach an agent through AIAgentViolationRule__c or AppliesToAllAgents__c; an agent can be offered on several objects (AIAgentObject__c); user settings are the user row over the usage policies that apply to them.
+3.0          Chandler Stuart          Permission set groups count as held permission sets. Rules are taken blocking first and a cut-short list is logged.
 */
 
 public without sharing class AIMessagingSelector {
   public static final String TERMS_ACCEPTED = 'ACCEPTED';
   public static final String TERMS_OUTDATED = 'OUTDATED';
   public static final String TERMS_NONE = 'NONE';
+
+  private static Set<String> loggedRuleCaps = new Set<String>(); // Agent and kind already logged as cut short in this transaction.
 
   // Tokens and counts for one user or one organisation over a period.
   public class UsageTotals {
@@ -180,8 +183,10 @@ public without sharing class AIMessagingSelector {
       return new List<AIViolationRule__c>();
 
     Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
+    Integer ruleQueryLimit =
+      AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT + 1; // One more than is used, to learn whether the list was cut short.
 
-    return [
+    List<AIViolationRule__c> rules = [
       SELECT
         Id,
         Name,
@@ -197,9 +202,11 @@ public without sharing class AIMessagingSelector {
         AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED
         AND SignalTag__c != NULL
       WITH SYSTEM_MODE
-      ORDER BY Name
-      LIMIT :AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT
+      ORDER BY BlockRequest__c DESC, Name
+      LIMIT :ruleQueryLimit
     ];
+
+    return capRules(rules, agentId, 'AI evaluated');
   }
 
   // The active deterministic rules of an agent that produce one violation type.
@@ -211,8 +218,10 @@ public without sharing class AIMessagingSelector {
       return new List<AIViolationRule__c>();
 
     Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
+    Integer ruleQueryLimit =
+      AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT + 1;
 
-    return [
+    List<AIViolationRule__c> rules = [
       SELECT Id, Name, BlockRequest__c, ViolationTypeProduced__c
       FROM AIViolationRule__c
       WHERE
@@ -222,9 +231,45 @@ public without sharing class AIMessagingSelector {
         AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_DETERMINISTIC
         AND ViolationTypeProduced__c = :violationType
       WITH SYSTEM_MODE
-      ORDER BY Name
-      LIMIT :AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT
+      ORDER BY BlockRequest__c DESC, Name
+      LIMIT :ruleQueryLimit
     ];
+
+    return capRules(rules, agentId, 'deterministic');
+  }
+
+  // Keeps the first MAX_AI_RULES_PER_AGENT rules, which are the blocking rules first and then by name, so a rule that stops a request is never the one dropped for a rule that only notes it. When rules are dropped it is logged, once per agent and kind in a transaction, so an administrator can find out; nothing else tells them.
+  private static List<AIViolationRule__c> capRules(
+    List<AIViolationRule__c> rules,
+    Id agentId,
+    String kind
+  ) {
+    Integer cap = AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT;
+    if (rules.size() <= cap)
+      return rules;
+
+    List<AIViolationRule__c> kept = new List<AIViolationRule__c>();
+    for (Integer index = 0; index < cap; index++)
+      kept.add(rules[index]);
+
+    String logKey = agentId + '|' + kind;
+    if (loggedRuleCaps.add(logKey)) {
+      Boolean droppedBlockingRule = rules[cap].BlockRequest__c == true;
+      AIPlatformLogManager.logCustomMessage(
+        'More than ' +
+          cap +
+          ' active ' +
+          kind +
+          ' violation rules apply to one agent; the rest were not used' +
+          (droppedBlockingRule ? ', INCLUDING A BLOCKING RULE.' : '.'),
+        'Rules beyond the limit are skipped. Blocking rules are kept first, then rules by name. Deactivate rules or stop assigning them to this agent.',
+        'AIMessagingSelector',
+        'capRules',
+        agentId
+      );
+    }
+
+    return kept;
   }
 
   // One action the agent may offer: active, and linked to the agent through an active assignment. Null when it is neither.
@@ -242,7 +287,8 @@ public without sharing class AIMessagingSelector {
         ApexClassName__c,
         FlowAPIName__c,
         TargetObject__c,
-        RequiresConfirmation__c
+        RequiresConfirmation__c,
+        InputSchema__c
       FROM AIWorkflowAction__c
       WHERE
         Id = :actionId
@@ -324,14 +370,7 @@ public without sharing class AIMessagingSelector {
     if (userId == null)
       return new List<AIUsagePolicy__c>();
 
-    Set<String> heldPermissionSets = new Set<String>();
-    for (PermissionSetAssignment heldAssignment : [
-      SELECT PermissionSet.Name
-      FROM PermissionSetAssignment
-      WHERE AssigneeId = :userId
-      WITH SYSTEM_MODE
-    ])
-      heldPermissionSets.add(heldAssignment.PermissionSet.Name);
+    Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
 
     Set<Id> policyIds = new Set<Id>();
     for (AIUsagePolicyAssignment__c assignment : [
@@ -427,12 +466,77 @@ public without sharing class AIMessagingSelector {
     if (permissionSetNames.isEmpty())
       return false;
 
-    return [
-        SELECT COUNT()
-        FROM PermissionSetAssignment
-        WHERE AssigneeId = :userId AND PermissionSet.Name IN :permissionSetNames
+    Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
+    heldPermissionSets.retainAll(permissionSetNames);
+
+    return !heldPermissionSets.isEmpty();
+  }
+
+  // The API names of every permission set the user holds: assigned directly, and the name of each permission set group assigned to them together with the permission sets inside that group. A permission set reached only through a group has no assignment row of its own, so matching on assignment rows alone would miss it.
+  @TestVisible
+  private static Set<String> getHeldPermissionSetNames(Id userId) {
+    Set<String> heldNames = new Set<String>();
+    Set<Id> heldGroupIds = new Set<Id>();
+
+    for (PermissionSetAssignment heldAssignment : [
+      SELECT
+        PermissionSet.Name,
+        PermissionSetGroupId,
+        PermissionSetGroup.DeveloperName
+      FROM PermissionSetAssignment
+      WHERE AssigneeId = :userId
+      WITH SYSTEM_MODE
+      LIMIT 2000
+    ]) {
+      heldNames.add(heldAssignment.PermissionSet.Name);
+      if (heldAssignment.PermissionSetGroupId != null) {
+        heldGroupIds.add(heldAssignment.PermissionSetGroupId);
+        heldNames.add(heldAssignment.PermissionSetGroup.DeveloperName);
+      }
+    }
+
+    if (!heldGroupIds.isEmpty()) {
+      for (PermissionSetGroupComponent member : [
+        SELECT PermissionSet.Name
+        FROM PermissionSetGroupComponent
+        WHERE PermissionSetGroupId IN :heldGroupIds
         WITH SYSTEM_MODE
-      ] > 0;
+        LIMIT 2000
+      ])
+        heldNames.add(member.PermissionSet.Name);
+    }
+
+    return heldNames;
+  }
+
+  // Active users who hold the AI Assist Admin permission set directly or through a permission set group, at most maxUsers. The people told when AI Assist changes mode to protect the org's limits.
+  public static List<Id> getAdminUserIds(Integer maxUsers) {
+    Set<Id> adminIds = new Set<Id>();
+
+    Set<Id> adminGroupIds = new Set<Id>();
+    for (PermissionSetGroupComponent member : [
+      SELECT PermissionSetGroupId
+      FROM PermissionSetGroupComponent
+      WHERE
+        PermissionSet.Name = :AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER
+      WITH SYSTEM_MODE
+      LIMIT 200
+    ])
+      adminGroupIds.add(member.PermissionSetGroupId);
+
+    for (PermissionSetAssignment adminAssignment : [
+      SELECT AssigneeId
+      FROM PermissionSetAssignment
+      WHERE
+        (PermissionSet.Name = :AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER
+        OR PermissionSetGroupId IN :adminGroupIds)
+        AND Assignee.IsActive = TRUE
+      WITH SYSTEM_MODE
+      LIMIT :maxUsers
+    ])
+      adminIds.add(adminAssignment.AssigneeId);
+
+    return new List<Id>(adminIds);
   }
 
   // Which of the agents are open to this user through an active assignment, by name or by a permission set they hold. One pass for many agents.
@@ -442,14 +546,7 @@ public without sharing class AIMessagingSelector {
     if (userId == null || agentIds == null || agentIds.isEmpty())
       return assignedIds;
 
-    Set<String> heldPermissionSets = new Set<String>();
-    for (PermissionSetAssignment heldAssignment : [
-      SELECT PermissionSet.Name
-      FROM PermissionSetAssignment
-      WHERE AssigneeId = :userId
-      WITH SYSTEM_MODE
-    ])
-      heldPermissionSets.add(heldAssignment.PermissionSet.Name);
+    Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
 
     for (AIAgentAssignment__c assignment : [
       SELECT AIAgent__c
@@ -605,21 +702,7 @@ public without sharing class AIMessagingSelector {
 
   // Admin, Super User or User, by the highest AI Assist permission set the user holds. Decides which slash commands they see.
   public static String getHighestPermissionLevel(Id userId) {
-    Set<String> heldPermissionSetNames = new Set<String>();
-
-    for (PermissionSetAssignment assignment : [
-      SELECT PermissionSet.Name
-      FROM PermissionSetAssignment
-      WHERE
-        AssigneeId = :userId
-        AND PermissionSet.Name IN :new List<String>{
-          AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER,
-          AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER
-        }
-      WITH SYSTEM_MODE
-    ]) {
-      heldPermissionSetNames.add(assignment.PermissionSet.Name);
-    }
+    Set<String> heldPermissionSetNames = getHeldPermissionSetNames(userId);
 
     return heldPermissionSetNames.contains(
         AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER

@@ -203,6 +203,8 @@ public class AIChatDataStructure {
     public String relatedRecordId;
     @AuraEnabled
     public String relatedObjectApiName;
+    @AuraEnabled
+    public String ownerName; // Only set on a conversation someone else started.
   }
 
   public class ChatMessage {

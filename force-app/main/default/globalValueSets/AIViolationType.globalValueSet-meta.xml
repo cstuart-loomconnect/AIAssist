@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
     <customValue>
-        <fullName>Unauthorized_Data_Access</fullName>
+        <fullName>UnauthorizedDataAccess</fullName>
         <default>false</default>
         <label>Unauthorised Data Access</label>
     </customValue>
     <customValue>
-        <fullName>Unauthorized_Workflow_Action</fullName>
+        <fullName>UnauthorizedWorkflowAction</fullName>
         <default>false</default>
         <label>Unauthorised Workflow Action</label>
     </customValue>
     <customValue>
-        <fullName>Usage_Limit_Exceeded</fullName>
+        <fullName>UsageLimitExceeded</fullName>
         <default>false</default>
         <label>Usage Limit Exceeded</label>
     </customValue>
     <customValue>
-        <fullName>PII_Masking_Failure</fullName>
+        <fullName>PIIMaskingFailure</fullName>
         <default>false</default>
         <label>PII Masking Failure</label>
     </customValue>
     <customValue>
-        <fullName>Configuration_Violation</fullName>
+        <fullName>ConfigurationViolation</fullName>
         <default>false</default>
         <label>Configuration Violation</label>
     </customValue>
     <customValue>
-        <fullName>AI_Flagged_Intent</fullName>
+        <fullName>AIFlaggedIntent</fullName>
         <default>false</default>
         <label>AI Flagged Intent</label>
     </customValue>

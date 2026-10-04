@@ -24,6 +24,7 @@ provider echoed back, and a debug log is readable by far more people than the pl
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Severity stamped. Debug statements removed (they carried exception text). Allowance check uses Publish Immediately, not DML statements. Delete and Upsert overloads dropped (nothing calls them).
+3.0          Chandler Stuart          Under org limit pressure only errors are published; logCustomMessage takes a severity.
 */
 
 public inherited sharing class AIPlatformLogManager {
@@ -246,8 +247,32 @@ public inherited sharing class AIPlatformLogManager {
     String methodName,
     Id recordId
   ) {
+    logCustomMessage(
+      message,
+      logDetail,
+      className,
+      methodName,
+      recordId,
+      AIAssistApplicationConstants.LOG_SEVERITY_WARNING
+    );
+  }
+
+  // As above with a severity. Under org limit pressure (AIOrgLimitMonitor) only an Error is published: a log entry is itself an event, and the allowance is the thing running out.
+  public static void logCustomMessage(
+    String message,
+    String logDetail,
+    String className,
+    String methodName,
+    Id recordId,
+    String severity
+  ) {
     try {
       if (String.isBlank(message) && String.isBlank(logDetail))
+        return;
+      if (
+        severity != AIAssistApplicationConstants.LOG_SEVERITY_ERROR &&
+        AIOrgLimitMonitor.isErrorOnlyLogging()
+      )
         return;
 
       AIPlatformLogEvent__e customMessageLogEvent = new AIPlatformLogEvent__e(
@@ -257,7 +282,7 @@ public inherited sharing class AIPlatformLogManager {
         ExceptionMessage__c = message,
         ExceptionLogDetail__c = logDetail,
         RelatedRecordId__c = recordId,
-        Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_WARNING
+        Severity__c = severity
       );
 
       if (

@@ -53,6 +53,7 @@ after this returns, or they are lost.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: failure reasons, input and output tokens, latency, provider and masking evidence on the steps, masking failure stops the request, data sources checked against the agent, user-facing step text from Custom Labels, single-use helpers inlined.
+3.0          Chandler Stuart          The system prompt tells the model to reply in the user's Salesforce language.
 */
 
 public inherited sharing class AIAgentManager {
@@ -271,6 +272,14 @@ public inherited sharing class AIAgentManager {
             'Do not: ' + promptTemplate.AIExclusionRules__c
           );
       }
+
+      // Replies match the user. Labels are translated by the platform; agent text is not, so the model is told. A turn runs as the user who sent the message, so this is their language.
+      systemPromptParts.add(
+        String.format(
+          AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
+          new List<String>{ UserInfo.getLanguage() }
+        )
+      );
 
       if (
         availableWorkflowActions != null && !availableWorkflowActions.isEmpty()

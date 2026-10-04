@@ -21,7 +21,7 @@ private class AIAgentObjectTriggerHandlerTest {
   // testScenario1: An object that exists is saved as the org spells it, with a key made of the agent and the object.
   // testScenario2: An object that does not exist is refused with a message that says what to enter.
   // testScenario3: The same object cannot be added to one agent twice, whatever the capitalisation; another agent can have it.
-  // testScenario4: An unexpected failure inside the handler is logged and never throws.
+  // testScenario4: An unexpected failure inside the handler is logged and the save is refused, never allowed unchecked.
 
   @TestSetup
   static void setup() {
@@ -130,16 +130,24 @@ private class AIAgentObjectTriggerHandlerTest {
     AIAgentObjectTriggerHandler.isTestCustomExceptionThrown = true;
 
     Test.startTest();
-    List<AIAgentObject__c> agentObjects = AIAssistTestDataFactory.createAIAgentObjects(
-      agent.Id,
-      new List<String>{ 'Case' },
-      true
+    List<Database.SaveResult> results = Database.insert(
+      AIAssistTestDataFactory.createAIAgentObjects(
+        agent.Id,
+        new List<String>{ 'Case' },
+        false
+      ),
+      false
     );
     Test.stopTest();
 
-    Assert.isNotNull(
-      agentObjects[0].Id,
-      'The save went through; the failure was logged.'
+    Assert.isFalse(
+      results[0].isSuccess(),
+      'The check could not run, so the save is refused rather than allowed unchecked.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Integrity_Check,
+      results[0].getErrors()[0].getMessage(),
+      'With the integrity label.'
     );
   }
 }

@@ -122,6 +122,44 @@ public class AIAssistTestDataFactory {
     }
   }
 
+  // Gives each user a permission set group (created here, containing the named permission set), so they hold that permission set only through the group and have no assignment row for it. The users must already be inserted.
+  public static void assignPermissionSetGroup(
+    List<User> users,
+    String groupDeveloperName,
+    String memberPermissionSetName
+  ) {
+    Id memberId = [
+      SELECT Id
+      FROM PermissionSet
+      WHERE Name = :memberPermissionSetName
+      LIMIT 1
+    ]
+    .Id;
+
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      PermissionSetGroup permissionSetGroup = new PermissionSetGroup(
+        DeveloperName = groupDeveloperName,
+        MasterLabel = groupDeveloperName
+      );
+      insert permissionSetGroup;
+      insert new PermissionSetGroupComponent(
+        PermissionSetGroupId = permissionSetGroup.Id,
+        PermissionSetId = memberId
+      );
+      Test.calculatePermissionSetGroup(permissionSetGroup.Id);
+
+      List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
+      for (User assignedUser : users)
+        assignments.add(
+          new PermissionSetAssignment(
+            AssigneeId = assignedUser.Id,
+            PermissionSetGroupId = permissionSetGroup.Id
+          )
+        );
+      insert assignments;
+    }
+  }
+
   public static List<Account> createAccounts(
     Integer numberOfAccounts,
     Boolean shouldDoInsert
@@ -269,11 +307,19 @@ public class AIAssistTestDataFactory {
   ) {
     List<AIWorkflowAction__c> actions = new List<AIWorkflowAction__c>();
 
+    // Flow versions cannot be created in a test, so the Flow is declared to run in the default mode.
+    if (
+      actionType == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW &&
+      String.isNotBlank(sourceValue)
+    )
+      AIFlowRunModeService.setRunModeForTest(sourceValue, null);
+
     for (Integer itemIndex = 0; itemIndex < numberOfActions; itemIndex++) {
       AIWorkflowAction__c workflowAction = new AIWorkflowAction__c(
         ActionName__c = uniqueName('Action').left(50),
         ActionType__c = actionType,
         ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY,
+        RequiresConfirmation__c = false,
         IsActive__c = true
       );
 

@@ -137,8 +137,20 @@ public inherited sharing class AIDataSourceDispatcher {
 
       Object executor = apexType.newInstance();
 
-      rawResults = ((IAIDataSourceExecutor) executor)
-        .execute(recordId, parameters);
+      AIDataSourceRequest request = new AIDataSourceRequest();
+      request.recordId = recordId;
+      request.inputParameters = new Map<String, Object>(parameters);
+      request.conversationId = conversationId;
+      request.agentId = agentId;
+      request.userId = UserInfo.getUserId();
+      request.dataSourceName = dataSource.DeveloperName__c;
+      request.maxRows = dataSource.MaxRows__c == null
+        ? null
+        : dataSource.MaxRows__c.intValue();
+
+      AIDataSourceResponse response = ((IAIDataSourceExecutor) executor)
+        .execute(request);
+      rawResults = response == null ? new List<SObject>() : response.records;
     } else {
       throw new AIDataSourceExecutorException(
         'Data source "' +

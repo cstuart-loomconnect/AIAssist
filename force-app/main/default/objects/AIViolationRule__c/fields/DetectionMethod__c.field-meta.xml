@@ -15,12 +15,12 @@
         <valueSetDefinition>
             <sorted>false</sorted>
             <value>
-                <fullName>Deterministic_Apex</fullName>
+                <fullName>DeterministicApex</fullName>
                 <default>false</default>
                 <label>Deterministic — Apex</label>
             </value>
             <value>
-                <fullName>AI_Evaluated</fullName>
+                <fullName>AIEvaluated</fullName>
                 <default>false</default>
                 <label>AI Evaluated</label>
             </value>

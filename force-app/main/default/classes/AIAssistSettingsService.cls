@@ -30,6 +30,11 @@ public inherited sharing class AIAssistSettingsService {
   @TestVisible
   private static AIAssistSettings__c cachedSettings; // Tests clear it to read a setting changed earlier in the same transaction.
 
+  // Forgets the cached settings so the next read sees a change made in this transaction.
+  public static void clearCache() {
+    cachedSettings = null;
+  }
+
   // The organisation settings, cached for the transaction.
   public static AIAssistSettings__c getSettings() {
     if (cachedSettings == null) {

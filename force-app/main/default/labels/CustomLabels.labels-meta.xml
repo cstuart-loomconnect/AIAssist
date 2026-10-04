@@ -700,7 +700,7 @@
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Messages reached.</shortDescription>
         <value
-    >Your organisation has used this month&apos;s message allowance. Ask your account team about a larger plan.</value>
+    >Your organisation has used all {0} messages allowed this month. The allowance renews on {1}. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Limit_Tokens</fullName>
@@ -709,7 +709,7 @@
         <protected>false</protected>
         <shortDescription>Chat: Max Monthly Tokens reached.</shortDescription>
         <value
-    >Your organisation has used this month&apos;s token allowance. Ask your account team about a larger plan.</value>
+    >Your organisation has used all {0} tokens allowed this month. The allowance renews on {1}. Ask your account team about a larger plan.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Providers_Limit</fullName>
@@ -1300,5 +1300,81 @@
     >Agent object: the object API name does not exist in this org.</shortDescription>
         <value
     >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Flow_Run_Mode</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow Action: Flow runs with more access than the user.</shortDescription>
+        <value
+    >This Flow cannot be used as an action: it runs in system context without sharing, or its run mode could not be confirmed. Choose a Flow that runs in user context or in system context with sharing.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Integrity_Check</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Save refused: a required integrity check could not be completed.</shortDescription>
+        <value
+    >This record could not be saved because a required check could not be completed. Try again, and contact your administrator if it keeps happening.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Org_Limits_Paused</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat is paused to protect the org limits; it resumes by itself.</shortDescription>
+        <value
+    >AI Assist is paused to protect your org's daily limits and will resume automatically. Please try again shortly.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Alert_Org_Limits_Title</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Admin notification title when AI Assist changes mode because of org limits.</shortDescription>
+        <value>AI Assist: {0} is now {1}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Alert_Org_Limits_Body</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Admin notification body when AI Assist changes mode because of org limits.</shortDescription>
+        <value
+    >{0} usage is at {1} percent. {2} Thresholds are set in AI Assist Settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Alert_Org_Limits_Effect_Degraded</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Admin notification: what Degraded means.</shortDescription>
+        <value>Live push updates are off and only errors are logged.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Alert_Org_Limits_Effect_Paused</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Admin notification: what Paused means.</shortDescription>
+        <value>New chat messages are paused until usage falls.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Alert_Org_Limits_Effect_Normal</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Admin notification: what Normal means.</shortDescription>
+        <value>AI Assist is back to normal.</value>
     </labels>
 </CustomLabels>

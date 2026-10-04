@@ -20,7 +20,7 @@ Version      Author                   Description
 private class AIUsagePolicyAssignmentHandlerTest {
   // testScenario1: A user assignment and a permission set assignment each get a key made of the policy and the assignee.
   // testScenario2: The same user, or the same permission set, cannot be given one policy twice; another policy can have them.
-  // testScenario3: An unexpected failure inside the handler is logged and never throws.
+  // testScenario3: An unexpected failure inside the handler is logged and the save is refused, never allowed unchecked.
 
   @TestSetup
   static void setup() {
@@ -140,17 +140,25 @@ private class AIUsagePolicyAssignmentHandlerTest {
     AIUsagePolicyAssignmentTriggerHandler.isTestCustomExceptionThrown = true;
 
     Test.startTest();
-    List<AIUsagePolicyAssignment__c> assignments = AIAssistTestDataFactory.createAIUsagePolicyAssignments(
-      policy.Id,
-      users,
-      null,
-      true
+    List<Database.SaveResult> results = Database.insert(
+      AIAssistTestDataFactory.createAIUsagePolicyAssignments(
+        policy.Id,
+        users,
+        null,
+        false
+      ),
+      false
     );
     Test.stopTest();
 
-    Assert.isNotNull(
-      assignments[0].Id,
-      'The save went through; the failure was logged.'
+    Assert.isFalse(
+      results[0].isSuccess(),
+      'The check could not run, so the save is refused rather than allowed unchecked.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Integrity_Check,
+      results[0].getErrors()[0].getMessage(),
+      'With the integrity label.'
     );
   }
 }

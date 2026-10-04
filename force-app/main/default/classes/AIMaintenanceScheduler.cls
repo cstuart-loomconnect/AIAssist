@@ -20,6 +20,7 @@ application is switched off.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development. Replaces the separate schedulable batches with one entry point.
 2.0          Chandler Stuart          scheduleDaily added, called by the post-install script.
+3.0          Chandler Stuart          Refreshes the reading of the org limits (AIOrgLimitMonitor).
 */
 
 public inherited sharing class AIMaintenanceScheduler implements Schedulable {
@@ -60,6 +61,8 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   public void execute(SchedulableContext context) {
     if (!AIAssistSettingsService.isEnabled())
       return;
+
+    AIOrgLimitMonitor.refreshIfStale(); // Keeps the mode and its alert current in an org where nobody is chatting. Never throws.
 
     // Each task is its own batch, started on its own, so one failing to start does not stop the others.
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{

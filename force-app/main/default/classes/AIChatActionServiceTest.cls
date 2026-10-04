@@ -110,6 +110,8 @@ private class AIChatActionServiceTest {
       'AIWorkflowActionDispatcherTest.EchoExecutor',
       true
     )[0];
+    action.InputSchema__c = '{"properties":{"x":{}}}';
+    update action;
     AIAssistTestDataFactory.createAIAgentWorkflowActions(
       agent.Id,
       new List<AIWorkflowAction__c>{ action },

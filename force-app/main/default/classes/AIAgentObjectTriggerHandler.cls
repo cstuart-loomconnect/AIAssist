@@ -11,12 +11,13 @@ Description: Business logic for AIAgentObject__c, before insert and before updat
 
 Safe in the subscriber's transactions: the trigger is on the package's own object, does no DML of its own and cannot recurse. The object check uses AISchemaHelper, which caches describes. Not behind the application switch: a bad object name saved while the application is off would still be there when it is switched back on.
 
-An unexpected failure is logged and the record still saves. A refused object name is not a failure; it stops the save.
+An unexpected failure of the check is logged and the save is refused (AI_Error_Integrity_Check), so an object name that was not checked is never saved. A refused object name stops the save the same way.
 
 =================================================================
 =================================================================
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Fails closed: if the key or name check cannot run, the save is refused instead of letting an unchecked record through.
 */
 
 public inherited sharing class AIAgentObjectTriggerHandler {
@@ -81,6 +82,7 @@ public inherited sharing class AIAgentObjectTriggerHandler {
         'AIAgentObjectTriggerHandler',
         methodName
       );
+      AIAssistGlobalUtility.refuseSave(newRecords); // Fails closed: an unchecked record must not be saved.
     }
   }
 }

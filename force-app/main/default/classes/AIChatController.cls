@@ -22,6 +22,7 @@ Every method that touches a conversation or reply first proves the signed-in use
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old controller. Codes instead of message text, Custom Labels throughout, IsEnabled__c, the suggested action runs through the workflow dispatcher with its plan, user and assignment gates, and a decline records that the user cancelled.
+2.0          Chandler Stuart          getPiiMappings removed (security model principle 4). Reading a conversation (earlier messages, update, open) is allowed to a user the visibility rules reach; every write, export and action stays with the starter. getSharedConversationHistory added.
 */
 
 public with sharing class AIChatController {
@@ -119,7 +120,7 @@ public with sharing class AIChatController {
     Id beforeMessageId
   ) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      AIConversationVisibilityService.assertCanView(conversationId);
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
@@ -143,7 +144,7 @@ public with sharing class AIChatController {
     Id afterMessageId
   ) {
     try {
-      AIConversation__c conversation = AIChatConversationService.assertOwnsConversation(
+      AIConversation__c conversation = AIConversationVisibilityService.assertCanView(
         conversationId
       );
       AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
@@ -295,7 +296,7 @@ public with sharing class AIChatController {
     Id conversationId
   ) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      AIConversationVisibilityService.assertCanView(conversationId);
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
@@ -336,6 +337,16 @@ public with sharing class AIChatController {
       );
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getConversationHistory');
+    }
+  }
+
+  // Other people's conversations this user may read, under the agent's visibility and the user's own scope. Read-only.
+  @AuraEnabled
+  public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
+    try {
+      return AIChatConversationService.getSharedConversationHistory();
+    } catch (Exception caughtException) {
+      throw toAura(caughtException, 'getSharedConversationHistory');
     }
   }
 
@@ -436,27 +447,6 @@ public with sharing class AIChatController {
       );
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getDebugTrace');
-    }
-  }
-
-  @AuraEnabled
-  public static String getPiiMappings(Id messageId) {
-    try {
-      if (
-        !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
-          .debugMode
-      )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
-
-      return AIChatDebugService.getPiiMappings(
-        AIChatConversationService.assertOwnsAgentMessage(messageId)
-          .AIConversation__c
-      );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getPiiMappings');
     }
   }
 

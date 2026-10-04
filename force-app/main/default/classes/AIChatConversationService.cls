@@ -20,6 +20,7 @@ Writes (resuming) go through the package gateway after the checks here.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old conversation service. One parameterised message query instead of four, ownership in every query, resume checks the concurrent limit, and step labels are Custom Labels.
+2.0          Chandler Stuart          getSharedConversationHistory lists conversations other users started that the viewer may read; buildConversationView no longer filters on the owner, its callers check access.
 */
 
 public with sharing class AIChatConversationService {
@@ -220,6 +221,34 @@ public with sharing class AIChatConversationService {
     return summaries;
   }
 
+  // Conversations other people started that the user may read (see AIConversationVisibilityService), newest activity first. Read-only: none of them can be sent to, closed, resumed, exported or acted on.
+  public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
+    Id viewerId = UserInfo.getUserId();
+    List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
+
+    for (
+      AIConversation__c conversation : AIConversationVisibilityService.getSharedConversations(
+        viewerId,
+        AIConversationVisibilityService.getEffectiveScope(
+          AIChatStateService.getUserSettings()
+        ),
+        CONVERSATION_FIELDS,
+        new Map<String, Object>{
+          'userSender' => AIAssistApplicationConstants.SENDER_USER
+        },
+        AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS
+      )
+    ) {
+      AIChatDataStructure.ConversationSummary summary = toConversationSummary(
+        conversation
+      );
+      summary.ownerName = conversation.Owner.Name;
+      summaries.add(summary);
+    }
+
+    return summaries;
+  }
+
   // A plain-text transcript, with the real values restored. Command instructions and System messages are left out. The caller has checked the user may export.
   public static String exportConversation(Id conversationId) {
     AIConversation__c conversation = [
@@ -276,6 +305,7 @@ public with sharing class AIChatConversationService {
     return String.join(lines, '\n');
   }
 
+  // The caller has already checked the user may read the conversation: assertOwnsConversation for their own, AIConversationVisibilityService.assertCanView when it may be someone else's.
   public static AIChatDataStructure.ConversationView buildConversationView(
     Id conversationId,
     Integer pageSize,
@@ -286,10 +316,9 @@ public with sharing class AIChatConversationService {
     AIConversation__c conversation = (AIConversation__c) Database.queryWithBinds(
       'SELECT ' +
         CONVERSATION_FIELDS +
-        ' FROM AIConversation__c WHERE Id = :conversationId AND OwnerId = :userId LIMIT 1',
+        ' FROM AIConversation__c WHERE Id = :conversationId LIMIT 1',
       new Map<String, Object>{
         'conversationId' => conversationId,
-        'userId' => UserInfo.getUserId(),
         'userSender' => userSender
       },
       AccessLevel.SYSTEM_MODE

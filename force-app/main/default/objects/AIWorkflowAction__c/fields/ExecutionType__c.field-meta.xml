@@ -15,12 +15,12 @@
             <sorted>false</sorted>
             <value>
                 <fullName>Read Only</fullName>
-                <default>true</default>
+                <default>false</default>
                 <label>Read Only</label>
             </value>
             <value>
                 <fullName>Write</fullName>
-                <default>false</default>
+                <default>true</default>
                 <label>Write</label>
             </value>
         </valueSetDefinition>
