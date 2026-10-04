@@ -83,9 +83,17 @@ public inherited sharing class AIMessageValidator {
         AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
         Label.AI_Error_Message_Empty
       );
+    // The administrator's maximum when it is set and lower than the fixed one.
+    Decimal configuredLength = AIAssistSettingsService.getSettings()
+      .MaxMessageLength__c;
     if (
       messageBody.length() >
-      AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS
+      (configuredLength != null &&
+        configuredLength >= 1 &&
+        configuredLength <
+        AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS
+        ? configuredLength.intValue()
+        : AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS)
     )
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,

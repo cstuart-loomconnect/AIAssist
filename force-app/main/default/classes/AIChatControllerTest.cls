@@ -375,6 +375,15 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
+    // The user running the tests may hold the custom permissions; this scenario is about a user who does not.
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_DEBUG_MODE,
+      false
+    );
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_RUN_ACTIONS,
+      false
+    );
     String shown;
 
     Test.startTest();

@@ -113,7 +113,11 @@ public inherited sharing class AIDataSourceDispatcher {
       dataSource.SourceType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX
     ) {
-      if (!AIPlanLimitService.isApexAllowed())
+      if (
+        !AIFeatureService.isFeatureEnabled(
+          AIAssistApplicationConstants.APP_FEATURE_APEX
+        )
+      )
         throw new AIDataSourceExecutorException(
           'Apex data sources are not included in the plan.'
         );

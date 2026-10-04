@@ -21,6 +21,8 @@ once and always:
     once the model's RetryAttempts__c are used up, and the turn fails.
 [4] Otherwise hand the lock on: start the user's newest message if one arrived during this turn,
     or release it.
+[5] With nothing to hand on, start a message of the same user's that was held at the org-wide cap on
+    messages in flight (AIConversationMessageService.startHeldMessage).
 
 If the next job cannot be enqueued (the org is at its asynchronous limit, or this is a trial or
 developer org, where chained jobs stop at a fixed depth), the finalizer does not leave the user
@@ -37,6 +39,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Runs with sharing. Failure recorded through AIMessageOutcomeService. Stale-lock handling, delayed later retries, and a graceful path when the next job cannot be enqueued.
 3.0          Chandler Stuart          Takes a fresh reading of the org limits when the last is stale, before anything else (AIOrgLimitMonitor).
+4.0          Chandler Stuart          Starts a message held at the cap on messages in flight when this turn leaves nothing else to queue.
 */
 
 public with sharing class AIMessageProcessingFinalizer implements Finalizer {
@@ -94,6 +97,7 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
 
   public void execute(FinalizerContext finalizerContext) {
     AIOrgLimitMonitor.refreshIfStale(); // A finalizer has finished its callout, so writing is safe here. Never throws.
+    AIAssistSettingsService.recordActivatedOrg();
 
     try {
       // finalizerContext is null only when a test calls execute() directly.
@@ -227,6 +231,9 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
             AIAssistApplicationConstants.FAILURE_REASON_OTHER
           );
         }
+      } else {
+        // [5] This turn's place is free: start a message of this user's that was held at the cap on messages in flight. A finalizer may queue one job, and this branch has queued none.
+        AIConversationMessageService.startHeldMessage();
       }
     } catch (Exception caughtException) {
       AIPlatformLogManager.logException(

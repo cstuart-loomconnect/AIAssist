@@ -149,6 +149,13 @@ public with sharing class AIChatController {
       );
       AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
 
+      // A message of this user's held at the cap on messages in flight is started from here once a place is free: only its sender can start it.
+      if (
+        AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null &&
+        AIConversationMessageService.startHeldMessage()
+      )
+        conversation.ProcessingLockedUntil__c = System.now().addMinutes(1);
+
       AIChatDataStructure.ConversationUpdate conversationUpdate = new AIChatDataStructure.ConversationUpdate();
       conversationUpdate.status = conversation.Status__c;
       conversationUpdate.isProcessing =

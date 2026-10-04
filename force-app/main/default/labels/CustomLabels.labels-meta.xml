@@ -429,6 +429,16 @@
     >No AI agent is available for this record. Contact your administrator if you think one should be.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Apex_Class_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: the Apex class named does not exist.</shortDescription>
+        <value
+    >Apex class {0} was not found, or does not implement {1}. Check the spelling and include its namespace prefix if it has one.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Application_Inactive</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -513,9 +523,9 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: Max Conversations Per 24 Hours reached.</shortDescription>
+    >Chat: Max Conversations Per Day reached.</shortDescription>
         <value
-    >You&apos;ve reached the number of conversations allowed in 24 hours. Try again later.</value>
+    >You&apos;ve reached the number of conversations allowed in a day. Try again tomorrow.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
@@ -528,12 +538,21 @@
     >This conversation could not be found. It may have been closed or removed.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Daily_Usage_Limit</fullName>
+        <fullName>AI_Error_Daily_Message_Budget</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: Max Tokens Per 24 Hours reached.</shortDescription>
+    >Chat: the org-wide daily message budget is used up.</shortDescription>
+        <value
+    >Your organisation has used today&apos;s AI Assist messages. You can send more tomorrow.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Daily_Usage_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: Max Tokens Per Day reached.</shortDescription>
         <value
     >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
     </labels>
@@ -624,6 +643,16 @@
     >Your message is too long. Please shorten it and try again.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Named_Credential_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: the Named Credential does not exist.</shortDescription>
+        <value
+    >Named Credential {0} does not exist in this org. Enter the Name of a Named Credential from Setup, or create one first.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Not_Authorised</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -642,6 +671,16 @@
     >Console: AI Evaluated rule not licensed.</shortDescription>
         <value
     >AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Permission_Set_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: no such permission set or group.</shortDescription>
+        <value
+    >No permission set or permission set group named {0} exists in this org. Enter its API name.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Actions_Not_Included</fullName>
@@ -829,6 +868,16 @@
     >Chat: provider returned no usable content.</shortDescription>
         <value
     >The AI service returned an empty response. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the per-user messages-per-minute limit.</shortDescription>
+        <value
+    >You&apos;re sending messages too quickly. Wait a moment, then try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Service_Busy</fullName>

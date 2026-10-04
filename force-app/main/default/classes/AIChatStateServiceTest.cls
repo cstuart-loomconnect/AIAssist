@@ -83,6 +83,21 @@ private class AIChatStateServiceTest {
       WorkflowActionsEnabled__c = true
     );
 
+    // Running an action also needs the plan to include Workflow Actions.
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
+      true
+    );
+    // The user running the tests may hold the custom permissions; this scenario is about a user who does not.
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_DEBUG_MODE,
+      false
+    );
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_RUN_ACTIONS,
+      false
+    );
+
     Test.startTest();
     AIChatDataStructure.UserState none = AIChatStateService.buildUserState(
       null

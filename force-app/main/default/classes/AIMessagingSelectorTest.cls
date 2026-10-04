@@ -398,7 +398,7 @@ private class AIMessagingSelectorTest {
     secondUsage.OutputTokens__c = 10;
     secondUsage.MessageCount__c = 1;
     insert new List<AIUsageDaily__c>{ firstUsage, secondUsage };
-    Date today = Datetime.now().dateGmt();
+    Date today = AIAssistGlobalUtility.getOrgToday();
 
     Test.startTest();
     Integer active = AIMessagingSelector.countActiveConversations(users[0].Id);

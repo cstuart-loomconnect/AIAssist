@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MessageRetentionDays__c</fullName>
+    <defaultValue>30</defaultValue>
+    <description
+  >Days AI Conversation Message records are kept before the clean-up job deletes them, whatever the conversation&apos;s own retention. Messages of a conversation on legal hold are kept. Blank or zero keeps them until their conversation is deleted.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Default 30. Blank keeps messages until their conversation is deleted.</inlineHelpText>
+    <label>Message Retention Days</label>
+    <precision>4</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

@@ -19,6 +19,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
+5.0          Chandler Stuart          The Apex class named must exist and implement IAIDataSourceExecutor (AIConfigurationValidator).
 */
 
 public inherited sharing class AIDataSourceTriggerHandler {
@@ -30,6 +31,13 @@ public inherited sharing class AIDataSourceTriggerHandler {
 
   public static void handleBeforeInsert(List<AIDataSource__c> newRecords) {
     AIPlanActivationService.checkDataSources(newRecords, null);
+    AIConfigurationValidator.checkApexClasses(
+      newRecords,
+      null,
+      AIDataSource__c.ApexClassName__c,
+      AIDataSource__c.SourceType__c,
+      IAIDataSourceExecutor.class
+    );
 
     try {
       if (!AIAssistSettingsService.isEnabled())
@@ -68,5 +76,12 @@ public inherited sharing class AIDataSourceTriggerHandler {
     List<AIDataSource__c> newRecords
   ) {
     AIPlanActivationService.checkDataSources(newRecords, oldRecordsById);
+    AIConfigurationValidator.checkApexClasses(
+      newRecords,
+      oldRecordsById,
+      AIDataSource__c.ApexClassName__c,
+      AIDataSource__c.SourceType__c,
+      IAIDataSourceExecutor.class
+    );
   }
 }

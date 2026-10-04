@@ -340,7 +340,7 @@ private class AIUsageLimitServiceTest {
         AIUsageLimitService.planLimitMessage(
           Label.AI_Error_Plan_Limit_Messages,
           10,
-          Datetime.now().dateGmt()
+          AIAssistGlobalUtility.getOrgToday()
         ),
         ex.getMessage(),
         'The text is the Custom Label, with the allowance and when it renews.'
@@ -404,7 +404,7 @@ private class AIUsageLimitServiceTest {
         AIUsageLimitService.planLimitMessage(
           Label.AI_Error_Plan_Limit_Tokens,
           100,
-          Datetime.now().dateGmt()
+          AIAssistGlobalUtility.getOrgToday()
         ),
         ex.getMessage(),
         'The text is the Custom Label, with the allowance and when it renews.'

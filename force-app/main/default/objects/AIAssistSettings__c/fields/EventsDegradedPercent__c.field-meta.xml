@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EventsDegradedPercent__c</fullName>
+    <description
+  >Percentage of an org limit at which the Events feature becomes Degraded. Blank uses Org Limit Degraded Percent. Must be below the paused percentage; a value that is not is replaced by the paused percentage minus one.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Blank uses Org Limit Degraded Percent. Must be lower than Events Paused Percent.</inlineHelpText>
+    <label>Events Degraded Percent</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

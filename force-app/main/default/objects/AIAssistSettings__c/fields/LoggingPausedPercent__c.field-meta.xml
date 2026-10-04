@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LoggingPausedPercent__c</fullName>
+    <description
+  >Percentage of an org limit at which the Logging feature is Paused (Platform Log entries below Error stop). Blank uses Org Limit Paused Percent. Between 2 and 100; whatever is set, AI Assist pauses at 95 percent of any limit.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Blank uses Org Limit Paused Percent. At most 100; AI Assist always pauses at 95 percent of any limit.</inlineHelpText>
+    <label>Logging Paused Percent</label>
+    <precision>3</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

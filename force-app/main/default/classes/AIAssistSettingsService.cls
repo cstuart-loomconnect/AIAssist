@@ -21,6 +21,7 @@ Blank logging switches count as on: logging is only off when explicitly unchecke
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: IsEnabled__c replaces IsApplicationActive__c, per-value caches removed (the platform already caches custom settings), numeric defaults share one rule.
+3.0          Chandler Stuart          Sandbox guard (ActivatedOrgId__c), activate, and the step capture mode.
 */
 
 public inherited sharing class AIAssistSettingsService {
@@ -78,9 +79,62 @@ public inherited sharing class AIAssistSettingsService {
         );
   }
 
-  // The application switch every trigger and entry point respects. Blank counts as on.
+  // The application switch every trigger and entry point respects. Blank counts as on. Off as well when the settings were activated in another org (isActivatedElsewhere): a sandbox copied from production stays off until it is activated there.
   public static Boolean isEnabled() {
-    return getSettings().IsEnabled__c != false;
+    return getSettings().IsEnabled__c != false && !isActivatedElsewhere();
+  }
+
+  // True when ActivatedOrgId__c names an org other than this one. Blank is not "elsewhere": it has not been recorded yet.
+  public static Boolean isActivatedElsewhere() {
+    String activatedOrgId = getSettings().ActivatedOrgId__c;
+
+    return String.isNotBlank(activatedOrgId) &&
+      !UserInfo.getOrganizationId().startsWith(activatedOrgId.left(15));
+  }
+
+  // Switches the application on in this org and records the org, which is what makes a copy of the settings in another org inactive. Creates the settings row when there is none.
+  public static void activate() {
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    if (settings == null || settings.Id == null) {
+      settings = (AIAssistSettings__c) AIAssistSettings__c.SObjectType.newSObject(
+        null,
+        true
+      );
+      settings.SetupOwnerId = UserInfo.getOrganizationId();
+    }
+    settings.IsEnabled__c = true;
+    settings.ActivatedOrgId__c = UserInfo.getOrganizationId();
+    Database.upsert(settings, true, AccessLevel.SYSTEM_MODE);
+    clearCache();
+  }
+
+  // Records this org on settings that are switched on and have no org recorded yet (switched on in Setup, or from before the field existed). Called where DML is safe: the maintenance job and after a turn. A failure is logged, never thrown.
+  public static void recordActivatedOrg() {
+    try {
+      AIAssistSettings__c settings = getSettings();
+      if (
+        settings.Id == null ||
+        settings.IsEnabled__c == false ||
+        String.isNotBlank(settings.ActivatedOrgId__c)
+      )
+        return;
+
+      Database.update(
+        new AIAssistSettings__c(
+          Id = settings.Id,
+          ActivatedOrgId__c = UserInfo.getOrganizationId()
+        ),
+        true,
+        AccessLevel.SYSTEM_MODE
+      );
+      clearCache();
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIAssistSettingsService',
+        'recordActivatedOrg'
+      );
+    }
   }
 
   // Exceptions are published as events unless this is explicitly unchecked.
@@ -161,6 +215,21 @@ public inherited sharing class AIAssistSettingsService {
       getSettings().MaxToolCallsPerIteration__c,
       AIAssistApplicationConstants.DEFAULT_MAX_TOOL_CALLS_PER_ITERATION
     );
+  }
+
+  // How much of each turn is stored as execution steps: Off, Summary or Full. Blank or anything unrecognised is Summary.
+  public static String getStepCaptureMode() {
+    String configuredMode = getSettings().StepCaptureMode__c;
+
+    return AIAssistApplicationConstants.STEP_CAPTURE_OFF.equalsIgnoreCase(
+        configuredMode
+      )
+      ? AIAssistApplicationConstants.STEP_CAPTURE_OFF
+      : (AIAssistApplicationConstants.STEP_CAPTURE_FULL.equalsIgnoreCase(
+            configuredMode
+          )
+          ? AIAssistApplicationConstants.STEP_CAPTURE_FULL
+          : AIAssistApplicationConstants.STEP_CAPTURE_SUMMARY);
   }
 
   // How long a conversation's processing lock lasts before it expires on its own.

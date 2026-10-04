@@ -274,16 +274,14 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
       responseRequest.aiRules = AIViolationService.loadActiveAiRules(agent.Id);
       responseContext.aiRules = responseRequest.aiRules;
 
-      // Live progress follows the org-wide setting. Request and response payloads are captured only for a user with debug mode on: queueables run as the sender, so this is the chat user.
-      AIUserSettings__c userSettings = AIMessagingSelector.getUserSettings(
-        userId
-      );
+      // Live progress follows the org-wide setting. Request and response payloads are captured only when the step capture mode is Full.
       responseRequest.trace = new AIExecutionStepTracker(
         conversationId,
         triggeringMessageId,
         AIAssistSettingsService.getUiSettings().ShowExecutionTraceToUser__c ==
         true,
-        userSettings != null && userSettings.DebugModeEnabled__c == true
+        AIAssistSettingsService.getStepCaptureMode() ==
+        AIAssistApplicationConstants.STEP_CAPTURE_FULL
       );
 
       // [2]

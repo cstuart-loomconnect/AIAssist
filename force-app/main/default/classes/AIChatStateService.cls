@@ -60,14 +60,22 @@ public with sharing class AIChatStateService {
     userState.userId = UserInfo.getUserId();
     userState.firstName = UserInfo.getFirstName();
 
-    if (userSettings == null)
-      return userState;
-
-    userState.debugMode = userSettings.DebugModeEnabled__c == true;
-    userState.exportEnabled = userSettings.ConversationExportEnabled__c == true;
-    userState.workflowActionsEnabled =
-      userSettings.IsActive__c == true &&
-      userSettings.WorkflowActionsEnabled__c == true;
+    // Plan, application and user in one place (AIFeatureService). A custom permission can grant debug mode or actions to a user with no settings row; export has no permission, so no row means no export.
+    AIUserSettings__c settings = userSettings == null
+      ? new AIUserSettings__c()
+      : userSettings;
+    userState.debugMode = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_DEBUG_MODE,
+      settings
+    );
+    userState.exportEnabled = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_EXPORT,
+      settings
+    );
+    userState.workflowActionsEnabled = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_RUN_ACTIONS,
+      settings
+    );
 
     return userState;
   }

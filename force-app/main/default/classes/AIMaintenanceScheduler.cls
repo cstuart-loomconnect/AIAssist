@@ -62,6 +62,7 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   }
 
   public void execute(SchedulableContext context) {
+    AIAssistSettingsService.recordActivatedOrg();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
     AIOrgLimitMonitor.refreshIfStale(); // Keeps the mode and its alert current in an org where nobody is chatting. Never throws.
@@ -69,8 +70,7 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
     // Retention and the usage totals run whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
       new AIConversationRetentionBatch(),
-      new AIRecordRetentionBatch(AIRecordRetentionBatch.LOGS),
-      new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS),
+      new AIRecordRetentionBatch(), // Logs, violations, steps and messages, one after another.
       new AIOrgUsageTotalsBatch()
     };
     // Closing idle conversations is part of the chat, so it waits for the application to be on.

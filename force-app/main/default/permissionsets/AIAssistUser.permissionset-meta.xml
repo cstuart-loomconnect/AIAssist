@@ -68,6 +68,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>AIConversationMessage__c.IsAwaitingCapacity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>AIConversationMessage__c.IsSuperseded__c</field>
         <readable>true</readable>
     </fieldPermissions>

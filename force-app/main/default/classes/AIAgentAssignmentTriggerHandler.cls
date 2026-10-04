@@ -20,6 +20,7 @@ A failure of the check itself is logged and the save is refused (AI_Error_Integr
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Fails closed: if the key or name check cannot run, the save is refused instead of letting an unchecked record through.
+3.0          Chandler Stuart          The permission set or group named must exist (AIConfigurationValidator).
 */
 
 public inherited sharing class AIAgentAssignmentTriggerHandler {
@@ -31,10 +32,18 @@ public inherited sharing class AIAgentAssignmentTriggerHandler {
 
   public static void handleBeforeInsert(List<AIAgentAssignment__c> newRecords) {
     stampKey(newRecords, 'handleBeforeInsert');
+    AIConfigurationValidator.checkPermissionSets(
+      newRecords,
+      AIAgentAssignment__c.PermissionSetName__c
+    );
   }
 
   public static void handleBeforeUpdate(List<AIAgentAssignment__c> newRecords) {
     stampKey(newRecords, 'handleBeforeUpdate');
+    AIConfigurationValidator.checkPermissionSets(
+      newRecords,
+      AIAgentAssignment__c.PermissionSetName__c
+    );
   }
 
   private static void stampKey(

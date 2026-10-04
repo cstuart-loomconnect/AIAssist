@@ -9,7 +9,8 @@ AIDataSourceDispatcher, with the extra care an action that can change data needs
 
 In order, and each refusal is an AIMessagingException with a Custom Label and a stable code:
 [1] The application is on, the plan includes Workflow Actions (and Apex, for an Apex action), and the
-    user's own settings allow them (AIUserSettings__c.WorkflowActionsEnabled__c, off unless set).
+    user may run them: the AIAssistRunActions custom permission, or Workflow Actions Enabled on
+    their policy or settings (AIFeatureService.isFeatureEnabled, one check for all three).
     The agent is active and still admits the user (AIMessageValidator.isUserAllowedOnAgent), so a user
     who has been removed from an agent cannot run an action it suggested earlier.
 [2] The action is read in system mode, because the User permission set cannot read it, and must be
@@ -59,25 +60,26 @@ public inherited sharing class AIWorkflowActionDispatcher {
     AIMessagingException problem = null;
 
     try {
-      if (!AIAssistSettingsService.isEnabled())
+      // Plan, then the application, then the user (AIFeatureService). The layer that refused chooses what the user is told.
+      String blockedBy = AIFeatureService.getBlockingLayer(
+        AIAssistApplicationConstants.APP_FEATURE_RUN_ACTIONS,
+        AIMessagingSelector.getUserSettings(UserInfo.getUserId())
+      );
+      // The application switch is reported first, as it always was: with AI Assist off nothing else matters.
+      if (
+        !AIAssistSettingsService.isEnabled() ||
+        blockedBy == AIFeatureService.LAYER_ORG
+      )
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
           Label.AI_Error_Application_Inactive
         );
-      if (!AIPlanLimitService.isWorkflowActionsAllowed())
+      if (blockedBy == AIFeatureService.LAYER_PLAN)
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_PLAN_ACTIONS_NOT_INCLUDED,
           Label.AI_Error_Plan_Actions_Not_Included
         );
-
-      AIUserSettings__c userSettings = AIMessagingSelector.getUserSettings(
-        UserInfo.getUserId()
-      );
-      if (
-        userSettings == null ||
-        userSettings.IsActive__c != true ||
-        userSettings.WorkflowActionsEnabled__c != true
-      )
+      if (blockedBy == AIFeatureService.LAYER_USER)
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
           Label.AI_Error_Action_Not_Permitted
@@ -124,7 +126,11 @@ public inherited sharing class AIWorkflowActionDispatcher {
         action.ActionType__c ==
         AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX
       ) {
-        if (!AIPlanLimitService.isApexAllowed()) {
+        if (
+          !AIFeatureService.isFeatureEnabled(
+            AIAssistApplicationConstants.APP_FEATURE_APEX
+          )
+        ) {
           hasRun = false;
           throw AIMessagingException.newRefusal(
             AIAssistApplicationConstants.ERROR_PLAN_APEX_NOT_INCLUDED,

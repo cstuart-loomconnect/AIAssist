@@ -136,7 +136,9 @@ public inherited sharing class AIPlanActivationService {
           dataSource.SourceType__c ==
           AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX &&
           (!wasActive || previous.SourceType__c != dataSource.SourceType__c) &&
-          !AIPlanLimitService.isApexAllowed()
+          !AIFeatureService.isFeatureEnabled(
+            AIAssistApplicationConstants.APP_FEATURE_APEX
+          )
         ) {
           dataSource.addError(Label.AI_Error_Plan_Apex_Not_Included);
           continue;
@@ -201,7 +203,12 @@ public inherited sharing class AIPlanActivationService {
           : oldActionsById.get(action.Id);
         Boolean wasActive = previous != null && previous.IsActive__c == true;
 
-        if (!wasActive && !AIPlanLimitService.isWorkflowActionsAllowed()) {
+        if (
+          !wasActive &&
+          !AIFeatureService.isFeatureEnabled(
+            AIAssistApplicationConstants.APP_FEATURE_WORKFLOW_ACTIONS
+          )
+        ) {
           action.addError(Label.AI_Error_Plan_Actions_Not_Included);
           continue;
         }
@@ -211,7 +218,9 @@ public inherited sharing class AIPlanActivationService {
           action.ActionType__c ==
           AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX &&
           (!wasActive || previous.ActionType__c != action.ActionType__c) &&
-          !AIPlanLimitService.isApexAllowed()
+          !AIFeatureService.isFeatureEnabled(
+            AIAssistApplicationConstants.APP_FEATURE_APEX
+          )
         ) {
           action.addError(Label.AI_Error_Plan_Apex_Not_Included);
           continue;
@@ -261,7 +270,9 @@ public inherited sharing class AIPlanActivationService {
         newConfigurations == null ||
         newConfigurations.isEmpty() ||
         !AIPlanLimitService.isActivationChecked() ||
-        AIPlanLimitService.isMultipleProvidersAllowed()
+        AIFeatureService.isFeatureEnabled(
+          AIAssistApplicationConstants.APP_FEATURE_MULTIPLE_PROVIDERS
+        )
       )
         return;
 

@@ -36,6 +36,7 @@ that called it.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          UUID from System.Uuid instead of an MD5 digest, namespace-safe field resolution, describe cached per transaction, DeveloperName cut to the field length and made unique, derived from SourceName__c / ActionName__c where Name is an auto-number, single-use helpers inlined.
+3.0          Chandler Stuart          The org's day: daily limits and the monthly reset follow the org's time zone.
 */
 
 public inherited sharing class AIAssistGlobalUtility {
@@ -333,5 +334,50 @@ public inherited sharing class AIAssistGlobalUtility {
 
       return existingNames;
     }
+  }
+
+  // =============================================================
+  // The org's day
+  // =============================================================
+
+  // Daily limits and the monthly reset follow the org's own time zone (Company Information), not UTC and not the time zone of whichever user sends a message: everyone in the org shares one day. Read once per transaction.
+  @TestVisible
+  private static String orgTimeZoneSidKey;
+  // A test cannot move the clock.
+  @TestVisible
+  private static Datetime nowForTest;
+
+  public static TimeZone getOrgTimeZone() {
+    if (orgTimeZoneSidKey == null)
+      orgTimeZoneSidKey = [
+        SELECT TimeZoneSidKey
+        FROM Organization
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ]
+      .TimeZoneSidKey;
+
+    return TimeZone.getTimeZone(orgTimeZoneSidKey);
+  }
+
+  // The calendar date a moment falls on in the org's time zone.
+  public static Date getOrgDate(Datetime moment) {
+    return Date.valueOf(moment.format('yyyy-MM-dd', getOrgTimeZone().getID()));
+  }
+
+  // Today in the org's time zone: the day usage is counted against.
+  public static Date getOrgToday() {
+    return getOrgDate(nowForTest == null ? System.now() : nowForTest);
+  }
+
+  // The moment the org's next day starts, which is when daily limits reset.
+  public static Datetime getNextOrgMidnight() {
+    Date tomorrow = getOrgToday().addDays(1);
+    Datetime asIfUtc = Datetime.newInstanceGmt(
+      tomorrow,
+      Time.newInstance(0, 0, 0, 0)
+    );
+
+    return asIfUtc.addSeconds(-getOrgTimeZone().getOffset(asIfUtc) / 1000);
   }
 }

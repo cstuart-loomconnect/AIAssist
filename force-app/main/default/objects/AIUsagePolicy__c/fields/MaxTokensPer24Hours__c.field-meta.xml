@@ -5,7 +5,7 @@
   >Most tokens a user covered by this policy can use in a UTC day. Blank means no limit from this policy.</description>
     <inlineHelpText
   >Leave blank for no limit. Where several policies apply, the lowest limit is used.</inlineHelpText>
-    <label>Max Tokens Per 24 Hours</label>
+    <label>Max Tokens Per Day</label>
     <precision>18</precision>
     <required>false</required>
     <scale>0</scale>

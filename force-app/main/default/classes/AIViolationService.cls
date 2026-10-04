@@ -47,7 +47,9 @@ public inherited sharing class AIViolationService {
     if (
       aiRules == null ||
       aiRules.isEmpty() ||
-      !AIPlanLimitService.isAiRulesAllowed()
+      !AIFeatureService.isFeatureEnabled(
+        AIAssistApplicationConstants.APP_FEATURE_AI_RULES
+      )
     )
       return null;
 
@@ -68,7 +70,9 @@ public inherited sharing class AIViolationService {
 
   // The rules a turn will be checked against: empty when the plan does not include AI evaluated rules.
   public static List<AIViolationRule__c> loadActiveAiRules(Id agentId) {
-    return AIPlanLimitService.isAiRulesAllowed()
+    return AIFeatureService.isFeatureEnabled(
+        AIAssistApplicationConstants.APP_FEATURE_AI_RULES
+      )
       ? AIMessagingSelector.getActiveAiEvaluatedRules(agentId)
       : new List<AIViolationRule__c>();
   }
@@ -87,7 +91,9 @@ public inherited sharing class AIViolationService {
         responseContext.aiRules == null ||
         responseContext.aiRules.isEmpty() ||
         String.isBlank(replyText) ||
-        !AIPlanLimitService.isAiRulesAllowed()
+        !AIFeatureService.isFeatureEnabled(
+          AIAssistApplicationConstants.APP_FEATURE_AI_RULES
+        )
       )
         return inspection;
 

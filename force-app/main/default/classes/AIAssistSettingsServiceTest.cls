@@ -22,6 +22,7 @@ private class AIAssistSettingsServiceTest {
   // testScenario2: Unchecking the three switches turns the application and both kinds of logging off, and a UI settings row replaces the field defaults.
   // testScenario3: With no organisation settings row at all, the field defaults apply instead of every checkbox reading as off.
   // testScenario4: Configured values are parsed and returned: success and retry status codes (skipping blanks and non-numbers), the callout timeout, and the tool-calling and lock limits, where a zero or negative limit falls back to its default.
+  // testScenario6: Settings activated in another org read as switched off, as a sandbox copied from production would be; blank and this org's Id do not. activate switches on and records this org, and recordActivatedOrg fills a blank one in.
   // testScenario5: Blank or garbled values fall back safely: success codes to 200, retry codes to none, blank limits to their defaults, and a blank callout timeout throws rather than guessing.
 
   @TestSetup
@@ -215,6 +216,61 @@ private class AIAssistSettingsServiceTest {
       AIAssistApplicationConstants.DEFAULT_PROCESSING_LOCK_MINUTES,
       lockMinutes,
       'Blank falls back to the default lock time.'
+    );
+  }
+
+  @IsTest
+  static void testScenario6() {
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    String otherOrgId = '00D000000000001AAA';
+
+    Test.startTest();
+    settings.ActivatedOrgId__c = otherOrgId;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    Boolean isEnabledElsewhere = AIAssistSettingsService.isEnabled();
+    Boolean isElsewhere = AIAssistSettingsService.isActivatedElsewhere();
+    AIAssistSettingsService.recordActivatedOrg();
+    String afterRecordingOverAnother = AIAssistSettings__c.getOrgDefaults()
+      .ActivatedOrgId__c;
+
+    settings.ActivatedOrgId__c = null;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    Boolean isEnabledBlank = AIAssistSettingsService.isEnabled();
+    AIAssistSettingsService.recordActivatedOrg();
+    String afterRecordingBlank = AIAssistSettings__c.getOrgDefaults()
+      .ActivatedOrgId__c;
+    Boolean isEnabledHere = AIAssistSettingsService.isEnabled();
+
+    settings.ActivatedOrgId__c = otherOrgId;
+    settings.IsEnabled__c = false;
+    update settings;
+    AIAssistSettingsService.activate();
+    Test.stopTest();
+
+    Assert.isTrue(isElsewhere, 'Another org\'s Id.');
+    Assert.isFalse(
+      isEnabledElsewhere,
+      'A mismatched org Id is inactive although the switch is on.'
+    );
+    Assert.areEqual(
+      otherOrgId,
+      afterRecordingOverAnother,
+      'Another org\'s Id is never overwritten by itself: an administrator activates.'
+    );
+    Assert.isTrue(isEnabledBlank, 'Blank is not yet recorded, not a mismatch.');
+    Assert.areEqual(
+      UserInfo.getOrganizationId(),
+      afterRecordingBlank,
+      'A blank one is filled in with this org.'
+    );
+    Assert.isTrue(isEnabledHere, 'This org\'s Id is active.');
+    Assert.isTrue(AIAssistSettingsService.isEnabled(), 'Activated here.');
+    Assert.areEqual(
+      UserInfo.getOrganizationId(),
+      AIAssistSettings__c.getOrgDefaults().ActivatedOrgId__c,
+      'Activation records this org.'
     );
   }
 }

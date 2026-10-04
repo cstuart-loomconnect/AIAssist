@@ -522,7 +522,8 @@ public inherited sharing class AIMessageOutcomeService {
             new AIConversationMessage__c(
               Id = candidate.Id,
               ProcessingStatus__c = processingStatus,
-              FailureReason__c = failureReason
+              FailureReason__c = failureReason,
+              IsAwaitingCapacity__c = false
             )
           );
       }

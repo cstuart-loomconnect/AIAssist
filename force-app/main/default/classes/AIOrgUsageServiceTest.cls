@@ -116,7 +116,7 @@ private class AIOrgUsageServiceTest {
 
   @IsTest
   static void testScenario2() {
-    Date today = Datetime.now().dateGmt();
+    Date today = AIAssistGlobalUtility.getOrgToday();
     Date yesterdayOrEarlierThisMonth = today.day() == 1
       ? today
       : today.addDays(-1);
@@ -160,7 +160,7 @@ private class AIOrgUsageServiceTest {
     );
     store(
       '{"day":"' +
-        String.valueOf(Datetime.now().dateGmt()) +
+        String.valueOf(AIAssistGlobalUtility.getOrgToday()) +
         '","dayMessages":900,"dayTokens":90000,"monthMessages":30000,"monthTokens":3000000}'
     );
     AIPlanLimitService.setLimitForTest(
@@ -199,7 +199,7 @@ private class AIOrgUsageServiceTest {
   @IsTest
   static void testScenario4() {
     World world = createWorld();
-    Date today = Datetime.now().dateGmt();
+    Date today = AIAssistGlobalUtility.getOrgToday();
     List<AIUsageDaily__c> rows = AIAssistTestDataFactory.createAIUsageDailies(
       world.chatUser.Id,
       world.agent.Id,

@@ -818,11 +818,13 @@ public without sharing class AIMessagingSelector {
     OrgUsage orgUsage = new OrgUsage();
 
     Date monthStart = Date.newInstance(today.year(), today.month(), 1);
+    // A day early: the month starts at the org's midnight, which can be up to 14 hours before the UTC one. UsageDate__c is the exact filter.
     Datetime monthStartDatetime = Datetime.newInstanceGmt(
-      monthStart.year(),
-      monthStart.month(),
-      monthStart.day()
-    );
+        monthStart.year(),
+        monthStart.month(),
+        monthStart.day()
+      )
+      .addDays(-1);
 
     for (AggregateResult dailyRow : [
       SELECT
@@ -882,10 +884,7 @@ public without sharing class AIMessagingSelector {
   // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
   public static Integer countQueuedMessageJobs() {
     Datetime oneDayAgo = Datetime.now().addDays(-1);
-    // This package's class only: a subscriber may have a class of the same name. Null when the code is not in a namespace.
-    String packageNamespace = AIMessagingSelector.class.getName().contains('.')
-      ? AIMessagingSelector.class.getName().substringBefore('.')
-      : null;
+    String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
 
     return [
       SELECT COUNT()
@@ -898,6 +897,28 @@ public without sharing class AIMessagingSelector {
         AND CreatedDate >= :oneDayAgo
       WITH SYSTEM_MODE
     ];
+  }
+
+  // Messages the user sent in the last 60 seconds, for the rate limit.
+  public static Integer countRecentUserMessages(Id userId) {
+    Datetime oneMinuteAgo = System.now().addSeconds(-60);
+
+    return [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        CreatedById = :userId
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
+        AND CreatedDate >= :oneMinuteAgo
+      WITH SYSTEM_MODE
+    ];
+  }
+
+  // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+  public static String getPackageNamespace() {
+    return AIMessagingSelector.class.getName().contains('.')
+      ? AIMessagingSelector.class.getName().substringBefore('.')
+      : null;
   }
 
   // =============================================================

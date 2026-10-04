@@ -8,6 +8,10 @@
     </classAccesses>
     <customPermissions>
         <enabled>true</enabled>
+        <name>AIAssistDebugMode</name>
+    </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
         <name>AIAssistViewSharedConversations</name>
     </customPermissions>
     <fieldPermissions>
@@ -228,6 +232,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversationMessage__c.InReplyTo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.IsAwaitingCapacity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

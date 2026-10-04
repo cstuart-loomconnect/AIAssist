@@ -19,7 +19,7 @@ A total for a day or month that has passed counts as zero: the day and month it 
 with it. Until the totals have been stored once (a new install, or no settings row), they are read from
 the usage rows the old way, so a limit is never skipped.
 
-"Today" is the UTC day, as on the usage rows. Nothing here throws: usage bookkeeping must never fail the
+"Today" is the day in the org's time zone, as on the usage rows. Nothing here throws: usage bookkeeping must never fail the
 turn it describes.
 
 =================================================================
@@ -33,7 +33,7 @@ public inherited sharing class AIOrgUsageService {
   // What is stored. Short names because the field holds 255 characters.
   @TestVisible
   private class State {
-    String day; // yyyy-MM-dd, UTC
+    String day; // yyyy-MM-dd, in the org's time zone
     Decimal dayMessages = 0;
     Decimal dayTokens = 0;
     Decimal monthMessages = 0;
@@ -42,7 +42,7 @@ public inherited sharing class AIOrgUsageService {
 
   // The totals for today and this month. Reads no usage row once the totals have been stored.
   public static AIMessagingSelector.OrgUsage getUsage() {
-    Date today = Datetime.now().dateGmt();
+    Date today = AIAssistGlobalUtility.getOrgToday();
     State state = parse(
       AIAssistSettingsService.getSettings().OrgUsageStateJson__c
     );
@@ -59,7 +59,7 @@ public inherited sharing class AIOrgUsageService {
       if (usageDelta == null)
         return;
 
-      Date today = Datetime.now().dateGmt();
+      Date today = AIAssistGlobalUtility.getOrgToday();
       List<AIAssistSettings__c> settingsRows = [
         SELECT Id, OrgUsageStateJson__c
         FROM AIAssistSettings__c

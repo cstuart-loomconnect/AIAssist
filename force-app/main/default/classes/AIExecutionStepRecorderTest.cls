@@ -26,6 +26,7 @@ private class AIExecutionStepRecorderTest {
   // testScenario6: Nothing is saved, and nothing throws, for no message, no trace or a trace with no steps.
   // testScenario7: A value longer than its field is cut instead of losing the evidence row.
   // testScenario8: Bulk: two hundred steps are saved in one insert, in order.
+  // testScenario9: Each capture mode: Off stores no step for the turn, Summary and a blank or unknown setting store steps, and only Full is the mode that carries payloads.
 
   @TestSetup
   static void setup() {
@@ -597,5 +598,90 @@ private class AIExecutionStepRecorderTest {
       .StepOrder__c,
       'Numbered to the end.'
     );
+  }
+
+  @IsTest
+  static void testScenario9() {
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      true
+    )[0];
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      1,
+      true
+    )[0];
+    AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      5,
+      1,
+      true
+    )[0];
+    Map<String, String> modeBySetting = new Map<String, String>();
+    Map<String, Integer> stepsBySetting = new Map<String, Integer>();
+
+    Test.startTest();
+    for (
+      String configured : new List<String>{
+        'Off',
+        'Summary',
+        'full',
+        '',
+        'Everything'
+      }
+    ) {
+      AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+      settings.StepCaptureMode__c = configured;
+      update settings;
+      AIAssistSettingsService.cachedSettings = null;
+      modeBySetting.put(
+        configured,
+        AIAssistSettingsService.getStepCaptureMode()
+      );
+
+      AIExecutionStepTracker trace = new AIExecutionStepTracker(
+        conversation.Id,
+        message.Id,
+        false,
+        false
+      );
+      trace.startStep('Calling the model', null);
+      trace.endStep(true);
+      delete [SELECT Id FROM AIExecutionStep__c];
+      AIExecutionStepRecorder.recordExecutionSteps(
+        message.Id,
+        trace,
+        'Anthropic',
+        'model-1'
+      );
+      stepsBySetting.put(configured, [SELECT COUNT() FROM AIExecutionStep__c]);
+    }
+    Test.stopTest();
+
+    Assert.areEqual(
+      AIAssistApplicationConstants.STEP_CAPTURE_OFF,
+      modeBySetting.get('Off'),
+      'Off.'
+    );
+    Assert.areEqual(0, stepsBySetting.get('Off'), 'Off stores no step.');
+    Assert.areEqual(1, stepsBySetting.get('Summary'), 'Summary stores it.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.STEP_CAPTURE_FULL,
+      modeBySetting.get('full'),
+      'Full, in any case.'
+    );
+    Assert.areEqual(1, stepsBySetting.get('full'), 'Full stores it.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.STEP_CAPTURE_SUMMARY,
+      modeBySetting.get(''),
+      'Blank is Summary.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.STEP_CAPTURE_SUMMARY,
+      modeBySetting.get('Everything'),
+      'An unknown value is Summary.'
+    );
+    Assert.areEqual(1, stepsBySetting.get('Everything'), 'And stores steps.');
   }
 }

@@ -116,7 +116,7 @@ public without sharing class AIMessagingDataService {
     if (usageDelta == null || usageDelta.userId == null)
       return;
 
-    Date usageDate = Datetime.now().dateGmt();
+    Date usageDate = AIAssistGlobalUtility.getOrgToday(); // The org's day, not the UTC day.
     String usageKey =
       usageDelta.userId +
       '|' +

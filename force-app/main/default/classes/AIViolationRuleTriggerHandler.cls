@@ -51,7 +51,9 @@ public inherited sharing class AIViolationRuleTriggerHandler {
       if (
         newRules == null ||
         newRules.isEmpty() ||
-        AIPlanLimitService.isAiRulesAllowed()
+        AIFeatureService.isFeatureEnabled(
+          AIAssistApplicationConstants.APP_FEATURE_AI_RULES
+        )
       )
         return;
 
@@ -85,7 +87,9 @@ public inherited sharing class AIViolationRuleTriggerHandler {
       if (
         newRules == null ||
         newRules.isEmpty() ||
-        AIPlanLimitService.isAiRulesAllowed()
+        AIFeatureService.isFeatureEnabled(
+          AIAssistApplicationConstants.APP_FEATURE_AI_RULES
+        )
       )
         return;
 

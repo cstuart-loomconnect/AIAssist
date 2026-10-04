@@ -27,6 +27,9 @@ private class AIOrgLimitMonitorTest {
   // testScenario7: The reading is kept as a short string and read back, and a malformed or blank one is treated as never read.
   // testScenario8: Refreshing keeps the reading, tells the administrators once when a feature changes mode, and does nothing while the reading is fresh.
   // testScenario9: A failure while reading the limits never throws, and falls back to the last known state or Normal.
+  // testScenario10: A feature's own thresholds are used when set, the org-wide ones when blank and the defaults when both are; and nothing pauses later than 95 percent whatever is set.
+  // testScenario11: AI Assist's own share trips a feature to Paused while the org has headroom: the asynchronous share for Chat, the event share for Events, and the storage budget for Chat and Logging.
+  // testScenario12: validateSettings names each field that breaks Degraded < Paused <= 100 or a share of 5 to 100, and the footprint is measured and stored by a refresh.
 
   @TestSetup
   static void setup() {
@@ -40,6 +43,7 @@ private class AIOrgLimitMonitorTest {
   private static void reset() {
     AIOrgLimitMonitor.transactionState = null;
     AIOrgLimitMonitor.testLimits = null;
+    AIOrgLimitMonitor.testFootprint = null;
     AIOrgLimitMonitor.isTestFailureThrown = false;
     AIAssistSettingsService.clearCache();
   }
@@ -457,5 +461,205 @@ private class AIOrgLimitMonitorTest {
     );
     Assert.isFalse(isPaused, 'Not paused.');
     Assert.isNotNull(known, 'A normal reading works.');
+  }
+
+  @IsTest
+  static void testScenario10() {
+    reset();
+    Test.startTest();
+    configure(
+      new Map<String, Object>{
+        'OrgLimitDegradedPercent__c' => null,
+        'OrgLimitPausedPercent__c' => null,
+        'OrgLimitMaxSharePercent__c' => null
+      }
+    );
+    AIOrgLimitMonitor.Thresholds defaults = AIOrgLimitMonitor.getThresholds(
+      AIAssistApplicationConstants.LIMIT_FEATURE_CHAT
+    );
+    configure(
+      new Map<String, Object>{
+        'OrgLimitDegradedPercent__c' => 40,
+        'OrgLimitPausedPercent__c' => 60,
+        'OrgLimitMaxSharePercent__c' => 80,
+        'EventsDegradedPercent__c' => 20,
+        'EventsPausedPercent__c' => 30,
+        'EventsAppSharePercent__c' => 10
+      }
+    );
+    AIOrgLimitMonitor.Thresholds orgWide = AIOrgLimitMonitor.getThresholds(
+      AIAssistApplicationConstants.LIMIT_FEATURE_CHAT
+    );
+    AIOrgLimitMonitor.Thresholds own = AIOrgLimitMonitor.getThresholds(
+      AIAssistApplicationConstants.LIMIT_FEATURE_EVENTS
+    );
+    configure(
+      new Map<String, Object>{
+        'OrgLimitMaxSharePercent__c' => null,
+        'ChatDegradedPercent__c' => 97,
+        'ChatPausedPercent__c' => 100,
+        'ChatAppSharePercent__c' => 3
+      }
+    );
+    AIOrgLimitMonitor.Thresholds floored = AIOrgLimitMonitor.getThresholds(
+      AIAssistApplicationConstants.LIMIT_FEATURE_CHAT
+    );
+    setUsage(96, 0);
+    String modeAt96 = stateAfter(null)
+      .byFeature.get(AIAssistApplicationConstants.LIMIT_FEATURE_CHAT)
+      .mode;
+    Test.stopTest();
+
+    Assert.areEqual(70, defaults.degraded, 'Both blank: the default.');
+    Assert.areEqual(85, defaults.paused, 'Both blank: the default.');
+    Assert.isNull(defaults.appShare, 'No share budget unless one is set.');
+    Assert.areEqual(40, orgWide.degraded, 'Blank on Chat: the org-wide value.');
+    Assert.areEqual(60, orgWide.paused, 'Blank on Chat: the org-wide value.');
+    Assert.areEqual(80, orgWide.appShare, 'Blank on Chat: the org-wide share.');
+    Assert.areEqual(20, own.degraded, 'The feature\'s own value.');
+    Assert.areEqual(30, own.paused, 'The feature\'s own value.');
+    Assert.areEqual(10, own.appShare, 'The feature\'s own share.');
+    Assert.areEqual(95, floored.paused, 'Never later than 95 percent.');
+    Assert.areEqual(94, floored.degraded, 'Degraded stays under it.');
+    Assert.isNull(floored.appShare, 'A share under 5 is not a budget.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.LIMIT_MODE_PAUSED,
+      modeAt96,
+      'Paused at 96 percent although the setting says 100.'
+    );
+  }
+
+  @IsTest
+  static void testScenario11() {
+    reset();
+    configure(
+      new Map<String, Object>{
+        'ChatAppSharePercent__c' => 20,
+        'EventsAppSharePercent__c' => 50,
+        'StorageBudgetPercent__c' => 10
+      }
+    );
+    // The org is almost idle: 5 percent of everything. Limits are 100 a day of asynchronous Apex, 100 an hour of events and 100 MB.
+    setUsage(5, 5);
+    AIOrgLimitMonitor.Footprint footprint = new AIOrgLimitMonitor.Footprint();
+    AIOrgLimitMonitor.testFootprint = footprint;
+
+    Test.startTest();
+    footprint.asyncJobs = 19;
+    AIOrgLimitMonitor.State under = stateAfter(null);
+    footprint.asyncJobs = 20;
+    AIOrgLimitMonitor.State asyncTripped = stateAfter(null);
+    footprint.asyncJobs = 0;
+    footprint.events = 1200; // Half of 24 hours of the hourly allowance.
+    AIOrgLimitMonitor.State eventsTripped = stateAfter(null);
+    footprint.events = 0;
+    footprint.storageMegabytes = 10;
+    AIOrgLimitMonitor.State storageTripped = stateAfter(null);
+    Test.stopTest();
+
+    String chat = AIAssistApplicationConstants.LIMIT_FEATURE_CHAT;
+    String events = AIAssistApplicationConstants.LIMIT_FEATURE_EVENTS;
+    String logging = AIAssistApplicationConstants.LIMIT_FEATURE_LOGGING;
+    String normal = AIAssistApplicationConstants.LIMIT_MODE_NORMAL;
+    String paused = AIAssistApplicationConstants.LIMIT_MODE_PAUSED;
+    Assert.areEqual(normal, under.byFeature.get(chat).mode, 'Under its share.');
+    Assert.areEqual(19, under.byFeature.get(chat).appPercent, 'Its share.');
+    Assert.areEqual(
+      paused,
+      asyncTripped.byFeature.get(chat).mode,
+      'AI Assist used its share of asynchronous Apex although the org has headroom.'
+    );
+    Assert.isTrue(
+      asyncTripped.byFeature.get(chat).limitName.contains('AI Assist share'),
+      'The reason says it is the share.'
+    );
+    Assert.areEqual(
+      normal,
+      asyncTripped.byFeature.get(events).mode,
+      'Events have their own share.'
+    );
+    Assert.areEqual(
+      paused,
+      eventsTripped.byFeature.get(events).mode,
+      'Events.'
+    );
+    Assert.areEqual(
+      normal,
+      eventsTripped.byFeature.get(chat).mode,
+      'Chat is not paused by the event share.'
+    );
+    Assert.areEqual(
+      paused,
+      storageTripped.byFeature.get(chat).mode,
+      'The storage budget pauses chat.'
+    );
+    Assert.areEqual(
+      paused,
+      storageTripped.byFeature.get(logging).mode,
+      'And logging.'
+    );
+    Assert.areEqual(
+      normal,
+      storageTripped.byFeature.get(events).mode,
+      'Events store nothing.'
+    );
+    Assert.areEqual(
+      20,
+      AIOrgLimitMonitor.parse(AIOrgLimitMonitor.serialize(asyncTripped))
+        .byFeature.get(chat)
+        .appPercent,
+      'The share is kept with the reading.'
+    );
+  }
+
+  @IsTest
+  static void testScenario12() {
+    reset();
+    AIAssistSettings__c sound = new AIAssistSettings__c(
+      ChatDegradedPercent__c = 50,
+      ChatPausedPercent__c = 100,
+      ChatAppSharePercent__c = 5,
+      StorageBudgetPercent__c = 100
+    );
+    AIAssistSettings__c broken = new AIAssistSettings__c(
+      ChatDegradedPercent__c = 80,
+      ChatPausedPercent__c = 80,
+      EventsPausedPercent__c = 101,
+      LoggingDegradedPercent__c = 0,
+      LoggingAppSharePercent__c = 4,
+      OrgLimitMaxSharePercent__c = 101,
+      StorageBudgetPercent__c = 2
+    );
+    insert new AIPlatformLog__c(ClassName__c = 'Footprint');
+    setUsage(0, 0);
+
+    Test.startTest();
+    List<String> noProblems = AIOrgLimitMonitor.validateSettings(sound);
+    List<String> problems = AIOrgLimitMonitor.validateSettings(broken);
+    AIOrgLimitMonitor.Footprint before = AIOrgLimitMonitor.getFootprint();
+    AIOrgLimitMonitor.refreshIfStale();
+    AIAssistSettingsService.clearCache();
+    Test.stopTest();
+
+    Assert.isTrue(noProblems.isEmpty(), 'Sound settings: ' + noProblems);
+    Assert.areEqual(6, problems.size(), 'One sentence each: ' + problems);
+    Assert.isTrue(
+      String.join(problems, ' ')
+        .contains('ChatDegradedPercent__c must be lower than'),
+      'The field to fix is named.'
+    );
+    Assert.isNull(before.measuredAt, 'Never measured.');
+    String stored = AIAssistSettings__c.getOrgDefaults().AppUsageStateJson__c;
+    Assert.isTrue(String.isNotBlank(stored), 'A refresh measures and stores.');
+    AIOrgLimitMonitor.Footprint measured = (AIOrgLimitMonitor.Footprint) JSON.deserialize(
+      stored,
+      AIOrgLimitMonitor.Footprint.class
+    );
+    Assert.isNotNull(measured.measuredAt, 'When it was measured.');
+    Assert.isTrue(
+      measured.events >= 1,
+      'The log entry is counted as an event.'
+    );
+    Assert.isTrue(measured.storageMegabytes > 0, 'Records take storage.');
   }
 }
