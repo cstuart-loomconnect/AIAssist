@@ -4,11 +4,13 @@ Class Name: AIFlowRunModeService
 =================================================================
 =================================================================
 
-Description: Decides whether a Flow may be run as an AI Assist Workflow Action. A Flow's run mode decides
-how much access it has: in the default mode it runs as the signed-in user, and in "System context without
-sharing" it runs with every record visible and every change allowed, whatever the user's permissions.
-An action the user triggers from a browser must not be a way round the user's own access, so a Flow in
-that mode is refused.
+Description: Decides whether a Flow may be run as an AI Assist Workflow Action. A Flow started from Apex
+does not run as the signed-in user. In the default mode it runs in system context: the user's object and
+field permissions are not applied, and record sharing follows the Apex that started it (with sharing, for
+an action run from the chat). In "System context without sharing" it also ignores sharing, so every record
+is visible and every change allowed. An action the user triggers from a browser must not be a way round
+the user's own access, so a Flow in that mode is refused, and AIWorkflowActionDispatcher checks the user's
+access to each record it hands to any other Flow.
 
 Checked twice: when the action is saved (AIWorkflowActionTriggerHandler), so an administrator is told at
 once, and again just before the Flow runs (AIWorkflowActionDispatcher), because the Flow can be edited
@@ -25,6 +27,7 @@ version when none is active. A blank run mode is the default mode.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Description corrected: a Flow started from Apex runs in system context, not as the user.
 */
 
 public inherited sharing class AIFlowRunModeService {

@@ -19,9 +19,14 @@ removed.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Explicit global no-argument constructor.
 */
 
 global class AIWorkflowActionRequest {
+  // Explicit and global, so a subscriber's test can build a request to call its own class with. The implicit constructor of a global class is not visible outside the package.
+  global AIWorkflowActionRequest() {
+  }
+
   // The record the conversation is about. Null when the action does not work on a record.
   global Id recordId;
   global Map<String, Object> inputParameters = new Map<String, Object>();

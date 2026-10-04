@@ -15,8 +15,8 @@ code, checked in this order:
       conversation, so an open one can carry on.
     Limits: conversations open at once, conversations started today, tokens used today.
 [2] The organisation's limits: the plan's monthly messages and tokens (Feature Management) and
-    AIAssistSettings__c.GlobalTokenBudgetPerDay__c. Skipped altogether when none is set, so an
-    unlimited org never sums a month of usage on every message.
+    AIAssistSettings__c.GlobalTokenBudgetPerDay__c, against the running totals AIOrgUsageService
+    keeps. No usage row is read, however many there are.
 [3] The organisation's asynchronous queue has room. It is shared with the subscriber's own
     queueables, batches and flows, so new turns are refused before ours can crowd theirs out.
 
@@ -33,6 +33,7 @@ that would break it is refused before its request is made. Nothing here writes.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the second half of AIMessageGuard.
 2.0          Chandler Stuart          The monthly message and token cap messages say how much the plan allows and when it renews.
+3.0          Chandler Stuart          Organisation totals read from AIOrgUsageService. A full queue says AI Assist is busy, not that the provider is unavailable.
 */
 
 public inherited sharing class AIUsageLimitService {
@@ -123,9 +124,8 @@ public inherited sharing class AIUsageLimitService {
       .GlobalTokenBudgetPerDay__c;
 
     if (messageLimit != null || usageLimit != null || dailyBudget != null) {
-      AIMessagingSelector.OrgUsage orgUsage = AIMessagingSelector.getOrganisationUsage(
-        today
-      );
+      // The running totals AI Assist keeps (AIOrgUsageService), not a sum of the month's usage rows on every send.
+      AIMessagingSelector.OrgUsage orgUsage = AIOrgUsageService.getUsage();
 
       if (messageLimit != null && orgUsage.month.messages >= messageLimit)
         throw limitReached(
@@ -160,7 +160,7 @@ public inherited sharing class AIUsageLimitService {
     ) {
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_SERVICE_BUSY,
-        Label.AI_Error_Provider_Unavailable
+        Label.AI_Error_Service_Busy
       );
     }
   }

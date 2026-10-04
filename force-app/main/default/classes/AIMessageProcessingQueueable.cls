@@ -227,6 +227,7 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
           OR (CreatedDate = :triggeringMessage.CreatedDate
           AND Id <= :triggeringMessage.Id))
           AND Sender__c != :AIAssistApplicationConstants.SENDER_SYSTEM
+          AND IsSuperseded__c = FALSE
         WITH USER_MODE
         ORDER BY CreatedDate DESC, Id DESC
         LIMIT :AIAssistApplicationConstants.MAX_HISTORY_MESSAGES

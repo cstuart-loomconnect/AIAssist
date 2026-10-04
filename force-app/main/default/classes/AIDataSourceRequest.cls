@@ -16,9 +16,14 @@ removed.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Explicit global no-argument constructor.
 */
 
 global class AIDataSourceRequest {
+  // Explicit and global, so a subscriber's test can build a request to call its own class with. The implicit constructor of a global class is not visible outside the package.
+  global AIDataSourceRequest() {
+  }
+
   // The record the conversation is about. Null for an unbound data source.
   global Id recordId;
   // Values the model supplied for the parameters the data source declares.

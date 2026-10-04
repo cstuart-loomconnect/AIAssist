@@ -194,8 +194,13 @@ public inherited sharing class AIViolationService {
         }
       }
 
+      // The record above is the evidence; the event is skipped while publishing is paused to protect the org's event allowance.
       for (
-        Database.SaveResult publishResult : EventBus.publish(violationEvents)
+        Database.SaveResult publishResult : EventBus.publish(
+          AIOrgLimitMonitor.isViolationEventAllowed()
+            ? violationEvents
+            : new List<AIViolationEvent__e>()
+        )
       ) {
         if (!publishResult.isSuccess())
           AIPlatformLogManager.logCustomMessage(
@@ -314,8 +319,13 @@ public inherited sharing class AIViolationService {
         }
       }
 
+      // The record above is the evidence; the event is skipped while publishing is paused to protect the org's event allowance.
       for (
-        Database.SaveResult publishResult : EventBus.publish(violationEvents)
+        Database.SaveResult publishResult : EventBus.publish(
+          AIOrgLimitMonitor.isViolationEventAllowed()
+            ? violationEvents
+            : new List<AIViolationEvent__e>()
+        )
       ) {
         if (!publishResult.isSuccess())
           AIPlatformLogManager.logCustomMessage(

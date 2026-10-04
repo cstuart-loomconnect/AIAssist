@@ -28,6 +28,7 @@ private class AIAgentManagerTest {
   // testScenario8: A data source that writes to the database throws AIDataSourceWriteException, carrying the tokens spent so far, before the next callout is attempted.
   // testScenario9: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
   // testScenario10: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
+  // testScenario11: The agent's persona opens the system prompt. A rejected credential, a retired model and an exhausted quota are never retried even when their status is listed as retryable, and say which record to fix; rate limiting is retried.
 
   @TestSetup
   static void setup() {
@@ -718,5 +719,93 @@ private class AIAgentManagerTest {
       empty.failureReason,
       'It is reported as a provider error.'
     );
+  }
+
+  @IsTest
+  static void testScenario11() {
+    World world = createWorld(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    );
+    world.agent.AIAgentPersona__c = 'A patient mortgage adviser.';
+    world.model.ModelIdentifier__c = 'retired-model-1';
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(response(200, anthropicText('Hello.')));
+    mock.script.add(
+      response(
+        401,
+        '{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
+      )
+    );
+    mock.script.add(
+      response(
+        404,
+        '{"type":"error","error":{"type":"not_found_error","message":"model: retired-model-1"}}'
+      )
+    );
+    mock.script.add(response(429, '{"error":{"code":"insufficient_quota"}}'));
+    mock.script.add(response(429, '{"error":{"code":"rate_limit_exceeded"}}'));
+    Test.setMock(HttpCalloutMock.class, mock);
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.RetryableStatusCodes__c = '401,404,429,503';
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    Test.startTest();
+    AIAgentManager.AgentResult reply = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult rejected = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult retired = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult noQuota = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult rateLimited = run(world, null, null, 1, null);
+    Test.stopTest();
+
+    Assert.isTrue(reply.isSuccessful, 'The first turn replied.');
+    Assert.isTrue(
+      mock.requests[0]
+        .getBody()
+        .contains('Persona: A patient mortgage adviser.'),
+      'The persona is in the system prompt: ' + mock.requests[0].getBody()
+    );
+    Assert.isTrue(
+      mock.requests[0].getBody().indexOf('Persona:') <
+      mock.requests[0].getBody().indexOf('Be brief.'),
+      'The persona comes before the template.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
+      rejected.failureReason,
+      'A 401 is a rejected credential.'
+    );
+    Assert.isFalse(
+      rejected.isRetryable,
+      'A rejected credential is not retried.'
+    );
+    Assert.isTrue(
+      rejected.errorMessage.contains(world.model.NamedCredential__c) &&
+      rejected.errorMessage.contains(world.model.Id),
+      'The message names the credential and the record to fix: ' +
+      rejected.errorMessage
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED,
+      retired.failureReason,
+      'A 404 naming the model is a retired model.'
+    );
+    Assert.isFalse(retired.isRetryable, 'A retired model is not retried.');
+    Assert.isTrue(
+      retired.errorMessage.contains('retired-model-1'),
+      'The message names the model: ' + retired.errorMessage
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
+      noQuota.failureReason,
+      'An exhausted quota is an account problem.'
+    );
+    Assert.isFalse(noQuota.isRetryable, 'Waiting does not refill a quota.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED,
+      rateLimited.failureReason,
+      'A 429 is rate limiting.'
+    );
+    Assert.isTrue(rateLimited.isRetryable, 'Rate limiting is retried.');
   }
 }

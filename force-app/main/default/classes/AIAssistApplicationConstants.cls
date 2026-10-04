@@ -89,6 +89,8 @@ public inherited sharing class AIAssistApplicationConstants {
 
   // AIAgent__c.ConversationVisibility__c: Private is the starter only; Global lets viewers whose own scope reaches the starter read it.
   public static final String AGENT_VISIBILITY_GLOBAL = 'Global';
+  public static final Integer MAX_FLOW_RECORD_INPUTS = 200; // UserRecordAccess answers for at most 200 records per query; a Flow action handed more is refused.
+  public static final String PERMISSION_VIEW_SHARED_CONVERSATIONS = 'AIAssistViewSharedConversations'; // Custom permission: honours the All Conversations scope without View All.
   public static final Integer MAX_ROLE_HIERARCHY_DEPTH = 20; // Levels of the role hierarchy walked to find a viewer's subordinates.
 
   public static final String ASSIGNEE_TYPE_USER = 'User';
@@ -124,6 +126,19 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String FAILURE_REASON_PII_MASKING_FAILED = 'PII Masking Failed';
   public static final String FAILURE_REASON_CONFIGURATION_ERROR = 'Configuration Error';
   public static final String FAILURE_REASON_OTHER = 'Other';
+  public static final String FAILURE_REASON_AUTHENTICATION_FAILED = 'Authentication Failed';
+  public static final String FAILURE_REASON_MODEL_RETIRED = 'Model Retired';
+  public static final String FAILURE_REASON_RATE_LIMITED = 'Rate Limited';
+  // HTTP statuses that will fail the same way however often they are sent again. Never retried, whatever AIAssistSettings__c.RetryableStatusCodes__c says.
+  public static final Set<Integer> NEVER_RETRIED_STATUS_CODES = new Set<Integer>{
+    400,
+    401,
+    403,
+    404,
+    410,
+    413,
+    422
+  };
   public static final String FAILURE_REASON_MESSAGE_MISSING = 'Message Missing'; // Never stored: only selects the label shown when the message being answered was deleted.
 
   // AIExecutionStep__c.StepType__c
@@ -203,6 +218,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer MAX_HISTORY_CHARACTERS = 100000;
   public static final Integer MAX_TOOLS_PER_KIND = 64; // The model sees every active data source and action as a tool, so hundreds linked would bloat every request.
   public static final Integer DEFAULT_PROCESSING_LOCK_MINUTES = 10; // Used when AIAssistSettings__c.ProcessingLockMinutes__c is blank or below 1.
+  public static final Integer MAX_ACTIVE_CONVERSATIONS_COUNTED = 2000; // Rows read to count a user's open conversations; far above any concurrent limit.
   public static final Integer MAX_PENDING_PROCESSING_JOBS = 200; // The asynchronous queue is shared with the subscriber's own work.
   public static final Integer RETRY_DELAY_MINUTES = 1; // Before the second and later retries, so a rate-limited provider is not hit again at once.
   public static final Integer CHARACTERS_PER_TOKEN_ESTIMATE = 4;
@@ -435,7 +451,6 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String NOTIFICATION_MODE_POLLING = 'Polling';
   public static final Set<String> ORG_LIMITS_FOR_CHAT = new Set<String>{
     'DailyAsyncApexExecutions',
-    'DailyApiRequests',
     'DataStorageMB'
   };
   public static final Set<String> ORG_LIMITS_FOR_EVENTS = new Set<String>{

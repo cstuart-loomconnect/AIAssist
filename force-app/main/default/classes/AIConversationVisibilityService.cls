@@ -7,19 +7,22 @@ Class Name: AIConversationVisibilityService
 Description: Decides who may read a conversation they did not start. Reading only: a conversation can be
 sent to, retried, closed, resumed, exported and acted on by the user who started it and nobody else.
 
-Two settings decide, and both must allow it:
+Sharing decides first. Every conversation is read in user mode, so a viewer never reaches a conversation
+the org's sharing (ownership, the role hierarchy, View All) does not already give them. The two settings
+below only narrow that, and both must allow it:
 [1] The agent (AIAgent__c.ConversationVisibility__c). Private, the default, means the starter only.
     Global means anyone the viewer's own scope reaches.
 [2] The viewer's scope (ConversationVisibilityScope__c, resolved from their policies and their own row by
     AIUsagePolicyResolver). My Conversations Only, the default, reaches nobody else. My Subordinates
     Conversations reaches users in a role below the viewer's in the role hierarchy. All Conversations
-    reaches every user.
+    reaches every user, and is honoured only for a viewer who holds View All on AI Conversation or the
+    AIAssistViewSharedConversations custom permission: without one of them it reaches nobody.
 A conversation about a record is also readable only by a viewer who can read that record (UserRecordAccess),
 so visibility never shows someone data they could not open themselves.
 
-Anything unknown fails closed: a blank or unrecognised scope or agent setting is the narrowest one. Reads are
-in system mode because the User permission set cannot read other users' conversations; every query is
-limited by the rules above and by a row cap.
+Anything unknown fails closed: a blank or unrecognised scope or agent setting is the narrowest one. The
+viewer is always the signed-in user, because user mode answers for nobody else. Only the role hierarchy
+and the viewer's own permissions are read in system mode: they are setup data, not conversations.
 
 =================================================================
 =================================================================
@@ -29,10 +32,10 @@ AIChatConversationService, AIChatController
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development. Gives ConversationVisibility__c and ConversationVisibilityScope__c an effect.
+2.0          Chandler Stuart          With sharing and user mode: the scope narrows what sharing allows and never widens it. All Conversations needs View All or AIAssistViewSharedConversations. The viewer is the signed-in user.
 */
 
-// Without sharing on purpose: the conversations are private to their starters, so a query that honoured sharing would never find them. Who may read one is decided by the rules above, in canView, before anything is returned.
-public without sharing class AIConversationVisibilityService {
+public with sharing class AIConversationVisibilityService {
   private static final Integer RECORD_ACCESS_BATCH = 200; // UserRecordAccess answers for at most 200 records per query.
 
   // The narrowest scope when nothing, or something unrecognised, is set.
@@ -46,24 +49,14 @@ public without sharing class AIConversationVisibilityService {
       : AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN;
   }
 
-  // Role Ids below the viewer's role, at any depth. Empty for a viewer with no role.
-  public static Set<Id> getSubordinateRoleIds(Id viewerId) {
+  // Role Ids below the signed-in user's role, at any depth. Empty for a user with no role.
+  public static Set<Id> getSubordinateRoleIds() {
     Set<Id> subordinateRoleIds = new Set<Id>();
 
-    if (viewerId == null)
+    if (UserInfo.getUserRoleId() == null)
       return subordinateRoleIds;
 
-    List<User> viewers = [
-      SELECT UserRoleId
-      FROM User
-      WHERE Id = :viewerId
-      WITH SYSTEM_MODE
-      LIMIT 1
-    ];
-    if (viewers.isEmpty() || viewers[0].UserRoleId == null)
-      return subordinateRoleIds;
-
-    Set<Id> currentLevel = new Set<Id>{ viewers[0].UserRoleId };
+    Set<Id> currentLevel = new Set<Id>{ UserInfo.getUserRoleId() };
     for (
       Integer depth = 0;
       depth < AIAssistApplicationConstants.MAX_ROLE_HIERARCHY_DEPTH &&
@@ -87,34 +80,41 @@ public without sharing class AIConversationVisibilityService {
     return subordinateRoleIds;
   }
 
-  // True when the viewer may read the conversation. The conversation needs OwnerId, RelatedRecordId__c and AIAgent__r.ConversationVisibility__c.
-  public static Boolean canView(
-    AIConversation__c conversation,
-    Id viewerId,
-    String scope
-  ) {
-    if (conversation == null || viewerId == null)
-      return false;
-    if (conversation.OwnerId == viewerId)
+  // Whether the All Conversations scope is honoured for the signed-in user: the custom permission, or View All on AI Conversation from any permission set, permission set group or profile they hold (View All Data switches it on for every object).
+  public static Boolean isAllScopeAllowed() {
+    if (
+      FeatureManagement.checkPermission(
+        AIAssistApplicationConstants.PERMISSION_VIEW_SHARED_CONVERSATIONS
+      )
+    )
       return true;
-    if (!isOtherUsersReadable(conversation, scope, viewerId))
-      return false;
 
-    return filterReadableRecords(
-          new List<AIConversation__c>{ conversation },
-          viewerId
-        )
-        .size() == 1;
+    return [
+        SELECT COUNT()
+        FROM ObjectPermissions
+        WHERE
+          SobjectType = :String.valueOf(AIConversation__c.SObjectType)
+          AND PermissionsViewAllRecords = TRUE
+          AND ParentId IN (
+            SELECT PermissionSetId
+            FROM PermissionSetAssignment
+            WHERE AssigneeId = :UserInfo.getUserId()
+          )
+        WITH SYSTEM_MODE
+      ] > 0;
   }
 
-  // Throws the "not found" refusal, the same answer as for a missing conversation, unless the viewer started the conversation or may read it under the rules above. Returns the conversation.
+  // Throws the "not found" refusal, the same answer as for a missing conversation, unless the signed-in user started the conversation or may read it under the rules above. Returns the conversation.
   public static AIConversation__c assertCanView(Id conversationId) {
-    Id viewerId = UserInfo.getUserId();
+    List<AIConversation__c> conversations = new List<AIConversation__c>();
 
-    List<AIConversation__c> conversations = conversationId == null ||
-      conversationId.getSobjectType() != AIConversation__c.SObjectType
-      ? new List<AIConversation__c>()
-      : [
+    // User mode: a conversation sharing does not give the viewer is not found, and neither is anything for a user with no AI Assist permission set.
+    try {
+      if (
+        conversationId != null &&
+        conversationId.getSobjectType() == AIConversation__c.SObjectType
+      )
+        conversations = [
           SELECT
             Id,
             OwnerId,
@@ -125,18 +125,53 @@ public without sharing class AIConversationVisibilityService {
             RelatedRecordId__c
           FROM AIConversation__c
           WHERE Id = :conversationId
-          WITH SYSTEM_MODE
+          WITH USER_MODE
           LIMIT 1
         ];
+    } catch (QueryException noAccess) {
+      conversations.clear();
+    }
 
-    if (
-      conversations.isEmpty() ||
-      !canView(
-        conversations[0],
-        viewerId,
-        getEffectiveScope(AIMessagingSelector.getUserSettings(viewerId))
-      )
-    )
+    Boolean isReadable = false;
+    if (!conversations.isEmpty()) {
+      AIConversation__c conversation = conversations[0];
+      String scope = getEffectiveScope(
+        AIMessagingSelector.getUserSettings(UserInfo.getUserId())
+      );
+
+      if (conversation.OwnerId == UserInfo.getUserId()) {
+        isReadable = true;
+      } else if (
+        conversation.AIAgent__r?.ConversationVisibility__c ==
+        AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL
+      ) {
+        Boolean isInScope = false;
+        if (scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL) {
+          isInScope = isAllScopeAllowed();
+        } else if (
+          scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES
+        ) {
+          Set<Id> subordinateRoleIds = getSubordinateRoleIds();
+          isInScope =
+            !subordinateRoleIds.isEmpty() &&
+            [
+              SELECT COUNT()
+              FROM User
+              WHERE
+                Id = :conversation.OwnerId
+                AND UserRoleId IN :subordinateRoleIds
+              WITH SYSTEM_MODE
+            ] == 1;
+        }
+
+        isReadable =
+          isInScope &&
+          filterReadableRecords(new List<AIConversation__c>{ conversation })
+            .size() == 1;
+      }
+    }
+
+    if (!isReadable)
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
         Label.AI_Error_Conversation_Not_Found
@@ -145,9 +180,8 @@ public without sharing class AIConversationVisibilityService {
     return conversations[0];
   }
 
-  // The conversations a viewer may read that someone else started, newest first. Empty for the default scope.
+  // The conversations the signed-in user may read that someone else started, newest first. Empty for the default scope, and for All Conversations without View All or the custom permission.
   public static List<AIConversation__c> getSharedConversations(
-    Id viewerId,
     String scope,
     String selectFields,
     Map<String, Object> binds,
@@ -155,14 +189,8 @@ public without sharing class AIConversationVisibilityService {
   ) {
     List<AIConversation__c> shared = new List<AIConversation__c>();
 
-    if (
-      viewerId == null ||
-      scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN
-    )
-      return shared;
-
     Map<String, Object> queryBinds = new Map<String, Object>(binds);
-    queryBinds.put('viewerId', viewerId);
+    queryBinds.put('viewerId', UserInfo.getUserId());
     queryBinds.put(
       'globalVisibility',
       AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL
@@ -170,14 +198,19 @@ public without sharing class AIConversationVisibilityService {
 
     String ownerFilter = '';
     if (scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES) {
-      Set<Id> subordinateRoleIds = getSubordinateRoleIds(viewerId);
+      Set<Id> subordinateRoleIds = getSubordinateRoleIds();
       if (subordinateRoleIds.isEmpty())
         return shared;
       queryBinds.put('subordinateRoleIds', subordinateRoleIds);
       ownerFilter = ' AND OwnerId IN (SELECT Id FROM User WHERE UserRoleId IN :subordinateRoleIds)';
+    } else if (
+      scope != AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL ||
+      !isAllScopeAllowed()
+    ) {
+      return shared;
     }
 
-    // Over-fetch because the record-access check below can remove rows; the final list is cut back to maxRows.
+    // Over-fetch because the record-access check below can remove rows; the final list is cut back to maxRows. User mode: sharing has already removed what the viewer cannot reach.
     queryBinds.put('candidateRows', maxRows * 4);
     List<AIConversation__c> candidates = Database.queryWithBinds(
       'SELECT ' +
@@ -187,12 +220,10 @@ public without sharing class AIConversationVisibilityService {
         ownerFilter +
         ' ORDER BY LastModifiedDate DESC LIMIT :candidateRows',
       queryBinds,
-      AccessLevel.SYSTEM_MODE
+      AccessLevel.USER_MODE
     );
 
-    for (
-      AIConversation__c readable : filterReadableRecords(candidates, viewerId)
-    ) {
+    for (AIConversation__c readable : filterReadableRecords(candidates)) {
       shared.add(readable);
       if (shared.size() >= maxRows)
         break;
@@ -201,45 +232,9 @@ public without sharing class AIConversationVisibilityService {
     return shared;
   }
 
-  // Agent setting, then scope. Role membership of the owner is checked here for a single conversation.
-  private static Boolean isOtherUsersReadable(
-    AIConversation__c conversation,
-    String scope,
-    Id viewerId
-  ) {
-    if (
-      conversation.AIAgent__r?.ConversationVisibility__c !=
-      AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL
-    )
-      return false;
-
-    if (scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL)
-      return true;
-
-    if (scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES) {
-      Set<Id> subordinateRoleIds = getSubordinateRoleIds(viewerId);
-      if (subordinateRoleIds.isEmpty())
-        return false;
-
-      List<User> owners = [
-        SELECT UserRoleId
-        FROM User
-        WHERE Id = :conversation.OwnerId
-        WITH SYSTEM_MODE
-        LIMIT 1
-      ];
-      return !owners.isEmpty() &&
-        owners[0].UserRoleId != null &&
-        subordinateRoleIds.contains(owners[0].UserRoleId);
-    }
-
-    return false;
-  }
-
   // Keeps the conversations that are not about a record, and those about a record the viewer can read. UserRecordAccess answers with the viewer's real sharing, hierarchy and permissions.
   private static List<AIConversation__c> filterReadableRecords(
-    List<AIConversation__c> conversations,
-    Id viewerId
+    List<AIConversation__c> conversations
   ) {
     List<AIConversation__c> readable = new List<AIConversation__c>();
     Set<Id> recordIds = new Set<Id>();
@@ -270,7 +265,7 @@ public without sharing class AIConversationVisibilityService {
       for (UserRecordAccess access : [
         SELECT RecordId, HasReadAccess
         FROM UserRecordAccess
-        WHERE UserId = :viewerId AND RecordId IN :batch
+        WHERE UserId = :UserInfo.getUserId() AND RecordId IN :batch
         WITH SYSTEM_MODE
       ]) {
         if (access.HasReadAccess == true)

@@ -11,7 +11,7 @@ OrgLimits.getMap() at most once every few minutes and gives each feature a mode:
 - Paused: new chat messages are refused with a plain message, and resume by themselves.
 
 Features and the limits each depends on (AIAssistApplicationConstants.ORG_LIMITS_FOR_*):
-- Chat: asynchronous Apex, API requests and data storage.
+- Chat: asynchronous Apex and data storage. Not API requests: a chat turn is Apex and a callout, and uses none.
 - Events: platform event allowances (the "reply is ready" and progress events).
 - Logging: the event allowances and data storage, because every log entry is an event.
 
@@ -132,6 +132,12 @@ public inherited sharing class AIOrgLimitMonitor {
       AIAssistApplicationConstants.LIMIT_MODE_NORMAL;
   }
 
+  // False only while the Events feature is Paused. A violation event tells a subscriber's own automation, so it keeps going through Degraded and does not depend on the chat's event setting; the AIViolation__c record is saved either way.
+  public static Boolean isViolationEventAllowed() {
+    return getMode(AIAssistApplicationConstants.LIMIT_FEATURE_EVENTS) !=
+      AIAssistApplicationConstants.LIMIT_MODE_PAUSED;
+  }
+
   // What the chat window should use to learn a reply is ready.
   public static String getNotificationMode() {
     return isEventNotificationAllowed()
@@ -192,9 +198,6 @@ public inherited sharing class AIOrgLimitMonitor {
   // Takes a fresh reading when the last one is older than the check interval, keeps it, and announces a change of mode. Call it only where DML is safe. A failure is logged and never thrown.
   public static void refreshIfStale() {
     try {
-      if (!AIAssistSettingsService.isEnabled())
-        return;
-
       AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
       State storedState = parse(settings.OrgLimitStateJson__c);
       if (storedState != null && !isStale(storedState))

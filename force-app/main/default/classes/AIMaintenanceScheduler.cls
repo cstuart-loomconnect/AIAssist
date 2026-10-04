@@ -11,8 +11,10 @@ registry. Without it retention is never applied and no field is ever registered 
 The post-install script schedules it once, daily, on a first install (scheduleDaily). That is the
 only job the package adds: a subscriber has a limit on scheduled jobs. An administrator can delete
 it or schedule it at another time in Setup > Scheduled Jobs; an upgrade does not put it back. Each
-task is its own batch, so a failure in one does not stop the others, and nothing runs while the
-application is switched off.
+task is its own batch, so a failure in one does not stop the others. Retention, the reading of the org
+limits and the organisation's usage totals run whether or not the application is switched on: data AI
+Assist already holds must still expire. Only closing idle conversations and the PII registry sync wait
+for the application to be on.
 
 =================================================================
 =================================================================
@@ -21,6 +23,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development. Replaces the separate schedulable batches with one entry point.
 2.0          Chandler Stuart          scheduleDaily added, called by the post-install script.
 3.0          Chandler Stuart          Refreshes the reading of the org limits (AIOrgLimitMonitor).
+4.0          Chandler Stuart          Retention, the limit reading and the usage totals run even while the application is off; only idle closing and the PII registry sync wait for it to be on.
 */
 
 public inherited sharing class AIMaintenanceScheduler implements Schedulable {
@@ -59,18 +62,20 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   }
 
   public void execute(SchedulableContext context) {
-    if (!AIAssistSettingsService.isEnabled())
-      return;
+    Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
     AIOrgLimitMonitor.refreshIfStale(); // Keeps the mode and its alert current in an org where nobody is chatting. Never throws.
 
-    // Each task is its own batch, started on its own, so one failing to start does not stop the others.
+    // Retention and the usage totals run whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
-      new AIConversationIdleBatch(),
       new AIConversationRetentionBatch(),
       new AIRecordRetentionBatch(AIRecordRetentionBatch.LOGS),
-      new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS)
+      new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS),
+      new AIOrgUsageTotalsBatch()
     };
+    // Closing idle conversations is part of the chat, so it waits for the application to be on.
+    if (isEnabled)
+      housekeepingBatches.add(new AIConversationIdleBatch());
 
     for (Database.Batchable<SObject> housekeepingBatch : housekeepingBatches) {
       try {
@@ -93,6 +98,7 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
       }
     }
 
-    AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
+    if (isEnabled)
+      AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
   }
 }

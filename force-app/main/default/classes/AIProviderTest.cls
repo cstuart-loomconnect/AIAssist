@@ -24,6 +24,7 @@ private class AIProviderTest {
   // testScenario2: An unknown, blank or null provider is not supported, and asking for its adapters throws.
   // testScenario3: stringifyToolResult passes a String through untouched and serialises anything else to JSON.
   // testScenario4: The canonical types start in a safe state: tool calls allowed on a request, and no tool calls and no tokens on a response.
+  // testScenario5: getFailureReason maps a rejected credential, an exhausted quota, a retired model, rate limiting and a timeout to their own reasons, and anything else to a provider error.
 
   @TestSetup
   static void setup() {
@@ -150,5 +151,87 @@ private class AIProviderTest {
     Assert.areEqual(0, response.totalTokens, 'And no tokens.');
     Assert.areEqual(0, response.inputTokens, 'Nor input tokens.');
     Assert.areEqual(0, response.outputTokens, 'Nor output tokens.');
+  }
+
+  @IsTest
+  static void testScenario5() {
+    // Status and body, then the reason expected.
+    List<List<Object>> cases = new List<List<Object>>{
+      new List<Object>{
+        401,
+        '{"error":{"code":"invalid_api_key"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED
+      },
+      new List<Object>{
+        403,
+        '{"type":"error","error":{"type":"permission_error"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED
+      },
+      new List<Object>{
+        429,
+        '{"error":{"code":"insufficient_quota"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED
+      },
+      new List<Object>{
+        404,
+        '{"error":{"code":"model_not_found"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED
+      },
+      new List<Object>{
+        404,
+        '{"type":"error","error":{"type":"not_found_error","message":"model: claude-old"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED
+      },
+      new List<Object>{
+        410,
+        null,
+        AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED
+      },
+      new List<Object>{
+        400,
+        'The model has been deprecated.',
+        AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED
+      },
+      new List<Object>{
+        429,
+        '{"error":{"code":"rate_limit_exceeded"}}',
+        AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED
+      },
+      new List<Object>{
+        408,
+        '',
+        AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
+      },
+      new List<Object>{
+        504,
+        'Gateway timeout',
+        AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
+      },
+      new List<Object>{
+        503,
+        'Unavailable',
+        AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR
+      },
+      new List<Object>{
+        404,
+        'No such path',
+        AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR
+      }
+    };
+    List<String> reasons = new List<String>();
+
+    Test.startTest();
+    for (List<Object> oneCase : cases)
+      reasons.add(
+        AIProvider.getFailureReason((Integer) oneCase[0], (String) oneCase[1])
+      );
+    Test.stopTest();
+
+    for (Integer index = 0; index < cases.size(); index++)
+      Assert.areEqual(
+        cases[index][2],
+        reasons[index],
+        'HTTP ' + cases[index][0] + ' with ' + cases[index][1]
+      );
   }
 }

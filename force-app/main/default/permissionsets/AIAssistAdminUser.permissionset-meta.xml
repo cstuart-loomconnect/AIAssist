@@ -26,6 +26,10 @@
         <apexClass>AIChatController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>AIAssistViewSharedConversations</name>
+    </customPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>AIAgentAssignment__c.AssignmentKey__c</field>
@@ -219,6 +223,16 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversationMessage__c.FailureReason__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.InReplyTo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.IsSuperseded__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -884,6 +898,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIPromptTemplate__c.TriggerKeywords__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIPromptTemplate__c.ActiveAgentKey__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

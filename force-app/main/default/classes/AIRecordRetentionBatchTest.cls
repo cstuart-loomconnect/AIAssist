@@ -22,7 +22,7 @@ private class AIRecordRetentionBatchTest {
   // testScenario2: A blank or zero lifetime keeps every log.
   // testScenario3: Violations older than the violation lifetime are deleted once reviewed or dismissed, and an unreviewed one is kept whatever its age.
   // testScenario4: The boundary: a log one day inside the lifetime is kept.
-  // testScenario5: Switched off, nothing is deleted.
+  // testScenario5: Retention still runs while the application is switched off.
 
   @TestSetup
   static void setup() {
@@ -195,9 +195,9 @@ private class AIRecordRetentionBatchTest {
     Test.stopTest();
 
     Assert.areEqual(
-      1,
+      0,
       [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = 'Old'],
-      'Kept while off.'
+      'Deleted although the application is off.'
     );
   }
 }

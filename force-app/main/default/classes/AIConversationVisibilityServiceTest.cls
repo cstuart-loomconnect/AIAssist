@@ -14,17 +14,19 @@ AIConversationVisibilityService
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Every scenario runs as the viewer: the service reads in user mode, so sharing decides first. All Conversations with and without View All or the custom permission.
 */
 
 @IsTest
 private class AIConversationVisibilityServiceTest {
   // testScenario1: A blank, missing or unrecognised scope is the narrowest one; the two wider scopes are kept.
-  // testScenario2: The starter always reads their conversation; a Private agent shows it to nobody else, whatever the viewer's scope.
-  // testScenario3: With a Global agent, My Conversations Only reaches nobody and All Conversations reaches everybody.
-  // testScenario4: My Subordinates Conversations reaches users in a role below the viewer's, at any depth, and not a peer, a manager or a user without a role.
-  // testScenario5: A conversation about a value that is not a record Id is not shown to another user.
-  // testScenario6: assertCanView answers "not found" for a conversation the viewer may not read, and returns one they may.
-  // testScenario7: getSharedConversations lists only other users' Global-agent conversations within the viewer's scope.
+  // testScenario2: The starter always reads their own conversation; a Private agent shows it to nobody else, even a viewer with View All and the All Conversations scope.
+  // testScenario3: All Conversations on a Global agent reaches another user's conversation for a viewer with View All, and nobody's for a viewer with neither View All nor the custom permission.
+  // testScenario4: All Conversations with the custom permission and no View All reaches only what sharing gives: a subordinate's conversation, not a peer's.
+  // testScenario5: My Subordinates Conversations reaches users in a role below the viewer's, at any depth, and not a peer, a user without a role or the viewer's manager.
+  // testScenario6: My Conversations Only, no settings, and a wrong or missing Id are all "not found", even for a viewer sharing would let read the conversation.
+  // testScenario7: A conversation about a value that is not a record Id is not shown to another user.
+  // testScenario8: getSharedConversations lists other users' Global-agent conversations within the viewer's scope and sharing, never the viewer's own or a Private agent's, and keeps to the row cap.
 
   @TestSetup
   static void setup() {
@@ -47,7 +49,7 @@ private class AIConversationVisibilityServiceTest {
     return agent;
   }
 
-  // Parent role above child role, child above grandchild, and an unrelated role; users are given the roles in the order of the list.
+  // Five chat users. Parent role above child role, child above grandchild, and an unrelated role; users are given the roles in the order of the list, and the last has none. The first is the viewer.
   private static List<User> createUsersInRoles() {
     List<User> users = AIAssistTestDataFactory.createUsers(5, true);
     System.runAs(new User(Id = UserInfo.getUserId())) {
@@ -66,15 +68,67 @@ private class AIConversationVisibilityServiceTest {
       UserRole peerRole = new UserRole(Name = 'AI Assist Test Peer');
       insert peerRole;
 
-      users[0].UserRoleId = parentRole.Id; // The viewer.
+      users[0].UserRoleId = parentRole.Id;
       users[1].UserRoleId = childRole.Id;
       users[2].UserRoleId = grandchildRole.Id;
       users[3].UserRoleId = peerRole.Id;
-      // users[4] has no role.
       update users;
     }
+    AIAssistTestDataFactory.assignPermissionSet(
+      users,
+      AIAssistApplicationConstants.PERMISSION_SET_USER
+    );
 
     return users;
+  }
+
+  private static void setScope(Id userId, String scope) {
+    AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(
+      userId,
+      false
+    )[0];
+    userSettings.ConversationVisibilityScope__c = scope;
+    insert userSettings;
+  }
+
+  // One conversation per owner, in the order given.
+  private static List<AIConversation__c> createConversations(
+    Id agentId,
+    List<User> owners
+  ) {
+    List<AIConversation__c> conversations = new List<AIConversation__c>();
+    for (User owner : owners)
+      conversations.addAll(
+        AIAssistTestDataFactory.createAIConversations(
+          agentId,
+          owner.Id,
+          1,
+          false
+        )
+      );
+    insert conversations;
+
+    return conversations;
+  }
+
+  // Whether the running user may read each conversation, in the order given.
+  private static List<Boolean> canView(List<AIConversation__c> conversations) {
+    List<Boolean> answers = new List<Boolean>();
+    for (AIConversation__c conversation : conversations) {
+      try {
+        AIConversationVisibilityService.assertCanView(conversation.Id);
+        answers.add(true);
+      } catch (AIMessagingException refusal) {
+        Assert.areEqual(
+          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+          refusal.code,
+          'The same answer as for a missing conversation.'
+        );
+        answers.add(false);
+      }
+    }
+
+    return answers;
   }
 
   @IsTest
@@ -129,149 +183,166 @@ private class AIConversationVisibilityServiceTest {
   @IsTest
   static void testScenario2() {
     AIAgent__c privateAgent = createAgent('Private');
-    User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIConversation__c mine = AIAssistTestDataFactory.createAIConversations(
+    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ users[0] },
+      AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER
+    );
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ users[1] },
+      AIAssistApplicationConstants.PERMISSION_SET_USER
+    );
+    setScope(users[0].Id, AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL);
+    List<AIConversation__c> conversations = createConversations(
       privateAgent.Id,
-      UserInfo.getUserId(),
-      1,
-      true
-    )[0];
-    AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(
-      privateAgent.Id,
-      other.Id,
-      1,
-      true
-    )[0];
-    mine = [
-      SELECT OwnerId, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c
-      FROM AIConversation__c
-      WHERE Id = :mine.Id
-    ];
-    theirs = [
-      SELECT OwnerId, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c
-      FROM AIConversation__c
-      WHERE Id = :theirs.Id
-    ];
+      new List<User>{ users[1] }
+    );
+    List<Boolean> starter;
+    List<Boolean> viewAllViewer;
 
     Test.startTest();
-    Boolean ownersOwn = AIConversationVisibilityService.canView(
-      mine,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN
-    );
-    Boolean privateToAll = AIConversationVisibilityService.canView(
-      theirs,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL
-    );
-    Boolean noViewer = AIConversationVisibilityService.canView(
-      theirs,
-      null,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL
-    );
-    Boolean noConversation = AIConversationVisibilityService.canView(
-      null,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL
-    );
+    System.runAs(users[1]) {
+      starter = canView(conversations);
+    }
+    System.runAs(users[0]) {
+      viewAllViewer = canView(conversations);
+    }
     Test.stopTest();
 
-    Assert.isTrue(ownersOwn, 'The starter always reads their own.');
+    Assert.isTrue(starter[0], 'The starter always reads their own.');
     Assert.isFalse(
-      privateToAll,
+      viewAllViewer[0],
       'A Private agent shows its conversations to the starter only.'
     );
-    Assert.isFalse(noViewer, 'No viewer, no access.');
-    Assert.isFalse(noConversation, 'No conversation, no access.');
   }
 
   @IsTest
   static void testScenario3() {
     AIAgent__c globalAgent = createAgent('Global');
-    User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(
+    List<User> users = AIAssistTestDataFactory.createUsers(3, true);
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ users[0] },
+      AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER
+    );
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ users[1], users[2] },
+      AIAssistApplicationConstants.PERMISSION_SET_USER
+    );
+    setScope(users[0].Id, AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL);
+    setScope(users[1].Id, AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL);
+    List<AIConversation__c> conversations = createConversations(
       globalAgent.Id,
-      other.Id,
-      1,
-      true
-    )[0];
-    theirs = [
-      SELECT OwnerId, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c
-      FROM AIConversation__c
-      WHERE Id = :theirs.Id
-    ];
+      new List<User>{ users[2] }
+    );
+    List<Boolean> withViewAll;
+    List<Boolean> withoutViewAll;
+    Boolean isAllowedWithViewAll;
+    Boolean isAllowedWithout;
 
     Test.startTest();
-    Boolean ownScope = AIConversationVisibilityService.canView(
-      theirs,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN
-    );
-    Boolean allScope = AIConversationVisibilityService.canView(
-      theirs,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL
-    );
-    Boolean unknownScope = AIConversationVisibilityService.canView(
-      theirs,
-      UserInfo.getUserId(),
-      'Everything'
-    );
+    System.runAs(users[0]) {
+      isAllowedWithViewAll = AIConversationVisibilityService.isAllScopeAllowed();
+      withViewAll = canView(conversations);
+    }
+    System.runAs(users[1]) {
+      isAllowedWithout = AIConversationVisibilityService.isAllScopeAllowed();
+      withoutViewAll = canView(conversations);
+    }
     Test.stopTest();
 
-    Assert.isFalse(ownScope, 'My Conversations Only reaches nobody else.');
-    Assert.isTrue(allScope, 'All Conversations reaches everybody.');
-    Assert.isFalse(unknownScope, 'An unrecognised scope fails closed.');
+    Assert.isTrue(isAllowedWithViewAll, 'View All honours the scope.');
+    Assert.isTrue(withViewAll[0], 'All Conversations reaches everybody.');
+    Assert.isFalse(
+      isAllowedWithout,
+      'Neither View All nor the custom permission.'
+    );
+    Assert.isFalse(
+      withoutViewAll[0],
+      'The scope alone never widens what sharing allows.'
+    );
   }
 
   @IsTest
   static void testScenario4() {
     AIAgent__c globalAgent = createAgent('Global');
     List<User> users = createUsersInRoles();
-    List<AIConversation__c> conversations = new List<AIConversation__c>();
-    for (Integer index = 1; index < users.size(); index++)
-      conversations.addAll(
-        AIAssistTestDataFactory.createAIConversations(
-          globalAgent.Id,
-          users[index].Id,
-          1,
-          false
-        )
+    setScope(users[0].Id, AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL);
+    List<AIConversation__c> conversations = createConversations(
+      globalAgent.Id,
+      new List<User>{ users[1], users[3] }
+    );
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      PermissionSet grantingSet = new PermissionSet(
+        Name = 'AIAssistTestViewShared',
+        Label = 'AI Assist Test View Shared'
       );
-    insert conversations;
-    Map<Id, AIConversation__c> byOwner = new Map<Id, AIConversation__c>();
-    for (AIConversation__c conversation : [
-      SELECT OwnerId, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c
-      FROM AIConversation__c
-      WHERE Id IN :conversations
-    ])
-      byOwner.put(conversation.OwnerId, conversation);
+      insert grantingSet;
+      insert new SetupEntityAccess(
+        ParentId = grantingSet.Id,
+        SetupEntityId = [
+          SELECT Id
+          FROM CustomPermission
+          WHERE
+            DeveloperName = :AIAssistApplicationConstants.PERMISSION_VIEW_SHARED_CONVERSATIONS
+          LIMIT 1
+        ]
+        .Id
+      );
+      insert new PermissionSetAssignment(
+        AssigneeId = users[0].Id,
+        PermissionSetId = grantingSet.Id
+      );
+    }
+    Boolean isAllowed;
+    List<Boolean> answers;
 
     Test.startTest();
-    Set<Id> roleIds = AIConversationVisibilityService.getSubordinateRoleIds(
-      users[0].Id
+    System.runAs(users[0]) {
+      isAllowed = AIConversationVisibilityService.isAllScopeAllowed();
+      answers = canView(conversations);
+    }
+    Test.stopTest();
+
+    Assert.isTrue(isAllowed, 'The custom permission honours the scope.');
+    Assert.isTrue(answers[0], 'Sharing gives a manager a subordinate\'s.');
+    Assert.isFalse(
+      answers[1],
+      'Sharing does not give a peer\'s, and the permission does not widen it.'
     );
-    Set<Id> noRoleIds = AIConversationVisibilityService.getSubordinateRoleIds(
-      users[4].Id
+  }
+
+  @IsTest
+  static void testScenario5() {
+    AIAgent__c globalAgent = createAgent('Global');
+    List<User> users = createUsersInRoles();
+    setScope(
+      users[0].Id,
+      AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES
     );
-    Set<Id> noUserIds = AIConversationVisibilityService.getSubordinateRoleIds(
-      null
-    );
-    Map<String, Boolean> canView = new Map<String, Boolean>();
-    for (Integer index = 1; index < users.size(); index++)
-      canView.put(
-        'user' + index,
-        AIConversationVisibilityService.canView(
-          byOwner.get(users[index].Id),
-          users[0].Id,
-          AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES
-        )
-      );
-    Boolean managerSeesSubordinate = AIConversationVisibilityService.canView(
-      byOwner.get(users[1].Id),
+    setScope(
       users[2].Id,
       AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES
     );
+    List<AIConversation__c> conversations = createConversations(
+      globalAgent.Id,
+      new List<User>{ users[1], users[2], users[3], users[4] }
+    );
+    Set<Id> roleIds;
+    Set<Id> noRoleIds;
+    List<Boolean> manager;
+    List<Boolean> subordinate;
+
+    Test.startTest();
+    System.runAs(users[0]) {
+      roleIds = AIConversationVisibilityService.getSubordinateRoleIds();
+      manager = canView(conversations);
+    }
+    System.runAs(users[4]) {
+      noRoleIds = AIConversationVisibilityService.getSubordinateRoleIds();
+    }
+    System.runAs(users[2]) {
+      subordinate = canView(conversations);
+    }
     Test.stopTest();
 
     Assert.areEqual(
@@ -280,73 +351,32 @@ private class AIConversationVisibilityServiceTest {
       'The child and grandchild roles, not the peer.'
     );
     Assert.isTrue(noRoleIds.isEmpty(), 'No role, no subordinates.');
-    Assert.isTrue(noUserIds.isEmpty(), 'No user, no subordinates.');
-    Assert.isTrue(canView.get('user1'), 'A direct report.');
-    Assert.isTrue(canView.get('user2'), 'A report two levels down.');
-    Assert.isFalse(canView.get('user3'), 'A peer is not a subordinate.');
-    Assert.isFalse(canView.get('user4'), 'A user without a role is not.');
+    Assert.isTrue(manager[0], 'A direct report.');
+    Assert.isTrue(manager[1], 'A report two levels down.');
+    Assert.isFalse(manager[2], 'A peer is not a subordinate.');
+    Assert.isFalse(manager[3], 'A user without a role is not.');
     Assert.isFalse(
-      managerSeesSubordinate,
+      subordinate[0],
       'Visibility follows the hierarchy downward only: a subordinate cannot read a manager.'
     );
   }
 
   @IsTest
-  static void testScenario5() {
-    AIAgent__c globalAgent = createAgent('Global');
-    User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(
-      globalAgent.Id,
-      other.Id,
-      1,
-      false
-    )[0];
-    theirs.RelatedRecordId__c = 'not-a-record-id';
-    insert theirs;
-    theirs = [
-      SELECT OwnerId, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c
-      FROM AIConversation__c
-      WHERE Id = :theirs.Id
-    ];
-
-    Test.startTest();
-    Boolean canView = AIConversationVisibilityService.canView(
-      theirs,
-      UserInfo.getUserId(),
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL
-    );
-    Test.stopTest();
-
-    Assert.isFalse(canView, 'A value that cannot be checked is not shown.');
-  }
-
-  @IsTest
   static void testScenario6() {
     AIAgent__c globalAgent = createAgent('Global');
-    User viewer = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIAssistTestDataFactory.assignPermissionSet(
-      new List<User>{ viewer },
-      'AIAssistUser'
-    );
-    User starter = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(
+    List<User> users = createUsersInRoles();
+    setScope(users[0].Id, AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN);
+    List<AIConversation__c> conversations = createConversations(
       globalAgent.Id,
-      starter.Id,
-      1,
-      true
-    )[0];
-    AIUserSettings__c viewerSettings = AIAssistTestDataFactory.createAIUserSettings(
-      viewer.Id,
-      false
-    )[0];
-    viewerSettings.ConversationVisibilityScope__c = AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL;
-    insert viewerSettings;
+      new List<User>{ users[1] }
+    );
+    List<Boolean> ownScope;
+    List<Boolean> noSettings;
     List<String> codes = new List<String>();
-    AIConversation__c allowed;
 
     Test.startTest();
-    System.runAs(viewer) {
-      allowed = AIConversationVisibilityService.assertCanView(theirs.Id);
+    System.runAs(users[0]) {
+      ownScope = canView(conversations);
       for (Id badId : new List<Id>{ null, UserInfo.getUserId() }) {
         try {
           AIConversationVisibilityService.assertCanView(badId);
@@ -355,116 +385,139 @@ private class AIConversationVisibilityServiceTest {
         }
       }
     }
-    delete viewerSettings;
-    System.runAs(viewer) {
-      try {
-        AIConversationVisibilityService.assertCanView(theirs.Id);
-      } catch (AIMessagingException refusal) {
-        codes.add(refusal.code);
-      }
+    delete [SELECT Id FROM AIUserSettings__c WHERE User__c = :users[0].Id];
+    System.runAs(users[0]) {
+      noSettings = canView(conversations);
     }
     Test.stopTest();
 
-    Assert.areEqual(theirs.Id, allowed.Id, 'Readable under All Conversations.');
+    Assert.isFalse(ownScope[0], 'My Conversations Only reaches nobody else.');
+    Assert.isFalse(noSettings[0], 'No settings is the narrowest scope.');
     Assert.areEqual(
-      3,
-      codes.size(),
-      'No Id, a wrong-type Id and a viewer without the scope are all refused.'
-    );
-    for (String code : codes)
-      Assert.areEqual(
+      new List<String>{
         AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-        code,
-        'The same answer as for a missing conversation.'
-      );
+        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND
+      },
+      codes,
+      'No Id and a wrong-type Id are refused the same way.'
+    );
   }
 
   @IsTest
   static void testScenario7() {
     AIAgent__c globalAgent = createAgent('Global');
-    AIAgent__c privateAgent = createAgent('Private');
     List<User> users = createUsersInRoles();
-    AIConversation__c mine = AIAssistTestDataFactory.createAIConversations(
-      globalAgent.Id,
+    setScope(
       users[0].Id,
-      1,
-      true
-    )[0];
-    AIConversation__c child = AIAssistTestDataFactory.createAIConversations(
+      AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES
+    );
+    AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(
       globalAgent.Id,
       users[1].Id,
       1,
-      true
+      false
     )[0];
-    AIConversation__c peer = AIAssistTestDataFactory.createAIConversations(
-      globalAgent.Id,
-      users[3].Id,
-      1,
-      true
-    )[0];
-    AIConversation__c hidden = AIAssistTestDataFactory.createAIConversations(
-      privateAgent.Id,
-      users[1].Id,
-      1,
-      true
-    )[0];
-    Map<String, Object> binds = new Map<String, Object>();
+    theirs.RelatedRecordId__c = 'not-a-record-id';
+    insert theirs;
+    List<Boolean> answers;
 
     Test.startTest();
-    List<AIConversation__c> underOwn = AIConversationVisibilityService.getSharedConversations(
-      users[0].Id,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN,
-      'Id',
-      binds,
-      10
+    System.runAs(users[0]) {
+      answers = canView(new List<AIConversation__c>{ theirs });
+    }
+    Test.stopTest();
+
+    Assert.isFalse(answers[0], 'A value that cannot be checked is not shown.');
+  }
+
+  @IsTest
+  static void testScenario8() {
+    AIAgent__c globalAgent = createAgent('Global');
+    AIAgent__c privateAgent = createAgent('Private');
+    List<User> users = createUsersInRoles();
+    User superUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ superUser },
+      AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER
     );
-    List<AIConversation__c> underSubordinates = AIConversationVisibilityService.getSharedConversations(
-      users[0].Id,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES,
-      'Id',
-      binds,
-      10
+    // The viewer's own, a child's, a grandchild's and a peer's on the Global agent.
+    List<AIConversation__c> onGlobal = createConversations(
+      globalAgent.Id,
+      new List<User>{ users[0], users[1], users[2], users[3] }
     );
-    List<AIConversation__c> underAll = AIConversationVisibilityService.getSharedConversations(
-      users[0].Id,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL,
-      'Id',
-      binds,
-      10
-    );
-    List<AIConversation__c> noRole = AIConversationVisibilityService.getSharedConversations(
-      users[4].Id,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES,
-      'Id',
-      binds,
-      10
-    );
-    List<AIConversation__c> capped = AIConversationVisibilityService.getSharedConversations(
-      users[0].Id,
-      AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL,
-      'Id',
-      binds,
-      1
-    );
+    createConversations(privateAgent.Id, new List<User>{ users[1] });
+    Map<String, Object> binds = new Map<String, Object>();
+    List<AIConversation__c> underOwn;
+    List<AIConversation__c> underSubordinates;
+    List<AIConversation__c> underAllWithoutViewAll;
+    List<AIConversation__c> noRole;
+    List<AIConversation__c> underAllWithViewAll;
+    List<AIConversation__c> capped;
+
+    Test.startTest();
+    System.runAs(users[0]) {
+      underOwn = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN,
+        'Id',
+        binds,
+        10
+      );
+      underSubordinates = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES,
+        'Id',
+        binds,
+        10
+      );
+      underAllWithoutViewAll = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL,
+        'Id',
+        binds,
+        10
+      );
+    }
+    System.runAs(users[4]) {
+      noRole = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES,
+        'Id',
+        binds,
+        10
+      );
+    }
+    System.runAs(superUser) {
+      underAllWithViewAll = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL,
+        'Id',
+        binds,
+        10
+      );
+      capped = AIConversationVisibilityService.getSharedConversations(
+        AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL,
+        'Id',
+        binds,
+        1
+      );
+    }
     Test.stopTest();
 
     Assert.isTrue(underOwn.isEmpty(), 'The default scope lists nothing.');
     Assert.areEqual(
-      new Set<Id>{ child.Id },
+      new Set<Id>{ onGlobal[1].Id, onGlobal[2].Id },
       new Map<Id, AIConversation__c>(underSubordinates).keySet(),
-      'Only the subordinate on a Global agent.'
+      'Only subordinates on a Global agent; never the viewer\'s own or a Private agent\'s.'
     );
-    Assert.areEqual(
-      new Set<Id>{ child.Id, peer.Id },
-      new Map<Id, AIConversation__c>(underAll).keySet(),
-      'Everybody else on a Global agent; never the viewer\'s own or a Private agent\'s.'
+    Assert.isTrue(
+      underAllWithoutViewAll.isEmpty(),
+      'All Conversations lists nothing without View All or the permission.'
     );
     Assert.isTrue(
       noRole.isEmpty(),
       'A viewer with no role has no subordinates.'
     );
+    Assert.areEqual(
+      new Map<Id, AIConversation__c>(onGlobal).keySet(),
+      new Map<Id, AIConversation__c>(underAllWithViewAll).keySet(),
+      'Everybody on a Global agent, and nothing from a Private one.'
+    );
     Assert.areEqual(1, capped.size(), 'The row cap holds.');
-    Assert.isNotNull(mine.Id);
-    Assert.isNotNull(hidden.Id);
   }
 }

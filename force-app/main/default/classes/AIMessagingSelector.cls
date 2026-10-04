@@ -62,6 +62,7 @@ public without sharing class AIMessagingSelector {
         Id,
         Name,
         DeveloperName__c,
+        AIAgentPersona__c,
         IsActive__c,
         AccessMode__c,
         ObjectType__c,
@@ -745,15 +746,37 @@ public without sharing class AIMessagingSelector {
       : TERMS_NONE;
   }
 
+  // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation.
   public static Integer countActiveConversations(Id userId) {
-    return [
-      SELECT COUNT()
+    Datetime currentTime = System.now();
+    Integer activeConversations = 0;
+
+    for (AIConversation__c conversation : [
+      SELECT
+        CreatedDate,
+        LastMessageTimestamp__c,
+        AIAgent__r.IdleTimeoutMinutes__c
       FROM AIConversation__c
       WHERE
         OwnerId = :userId
         AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
       WITH SYSTEM_MODE
-    ];
+      ORDER BY LastModifiedDate DESC
+      LIMIT :AIAssistApplicationConstants.MAX_ACTIVE_CONVERSATIONS_COUNTED
+    ]) {
+      Datetime lastActivity = conversation.LastMessageTimestamp__c == null
+        ? conversation.CreatedDate
+        : conversation.LastMessageTimestamp__c;
+      if (
+        conversation.AIAgent__r?.IdleTimeoutMinutes__c == null ||
+        lastActivity.addMinutes(
+          Integer.valueOf(conversation.AIAgent__r.IdleTimeoutMinutes__c)
+        ) > currentTime
+      )
+        activeConversations++;
+    }
+
+    return activeConversations;
   }
 
   // =============================================================
@@ -859,12 +882,17 @@ public without sharing class AIMessagingSelector {
   // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
   public static Integer countQueuedMessageJobs() {
     Datetime oneDayAgo = Datetime.now().addDays(-1);
+    // This package's class only: a subscriber may have a class of the same name. Null when the code is not in a namespace.
+    String packageNamespace = AIMessagingSelector.class.getName().contains('.')
+      ? AIMessagingSelector.class.getName().substringBefore('.')
+      : null;
 
     return [
       SELECT COUNT()
       FROM AsyncApexJob
       WHERE
         ApexClass.Name = 'AIMessageProcessingQueueable'
+        AND ApexClass.NamespacePrefix = :packageNamespace
         AND JobType = 'Queueable'
         AND Status IN ('Queued', 'Preparing', 'Processing')
         AND CreatedDate >= :oneDayAgo
