@@ -23,6 +23,11 @@
                 <default>false</default>
                 <label>OpenAI</label>
             </value>
+            <value>
+                <fullName>Azure OpenAI</fullName>
+                <default>false</default>
+                <label>Azure OpenAI</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

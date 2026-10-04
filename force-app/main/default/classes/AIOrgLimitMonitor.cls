@@ -15,11 +15,22 @@ Features and the limits each depends on (AIAssistApplicationConstants.ORG_LIMITS
 - Events: platform event allowances (the "reply is ready" and progress events).
 - Logging: the event allowances and data storage, because every log entry is an event.
 
-An administrator sets the thresholds in AIAssistSettings__c: Degraded at 70 and Paused at 85 percent by
-default, and a maximum share that replaces the Paused threshold when it is lower, so AI Assist never takes
-a limit above that percentage and the rest is the subscriber's buffer. A feature returns to a milder mode
-only once usage is below the threshold by the resume margin (5 points by default), so it does not flip
-back and forth at the line.
+An administrator sets the thresholds in AIAssistSettings__c. Each feature has its own Degraded and Paused
+percentage ({Feature}DegradedPercent__c, {Feature}PausedPercent__c); a blank one uses the org-wide
+OrgLimit* field, and that falls back to 70 and 85. Whatever is set, a feature pauses at 95 percent of any
+limit. A feature returns to a milder mode only once usage is below the threshold by the resume margin (5
+points by default), so it does not flip back and forth at the line.
+
+Two readings decide a mode, and the stricter wins:
+- Org headroom: how full the org's limit is, from every process in the org.
+- AI Assist's share: how much of the limit AI Assist itself used ({Feature}AppSharePercent__c, or
+  OrgLimitMaxSharePercent__c when blank). Reaching the share pauses the feature even when the org has
+  room, so AI Assist cannot crowd out the subscriber's own work. StorageBudgetPercent__c is the share of
+  data storage; reaching it pauses Chat and Logging.
+AI Assist's own usage (its footprint) is measured only by the maintenance job and by refreshIfStale, at
+most hourly, and kept in AppUsageStateJson__c: asynchronous jobs in the last day (AsyncApexJob, by
+namespace), events in the last day (the day's messages plus Platform Log entries) and the storage its
+records take (records times 2 KB).
 
 How it stays cheap and safe:
 - The last reading is kept in AIAssistSettings__c.OrgLimitStateJson__c, which the platform caches, so most
@@ -43,13 +54,23 @@ again, with the window falling back to polling, as soon as the Events feature le
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Thresholds per feature with the org-wide ones as defaults, a hard floor at 95 percent, and AI Assist's own share of each limit measured and applied.
 */
 
 public inherited sharing class AIOrgLimitMonitor {
   public class FeatureState {
     public String mode = AIAssistApplicationConstants.LIMIT_MODE_NORMAL;
     public Integer percent = 0;
+    public Integer appPercent = 0; // AI Assist's own share of the limit behind this feature.
     public String limitName; // The limit that decided the mode; not kept between reads.
+  }
+
+  // AI Assist's own usage of the org, as last measured.
+  public class Footprint {
+    public Long measuredAt;
+    public Decimal asyncJobs = 0; // In the last day.
+    public Decimal events = 0; // In the last day.
+    public Decimal storageMegabytes = 0;
   }
 
   public class State {
@@ -81,7 +102,39 @@ public inherited sharing class AIOrgLimitMonitor {
     public Integer degraded;
     public Integer paused;
     public Integer margin;
+    public Integer appShare; // Null: no share budget.
   }
+
+  // The package's objects that hold records, for the storage estimate.
+  private static final List<Schema.SObjectType> STORED_OBJECTS = new List<Schema.SObjectType>{
+    AIAgent__c.SObjectType,
+    AIAgentAssignment__c.SObjectType,
+    AIAgentDataSource__c.SObjectType,
+    AIAgentObject__c.SObjectType,
+    AIAgentViolationRule__c.SObjectType,
+    AIAgentWorkflowAction__c.SObjectType,
+    AIConversation__c.SObjectType,
+    AIConversationMessage__c.SObjectType,
+    AIDataDeletionRequest__c.SObjectType,
+    AIDataSource__c.SObjectType,
+    AIExecutionStep__c.SObjectType,
+    AIFeedback__c.SObjectType,
+    AIModelConfiguration__c.SObjectType,
+    AIPIIFieldMetadata__c.SObjectType,
+    AIPIIMapping__c.SObjectType,
+    AIPIIMaskingRecord__c.SObjectType,
+    AIPIIRegistry__c.SObjectType,
+    AIPlatformLog__c.SObjectType,
+    AIPromptTemplate__c.SObjectType,
+    AITermsAcknowledgment__c.SObjectType,
+    AIUsageDaily__c.SObjectType,
+    AIUsagePolicy__c.SObjectType,
+    AIUsagePolicyAssignment__c.SObjectType,
+    AIUserSettings__c.SObjectType,
+    AIViolation__c.SObjectType,
+    AIViolationRule__c.SObjectType,
+    AIWorkflowAction__c.SObjectType
+  };
 
   private static final List<String> FEATURES = new List<String>{
     AIAssistApplicationConstants.LIMIT_FEATURE_CHAT,
@@ -100,6 +153,9 @@ public inherited sharing class AIOrgLimitMonitor {
   private static Map<String, List<Decimal>> testLimits;
   @TestVisible
   private static Boolean isTestFailureThrown = false;
+  // Tests cannot create jobs or fill storage: when set it replaces the measured footprint.
+  @TestVisible
+  private static Footprint testFootprint;
   @TestVisible
   private static State transactionState;
   private static Boolean isReading = false;
@@ -207,6 +263,17 @@ public inherited sharing class AIOrgLimitMonitor {
           'Test exception for AIOrgLimitMonitor.refreshIfStale'
         );
 
+      // AI Assist's own usage is measured here and nowhere else, and only when the last measurement is old: it costs a count query per object.
+      Footprint storedFootprint = getFootprint();
+      Boolean isFootprintDue =
+        settings.Id != null &&
+        testFootprint == null &&
+        (storedFootprint.measuredAt == null ||
+        System.currentTimeMillis() - storedFootprint.measuredAt >=
+        AIAssistApplicationConstants.APP_FOOTPRINT_REFRESH_MINUTES * 60000L);
+      if (isFootprintDue)
+        transactionFootprint = measureFootprint();
+
       State freshState = evaluate(storedState);
       transactionState = freshState;
 
@@ -220,6 +287,8 @@ public inherited sharing class AIOrgLimitMonitor {
         Id = settings.Id,
         OrgLimitStateJson__c = serialize(freshState)
       );
+      if (isFootprintDue)
+        stateUpdate.AppUsageStateJson__c = JSON.serialize(transactionFootprint);
       if (shouldAlert)
         stateUpdate.OrgLimitAlertSentAt__c = System.now();
       Database.update(stateUpdate, true, AccessLevel.SYSTEM_MODE);
@@ -245,12 +314,36 @@ public inherited sharing class AIOrgLimitMonitor {
   // Reads the limits and decides each feature's mode, starting from where it was so a switch back waits for the margin.
   @TestVisible
   private static State evaluate(State previousState) {
-    Thresholds thresholds = getThresholds();
     Map<String, List<Decimal>> readings = readLimits();
+    Footprint footprint = getFootprint();
     State freshState = new State();
     freshState.checkedAt = System.currentTimeMillis();
 
+    // AI Assist's own share of the three limits its features lean on. Events are compared with a day of the hourly allowance, because the footprint counts a day.
+    Decimal asyncShare = shareOf(
+      footprint.asyncJobs,
+      readings.get(AIAssistApplicationConstants.ORG_LIMIT_ASYNC_APEX),
+      1
+    );
+    Decimal eventShare = shareOf(
+      footprint.events,
+      readings.get(AIAssistApplicationConstants.ORG_LIMIT_HOURLY_EVENTS),
+      24
+    );
+    Decimal storageShare = shareOf(
+      footprint.storageMegabytes,
+      readings.get(AIAssistApplicationConstants.ORG_LIMIT_DATA_STORAGE),
+      1
+    );
+    Integer storageBudget = inRange(
+      AIAssistSettingsService.getSettings().StorageBudgetPercent__c,
+      AIAssistApplicationConstants.LIMIT_MINIMUM_SHARE_PERCENT,
+      100,
+      null
+    );
+
     for (String feature : FEATURES) {
+      Thresholds thresholds = getThresholds(feature);
       FeatureState featureState = new FeatureState();
       Decimal highestPercent = 0;
 
@@ -278,6 +371,34 @@ public inherited sharing class AIOrgLimitMonitor {
           : previousFeature.mode,
         thresholds
       );
+
+      // The stricter of the two readings: the org may have headroom while AI Assist has used its share.
+      Boolean isChat =
+        feature == AIAssistApplicationConstants.LIMIT_FEATURE_CHAT;
+      Decimal appShare = isChat ? asyncShare : eventShare;
+      featureState.appPercent = appShare.round(System.RoundingMode.DOWN)
+        .intValue();
+      if (thresholds.appShare != null && appShare >= thresholds.appShare) {
+        featureState.mode = AIAssistApplicationConstants.LIMIT_MODE_PAUSED;
+        featureState.limitName =
+          'AI Assist share of ' +
+          (isChat
+            ? AIAssistApplicationConstants.ORG_LIMIT_ASYNC_APEX
+            : AIAssistApplicationConstants.ORG_LIMIT_HOURLY_EVENTS);
+      }
+      if (
+        storageBudget != null &&
+        storageShare >= storageBudget &&
+        feature != AIAssistApplicationConstants.LIMIT_FEATURE_EVENTS
+      ) {
+        featureState.mode = AIAssistApplicationConstants.LIMIT_MODE_PAUSED;
+        featureState.appPercent = storageShare.round(System.RoundingMode.DOWN)
+          .intValue();
+        featureState.limitName =
+          'AI Assist share of ' +
+          AIAssistApplicationConstants.ORG_LIMIT_DATA_STORAGE;
+      }
+
       freshState.byFeature.put(feature, featureState);
     }
 
@@ -308,16 +429,29 @@ public inherited sharing class AIOrgLimitMonitor {
     return AIAssistApplicationConstants.LIMIT_MODE_NORMAL;
   }
 
-  // The administrator's thresholds made safe: a blank, silly or contradictory value never switches AI Assist off or leaves it unprotected. The maximum share replaces the paused threshold when it is lower.
+  // The org-wide thresholds, as for a feature with no fields of its own.
   public static Thresholds getThresholds() {
+    return getThresholds(null);
+  }
+
+  // A feature's thresholds made safe: a blank, silly or contradictory value never switches AI Assist off or leaves it unprotected. The feature's own fields come first, then the org-wide OrgLimit* fields, then the defaults. The org-wide maximum share still replaces the paused threshold when it is lower, and nothing pauses later than the hard floor.
+  public static Thresholds getThresholds(String feature) {
     AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
     Thresholds thresholds = new Thresholds();
+    Boolean hasOwnFields = FEATURES.contains(feature);
 
     thresholds.paused = inRange(
-      settings.OrgLimitPausedPercent__c,
+      hasOwnFields
+        ? (Decimal) settings.get(feature + 'PausedPercent__c')
+        : null,
       2,
       100,
-      AIAssistApplicationConstants.DEFAULT_LIMIT_PAUSED_PERCENT
+      inRange(
+        settings.OrgLimitPausedPercent__c,
+        2,
+        100,
+        AIAssistApplicationConstants.DEFAULT_LIMIT_PAUSED_PERCENT
+      )
     );
     Integer maxShare = inRange(
       settings.OrgLimitMaxSharePercent__c,
@@ -327,12 +461,23 @@ public inherited sharing class AIOrgLimitMonitor {
     );
     if (maxShare != null && maxShare < thresholds.paused)
       thresholds.paused = maxShare;
+    thresholds.paused = Math.min(
+      thresholds.paused,
+      AIAssistApplicationConstants.LIMIT_HARD_FLOOR_PAUSED_PERCENT
+    );
 
     thresholds.degraded = inRange(
-      settings.OrgLimitDegradedPercent__c,
+      hasOwnFields
+        ? (Decimal) settings.get(feature + 'DegradedPercent__c')
+        : null,
       1,
       99,
-      AIAssistApplicationConstants.DEFAULT_LIMIT_DEGRADED_PERCENT
+      inRange(
+        settings.OrgLimitDegradedPercent__c,
+        1,
+        99,
+        AIAssistApplicationConstants.DEFAULT_LIMIT_DEGRADED_PERCENT
+      )
     );
     if (thresholds.degraded >= thresholds.paused)
       thresholds.degraded = Math.max(1, thresholds.paused - 1);
@@ -344,7 +489,161 @@ public inherited sharing class AIOrgLimitMonitor {
       AIAssistApplicationConstants.DEFAULT_LIMIT_RESUME_MARGIN_PERCENT
     );
 
+    thresholds.appShare = inRange(
+      hasOwnFields
+        ? (Decimal) settings.get(feature + 'AppSharePercent__c')
+        : null,
+      AIAssistApplicationConstants.LIMIT_MINIMUM_SHARE_PERCENT,
+      100,
+      inRange(
+        settings.OrgLimitMaxSharePercent__c,
+        AIAssistApplicationConstants.LIMIT_MINIMUM_SHARE_PERCENT,
+        100,
+        null
+      )
+    );
+
     return thresholds;
+  }
+
+  // What is wrong with the limit settings as an administrator entered them, one sentence each, naming the field to fix. Empty when they are sound. The monitor never trusts them (getThresholds); this is for the screens that save them.
+  public static List<String> validateSettings(AIAssistSettings__c settings) {
+    List<String> problems = new List<String>();
+    List<String> groups = new List<String>{ 'OrgLimit' };
+    groups.addAll(FEATURES);
+
+    for (String settingGroup : groups) {
+      Decimal degraded = (Decimal) settings.get(
+        settingGroup + 'DegradedPercent__c'
+      );
+      Decimal paused = (Decimal) settings.get(
+        settingGroup + 'PausedPercent__c'
+      );
+      Decimal share = (Decimal) settings.get(
+        settingGroup == 'OrgLimit'
+          ? 'OrgLimitMaxSharePercent__c'
+          : settingGroup + 'AppSharePercent__c'
+      );
+
+      if (paused != null && (paused < 2 || paused > 100))
+        problems.add(
+          settingGroup + 'PausedPercent__c must be between 2 and 100.'
+        );
+      if (degraded != null && degraded < 1)
+        problems.add(settingGroup + 'DegradedPercent__c must be 1 or more.');
+      if (degraded != null && paused != null && degraded >= paused)
+        problems.add(
+          settingGroup +
+            'DegradedPercent__c must be lower than ' +
+            settingGroup +
+            'PausedPercent__c.'
+        );
+      if (
+        share != null &&
+        (share < AIAssistApplicationConstants.LIMIT_MINIMUM_SHARE_PERCENT ||
+        share > 100)
+      )
+        problems.add(
+          (settingGroup == 'OrgLimit'
+            ? 'OrgLimitMaxSharePercent__c'
+            : settingGroup + 'AppSharePercent__c') +
+          ' must be between 5 and 100.'
+        );
+    }
+
+    if (
+      settings.StorageBudgetPercent__c != null &&
+      (settings.StorageBudgetPercent__c <
+      AIAssistApplicationConstants.LIMIT_MINIMUM_SHARE_PERCENT ||
+      settings.StorageBudgetPercent__c > 100)
+    )
+      problems.add('StorageBudgetPercent__c must be between 5 and 100.');
+
+    return problems;
+  }
+
+  // =============================================================
+  // AI Assist's own usage
+  // =============================================================
+
+  private static Footprint transactionFootprint;
+
+  // The footprint as last measured and stored. Empty (all zero) when it has never been measured. Reads no record.
+  public static Footprint getFootprint() {
+    if (testFootprint != null)
+      return testFootprint;
+    if (transactionFootprint != null)
+      return transactionFootprint;
+
+    String stored = AIAssistSettingsService.getSettings().AppUsageStateJson__c;
+    try {
+      Footprint footprint = String.isBlank(stored)
+        ? null
+        : (Footprint) JSON.deserialize(stored, Footprint.class);
+      return footprint == null ? new Footprint() : footprint;
+    } catch (Exception malformed) {
+      return new Footprint();
+    }
+  }
+
+  // Counts AI Assist's own jobs, events and records. One count query per object, so it is called only from refreshIfStale.
+  @TestVisible
+  private static Footprint measureFootprint() {
+    Footprint footprint = new Footprint();
+    footprint.measuredAt = System.currentTimeMillis();
+    Datetime oneDayAgo = System.now().addDays(-1);
+    String packageNamespace = AIMessagingSelector.getPackageNamespace();
+
+    // Every job of the package's classes. Outside a namespace the class name prefix keeps the subscriber's own jobs out.
+    footprint.asyncJobs = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE
+        ApexClass.NamespacePrefix = :packageNamespace
+        AND ApexClass.Name LIKE 'AI%'
+        AND CreatedDate >= :oneDayAgo
+      WITH SYSTEM_MODE
+    ];
+
+    // Each message can publish a "reply is ready" event and each log entry is published as one.
+    footprint.events =
+      AIOrgUsageService.getUsage().today.messages +
+      [
+        SELECT COUNT()
+        FROM AIPlatformLog__c
+        WHERE CreatedDate >= :oneDayAgo
+        WITH SYSTEM_MODE
+      ];
+
+    Decimal records = 0;
+    for (Schema.SObjectType storedObject : STORED_OBJECTS)
+      records += Database.countQuery(
+        'SELECT COUNT() FROM ' + storedObject,
+        AccessLevel.SYSTEM_MODE
+      );
+    footprint.storageMegabytes = (records *
+      AIAssistApplicationConstants.STORAGE_KILOBYTES_PER_RECORD /
+      1024)
+      .setScale(4);
+
+    return footprint;
+  }
+
+  // Usage as a percentage of a limit reading {used, maximum}, the maximum multiplied to cover the same period as the usage. Zero when the limit is unknown.
+  private static Decimal shareOf(
+    Decimal used,
+    List<Decimal> reading,
+    Integer periods
+  ) {
+    if (
+      used == null ||
+      reading == null ||
+      reading[1] == null ||
+      reading[1] <= 0
+    )
+      return 0;
+
+    return 100 * used / (reading[1] * periods);
   }
 
   private static Integer inRange(
@@ -408,7 +707,7 @@ public inherited sharing class AIOrgLimitMonitor {
   // Keeping the state between transactions
   // =============================================================
 
-  // {"t":checkedAtMilliseconds,"c":[modeIndex,percent],"e":[...],"g":[...]} for Chat, Events and Logging. Small enough for a 255 character field.
+  // {"t":checkedAtMilliseconds,"c":[modeIndex,percent,appPercent],"e":[...],"g":[...]} for Chat, Events and Logging. Small enough for a 255 character field.
   @TestVisible
   private static String serialize(State state) {
     Map<String, Object> compact = new Map<String, Object>{
@@ -424,7 +723,8 @@ public inherited sharing class AIOrgLimitMonitor {
           featureState == null
             ? 0
             : Math.max(0, MODES_BY_INDEX.indexOf(featureState.mode)),
-          featureState == null ? 0 : featureState.percent
+          featureState == null ? 0 : featureState.percent,
+          featureState == null ? 0 : featureState.appPercent
         }
       );
     }
@@ -454,6 +754,9 @@ public inherited sharing class AIOrgLimitMonitor {
           ? MODES_BY_INDEX[modeIndex]
           : AIAssistApplicationConstants.LIMIT_MODE_NORMAL;
         featureState.percent = Integer.valueOf(values[1]);
+        featureState.appPercent = values.size() > 2
+          ? Integer.valueOf(values[2])
+          : 0;
         state.byFeature.put(FEATURES[index], featureState);
       }
 

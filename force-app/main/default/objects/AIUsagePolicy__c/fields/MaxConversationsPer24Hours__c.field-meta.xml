@@ -5,7 +5,7 @@
   >Most conversations a user covered by this policy can start in a UTC day. Blank means no limit from this policy.</description>
     <inlineHelpText
   >Leave blank for no limit. Where several policies apply, the lowest limit is used.</inlineHelpText>
-    <label>Max Conversations Per 24 Hours</label>
+    <label>Max Conversations Per Day</label>
     <precision>5</precision>
     <required>false</required>
     <scale>0</scale>

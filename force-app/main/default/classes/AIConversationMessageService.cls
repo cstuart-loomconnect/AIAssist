@@ -241,12 +241,16 @@ public with sharing class AIConversationMessageService {
       Boolean shouldStartProcessing = AIConversationLockService.acquireLock(
         conversation.Id
       );
+      // At the org-wide cap on messages in flight the message is kept, Queued, and started when a place is free (startHeldMessage).
+      Boolean isHeld =
+        shouldStartProcessing && AIUsageLimitService.isInFlightCapReached();
 
       AIConversationMessage__c userMessage = new AIConversationMessage__c(
         AIConversation__c = conversation.Id,
         Sender__c = AIAssistApplicationConstants.SENDER_USER,
         MessageBody__c = messageBody,
         ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
+        IsAwaitingCapacity__c = isHeld,
         TokenCount__c = chatContext.agent.TokenTrackingMethod__c ==
           AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE
           ? estimatedTokens
@@ -256,7 +260,9 @@ public with sharing class AIConversationMessageService {
       AIMessagingDataService.insertAsPackage(new List<SObject>{ userMessage });
 
       // Only when this message took the lock; otherwise it waits and the running job's finalizer starts it.
-      if (shouldStartProcessing)
+      if (isHeld)
+        AIConversationLockService.releaseLock(conversation.Id); // Nothing is working on it yet.
+      else if (shouldStartProcessing)
         System.enqueueJob(
           new AIMessageProcessingQueueable(userMessage.Id, conversation.Id)
         );
@@ -286,6 +292,125 @@ public with sharing class AIConversationMessageService {
         caughtException.getMessage(),
         caughtException
       );
+    }
+  }
+
+  // Fails every message, whoever sent it, that has waited longer than HELD_MESSAGE_TIMEOUT_MINUTES for a place under the cap on messages in flight, so its sender is offered Try again instead of a wait that never ends: only the sender can start a held message, and they may have closed the window. Returns how many were failed. isRecentOnly looks at the last day alone, which is what a finalizer or a chat window can afford; the maintenance job looks at them all. Never throws.
+  public static Integer failExpiredHeldMessages(Boolean isRecentOnly) {
+    try {
+      Datetime heldBefore = System.now()
+        .addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES);
+      List<AIConversationMessage__c> failedMessages = new List<AIConversationMessage__c>();
+      Set<Id> conversationIds = new Set<Id>();
+
+      for (
+        AIConversationMessage__c heldMessage : AIMessagingSelector.lockExpiredHeldMessages(
+          heldBefore,
+          isRecentOnly ? heldBefore.addDays(-1) : null,
+          AIAssistApplicationConstants.HELD_MESSAGE_SWEEP_SIZE
+        )
+      ) {
+        // Read again under the lock: its sender may have started it while this waited.
+        if (
+          !heldMessage.IsAwaitingCapacity__c ||
+          heldMessage.ProcessingStatus__c !=
+          AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+        )
+          continue;
+
+        failedMessages.add(
+          new AIConversationMessage__c(
+            Id = heldMessage.Id,
+            ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+            FailureReason__c = AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY,
+            IsAwaitingCapacity__c = false
+          )
+        );
+        conversationIds.add(heldMessage.AIConversation__c);
+      }
+
+      AIMessagingDataService.updateAndLogFailures(
+        failedMessages,
+        'AIConversationMessageService',
+        'failExpiredHeldMessages'
+      );
+      for (Id conversationId : conversationIds)
+        AIMessageOutcomeService.publishMessageFailure(
+          conversationId,
+          AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY
+        );
+
+      return failedMessages.size();
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIConversationMessageService',
+        'failExpiredHeldMessages'
+      );
+      return 0;
+    }
+  }
+
+  // Starts the signed-in user's oldest message that is waiting for a place under the cap on messages in flight, if a place is free. True when one was started. A job runs as whoever queues it and reads the conversation in user mode, so a waiting message can only be started by its own sender: from the finalizer of that user's earlier turn, or from their chat window asking for an update. Any user's finalizer or window first fails the messages that have waited too long (failExpiredHeldMessages), which are then no longer started. Never throws.
+  public static Boolean startHeldMessage() {
+    failExpiredHeldMessages(true);
+
+    Savepoint beforeStart;
+    try {
+      Datetime heldSince = System.now()
+        .addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES);
+      List<AIConversationMessage__c> heldMessages = [
+        SELECT Id, AIConversation__c
+        FROM AIConversationMessage__c
+        WHERE
+          IsAwaitingCapacity__c = TRUE
+          AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+          AND CreatedById = :UserInfo.getUserId()
+          AND CreatedDate >= :heldSince
+        WITH SYSTEM_MODE
+        ORDER BY CreatedDate ASC, Id ASC
+        LIMIT 1
+      ];
+
+      if (
+        heldMessages.isEmpty() ||
+        Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs() ||
+        AIUsageLimitService.isInFlightCapReached() ||
+        !AIConversationLockService.acquireLock(
+          heldMessages[0].AIConversation__c
+        )
+      )
+        return false;
+
+      // If the job cannot be queued the message goes back to waiting, with no lock left on its conversation. The savepoint is set before the lock is written, so rolling back frees it.
+      AIConversationLockService.releaseLock(heldMessages[0].AIConversation__c);
+      beforeStart = Database.setSavepoint();
+      AIConversationLockService.acquireLock(heldMessages[0].AIConversation__c);
+      AIMessagingDataService.updateAsPackage(
+        new List<SObject>{
+          new AIConversationMessage__c(
+            Id = heldMessages[0].Id,
+            IsAwaitingCapacity__c = false
+          )
+        }
+      );
+      System.enqueueJob(
+        new AIMessageProcessingQueueable(
+          heldMessages[0].Id,
+          heldMessages[0].AIConversation__c
+        )
+      );
+
+      return true;
+    } catch (Exception caughtException) {
+      if (beforeStart != null)
+        Database.rollback(beforeStart);
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIConversationMessageService',
+        'startHeldMessage'
+      );
+      return false;
     }
   }
 

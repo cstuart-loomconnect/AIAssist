@@ -41,6 +41,18 @@ public inherited sharing class AIPlanLimitService {
     );
   }
 
+  // A Boolean plan parameter by name. One that cannot be read counts as allowed, except the spare ones, which stay off until the licence switches them on.
+  public static Boolean isAllowed(String parameterName) {
+    Object featureValue = read(parameterName, true);
+    Boolean isOffUntilSet =
+      parameterName ==
+      AIAssistApplicationConstants.FEATURE_BETA_FEATURES_ENABLED ||
+      parameterName ==
+      AIAssistApplicationConstants.FEATURE_CONTINUATION_CHAT_ENABLED;
+
+    return featureValue == null ? !isOffUntilSet : (Boolean) featureValue;
+  }
+
   // Whether the plan includes Apex data sources. Allowed when the parameter cannot be read.
   public static Boolean isApexAllowed() {
     Object featureValue = read(

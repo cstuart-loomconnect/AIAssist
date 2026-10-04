@@ -46,6 +46,14 @@ public class AIChatDataStructure {
     public ConversationView conversation;
     @AuraEnabled
     public ConversationSummary openConversation;
+    // Why the user cannot send a message right now (AIAssistApplicationConstants.CHAT_BLOCKED_*), and what to tell them. Null when they can.
+    @AuraEnabled
+    public String blockedState;
+    @AuraEnabled
+    public String blockedMessage;
+    // Set when the organisation is close to its monthly plan allowance but not yet at it.
+    @AuraEnabled
+    public String planCapWarning;
   }
 
   public class UiSettings {

@@ -31,7 +31,7 @@ A user sends a message; the layer decides whether they may, records it, and hand
 - **Configuration in system mode.** Model connection, prompts, tools, user settings, assignments and terms are read by the package, as the model's section 4 requires; the User permission set cannot read them.
 - **Who may use which agent.** `AIAgent__c.AccessMode__c` and `AIAgentAssignment__c`, by user or by permission set, checked on every message including retries.
 - **Terms** are checked against `AITermsAcknowledgment__c` for `AIAssistSettings__c.CurrentTermsVersion__c`.
-- **Related record.** The Id must be an object the user can read (`UserRecordAccess`), match the object name given, and match the agent's `ObjectType__c`.
+- **Related record.** The Id must be an object the user can read (`UserRecordAccess`), match the object name given, and be an object the agent is for (an active `AIAgentObject__c`; an agent with none is general).
 - **Forged messages.** A user can create messages and edit `Sender__c`. A before-insert check refuses any sender but User unless the write came through the repository.
 - **No leak of provider or configuration detail.** The user only ever sees a Custom Label chosen by the failure reason. The provider's own error goes to the platform log, never to a record the user can read.
 - **Labels.** Every user-facing string is one of the existing `AI_Error_*` / `AI_Chat_*` labels. No new labels were needed except the gap in section 5.
@@ -45,7 +45,7 @@ A user sends a message; the layer decides whether they may, records it, and hand
 - Retries after the first wait one minute, so a rate-limited provider is not hit again at once.
 - A job that cannot enqueue its successor (asynchronous limit, or the fixed chain depth of trial and developer orgs) fails the turn, frees the lock and tells the user, instead of leaving them waiting.
 - A job that waited in the queue longer than the lock lasts stands down instead of running beside whatever took the conversation over.
-- A user's limits read that user's `AIUsageDaily__c` rows for the day. The organisation's limits (the plan's monthly messages and tokens, the daily token budget) read running totals kept in `AIAssistSettings__c.OrgUsageStateJson__c` by `AIOrgUsageService`: each usage write adds to them, and the maintenance job recounts them exactly (`AIOrgUsageTotalsBatch`). No usage row is read on a send, however many there are.
+- A user's limits read that user's `AIUsageDaily__c` rows for the day. The organisation's limits (the plan's monthly messages and tokens, the daily token budget) come from `AIOrgUsageService`: the month's closed days, counted exactly by the maintenance job (`AIOrgUsageTotalsBatch`) and stored in `AIAssistSettings__c.OrgUsageStateJson__c`, plus one grouped query over today's `AIUsageDaily__c` rows. The result is cached for 60 seconds in the `AIAssistSchema` org cache partition when the subscriber has one, and for the transaction otherwise. Nothing is written or locked when a turn ends. A `SUM` counts every row it adds up against the 50,000 query row limit, which is why the month is never added up on a send.
 - When a reply is saved or a turn fails, every user message in the conversation still Queued and sent at or before the one answered is ended with it (Complete or Failed). The finalizer hands the lock to the newest waiting message only, so an older one would otherwise stay Queued.
 - Regenerate replaces the answer: each reply records the message it answers (`InReplyTo__c`), and saving a new reply marks the earlier one `IsSuperseded__c`. A superseded reply is left out of the chat and of what the model is sent; it still counts in usage and is still exported and retained. A regenerate that fails leaves the earlier reply in place.
 - The concurrent conversation limit counts Active conversations with activity inside their agent's idle timeout; an agent with no timeout counts all of them.
@@ -80,7 +80,7 @@ The seam `AiMessageProcessingQueueable.ITurnExecutor` is how the tests replace l
 - **Guard rails as settings.** The limits in `AIAssistApplicationConstants` (message length, history size, queue ceiling, retry delay) are constants; an enterprise will want them on `AIAssistSettings__c`.
 - **A label for "channel not enabled".** A channel outside the user's allow-list is refused with `AI_Error_Not_Authorised` because no more specific label exists.
 - **Usage windows** are the UTC calendar day because limits read `AIUsageDaily__c`; the fields are still named "24 Hours".
-- **Fields not used by this layer**: `IsTestModeEnabled__c`, `AllowConversationResume__c`, `NoMatchBehavior__c`, `AIFallbackMessage__c`, `GreetingMessage__c` belong to the chat window and the agent manager.
+- **Fields not used by this layer**: `AllowConversationResume__c` and `GreetingMessage__c` belong to the chat window. `IsTestModeEnabled__c`, `NoMatchBehavior__c` and `AIFallbackMessage__c` were never read and have been deleted.
 
 ## 6. Not in this layer
 
@@ -99,7 +99,7 @@ The package's fields are visible to nobody until a permission set grants them, a
 | Data deletion    | `AIDataDeletionBatch`, `AIDataDeletionRequestTriggerHandler` and trigger (approved requests only)                                                                                                     |
 | Workflow actions | `AIWorkflowActionDispatcher`, `IAIWorkflowActionExecutor`: plan, user setting, assignment, confirmation, evidence on every outcome                                                                    |
 | Violations       | `AIViolationService`, `AIViolationTriggerHandler`, `AIViolationRuleTriggerHandler` and triggers                                                                                                       |
-| Usage            | `AITokenUsageService` on `AIUsageDaily__c`                                                                                                                                                            |
+| Usage            | `AIMessagingDataService.addToDailyUsage` on `AIUsageDaily__c`, with the organisation's totals read through `AIOrgUsageService` (`AITokenUsageService` was unused and has been deleted)                |
 | Chat             | `AIChatController` and eight `AIChat*Service` classes plus `AIChatDataStructure`. Refusals reach the window as a status chosen from `AIMessagingException.code`, with a Custom Label                  |
 | Schema           | `AISchemaHelper`: describe facts cached per transaction and, if the subscriber creates an org cache partition named `AIAssistSchema`, between transactions                                            |
 

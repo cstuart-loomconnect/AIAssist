@@ -48,11 +48,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIAgent__c.ObjectType__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>AIAgent__c.PublicId__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -64,6 +59,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversationMessage__c.FailureReason__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.IsAwaitingCapacity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

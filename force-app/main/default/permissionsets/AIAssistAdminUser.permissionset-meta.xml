@@ -26,6 +26,38 @@
         <apexClass>AIChatController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>AIConnectionTestController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AICredentialSetupController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIHealthCheckController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPlanUsageController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AISetupChecklistController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>AIAssistDebugMode</name>
+    </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>AIAssistManageConfiguration</name>
+    </customPermissions>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>AIAssistRunActions</name>
+    </customPermissions>
     <customPermissions>
         <enabled>true</enabled>
         <name>AIAssistViewSharedConversations</name>
@@ -97,11 +129,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>AIAgent__c.AIFallbackMessage__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>AIAgent__c.AIModelConfiguration__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -157,11 +184,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>AIAgent__c.IsTestModeEnabled__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>AIAgent__c.MaxMessagesPerConversation__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -176,16 +198,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
-        <field>AIAgent__c.NoMatchBehavior__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIAgent__c.ObjectType__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>false</editable>
         <field>AIAgent__c.PublicId__c</field>
         <readable>true</readable>
@@ -193,21 +205,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIAgent__c.RetentionTrigger__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIAgent__c.SetupCurrentStep__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIAgent__c.SetupLastEdited__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIAgent__c.SetupStatus__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -228,6 +225,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversationMessage__c.InReplyTo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.IsAwaitingCapacity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -283,11 +285,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversation__c.ConversationTokenUsage__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIConversation__c.ExternalReference__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -636,6 +633,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>AIModelConfiguration__c.ConnectionTestedDate__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>AIModelConfiguration__c.CostCurrency__c</field>
         <readable>true</readable>
@@ -872,11 +874,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>AIPromptTemplate__c.ActivationCriteria__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>AIPromptTemplate__c.Description__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -893,11 +890,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIPromptTemplate__c.MaxResponseLength__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIPromptTemplate__c.TriggerKeywords__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

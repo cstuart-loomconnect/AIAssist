@@ -84,6 +84,11 @@ public with sharing class AIChatContextService {
   ) {
     List<AIChatDataStructure.AgentOption> options = new List<AIChatDataStructure.AgentOption>();
 
+    // An agent built for this object says so; a general one has no object.
+    Set<Id> agentIdsForObject = AIMessagingSelector.getAgentIdsForObject(
+      objectApiName
+    );
+
     for (
       AIAgent__c agent : AIMessagingSelector.getAgentsAvailableForChat(
         objectApiName,
@@ -95,7 +100,9 @@ public with sharing class AIChatContextService {
       option.name = agent.Name;
       option.description = agent.Description__c;
       option.greeting = agent.GreetingMessage__c;
-      option.objectApiName = agent.ObjectType__c;
+      option.objectApiName = agentIdsForObject.contains(agent.Id)
+        ? objectApiName
+        : null;
       option.loadTrigger = agent.ConversationLoadTrigger__c;
       option.allowResume = agent.AllowConversationResume__c == true;
 

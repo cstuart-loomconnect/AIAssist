@@ -97,11 +97,19 @@ private class AIChatContextServiceTest {
       agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     agents[0].Name = 'A General';
     agents[1].Name = 'B Account';
-    agents[1].ObjectType__c = 'Account';
     agents[2].Name = 'C Contact';
-    agents[2].ObjectType__c = 'Contact';
     agents[3].IsActive__c = false;
     insert agents;
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[1].Id,
+      new List<String>{ 'Account' },
+      true
+    );
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[2].Id,
+      new List<String>{ 'Contact' },
+      true
+    );
 
     Test.startTest();
     List<AIChatDataStructure.AgentOption> options = AIChatContextService.getAvailableAgents(

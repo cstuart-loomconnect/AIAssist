@@ -116,7 +116,7 @@ public without sharing class AIMessagingDataService {
     if (usageDelta == null || usageDelta.userId == null)
       return;
 
-    Date usageDate = Datetime.now().dateGmt();
+    Date usageDate = AIAssistGlobalUtility.getOrgToday(); // The org's day, not the UTC day.
     String usageKey =
       usageDelta.userId +
       '|' +
@@ -154,7 +154,7 @@ public without sharing class AIMessagingDataService {
         AccessLevel.SYSTEM_MODE
       );
       if (insertResult.isSuccess()) {
-        AIOrgUsageService.add(usageDelta);
+        AIOrgUsageService.forgetForTransaction();
         return;
       }
 
@@ -190,7 +190,7 @@ public without sharing class AIMessagingDataService {
       usageDelta.outputTokens;
 
     updateAsPackage(new List<SObject>{ usageRow });
-    AIOrgUsageService.add(usageDelta);
+    AIOrgUsageService.forgetForTransaction();
   }
 
   private static void write(

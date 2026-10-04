@@ -600,7 +600,7 @@ public class AIAssistTestDataFactory {
     List<AIUsageDaily__c> usageRows = new List<AIUsageDaily__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfDays; itemIndex++) {
-      Date usageDate = Datetime.now().dateGmt().addDays(-itemIndex);
+      Date usageDate = AIAssistGlobalUtility.getOrgToday().addDays(-itemIndex);
 
       usageRows.add(
         new AIUsageDaily__c(

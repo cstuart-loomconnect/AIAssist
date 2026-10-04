@@ -2,10 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>OrgUsageStateJson__c</fullName>
     <description
-  >Written by AI Assist, not by an administrator: the organisation&apos;s running message and token totals for the current day and month, so a limit check reads one value instead of adding up every usage row. Added to after each turn and recalculated exactly by the maintenance job.</description>
+  >Written by AI Assist, not by an administrator: the organisation&apos;s message and token totals for the closed days of the current month (every day before the day stored with them), so a limit check adds up the usage rows of today alone. Counted exactly by the maintenance job once a night; no turn writes it.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Maintained by AI Assist. Running usage totals for today and this month.</inlineHelpText>
+  >Maintained by AI Assist. Usage totals for this month&apos;s closed days.</inlineHelpText>
     <label>Org Usage State</label>
     <length>255</length>
     <required>false</required>

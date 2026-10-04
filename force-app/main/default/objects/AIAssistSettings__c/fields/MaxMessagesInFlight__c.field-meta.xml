@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MaxMessagesInFlight__c</fullName>
+    <description
+  >The most chat messages AI Assist works on at once across the org. A message sent while this many are queued or running waits as Queued and starts when one finishes. Blank means no cap below the fixed ceiling of 200.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Messages worked on at once, org-wide. Extra messages wait. Blank: no cap.</inlineHelpText>
+    <label>Maximum Messages In Flight</label>
+    <precision>4</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

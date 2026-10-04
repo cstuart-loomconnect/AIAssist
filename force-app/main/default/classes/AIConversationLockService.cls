@@ -33,7 +33,7 @@ lock already released. A record that stays locked past the platform's wait is re
 rather than failing the user's send with a platform error.
 
 `without sharing` with explicit system mode on every statement: ProcessingLockedUntil__c is
-system-managed and not even readable by the AI Assist User permission set. Callers have already
+system-managed: the AI Assist User permission set can read it and cannot set it. Callers have already
 authorised the user against the conversation; this class only ever touches the lock.
 
 Throws AIMessagingException without logging; the caller logs it once.

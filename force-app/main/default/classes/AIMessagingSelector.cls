@@ -65,7 +65,6 @@ public without sharing class AIMessagingSelector {
         AIAgentPersona__c,
         IsActive__c,
         AccessMode__c,
-        ObjectType__c,
         AIModelConfiguration__c,
         MaxMessagesPerConversation__c,
         MaxTokensPerConversation__c,
@@ -567,7 +566,7 @@ public without sharing class AIMessagingSelector {
     return assignedIds;
   }
 
-  // The objects each active agent has been added to through AI Agent Object records, by agent. Agents with none are not in the map.
+  // The objects each active agent is for (its active AI Agent Object records), by agent. Agents with none are general and are not in the map.
   private static Map<Id, Set<String>> getExtraObjectsByAgent() {
     Map<Id, Set<String>> objectsByAgent = new Map<Id, Set<String>>();
 
@@ -587,14 +586,13 @@ public without sharing class AIMessagingSelector {
     return objectsByAgent;
   }
 
-  // True when the agent is offered on the object: its own Object Type, any object added to it, or, for an agent with neither, every object.
+  // True when the agent is offered on the object: an active AI Agent Object record names it, or the agent has none and is general, offered on every object.
   public static Boolean agentSupportsObject(
     Id agentId,
-    String agentObjectType,
     String objectApiName,
     String objectLocalName
   ) {
-    Set<String> extraObjects = new Set<String>();
+    Set<String> agentObjects = new Set<String>();
 
     if (agentId != null) {
       for (AIAgentObject__c agentObject : [
@@ -604,28 +602,37 @@ public without sharing class AIMessagingSelector {
         WITH SYSTEM_MODE
         LIMIT 200
       ])
-        extraObjects.add(agentObject.ObjectApiName__c.toLowerCase());
+        agentObjects.add(agentObject.ObjectApiName__c.toLowerCase());
     }
 
-    if (String.isBlank(agentObjectType) && extraObjects.isEmpty())
-      return true;
-
-    return matchesObject(agentObjectType, objectApiName, objectLocalName) ||
-      extraObjects.contains(String.valueOf(objectApiName).toLowerCase()) ||
-      extraObjects.contains(String.valueOf(objectLocalName).toLowerCase());
+    return agentObjects.isEmpty() ||
+      agentObjects.contains(String.valueOf(objectApiName).toLowerCase()) ||
+      agentObjects.contains(String.valueOf(objectLocalName).toLowerCase());
   }
 
-  private static Boolean matchesObject(
-    String configuredObject,
-    String objectApiName,
-    String objectLocalName
-  ) {
-    return String.isNotBlank(configuredObject) &&
-      (configuredObject.equalsIgnoreCase(objectApiName) ||
-      configuredObject.equalsIgnoreCase(objectLocalName));
+  // The active agents that have an active AI Agent Object record for the object.
+  public static Set<Id> getAgentIdsForObject(String objectApiName) {
+    Set<Id> agentIds = new Set<Id>();
+
+    if (String.isBlank(objectApiName))
+      return agentIds;
+
+    for (AIAgentObject__c agentObject : [
+      SELECT AIAgent__c
+      FROM AIAgentObject__c
+      WHERE
+        ObjectApiName__c = :objectApiName
+        AND IsActive__c = TRUE
+        AND AIAgent__r.IsActive__c = TRUE
+      WITH SYSTEM_MODE
+      LIMIT 5000
+    ])
+      agentIds.add(agentObject.AIAgent__c);
+
+    return agentIds;
   }
 
-  // The active agents this user can chat with for an object, agents for the object first. An agent is for the object through its Object Type or an AI Agent Object record; one with neither is general and comes last. An Assigned Users Only agent is included only when the user is assigned.
+  // The active agents this user can chat with for an object, agents for the object first. An agent is for the object through an AI Agent Object record; one with no such record at all is general and comes last. An Assigned Users Only agent is included only when the user is assigned.
   public static List<AIAgent__c> getAgentsAvailableForChat(
     String objectApiName,
     Id userId
@@ -648,16 +655,14 @@ public without sharing class AIMessagingSelector {
         DeveloperName__c,
         Description__c,
         GreetingMessage__c,
-        ObjectType__c,
         ConversationLoadTrigger__c,
         AllowConversationResume__c,
         AccessMode__c
       FROM AIAgent__c
       WHERE
         IsActive__c = TRUE
-        AND (ObjectType__c = NULL
-        OR ObjectType__c = :objectApiName
-        OR Id IN :agentsAddedToObject)
+        AND (Id IN :agentsAddedToObject
+        OR Id NOT IN :extraObjectsByAgent.keySet())
       WITH SYSTEM_MODE
       ORDER BY Name
       LIMIT :AIAssistApplicationConstants.CHAT_MAX_AGENTS
@@ -683,18 +688,11 @@ public without sharing class AIMessagingSelector {
       )
         continue;
 
-      Boolean isForObject =
-        agentsAddedToObject.contains(candidate.Id) ||
-        (String.isNotBlank(candidate.ObjectType__c) &&
-        candidate.ObjectType__c.equalsIgnoreCase(objectApiName));
-
-      if (isForObject)
+      // The query left out agents added to other objects only: what remains is for this object or general.
+      if (agentsAddedToObject.contains(candidate.Id))
         agentsForObject.add(candidate);
-      else if (
-        String.isBlank(candidate.ObjectType__c) &&
-        !extraObjectsByAgent.containsKey(candidate.Id)
-      )
-        generalAgents.add(candidate); // Added to other objects only: not general.
+      else
+        generalAgents.add(candidate);
     }
 
     agentsForObject.addAll(generalAgents);
@@ -813,16 +811,22 @@ public without sharing class AIMessagingSelector {
     return totals;
   }
 
-  // One grouped query (at most 31 rows) gives the month and the day. CreatedDate is the indexed filter that keeps it selective as the table grows: a row is created on the first use of its day, so a month's rows are always created inside that month.
+  // The month so far and the day, added up from every usage row of the month.
   public static OrgUsage getOrganisationUsage(Date today) {
+    return getOrganisationUsage(today, today.toStartOfMonth());
+  }
+
+  // One grouped query gives the usage from countFrom (a day of this month) to today, and today's on its own. Every row it adds up counts against the query row limit, so a caller on a send passes a recent day (AIOrgUsageService). CreatedDate is the indexed filter that keeps it selective as the table grows: a row is created on the first use of its day, so the rows of a day are never created before it.
+  public static OrgUsage getOrganisationUsage(Date today, Date countFrom) {
     OrgUsage orgUsage = new OrgUsage();
 
-    Date monthStart = Date.newInstance(today.year(), today.month(), 1);
-    Datetime monthStartDatetime = Datetime.newInstanceGmt(
-      monthStart.year(),
-      monthStart.month(),
-      monthStart.day()
-    );
+    // A day early: the day starts at the org's midnight, which can be up to 14 hours before the UTC one. UsageDate__c is the exact filter.
+    Datetime countFromDatetime = Datetime.newInstanceGmt(
+        countFrom.year(),
+        countFrom.month(),
+        countFrom.day()
+      )
+      .addDays(-1);
 
     for (AggregateResult dailyRow : [
       SELECT
@@ -831,7 +835,7 @@ public without sharing class AIMessagingSelector {
         SUM(InputTokens__c) inputTokens,
         SUM(OutputTokens__c) outputTokens
       FROM AIUsageDaily__c
-      WHERE CreatedDate >= :monthStartDatetime AND UsageDate__c >= :monthStart
+      WHERE CreatedDate >= :countFromDatetime AND UsageDate__c >= :countFrom
       WITH SYSTEM_MODE
       GROUP BY UsageDate__c
     ]) {
@@ -882,10 +886,7 @@ public without sharing class AIMessagingSelector {
   // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
   public static Integer countQueuedMessageJobs() {
     Datetime oneDayAgo = Datetime.now().addDays(-1);
-    // This package's class only: a subscriber may have a class of the same name. Null when the code is not in a namespace.
-    String packageNamespace = AIMessagingSelector.class.getName().contains('.')
-      ? AIMessagingSelector.class.getName().substringBefore('.')
-      : null;
+    String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
 
     return [
       SELECT COUNT()
@@ -898,6 +899,52 @@ public without sharing class AIMessagingSelector {
         AND CreatedDate >= :oneDayAgo
       WITH SYSTEM_MODE
     ];
+  }
+
+  // Messages still held at the cap on messages in flight that were sent before heldBefore, whoever sent them. heldSince, when given, keeps the query to a range of the CreatedDate index. Locked and read again by the caller's check, so one its sender is starting at this moment is seen as it ends up.
+  public static List<AIConversationMessage__c> lockExpiredHeldMessages(
+    Datetime heldBefore,
+    Datetime heldSince,
+    Integer maximum
+  ) {
+    Datetime earliest = heldSince == null
+      ? Datetime.newInstanceGmt(2000, 1, 1)
+      : heldSince;
+
+    return [
+      SELECT Id, AIConversation__c, IsAwaitingCapacity__c, ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE
+        IsAwaitingCapacity__c = TRUE
+        AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+        AND CreatedDate < :heldBefore
+        AND CreatedDate >= :earliest
+      WITH SYSTEM_MODE
+      LIMIT :maximum
+      FOR UPDATE
+    ];
+  }
+
+  // Messages the user sent in the last 60 seconds, for the rate limit.
+  public static Integer countRecentUserMessages(Id userId) {
+    Datetime oneMinuteAgo = System.now().addSeconds(-60);
+
+    return [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        CreatedById = :userId
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
+        AND CreatedDate >= :oneMinuteAgo
+      WITH SYSTEM_MODE
+    ];
+  }
+
+  // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+  public static String getPackageNamespace() {
+    return AIMessagingSelector.class.getName().contains('.')
+      ? AIMessagingSelector.class.getName().substringBefore('.')
+      : null;
   }
 
   // =============================================================

@@ -7,7 +7,7 @@
     <inlineHelpText
   >Turn this on to prevent multiple simultaneous conversations on the same record, which can otherwise create confusing or conflicting context.</inlineHelpText>
     <label>Single Active Conversation Per Record</label>
-    <trackHistory>false</trackHistory>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

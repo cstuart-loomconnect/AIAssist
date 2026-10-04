@@ -17,12 +17,16 @@ code, checked in this order:
 [2] The organisation's limits: the plan's monthly messages and tokens (Feature Management) and
     AIAssistSettings__c.GlobalTokenBudgetPerDay__c, against the running totals AIOrgUsageService
     keeps. No usage row is read, however many there are.
+    The organisation's daily message budget (DailyMessageBudget__c) is checked with them. Before
+    any of this, a user who has sent MaxMessagesPerUserPerMinute__c messages in the last minute
+    is refused.
 [3] The organisation's asynchronous queue has room. It is shared with the subscriber's own
     queueables, batches and flows, so new turns are refused before ours can crowd theirs out.
 
-"Today" and "this month" are the UTC calendar day and month: limits are read from AIUsageDaily__c,
-one row per user per day, instead of summing every message. The fields are named "24 hours" in the
-object model; they behave as per UTC day.
+"Today" and "this month" are the calendar day and month in the org's time zone
+(AIAssistGlobalUtility.getOrgToday): limits are read from AIUsageDaily__c, one row per user per
+day, instead of summing every message. The limit fields are labelled "per day"; their API names
+still say 24 hours.
 
 The token estimate of the message being sent counts towards the user's daily limit, so a message
 that would break it is refused before its request is made. Nothing here writes.
@@ -34,20 +38,37 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the second half of AIMessageGuard.
 2.0          Chandler Stuart          The monthly message and token cap messages say how much the plan allows and when it renews.
 3.0          Chandler Stuart          Organisation totals read from AIOrgUsageService. A full queue says AI Assist is busy, not that the provider is unavailable.
+4.0          Chandler Stuart          Per-user messages per minute, the organisation's daily message budget, and the cap on messages in flight.
 */
 
 public inherited sharing class AIUsageLimitService {
   // A test cannot queue hundreds of jobs, so it lowers the ceiling instead.
   @TestVisible
   private static Integer maxPendingJobsForTest;
+  // A test cannot keep jobs running, so it says how many are in flight.
+  @TestVisible
+  private static Integer inFlightForTest;
 
   public static void enforceUsageLimits(
     AIMessageValidator.ChatContext chatContext,
     Boolean isNewConversation,
     Decimal estimatedTokens
   ) {
-    Date today = Datetime.now().dateGmt();
+    Date today = AIAssistGlobalUtility.getOrgToday();
     AIUserSettings__c userSettings = chatContext.userSettings;
+    AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
+
+    // [0] How fast one user may send, whatever their other limits: the newest messages of theirs in the last minute.
+    if (
+      settings.MaxMessagesPerUserPerMinute__c != null &&
+      settings.MaxMessagesPerUserPerMinute__c >= 1 &&
+      AIMessagingSelector.countRecentUserMessages(chatContext.userId) >=
+      settings.MaxMessagesPerUserPerMinute__c
+    )
+      throw AIMessagingException.newRefusal(
+        AIAssistApplicationConstants.ERROR_RATE_LIMITED,
+        Label.AI_Error_Rate_Limited
+      );
 
     // [1] The user's own limits.
     if (
@@ -120,11 +141,16 @@ public inherited sharing class AIUsageLimitService {
     // [2] The organisation's limits.
     Integer messageLimit = AIPlanLimitService.getMessageLimit();
     Integer usageLimit = AIPlanLimitService.getUsageLimit();
-    Decimal dailyBudget = AIAssistSettingsService.getSettings()
-      .GlobalTokenBudgetPerDay__c;
+    Decimal dailyBudget = settings.GlobalTokenBudgetPerDay__c;
+    Decimal dailyMessageBudget = settings.DailyMessageBudget__c;
 
-    if (messageLimit != null || usageLimit != null || dailyBudget != null) {
-      // The running totals AI Assist keeps (AIOrgUsageService), not a sum of the month's usage rows on every send.
+    if (
+      messageLimit != null ||
+      usageLimit != null ||
+      dailyBudget != null ||
+      dailyMessageBudget != null
+    ) {
+      // The stored closed days and today's usage rows (AIOrgUsageService), not a sum of the month's usage rows on every send.
       AIMessagingSelector.OrgUsage orgUsage = AIOrgUsageService.getUsage();
 
       if (messageLimit != null && orgUsage.month.messages >= messageLimit)
@@ -142,6 +168,15 @@ public inherited sharing class AIUsageLimitService {
           chatContext,
           AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE,
           planLimitMessage(Label.AI_Error_Plan_Limit_Tokens, usageLimit, today)
+        );
+      if (
+        dailyMessageBudget != null &&
+        orgUsage.today.messages >= dailyMessageBudget
+      )
+        throw limitReached(
+          chatContext,
+          AIAssistApplicationConstants.ERROR_DAILY_MESSAGE_BUDGET,
+          Label.AI_Error_Daily_Message_Budget
         );
       if (dailyBudget != null && orgUsage.today.tokens >= dailyBudget)
         throw limitReached(
@@ -163,6 +198,18 @@ public inherited sharing class AIUsageLimitService {
         Label.AI_Error_Service_Busy
       );
     }
+  }
+
+  // True when the org-wide cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
+  public static Boolean isInFlightCapReached() {
+    Decimal inFlightCap = AIAssistSettingsService.getSettings()
+      .MaxMessagesInFlight__c;
+
+    return inFlightCap != null &&
+      inFlightCap >= 1 &&
+      (inFlightForTest == null
+        ? AIMessagingSelector.countQueuedMessageJobs()
+        : inFlightForTest) >= inFlightCap;
   }
 
   // A limit reached is the violation the object model calls Usage Limit Exceeded, when the agent has a rule for it.

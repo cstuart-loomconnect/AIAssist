@@ -24,6 +24,7 @@ Version      Author                   Description
 2.0          Chandler Stuart          scheduleDaily added, called by the post-install script.
 3.0          Chandler Stuart          Refreshes the reading of the org limits (AIOrgLimitMonitor).
 4.0          Chandler Stuart          Retention, the limit reading and the usage totals run even while the application is off; only idle closing and the PII registry sync wait for it to be on.
+5.0          Chandler Stuart          Fails messages left waiting at the cap on messages in flight.
 */
 
 public inherited sharing class AIMaintenanceScheduler implements Schedulable {
@@ -62,15 +63,16 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   }
 
   public void execute(SchedulableContext context) {
+    AIAssistSettingsService.recordActivatedOrg();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
     AIOrgLimitMonitor.refreshIfStale(); // Keeps the mode and its alert current in an org where nobody is chatting. Never throws.
+    AIConversationMessageService.failExpiredHeldMessages(false); // Messages held at the cap that no finalizer or chat window has failed since. Never throws.
 
     // Retention and the usage totals run whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
       new AIConversationRetentionBatch(),
-      new AIRecordRetentionBatch(AIRecordRetentionBatch.LOGS),
-      new AIRecordRetentionBatch(AIRecordRetentionBatch.VIOLATIONS),
+      new AIRecordRetentionBatch(), // Logs, violations, steps and messages, one after another.
       new AIOrgUsageTotalsBatch()
     };
     // Closing idle conversations is part of the chat, so it waits for the application to be on.

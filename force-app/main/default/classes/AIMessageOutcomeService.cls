@@ -332,6 +332,10 @@ public inherited sharing class AIMessageOutcomeService {
       failureReason == AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED
     )
       userMessage = Label.AI_Error_Provider_Rate_Limited;
+    else if (
+      failureReason == AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY
+    )
+      userMessage = Label.AI_Error_Service_Busy;
 
     try {
       if (conversationId != null) {
@@ -522,7 +526,8 @@ public inherited sharing class AIMessageOutcomeService {
             new AIConversationMessage__c(
               Id = candidate.Id,
               ProcessingStatus__c = processingStatus,
-              FailureReason__c = failureReason
+              FailureReason__c = failureReason,
+              IsAwaitingCapacity__c = false
             )
           );
       }

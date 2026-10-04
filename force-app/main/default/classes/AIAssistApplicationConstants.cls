@@ -129,6 +129,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String FAILURE_REASON_AUTHENTICATION_FAILED = 'Authentication Failed';
   public static final String FAILURE_REASON_MODEL_RETIRED = 'Model Retired';
   public static final String FAILURE_REASON_RATE_LIMITED = 'Rate Limited';
+  public static final String FAILURE_REASON_SERVICE_BUSY = 'Service Busy'; // Held at the cap on messages in flight for too long, and never started.
   // HTTP statuses that will fail the same way however often they are sent again. Never retried, whatever AIAssistSettings__c.RetryableStatusCodes__c says.
   public static final Set<Integer> NEVER_RETRIED_STATUS_CODES = new Set<Integer>{
     400,
@@ -163,6 +164,8 @@ public inherited sharing class AIAssistApplicationConstants {
   // AIModelConfiguration__c.AIProvider__c
   public static final String AI_PROVIDER_ANTHROPIC = 'Anthropic';
   public static final String AI_PROVIDER_OPEN_AI = 'OpenAI';
+  public static final String AI_PROVIDER_AZURE_OPEN_AI = 'Azure OpenAI';
+  public static final String AZURE_OPEN_AI_DEFAULT_API_VERSION = '2024-10-21';
 
   // Feature Management parameter names (featureParameters in the object model). "Usage" is the token allowance.
   public static final String FEATURE_MAX_MONTHLY_MESSAGES = 'MaxMonthlyMessages';
@@ -175,6 +178,27 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String FEATURE_MAX_ACTIVE_WORKFLOW_ACTIONS = 'MaxActiveWorkflowActions';
   public static final String FEATURE_MAX_CONVERSATION_RETENTION_DAYS = 'MaxConversationRetentionDays';
   public static final String FEATURE_MULTIPLE_PROVIDERS_ALLOWED = 'MultipleProvidersAllowed';
+  // Spare parameters, shipped now because a parameter cannot be added to a released package's licence records later without an upgrade.
+  public static final String FEATURE_BETA_FEATURES_ENABLED = 'BetaFeaturesEnabled';
+  public static final String FEATURE_CONTINUATION_CHAT_ENABLED = 'ContinuationChatEnabled';
+  public static final String FEATURE_RESERVED_INTEGER = 'ReservedInteger1';
+  // Reported from the subscriber's org to the License Management Org by the maintenance job.
+  public static final String FEATURE_MONTHLY_MESSAGES_USED = 'MonthlyMessagesUsed';
+  public static final String FEATURE_MONTHLY_ERRORS = 'MonthlyErrors';
+
+  // What AIFeatureService.isFeatureEnabled answers for.
+  public static final String APP_FEATURE_WORKFLOW_ACTIONS = 'WorkflowActions'; // Configuring them: the plan only.
+  public static final String APP_FEATURE_RUN_ACTIONS = 'RunActions'; // A user running one: plan, application, user.
+  public static final String APP_FEATURE_APEX = 'Apex';
+  public static final String APP_FEATURE_AI_RULES = 'AIEvaluatedRules';
+  public static final String APP_FEATURE_MULTIPLE_PROVIDERS = 'MultipleProviders';
+  public static final String APP_FEATURE_DEBUG_MODE = 'DebugMode';
+  public static final String APP_FEATURE_EXPORT = 'ConversationExport';
+  public static final String APP_FEATURE_BETA = 'BetaFeatures';
+  public static final String APP_FEATURE_CONTINUATION_CHAT = 'ContinuationChat';
+  public static final String PERMISSION_DEBUG_MODE = 'AIAssistDebugMode';
+  public static final String PERMISSION_RUN_ACTIONS = 'AIAssistRunActions';
+  public static final String PERMISSION_MANAGE_CONFIGURATION = 'AIAssistManageConfiguration';
 
   // AIMessagingException.code - stable values, so the UI never has to parse a translated message.
   public static final String ERROR_GENERIC = 'GENERIC';
@@ -201,6 +225,8 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String ERROR_PLAN_LIMIT_MESSAGES = 'PLAN_LIMIT_MESSAGES';
   public static final String ERROR_PLAN_LIMIT_USAGE = 'PLAN_LIMIT_TOKENS';
   public static final String ERROR_SERVICE_BUSY = 'SERVICE_BUSY';
+  public static final String ERROR_RATE_LIMITED = 'RATE_LIMITED';
+  public static final String ERROR_DAILY_MESSAGE_BUDGET = 'DAILY_MESSAGE_BUDGET';
   public static final String ERROR_NOT_AUTHORISED = 'NOT_AUTHORISED';
   public static final String ERROR_COMMAND_UNKNOWN = 'COMMAND_UNKNOWN';
   public static final String ERROR_FEEDBACK_INVALID = 'FEEDBACK_INVALID';
@@ -403,6 +429,8 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer DEFAULT_MAX_PII_FIELDS_TO_QUERY = 200;
   public static final Integer MAX_PII_REGISTRIES_PER_RUN = 20; // One queueable syncs them all, so this bounds its queries and DML.
   public static final Integer HOUSEKEEPING_BATCH_SIZE = 200;
+  public static final Integer HELD_MESSAGE_TIMEOUT_MINUTES = 5; // How long a message waits for a place under the cap on messages in flight before it is failed.
+  public static final Integer HELD_MESSAGE_SWEEP_SIZE = 20; // How many are failed in one go: each tells its chat window.
   public static final Integer DATA_DELETION_BATCH_SIZE = 100; // Each conversation takes its messages, steps and mappings with it.
 
   public static final String DELETION_STATUS_REQUESTED = 'Requested';
@@ -465,6 +493,18 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer DEFAULT_LIMIT_PAUSED_PERCENT = 85;
   public static final Integer DEFAULT_LIMIT_RESUME_MARGIN_PERCENT = 5;
   public static final Integer DEFAULT_LIMIT_CHECK_MINUTES = 5;
+  // AIAssistSettings__c.StepCaptureMode__c
+  public static final String STEP_CAPTURE_OFF = 'Off';
+  public static final String STEP_CAPTURE_SUMMARY = 'Summary';
+  public static final String STEP_CAPTURE_FULL = 'Full';
+  public static final Integer CONNECTION_TEST_TIMEOUT_MILLISECONDS = 20000;
+  public static final Integer LIMIT_HARD_FLOOR_PAUSED_PERCENT = 95; // A feature pauses at this share of any limit whatever the settings say.
+  public static final Integer LIMIT_MINIMUM_SHARE_PERCENT = 5; // A share budget below this would pause AI Assist almost at once.
+  public static final Integer APP_FOOTPRINT_REFRESH_MINUTES = 60; // How often AI Assist's own usage is measured outside the maintenance job.
+  public static final Integer STORAGE_KILOBYTES_PER_RECORD = 2; // What the platform charges for most records.
+  public static final String ORG_LIMIT_ASYNC_APEX = 'DailyAsyncApexExecutions';
+  public static final String ORG_LIMIT_HOURLY_EVENTS = 'HourlyPublishedPlatformEvents';
+  public static final String ORG_LIMIT_DATA_STORAGE = 'DataStorageMB';
   public static final Integer LIMIT_ALERT_MINIMUM_GAP_MINUTES = 15; // Administrators are told at most this often, unless a feature pauses.
   public static final Integer LIMIT_ALERT_MAX_RECIPIENTS = 25;
   public static final String USER_LEVEL_USER = 'User';
@@ -483,6 +523,17 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String CHAT_STATE_CHANNEL_DISABLED = 'CHANNEL_DISABLED';
   public static final String CHAT_STATE_NO_AGENT = 'NO_AGENT';
   public static final String CHAT_STATE_TERMS = 'TERMS';
+  // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
+  public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
+  public static final String CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED = 'SANDBOX_NOT_ACTIVATED';
+  public static final String CHAT_BLOCKED_PAUSED = 'PAUSED';
+  public static final String CHAT_BLOCKED_BUSY = 'BUSY';
+  public static final String CHAT_BLOCKED_NO_LICENCE = 'NO_LICENCE';
+  public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
+  public static final String CHAT_BLOCKED_TERMS = 'TERMS';
+  public static final String CHAT_BLOCKED_USAGE_LIMIT = 'USAGE_LIMIT';
+  public static final String CHAT_BLOCKED_PLAN_CAP = 'PLAN_CAP';
+  public static final Integer PLAN_CAP_WARNING_PERCENT = 80; // The chat window warns once this much of a monthly allowance is used.
   public static final String CHAT_SEND_STATUS_SENT = 'SENT';
   public static final String CHAT_SEND_STATUS_BLOCKED = 'BLOCKED';
   public static final String CHAT_SEND_STATUS_LIMIT = 'LIMIT';

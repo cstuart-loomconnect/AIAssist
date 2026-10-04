@@ -65,7 +65,7 @@ public inherited sharing class AIExecutionStepTracker {
   private final Id userMessageId;
   private final Boolean showLiveProgress;
 
-  // The running user's AIUserSettings__c.DebugModeEnabled__c: gates the request and response payloads and the sent preview.
+  // True when AIAssistSettings__c.StepCaptureMode__c is Full: gates the request and response payloads and the sent preview.
   public final Boolean captureFullDetail;
 
   public List<StepEntry> steps = new List<StepEntry>();

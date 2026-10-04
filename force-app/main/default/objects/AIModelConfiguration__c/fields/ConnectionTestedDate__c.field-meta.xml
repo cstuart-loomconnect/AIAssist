@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ConnectionTestedDate__c</fullName>
+    <description
+  >When a connection test last succeeded for this model configuration. Set by AI Assist; blank until a test succeeds. The set-up checklist reads it.</description>
+    <inlineHelpText
+  >Set automatically when Test Connection succeeds.</inlineHelpText>
+    <label>Connection Tested Date</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

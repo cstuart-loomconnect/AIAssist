@@ -58,6 +58,11 @@
                 <label>Rate Limited</label>
             </value>
             <value>
+                <fullName>Service Busy</fullName>
+                <default>false</default>
+                <label>Service Busy</label>
+            </value>
+            <value>
                 <fullName>Other</fullName>
                 <default>false</default>
                 <label>Other</label>

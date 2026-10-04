@@ -26,7 +26,7 @@ public with sharing class AIChatUsageService {
     Id userId = UserInfo.getUserId();
     AIMessagingSelector.UsageTotals todayUsage = AIMessagingSelector.getUserDailyUsage(
       userId,
-      Datetime.now().dateGmt()
+      AIAssistGlobalUtility.getOrgToday()
     );
 
     usage.tokensUsed = todayUsage.tokens;
@@ -74,12 +74,9 @@ public with sharing class AIChatUsageService {
       usage.blockMessages ||
       usage.blockNewConversations;
 
-    // The day is the UTC day, so usage resets at the next UTC midnight.
+    // The day is the org's day, so usage resets at the org's next midnight.
     if (usage.limitReached) {
-      Datetime nextMidnight = Datetime.newInstanceGmt(
-        Datetime.now().dateGmt().addDays(1),
-        Time.newInstance(0, 0, 0, 0)
-      );
+      Datetime nextMidnight = AIAssistGlobalUtility.getNextOrgMidnight();
       usage.resetsInMinutes = Math.max(
         1,
         ((nextMidnight.getTime() - System.now().getTime()) / 60000).intValue()

@@ -500,8 +500,12 @@ private class AIMessageValidatorTest {
       model.Id,
       false
     );
-    agents[1].ObjectType__c = 'Contact';
     insert agents;
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[1].Id,
+      new List<String>{ 'Contact' },
+      true
+    );
     Account ownAccount;
     System.runAs(users[0]) {
       ownAccount = AIAssistTestDataFactory.createAccounts(1, true)[0];

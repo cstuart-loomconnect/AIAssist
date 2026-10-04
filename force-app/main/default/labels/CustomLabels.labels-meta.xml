@@ -429,6 +429,16 @@
     >No AI agent is available for this record. Contact your administrator if you think one should be.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Apex_Class_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: the Apex class named does not exist.</shortDescription>
+        <value
+    >Apex class {0} was not found, or does not implement {1}. Check the spelling and include its namespace prefix if it has one.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Application_Inactive</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -513,9 +523,9 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: Max Conversations Per 24 Hours reached.</shortDescription>
+    >Chat: Max Conversations Per Day reached.</shortDescription>
         <value
-    >You&apos;ve reached the number of conversations allowed in 24 hours. Try again later.</value>
+    >You&apos;ve reached the number of conversations allowed in a day. Try again tomorrow.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
@@ -528,12 +538,21 @@
     >This conversation could not be found. It may have been closed or removed.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Daily_Usage_Limit</fullName>
+        <fullName>AI_Error_Daily_Message_Budget</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: Max Tokens Per 24 Hours reached.</shortDescription>
+    >Chat: the org-wide daily message budget is used up.</shortDescription>
+        <value
+    >Your organisation has used today&apos;s AI Assist messages. You can send more tomorrow.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Daily_Usage_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: Max Tokens Per Day reached.</shortDescription>
         <value
     >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
     </labels>
@@ -624,6 +643,16 @@
     >Your message is too long. Please shorten it and try again.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Named_Credential_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: the Named Credential does not exist.</shortDescription>
+        <value
+    >Named Credential {0} does not exist in this org. Enter the Name of a Named Credential from Setup, or create one first.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Not_Authorised</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -642,6 +671,16 @@
     >Console: AI Evaluated rule not licensed.</shortDescription>
         <value
     >AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Permission_Set_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Config save: no such permission set or group.</shortDescription>
+        <value
+    >No permission set or permission set group named {0} exists in this org. Enter its API name.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Plan_Actions_Not_Included</fullName>
@@ -829,6 +868,16 @@
     >Chat: provider returned no usable content.</shortDescription>
         <value
     >The AI service returned an empty response. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the per-user messages-per-minute limit.</shortDescription>
+        <value
+    >You&apos;re sending messages too quickly. Wait a moment, then try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Service_Busy</fullName>
@@ -1425,5 +1474,199 @@
         <shortDescription
     >Admin notification: what Normal means.</shortDescription>
         <value>AI Assist is back to normal.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Credential_Created</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Credential set-up: created.</shortDescription>
+        <value
+    >The credential {0} was created and the key stored. Next, grant your users access to it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Credential_Rotated</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Credential set-up: key replaced.</shortDescription>
+        <value>The key for {0} was replaced. Nothing else was changed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Credential_Access_Granted</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Credential set-up: permission set created.</shortDescription>
+        <value
+    >Access is granted through the permission set {0}. Assign it to everyone who uses AI Assist.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Credential_Access_Manual</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Credential set-up: grant access by hand.</shortDescription>
+        <value
+    >Access could not be granted automatically. In Setup, open External Credentials, open {0}, and under Principals add a permission set your AI Assist users hold. They also need Read on the User External Credentials object.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Credential_Linked</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Credential set-up: model configuration updated.</shortDescription>
+        <value
+    >The model configuration now uses the credential {0}. Test the connection to finish.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Connection_Ok</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Connection test: success.</shortDescription>
+        <value>Connected. The provider answered in {0} ms.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_App_Inactive</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: application switched off.</shortDescription>
+        <value
+    >AI Assist is switched off in this org, so nobody can chat. Switch it on in AI Assist Settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Sandbox</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: activated in another org.</shortDescription>
+        <value
+    >These settings were activated in another org (a sandbox copied from production). AI Assist stays off here until you activate it in this org.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_No_Maintenance</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: maintenance job missing.</shortDescription>
+        <value
+    >The daily maintenance job is not scheduled, so retention and idle closing are not running. Schedule it from the set-up checklist.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Apex_Missing</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Health check: Apex class not found.</shortDescription>
+        <value
+    >{0} names the Apex class {1}, which does not exist or does not implement the required interface.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Flow_Missing</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: Flow missing or not allowed.</shortDescription>
+        <value
+    >{0} names the Flow {1}, which does not exist or runs in system context without sharing.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Credential_Missing</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: no usable Named Credential.</shortDescription>
+        <value
+    >{0} has no Named Credential, or names one ({1}) that does not exist in this org.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Model_Retired</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: provider says model is retired.</shortDescription>
+        <value
+    >The provider reported that the model {1} used by {0} is no longer available. Update its Model Identifier.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Model_Inactive</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: agent has no active model.</shortDescription>
+        <value
+    >The agent {0} has no active model configuration, so it cannot answer.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_No_Users</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: agent has nobody assigned.</shortDescription>
+        <value
+    >The agent {0} is limited to assigned users and has none, so nobody can use it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Console_Health_Permission_Set_Missing</fullName>
+        <categories>AI Assist,Console</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Health check: assignment names a missing set.</shortDescription>
+        <value
+    >An assignment on {0} names the permission set {1}, which does not exist in this org.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_Sandbox</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: settings were activated in another org.</shortDescription>
+        <value
+    >AI Assist has not been activated in this org yet. Ask your administrator to activate it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_No_Licence</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the user has no package licence.</shortDescription>
+        <value
+    >You don&apos;t have an AI Assist licence. Ask your administrator to assign one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_Not_Assigned</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: no agent is available to the user.</shortDescription>
+        <value
+    >You haven&apos;t been given access to an AI Assist agent here. Ask your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Plan_Cap_Warning</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: plan allowance nearly used. {0} is percent.</shortDescription>
+        <value
+    >Your organisation has used {0}% of this month&apos;s AI Assist allowance.</value>
     </labels>
 </CustomLabels>

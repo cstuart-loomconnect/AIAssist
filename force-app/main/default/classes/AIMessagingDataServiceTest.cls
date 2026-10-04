@@ -341,7 +341,7 @@ private class AIMessagingDataServiceTest {
     Assert.areEqual(200, rows[0].InputTokens__c, 'Input tokens are added.');
     Assert.areEqual(40, rows[0].OutputTokens__c, 'Output tokens are added.');
     Assert.areEqual(
-      Datetime.now().dateGmt(),
+      AIAssistGlobalUtility.getOrgToday(),
       rows[0].UsageDate__c,
       'The day is the UTC day.'
     );

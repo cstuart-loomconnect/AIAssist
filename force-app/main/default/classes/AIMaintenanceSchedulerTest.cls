@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest
 private class AIMaintenanceSchedulerTest {
-  // testScenario1: A scheduled run starts the five housekeeping batches.
+  // testScenario1: A scheduled run starts the four housekeeping batches.
   // testScenario2: It can be scheduled and fires through the platform's scheduler.
   // testScenario3: Switched off, retention and the usage totals still run and only the idle batch does not.
   // testScenario4: A batch that cannot be started is logged and the others still start.
@@ -56,14 +56,13 @@ private class AIMaintenanceSchedulerTest {
       ],
       'Retention batch.'
     );
-    Assert.areEqual(
-      2,
+    Assert.isTrue(
       [
         SELECT COUNT()
         FROM AsyncApexJob
         WHERE ApexClass.Name = 'AIRecordRetentionBatch'
-      ],
-      'Logs and violations.'
+      ] >= 1,
+      'Logs, violations, steps and messages, as one chained batch.'
     );
     Assert.areEqual(
       1,
@@ -120,18 +119,19 @@ private class AIMaintenanceSchedulerTest {
       'Idle closing waits for the application to be on.'
     );
     Assert.areEqual(
-      4,
+      3,
       [
-        SELECT COUNT()
-        FROM AsyncApexJob
-        WHERE
-          ApexClass.Name IN (
-            'AIConversationRetentionBatch',
-            'AIRecordRetentionBatch',
-            'AIOrgUsageTotalsBatch'
-          )
-      ],
-      'Retention (conversations, logs, violations) and the usage totals run while off.'
+          SELECT COUNT_DISTINCT(ApexClass.Name)
+          FROM AsyncApexJob
+          WHERE
+            ApexClass.Name IN (
+              'AIConversationRetentionBatch',
+              'AIRecordRetentionBatch',
+              'AIOrgUsageTotalsBatch'
+            )
+        ][0]
+        .get('expr0'),
+      'Retention (conversations and the record kinds) and the usage totals run while off.'
     );
   }
 
@@ -148,7 +148,7 @@ private class AIMaintenanceSchedulerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      5,
+      4,
       [
         SELECT COUNT()
         FROM AIPlatformLog__c

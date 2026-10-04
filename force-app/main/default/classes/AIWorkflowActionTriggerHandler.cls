@@ -25,6 +25,7 @@ Version      Author                   Description
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
 5.0          Chandler Stuart          Flow run mode check added, before insert and before update. Not behind the application switch, and it fails closed.
+6.0          Chandler Stuart          The Apex class named must exist and implement IAIWorkflowActionExecutor (AIConfigurationValidator).
 */
 
 public inherited sharing class AIWorkflowActionTriggerHandler {
@@ -39,6 +40,13 @@ public inherited sharing class AIWorkflowActionTriggerHandler {
 
   public static void handleBeforeInsert(List<AIWorkflowAction__c> newRecords) {
     AIPlanActivationService.checkWorkflowActions(newRecords, null);
+    AIConfigurationValidator.checkApexClasses(
+      newRecords,
+      null,
+      AIWorkflowAction__c.ApexClassName__c,
+      AIWorkflowAction__c.ActionType__c,
+      IAIWorkflowActionExecutor.class
+    );
     checkFlowRunModes(newRecords, null);
 
     try {
@@ -69,6 +77,13 @@ public inherited sharing class AIWorkflowActionTriggerHandler {
     List<AIWorkflowAction__c> newRecords
   ) {
     AIPlanActivationService.checkWorkflowActions(newRecords, oldRecordsById);
+    AIConfigurationValidator.checkApexClasses(
+      newRecords,
+      oldRecordsById,
+      AIWorkflowAction__c.ApexClassName__c,
+      AIWorkflowAction__c.ActionType__c,
+      IAIWorkflowActionExecutor.class
+    );
     checkFlowRunModes(newRecords, oldRecordsById);
   }
 

@@ -27,6 +27,7 @@ logged and skipped; it never turns a finished answer into a failure.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: step types, provider evidence, masking records, every turn and failed turns, not only successful turns with debug on.
+3.0          Chandler Stuart          Honours AIAssistSettings__c.StepCaptureMode__c: Off stores no turn steps, and only Full carries payloads.
 */
 
 public inherited sharing class AIExecutionStepRecorder {
@@ -41,9 +42,11 @@ public inherited sharing class AIExecutionStepRecorder {
       if (
         messageId == null ||
         executionTrace == null ||
-        executionTrace.steps.isEmpty()
+        executionTrace.steps.isEmpty() ||
+        AIAssistSettingsService.getStepCaptureMode() ==
+        AIAssistApplicationConstants.STEP_CAPTURE_OFF
       )
-        return;
+        return; // Off stores nothing for the turn. A Workflow Action a user runs is still recorded (recordWorkflowActionStep).
 
       Integer lastProviderCallIndex = -1;
       for (
@@ -120,7 +123,7 @@ public inherited sharing class AIExecutionStepRecorder {
           );
           executionStep.PIIMaskingApplied__c = entry.piiMaskingApplied;
 
-          // Payloads are customer data: kept only for a user with debug mode on, and only for the last call.
+          // Payloads are customer data and large: kept only in Full capture mode (the tracker is told), and only for the last call.
           if (
             executionTrace.captureFullDetail &&
             stepIndex == lastProviderCallIndex
