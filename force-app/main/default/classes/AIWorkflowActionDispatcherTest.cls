@@ -14,6 +14,7 @@ AIWorkflowActionDispatcher
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Undeclared inputs, a user removed from the agent and a Flow in system context without sharing.
 */
 
 @IsTest
@@ -28,6 +29,10 @@ private class AIWorkflowActionDispatcherTest {
   // testScenario8: An Apex action on a plan without Apex is refused with the Apex plan label.
   // testScenario9: cancel records that the user declined, and a missing message or action records nothing.
   // testScenario10: Switched off, nothing runs.
+  // testScenario11: Only inputs the action declares reach it; an undeclared key, and every key when the schema is blank or malformed, is dropped.
+  // testScenario12: A user removed from an Assigned Users Only agent, and a user of an inactive agent, cannot run an action it suggested earlier; restoring the assignment lets it run.
+  // testScenario14: The request carries the action, agent, user, conversation and confirmation, so the class need not look them up.
+  // testScenario13: A Flow that runs in system context without sharing, or whose run mode cannot be read, is not run.
 
   @TestSetup
   static void setup() {
@@ -40,13 +45,40 @@ private class AIWorkflowActionDispatcherTest {
 
   // An action class, one that throws, and one that is not an action at all.
   public class EchoExecutor implements IAIWorkflowActionExecutor {
-    public Object execute(Id recordId, Map<String, Object> inputParameters) {
-      return 'echo:' + inputParameters.get('x');
+    public AIWorkflowActionResponse execute(AIWorkflowActionRequest request) {
+      return new AIWorkflowActionResponse(
+        'echo:' + request.inputParameters.get('x')
+      );
+    }
+  }
+
+  public class KeysExecutor implements IAIWorkflowActionExecutor {
+    public AIWorkflowActionResponse execute(AIWorkflowActionRequest request) {
+      List<String> keys = new List<String>(request.inputParameters.keySet());
+      keys.sort();
+      return new AIWorkflowActionResponse(String.join(keys, ','));
+    }
+  }
+
+  public class ContextExecutor implements IAIWorkflowActionExecutor {
+    public AIWorkflowActionResponse execute(AIWorkflowActionRequest request) {
+      return new AIWorkflowActionResponse(
+        String.join(
+          new List<Object>{
+            request.actionName,
+            request.agentId,
+            request.userId,
+            request.conversationId,
+            request.isConfirmed
+          },
+          '|'
+        )
+      );
     }
   }
 
   public class ThrowingExecutor implements IAIWorkflowActionExecutor {
-    public Object execute(Id recordId, Map<String, Object> inputParameters) {
+    public AIWorkflowActionResponse execute(AIWorkflowActionRequest request) {
       throw new CalloutException('Secret internal detail');
     }
   }
@@ -81,6 +113,8 @@ private class AIWorkflowActionDispatcherTest {
       'AIWorkflowActionDispatcherTest.EchoExecutor',
       true
     )[0];
+    action.InputSchema__c = '{"type":"object","properties":{"x":{"type":"string"}}}';
+    update action;
     AIAssistTestDataFactory.createAIAgentWorkflowActions(
       agent.Id,
       new List<AIWorkflowAction__c>{ action },
@@ -521,6 +555,7 @@ private class AIWorkflowActionDispatcherTest {
     action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
     action.RequiresConfirmation__c = true;
     action.ConfirmationMessage__c = 'This changes data. Are you sure?';
+    action.InputSchema__c = '{"properties":{"x":{}}}';
     update action;
     String code;
     Object output;
@@ -1063,6 +1098,279 @@ private class AIWorkflowActionDispatcherTest {
       AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
       code,
       'Application inactive.'
+    );
+  }
+
+  // A user who may run actions, an agent, an Apex or Flow action assigned to it, and the reply it was suggested on.
+  private class Fixture {
+    User chatUser;
+    AIAgent__c agent;
+    AIWorkflowAction__c action;
+    AIConversation__c conversation;
+    AIConversationMessage__c reply;
+  }
+
+  private static Fixture createFixture(
+    String actionType,
+    String source,
+    String inputSchema
+  ) {
+    Fixture fixture = new Fixture();
+    fixture.chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+    AIAssistTestDataFactory.assignPermissionSet(
+      new List<User>{ fixture.chatUser },
+      'AIAssistUser'
+    );
+    fixture.agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      true
+    )[0];
+    AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(
+      fixture.chatUser.Id,
+      false
+    )[0];
+    userSettings.WorkflowActionsEnabled__c = true;
+    insert userSettings;
+    fixture.action = AIAssistTestDataFactory.createAIWorkflowActions(
+      1,
+      actionType,
+      source,
+      true
+    )[0];
+    fixture.action.InputSchema__c = inputSchema;
+    update fixture.action;
+    AIAssistTestDataFactory.createAIAgentWorkflowActions(
+      fixture.agent.Id,
+      new List<AIWorkflowAction__c>{ fixture.action },
+      true
+    );
+    fixture.conversation = AIAssistTestDataFactory.createAIConversations(
+      fixture.agent.Id,
+      fixture.chatUser.Id,
+      1,
+      true
+    )[0];
+    fixture.reply = AIAssistTestDataFactory.createAIConversationMessages(
+      fixture.conversation.Id,
+      AIAssistApplicationConstants.SENDER_AI_AGENT,
+      5,
+      1,
+      true
+    )[0];
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
+      true
+    );
+    AIPlanLimitService.setLimitForTest(
+      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
+      true
+    );
+
+    return fixture;
+  }
+
+  private static String refusalCode(
+    Fixture fixture,
+    Map<String, Object> inputs
+  ) {
+    String code;
+    try {
+      AIWorkflowActionDispatcher.runWorkflowAction(
+        fixture.action.Id,
+        fixture.agent.Id,
+        fixture.reply.Id,
+        null,
+        inputs,
+        true
+      );
+    } catch (AIMessagingException refusal) {
+      code = refusal.code;
+    }
+    return code;
+  }
+
+  @IsTest
+  static void testScenario11() {
+    Fixture fixture = createFixture(
+      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
+      'AIWorkflowActionDispatcherTest.KeysExecutor',
+      '{"type":"object","properties":{"a":{"type":"string"}}}'
+    );
+    Map<String, Object> submitted = new Map<String, Object>{
+      'a' => '1',
+      'b' => '2',
+      'recordId' => '001000000000000AAA'
+    };
+    Object declared;
+    Object malformed;
+    Object blank;
+
+    System.runAs(fixture.chatUser) {
+      Test.startTest();
+      declared = AIWorkflowActionDispatcher.runWorkflowAction(
+        fixture.action.Id,
+        fixture.agent.Id,
+        fixture.reply.Id,
+        null,
+        submitted,
+        true
+      );
+      Test.stopTest();
+    }
+    Map<String, Object> noneDeclared = AIWorkflowActionDispatcher.filterDeclaredInputs(
+      '{ not json',
+      submitted,
+      fixture.action.Id
+    );
+    Map<String, Object> blankSchema = AIWorkflowActionDispatcher.filterDeclaredInputs(
+      null,
+      submitted,
+      fixture.action.Id
+    );
+    Map<String, Object> noInputs = AIWorkflowActionDispatcher.filterDeclaredInputs(
+      '{"properties":{"a":{}}}',
+      null,
+      fixture.action.Id
+    );
+
+    Assert.areEqual('a', declared, 'Only the declared key reaches the action.');
+    Assert.isTrue(
+      noneDeclared.isEmpty(),
+      'A malformed schema declares nothing.'
+    );
+    Assert.isTrue(blankSchema.isEmpty(), 'A blank schema declares nothing.');
+    Assert.isTrue(noInputs.isEmpty(), 'No inputs, none passed.');
+  }
+
+  @IsTest
+  static void testScenario12() {
+    Fixture fixture = createFixture(
+      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
+      'AIWorkflowActionDispatcherTest.EchoExecutor',
+      '{"properties":{"x":{}}}'
+    );
+    fixture.agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
+    update fixture.agent;
+    String removed;
+    String restored;
+    String inactive;
+    Object output;
+
+    System.runAs(fixture.chatUser) {
+      Test.startTest();
+      removed = refusalCode(fixture, new Map<String, Object>{ 'x' => 'a' });
+      Test.stopTest();
+    }
+    AIAssistTestDataFactory.createAIAgentAssignments(
+      fixture.agent.Id,
+      new List<User>{ fixture.chatUser },
+      true
+    );
+    System.runAs(fixture.chatUser) {
+      output = AIWorkflowActionDispatcher.runWorkflowAction(
+        fixture.action.Id,
+        fixture.agent.Id,
+        fixture.reply.Id,
+        null,
+        new Map<String, Object>{ 'x' => 'a' },
+        true
+      );
+    }
+    fixture.agent.IsActive__c = false;
+    update fixture.agent;
+    System.runAs(fixture.chatUser) {
+      inactive = refusalCode(fixture, new Map<String, Object>{ 'x' => 'a' });
+    }
+
+    Assert.areEqual(
+      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      removed,
+      'A user the agent does not admit cannot run its action.'
+    );
+    Assert.areEqual('echo:a', output, 'Once assigned again it runs.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      inactive,
+      'An inactive agent runs nothing.'
+    );
+  }
+
+  @IsTest
+  static void testScenario13() {
+    Fixture fixture = createFixture(
+      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW,
+      'RunsAsSystem',
+      '{"properties":{}}'
+    );
+    AIFlowRunModeService.setRunModeForTest(
+      'RunsAsSystem',
+      AIFlowRunModeService.RUN_MODE_SYSTEM_WITHOUT_SHARING
+    );
+    String code;
+
+    System.runAs(fixture.chatUser) {
+      Test.startTest();
+      code = refusalCode(fixture, null);
+      Test.stopTest();
+    }
+
+    Assert.areEqual(
+      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
+      code,
+      'The user sees Action Failed, never why.'
+    );
+    Assert.areEqual(
+      1,
+      [
+        SELECT COUNT()
+        FROM AIExecutionStep__c
+        WHERE
+          AIConversationMessage__c = :fixture.reply.Id
+          AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED
+      ],
+      'A Failed step is recorded.'
+    );
+  }
+
+  @IsTest
+  static void testScenario14() {
+    Fixture fixture = createFixture(
+      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
+      'AIWorkflowActionDispatcherTest.ContextExecutor',
+      '{"properties":{}}'
+    );
+    Object output;
+
+    System.runAs(fixture.chatUser) {
+      Test.startTest();
+      output = AIWorkflowActionDispatcher.runWorkflowAction(
+        fixture.action.Id,
+        fixture.agent.Id,
+        fixture.reply.Id,
+        null,
+        null,
+        true
+      );
+      Test.stopTest();
+    }
+
+    AIWorkflowAction__c saved = [
+      SELECT DeveloperName__c
+      FROM AIWorkflowAction__c
+      WHERE Id = :fixture.action.Id
+    ];
+    Assert.areEqual(
+      saved.DeveloperName__c +
+        '|' +
+        fixture.agent.Id +
+        '|' +
+        fixture.chatUser.Id +
+        '|' +
+        fixture.conversation.Id +
+        '|true',
+      output,
+      'The request carries who, what and where.'
     );
   }
 }

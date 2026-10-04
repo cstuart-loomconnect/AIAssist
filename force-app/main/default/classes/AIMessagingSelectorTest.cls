@@ -29,6 +29,7 @@ private class AIMessagingSelectorTest {
   // testScenario10: A rule reaches an agent through an active assignment or because it applies to all agents; an inactive assignment, an inactive rule and another agent's rule do not.
   // testScenario11: getUserSettings combines the usage policies of a user (assigned to them, to a permission set they hold, or the default) with their own row as an personalSettings.
   // testScenario12: An agent is offered on its own Object Type and on every object added to it, a general agent on any object, and an agent added to other objects only is not general.
+  // testScenario13: A permission set held only through a permission set group still matches an agent assignment and a usage policy assignment, by the permission set's name or the group's, and a user outside the group does not match.
   // testScenario9: countPendingJobs answers with a count, and the trigger queries return nothing for no input and the rows asked for otherwise.
 
   @TestSetup
@@ -704,6 +705,93 @@ private class AIMessagingSelectorTest {
     Assert.isFalse(
       addedOnly,
       'Objects were configured and this is not one of them.'
+    );
+  }
+
+  @IsTest
+  static void testScenario13() {
+    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+    AIAssistTestDataFactory.assignPermissionSetGroup(
+      new List<User>{ users[0] },
+      'AIAssistTestGroup',
+      'AIAssistUser'
+    );
+    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
+      2,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      true
+    );
+    AIAssistTestDataFactory.createAIAgentAssignments(
+      agents[0].Id,
+      'AIAssistUser',
+      true
+    );
+    AIAssistTestDataFactory.createAIAgentAssignments(
+      agents[1].Id,
+      'AIAssistTestGroup',
+      true
+    );
+    AIUsagePolicy__c restrictive = AIAssistTestDataFactory.createAIUsagePolicies(
+      1,
+      false
+    )[0];
+    restrictive.MaxTokensPer24Hours__c = 10;
+    insert restrictive;
+    AIAssistTestDataFactory.createAIUsagePolicyAssignments(
+      restrictive.Id,
+      null,
+      'AIAssistUser',
+      true
+    );
+    AIUsagePolicy__c looser = AIAssistTestDataFactory.createAIUsagePolicies(
+      1,
+      false
+    )[0];
+    looser.MaxTokensPer24Hours__c = 1000000;
+    looser.IsDefault__c = true;
+    insert looser;
+
+    Test.startTest();
+    Boolean viaMember = AIMessagingSelector.isUserAssignedToAgent(
+      agents[0].Id,
+      users[0].Id
+    );
+    Boolean viaGroup = AIMessagingSelector.isUserAssignedToAgent(
+      agents[1].Id,
+      users[0].Id
+    );
+    Boolean outsideGroup = AIMessagingSelector.isUserAssignedToAgent(
+      agents[0].Id,
+      users[1].Id
+    );
+    Set<Id> assignedAgents = AIMessagingSelector.getAgentIdsAssignedToUser(
+      users[0].Id,
+      new Set<Id>{ agents[0].Id, agents[1].Id }
+    );
+    AIUserSettings__c inGroup = AIMessagingSelector.getUserSettings(
+      users[0].Id
+    );
+    AIUserSettings__c notInGroup = AIMessagingSelector.getUserSettings(
+      users[1].Id
+    );
+    Test.stopTest();
+
+    Assert.isTrue(
+      viaMember,
+      'The permission set inside the group matches an assignment to it.'
+    );
+    Assert.isTrue(viaGroup, 'The group itself matches an assignment to it.');
+    Assert.isFalse(outsideGroup, 'A user outside the group does not match.');
+    Assert.areEqual(2, assignedAgents.size(), 'Both agents are open.');
+    Assert.areEqual(
+      10,
+      inGroup.MaxTokensPer24Hours__c,
+      'The restrictive policy applies through the group instead of the looser default.'
+    );
+    Assert.areEqual(
+      1000000,
+      notInGroup.MaxTokensPer24Hours__c,
+      'A user outside the group falls back to the default.'
     );
   }
 }

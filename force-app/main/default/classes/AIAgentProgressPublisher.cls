@@ -35,8 +35,11 @@ public inherited sharing class AIAgentProgressPublisher {
       String.isBlank(stepLabel)
     )
       return;
-    if (!AIGovernorLimits.isSafeToPublishProgress())
-      return;
+    if (
+      !AIOrgLimitMonitor.isEventNotificationAllowed() ||
+      !AIGovernorLimits.isSafeToPublishProgress()
+    )
+      return; // Events are optional and switch themselves off near an org limit; the window polls instead.
 
     EventBus.publish(
       new AIAgentProgressEvent__e(

@@ -62,12 +62,9 @@ private class AIAgentManagerTest {
 
   // An Apex data source that writes to the database, which a data source must never do.
   public class WritingExecutor implements IAIDataSourceExecutor {
-    public List<SObject> execute(
-      Id recordId,
-      Map<String, Object> inputParameters
-    ) {
+    public AIDataSourceResponse execute(AIDataSourceRequest request) {
       insert new Account(Name = 'Written by a data source');
-      return new List<SObject>();
+      return new AIDataSourceResponse();
     }
   }
 
@@ -226,6 +223,17 @@ private class AIAgentManagerTest {
     Assert.isTrue(
       mock.requests[0].getBody().contains('Be brief.'),
       'The prompt template is sent as the system prompt.'
+    );
+    Assert.isTrue(
+      mock.requests[0]
+        .getBody()
+        .contains(
+          String.format(
+            AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
+            new List<String>{ UserInfo.getLanguage() }
+          )
+        ),
+      'The model is told to reply in the user\'s language.'
     );
     Assert.isTrue(
       mock.requests[0].getBody().contains('Test message 0'),

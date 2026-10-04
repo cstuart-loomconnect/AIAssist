@@ -12,6 +12,11 @@ A failure is logged and the record still saves.
 
 An active action the plan does not include is refused with the plan label; see AIPlanActivationService.
 
+A Flow action whose Flow runs in "System context without sharing" is refused (AIFlowRunModeService): the
+user triggers the action from a browser, and that mode would let them do what their own access forbids.
+Unlike the rest of this handler that check fails closed: if the run mode cannot be read the save is
+refused, not allowed.
+
 =================================================================
 =================================================================
 
@@ -19,6 +24,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
+5.0          Chandler Stuart          Flow run mode check added, before insert and before update. Not behind the application switch, and it fails closed.
 */
 
 public inherited sharing class AIWorkflowActionTriggerHandler {
@@ -28,8 +34,12 @@ public inherited sharing class AIWorkflowActionTriggerHandler {
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
+  @TestVisible
+  private static Boolean isTestFlowCheckExceptionThrown = false;
+
   public static void handleBeforeInsert(List<AIWorkflowAction__c> newRecords) {
     AIPlanActivationService.checkWorkflowActions(newRecords, null);
+    checkFlowRunModes(newRecords, null);
 
     try {
       if (!AIAssistSettingsService.isEnabled())
@@ -59,5 +69,70 @@ public inherited sharing class AIWorkflowActionTriggerHandler {
     List<AIWorkflowAction__c> newRecords
   ) {
     AIPlanActivationService.checkWorkflowActions(newRecords, oldRecordsById);
+    checkFlowRunModes(newRecords, oldRecordsById);
+  }
+
+  // A Flow action is checked when it is new, when its Flow or type changes, and when it is switched on. oldRecordsById is null on insert.
+  @TestVisible
+  private static void checkFlowRunModes(
+    List<AIWorkflowAction__c> newRecords,
+    Map<Id, AIWorkflowAction__c> oldRecordsById
+  ) {
+    List<AIWorkflowAction__c> toCheck = new List<AIWorkflowAction__c>();
+
+    if (newRecords == null)
+      return;
+
+    for (AIWorkflowAction__c action : newRecords) {
+      if (
+        action.ActionType__c !=
+        AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW ||
+        String.isBlank(action.FlowAPIName__c)
+      )
+        continue;
+
+      AIWorkflowAction__c previous = oldRecordsById == null
+        ? null
+        : oldRecordsById.get(action.Id);
+      if (
+        previous == null ||
+        previous.ActionType__c != action.ActionType__c ||
+        previous.FlowAPIName__c != action.FlowAPIName__c ||
+        (action.IsActive__c == true &&
+        previous.IsActive__c != true)
+      )
+        toCheck.add(action);
+    }
+
+    if (toCheck.isEmpty())
+      return;
+
+    try {
+      if (isTestFlowCheckExceptionThrown) {
+        throw new AIWorkflowActionTriggerHandlerException(
+          'Test exception for AIWorkflowActionTriggerHandler.checkFlowRunModes'
+        );
+      }
+
+      Set<String> flowNames = new Set<String>();
+      for (AIWorkflowAction__c action : toCheck)
+        flowNames.add(action.FlowAPIName__c);
+
+      Map<String, Boolean> allowedByName = AIFlowRunModeService.getAllowedByFlowName(
+        flowNames
+      );
+      for (AIWorkflowAction__c action : toCheck) {
+        if (allowedByName.get(action.FlowAPIName__c) != true)
+          action.FlowAPIName__c.addError(Label.AI_Error_Flow_Run_Mode);
+      }
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIWorkflowActionTriggerHandler',
+        'checkFlowRunModes'
+      );
+      for (AIWorkflowAction__c action : toCheck)
+        action.addError(Label.AI_Error_Flow_Run_Mode);
+    }
   }
 }

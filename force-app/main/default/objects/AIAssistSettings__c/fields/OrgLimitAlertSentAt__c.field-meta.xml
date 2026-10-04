@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>OrgLimitAlertSentAt__c</fullName>
+    <description
+  >Written by AI Assist: when administrators were last told that a feature changed mode, so a limit hovering at a threshold does not send a message every time it crosses.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Maintained by AI Assist. When administrators were last notified.</inlineHelpText>
+    <label>Org Limit Alert Sent At</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

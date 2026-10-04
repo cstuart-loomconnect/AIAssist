@@ -36,6 +36,7 @@ the waiting message is picked up by the retry's own finalizer.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Runs with sharing. Failure recorded through AIMessageOutcomeService. Stale-lock handling, delayed later retries, and a graceful path when the next job cannot be enqueued.
+3.0          Chandler Stuart          Takes a fresh reading of the org limits when the last is stale, before anything else (AIOrgLimitMonitor).
 */
 
 public with sharing class AIMessageProcessingFinalizer implements Finalizer {
@@ -92,6 +93,8 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
   }
 
   public void execute(FinalizerContext finalizerContext) {
+    AIOrgLimitMonitor.refreshIfStale(); // A finalizer has finished its callout, so writing is safe here. Never throws.
+
     try {
       // finalizerContext is null only when a test calls execute() directly.
       Boolean isJobFailed =

@@ -8,7 +8,7 @@
     <label>User</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>AI Terms Acknowledgments</relationshipLabel>
-    <relationshipName>AI_Terms_Acknowledgments</relationshipName>
+    <relationshipName>AITermsAcknowledgments</relationshipName>
     <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>

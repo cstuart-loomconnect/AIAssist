@@ -87,6 +87,10 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String VISIBILITY_SCOPE_SUBORDINATES = 'My Subordinates Conversations';
   public static final String VISIBILITY_SCOPE_ALL = 'All Conversations';
 
+  // AIAgent__c.ConversationVisibility__c: Private is the starter only; Global lets viewers whose own scope reaches the starter read it.
+  public static final String AGENT_VISIBILITY_GLOBAL = 'Global';
+  public static final Integer MAX_ROLE_HIERARCHY_DEPTH = 20; // Levels of the role hierarchy walked to find a viewer's subordinates.
+
   public static final String ASSIGNEE_TYPE_USER = 'User';
   public static final String ASSIGNEE_TYPE_PERMISSION_SET = 'Permission Set';
 
@@ -161,6 +165,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String ERROR_GENERIC = 'GENERIC';
   public static final String ERROR_APPLICATION_DISABLED = 'APPLICATION_DISABLED';
   public static final String ERROR_MAINTENANCE_MODE = 'MAINTENANCE_MODE';
+  public static final String ERROR_ORG_LIMITS_PAUSED = 'ORG_LIMITS_PAUSED';
   public static final String ERROR_NEW_CONVERSATIONS_PAUSED = 'NEW_CONVERSATIONS_PAUSED';
   public static final String ERROR_MESSAGE_EMPTY = 'MESSAGE_EMPTY';
   public static final String ERROR_MESSAGE_TOO_LONG = 'MESSAGE_TOO_LONG';
@@ -339,6 +344,8 @@ public inherited sharing class AIAssistApplicationConstants {
 
   // AIAgentManager - the model can only ever suggest a Workflow Action, never run one - phase 1 requires the user to trigger it explicitly from the chat UI.
   public static final String SUGGESTED_WORKFLOW_ACTION_JSON_KEY = 'suggested_workflow_action';
+  // {0} is the signed-in user's Salesforce language code, such as fr or de. The model decides how to translate; agent text (greeting, fallback message) has no per-language versions.
+  public static final String LANGUAGE_PROMPT_INSTRUCTION = 'Reply in the language with the Salesforce language code {0}, unless the user writes to you in another language.';
   public static final String WORKFLOW_ACTION_PROMPT_INSTRUCTION = 'Workflows (you cannot run these; suggest one only if it genuinely helps, never claim to have run one):';
   public static final String WORKFLOW_ACTION_SUGGESTION_ONLY_REPLY = 'Here\'s a suggested next step.'; // Shown when the model's reply was only a Workflow Action suggestion, so the saved reply is never blank.
   public static final String WORKFLOW_ACTION_PROMPT_JSON_INSTRUCTION =
@@ -401,14 +408,14 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String SEVERITY_LOW = 'Low';
   public static final String SEVERITY_MEDIUM = 'Medium';
   public static final String SEVERITY_HIGH = 'High';
-  public static final String DETECTION_METHOD_DETERMINISTIC = 'Deterministic_Apex';
-  public static final String DETECTION_METHOD_AI_EVALUATED = 'AI_Evaluated';
-  public static final String VIOLATION_TYPE_UNAUTHORIZED_DATA_ACCESS = 'Unauthorized_Data_Access';
-  public static final String VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION = 'Unauthorized_Workflow_Action';
-  public static final String VIOLATION_TYPE_USAGE_LIMIT_EXCEEDED = 'Usage_Limit_Exceeded';
-  public static final String VIOLATION_TYPE_PII_MASKING_FAILURE = 'PII_Masking_Failure';
-  public static final String VIOLATION_TYPE_CONFIGURATION = 'Configuration_Violation';
-  public static final String VIOLATION_TYPE_AI_FLAGGED_INTENT = 'AI_Flagged_Intent';
+  public static final String DETECTION_METHOD_DETERMINISTIC = 'DeterministicApex';
+  public static final String DETECTION_METHOD_AI_EVALUATED = 'AIEvaluated';
+  public static final String VIOLATION_TYPE_UNAUTHORIZED_DATA_ACCESS = 'UnauthorizedDataAccess';
+  public static final String VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION = 'UnauthorizedWorkflowAction';
+  public static final String VIOLATION_TYPE_USAGE_LIMIT_EXCEEDED = 'UsageLimitExceeded';
+  public static final String VIOLATION_TYPE_PII_MASKING_FAILURE = 'PIIMaskingFailure';
+  public static final String VIOLATION_TYPE_CONFIGURATION = 'ConfigurationViolation';
+  public static final String VIOLATION_TYPE_AI_FLAGGED_INTENT = 'AIFlaggedIntent';
   public static final Integer MAX_AI_RULES_PER_AGENT = 10; // Every AI evaluated rule adds its instruction to every request.
   public static final Integer VIOLATION_DETAIL_LENGTH = 255;
 
@@ -416,6 +423,35 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String PERMISSION_SET_USER = 'AIAssistUser';
   public static final String PERMISSION_SET_SUPER_USER = 'AIAssistSuperUser';
   public static final String PERMISSION_SET_ADMIN_USER = 'AIAssistAdminUser';
+
+  // AIOrgLimitMonitor: the modes a feature can be in, the features, and the org limits (as OrgLimits.getMap() names them) each one depends on.
+  public static final String LIMIT_MODE_NORMAL = 'Normal';
+  public static final String LIMIT_MODE_DEGRADED = 'Degraded';
+  public static final String LIMIT_MODE_PAUSED = 'Paused';
+  public static final String LIMIT_FEATURE_CHAT = 'Chat';
+  public static final String LIMIT_FEATURE_EVENTS = 'Events';
+  public static final String LIMIT_FEATURE_LOGGING = 'Logging';
+  public static final String NOTIFICATION_MODE_EVENTS = 'Events';
+  public static final String NOTIFICATION_MODE_POLLING = 'Polling';
+  public static final Set<String> ORG_LIMITS_FOR_CHAT = new Set<String>{
+    'DailyAsyncApexExecutions',
+    'DailyApiRequests',
+    'DataStorageMB'
+  };
+  public static final Set<String> ORG_LIMITS_FOR_EVENTS = new Set<String>{
+    'HourlyPublishedPlatformEvents',
+    'HourlyPublishedStandardVolumePlatformEvents',
+    'DailyStandardVolumePlatformEvents',
+    'DailyDeliveredPlatformEvents',
+    'DailyStreamingApiEvents',
+    'MonthlyPlatformEventsUsageEntitlement'
+  };
+  public static final Integer DEFAULT_LIMIT_DEGRADED_PERCENT = 70;
+  public static final Integer DEFAULT_LIMIT_PAUSED_PERCENT = 85;
+  public static final Integer DEFAULT_LIMIT_RESUME_MARGIN_PERCENT = 5;
+  public static final Integer DEFAULT_LIMIT_CHECK_MINUTES = 5;
+  public static final Integer LIMIT_ALERT_MINIMUM_GAP_MINUTES = 15; // Administrators are told at most this often, unless a feature pauses.
+  public static final Integer LIMIT_ALERT_MAX_RECIPIENTS = 25;
   public static final String USER_LEVEL_USER = 'User';
   public static final String USER_LEVEL_SUPER_USER = 'Super User';
   public static final String USER_LEVEL_ADMIN = 'Admin';

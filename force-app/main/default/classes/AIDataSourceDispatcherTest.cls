@@ -38,11 +38,8 @@ private class AIDataSourceDispatcherTest {
 
   // Stands in for a subscriber's Apex data source.
   public class NoRecordsExecutor implements IAIDataSourceExecutor {
-    public List<SObject> execute(
-      Id recordId,
-      Map<String, Object> inputParameters
-    ) {
-      return new List<SObject>();
+    public AIDataSourceResponse execute(AIDataSourceRequest request) {
+      return new AIDataSourceResponse(new List<SObject>());
     }
   }
 

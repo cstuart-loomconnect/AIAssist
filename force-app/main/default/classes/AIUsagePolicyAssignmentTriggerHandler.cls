@@ -10,12 +10,13 @@ The key is always worked out again, so it cannot be typed in or left stale by an
 
 Safe in the subscriber's transactions: the trigger is on the package's own object, makes no query and no DML, and cannot recurse. Not behind the application switch.
 
-A failure is logged and the record still saves.
+A failure of the check itself is logged and the save is refused (AI_Error_Integrity_Check): a record saved without its unique key would allow duplicates.
 
 =================================================================
 =================================================================
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Fails closed: if the key or name check cannot run, the save is refused instead of letting an unchecked record through.
 */
 
 public inherited sharing class AIUsagePolicyAssignmentTriggerHandler {
@@ -68,6 +69,7 @@ public inherited sharing class AIUsagePolicyAssignmentTriggerHandler {
         'AIUsagePolicyAssignmentTriggerHandler',
         methodName
       );
+      AIAssistGlobalUtility.refuseSave(newRecords); // Fails closed: an unchecked record must not be saved.
     }
   }
 }

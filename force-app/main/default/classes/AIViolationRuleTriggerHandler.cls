@@ -22,6 +22,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old handler. The duplicate tag check, Public Id and Developer Name stamps are gone because the object model covers them; the plan check is new.
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 4.0          Chandler Stuart          Public Id and Developer Name stamped on insert, now that a rule is defined once and shared by many agents.
+5.0          Chandler Stuart          After save, warns (in the Platform Log) when an agent now has more AI evaluated rules than are used; see AIViolationRuleCapService.
 */
 
 public inherited sharing class AIViolationRuleTriggerHandler {
@@ -101,6 +102,31 @@ public inherited sharing class AIViolationRuleTriggerHandler {
         caughtException,
         'AIViolationRuleTriggerHandler',
         'handleBeforeUpdate'
+      );
+    }
+  }
+
+  // After insert and update: a new or changed active AI evaluated rule can push an agent over the limit.
+  public static void handleAfterSave(List<AIViolationRule__c> savedRules) {
+    try {
+      if (!AIAssistSettingsService.isEnabled() || savedRules == null)
+        return;
+
+      for (AIViolationRule__c rule : savedRules) {
+        if (
+          rule.IsActive__c == true &&
+          rule.DetectionMethod__c ==
+          AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED
+        ) {
+          AIViolationRuleCapService.warnWhenOverLimit();
+          return;
+        }
+      }
+    } catch (Exception caughtException) {
+      AIPlatformLogManager.logException(
+        caughtException,
+        'AIViolationRuleTriggerHandler',
+        'handleAfterSave'
       );
     }
   }

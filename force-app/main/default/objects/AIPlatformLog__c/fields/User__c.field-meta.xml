@@ -8,7 +8,7 @@
     <label>User</label>
     <referenceTo>User</referenceTo>
     <relationshipLabel>AI Platform Logs</relationshipLabel>
-    <relationshipName>AI_Platform_Logs</relationshipName>
+    <relationshipName>AIPlatformLogs</relationshipName>
     <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>
