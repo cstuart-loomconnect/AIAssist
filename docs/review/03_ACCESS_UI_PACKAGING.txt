@@ -1,0 +1,369 @@
+REVIEW CHECKLIST 3: ACCESS, USER INTERFACE METADATA AND PACKAGING
+=================================================================
+
+Part 3 of 3. Access is reviewed last on purpose: a permission set can only be judged once you know what every object, field and class it grants actually does.
+
+
+3.1 CUSTOM PERMISSIONS
+----------------------
+
+[ ] AIAssistDebugMode: AI Assist Debug Mode
+[ ] AIAssistManageConfiguration: AI Assist Manage Configuration
+[ ] AIAssistRunActions: AI Assist Run Actions
+[ ] AIAssistViewSharedConversations: AI Assist View Shared Conversations
+[ ] Every place Apex checks a custom permission names one of the four above
+
+
+3.2 PERMISSION SETS
+-------------------
+
+Review from least to most access. Each higher set should be the one below it plus a reasoned difference.
+
+[ ] AIAssistUser (AI Assist User)
+  [ ] Object permissions (9)
+  [ ] Field permissions (39)
+  [ ] Apex class access (1)
+  [ ] Tab settings (5)
+[ ] AIAssistSuperUser (AI Assist Super User)
+  [ ] Object permissions (29)
+  [ ] Field permissions (233)
+  [ ] Apex class access (1)
+  [ ] Tab settings (19)
+  [ ] Custom permissions (2)
+[ ] AIAssistAdminUser (AI Assist Admin)
+  [ ] Object permissions (30)
+  [ ] Field permissions (246)
+  [ ] Apex class access (6)
+  [ ] Tab settings (20)
+  [ ] Custom permissions (4)
+  [ ] Custom setting access (2)
+  [ ] Custom metadata type access (3)
+[ ] AIAssistPermissionSetsTest (no sharing keyword, 105 lines): the package permission sets
+[ ] No profile ships in the package (.forceignore excludes profiles)
+
+
+3.3 SHARING MODEL
+-----------------
+
+One pass over the whole model now that every object is understood.
+
+Object                      Internal            External
+--------------------------  ------------------  ------------------
+AIModelConfiguration__c     ReadWrite           Private
+AIAgent__c                  ReadWrite           Private
+AIPromptTemplate__c         ReadWrite           Private
+AIDataSource__c             ReadWrite           Private
+AIWorkflowAction__c         ReadWrite           Private
+AIViolationRule__c          ReadWrite           Private
+AIAgentObject__c            ControlledByParent  ControlledByParent
+AIAgentDataSource__c        ControlledByParent  ControlledByParent
+AIAgentWorkflowAction__c    ControlledByParent  ControlledByParent
+AIAgentViolationRule__c     ControlledByParent  ControlledByParent
+AIAgentAssignment__c        ControlledByParent  ControlledByParent
+AIUsagePolicy__c            ReadWrite           Private
+AIUsagePolicyAssignment__c  ControlledByParent  ControlledByParent
+AIUserSettings__c           ReadWrite           Private
+AITermsAcknowledgment__c    Private             Private
+AIConversation__c           Private             Private
+AIConversationMessage__c    ControlledByParent  ControlledByParent
+AIExecutionStep__c          ControlledByParent  ControlledByParent
+AIFeedback__c               Private             Private
+AIViolation__c              ReadWrite           Private
+AIUsageDaily__c             Private             Private
+AIPIIRegistry__c            ReadWrite           Private
+AIPIIFieldMetadata__c       ControlledByParent  ControlledByParent
+AIPIIMapping__c             ControlledByParent  ControlledByParent
+AIPIIMaskingRecord__c       ControlledByParent  ControlledByParent
+AIDataDeletionRequest__c    ReadWrite           Private
+AIPlatformLog__c            Private             Private
+
+[ ] Each row matches docs/SECURITY_MODEL.md
+[ ] Every without sharing class (AIMessagingSelector, AIMessagingDataService, AIConversationLockService) has a stated reason and a caller that checks access first
+[ ] Conversation visibility is enforced in every path that returns a conversation or its messages
+
+
+3.4 CUSTOM LABELS
+-----------------
+
+181 labels in CustomLabels.labels-meta.xml, grouped by prefix. For each: wording, category, whether it is still referenced, and whether it is protected.
+
+AI_Alert_* (5):
+
+[ ] AI_Alert_Org_Limits_Body
+[ ] AI_Alert_Org_Limits_Effect_Degraded
+[ ] AI_Alert_Org_Limits_Effect_Normal
+[ ] AI_Alert_Org_Limits_Effect_Paused
+[ ] AI_Alert_Org_Limits_Title
+
+AI_Chat_* (31):
+
+[ ] AI_Chat_Blocked_No_Licence
+[ ] AI_Chat_Blocked_Not_Assigned
+[ ] AI_Chat_Blocked_Sandbox
+[ ] AI_Chat_Composer_Placeholder
+[ ] AI_Chat_Confirm_Action_Default
+[ ] AI_Chat_Confirm_Cancel
+[ ] AI_Chat_Confirm_Run
+[ ] AI_Chat_Debug_Heading
+[ ] AI_Chat_Disclaimer
+[ ] AI_Chat_Empty_State_Body
+[ ] AI_Chat_Empty_State_Title
+[ ] AI_Chat_End_Conversation
+[ ] AI_Chat_Fallback_Default
+[ ] AI_Chat_Feedback_Comment_Placeholder
+[ ] AI_Chat_Feedback_Helpful
+[ ] AI_Chat_Feedback_Not_Helpful
+[ ] AI_Chat_Feedback_Prompt
+[ ] AI_Chat_Feedback_Reason_Prompt
+[ ] AI_Chat_Feedback_Thanks
+[ ] AI_Chat_Greeting_Default
+[ ] AI_Chat_History
+[ ] AI_Chat_New_Chat
+[ ] AI_Chat_New_Chats_Paused
+[ ] AI_Chat_PII_Notice
+[ ] AI_Chat_Plan_Cap_Warning
+[ ] AI_Chat_Retry
+[ ] AI_Chat_Send
+[ ] AI_Chat_Suggested_Actions_Heading
+[ ] AI_Chat_Title
+[ ] AI_Chat_Usage_Warning
+[ ] AI_Chat_Working
+
+AI_Common_* (13):
+
+[ ] AI_Common_Active
+[ ] AI_Common_Back
+[ ] AI_Common_Cancel
+[ ] AI_Common_Close
+[ ] AI_Common_Delete
+[ ] AI_Common_Edit
+[ ] AI_Common_Finish
+[ ] AI_Common_Inactive
+[ ] AI_Common_Loading
+[ ] AI_Common_Next
+[ ] AI_Common_No
+[ ] AI_Common_Save
+[ ] AI_Common_Yes
+
+AI_Console_* (19):
+
+[ ] AI_Console_Agents_Empty
+[ ] AI_Console_Connection_Ok
+[ ] AI_Console_Credential_Access_Granted
+[ ] AI_Console_Credential_Access_Manual
+[ ] AI_Console_Credential_Created
+[ ] AI_Console_Credential_Linked
+[ ] AI_Console_Credential_Rotated
+[ ] AI_Console_Delete_Confirm
+[ ] AI_Console_Health_Apex_Missing
+[ ] AI_Console_Health_App_Inactive
+[ ] AI_Console_Health_Credential_Missing
+[ ] AI_Console_Health_Flow_Missing
+[ ] AI_Console_Health_Model_Inactive
+[ ] AI_Console_Health_Model_Retired
+[ ] AI_Console_Health_No_Maintenance
+[ ] AI_Console_Health_No_Users
+[ ] AI_Console_Health_Permission_Set_Missing
+[ ] AI_Console_Health_Sandbox
+[ ] AI_Console_List_Empty
+
+AI_Error_* (61):
+
+[ ] AI_Error_Action_Confirmation_Required
+[ ] AI_Error_Action_Failed
+[ ] AI_Error_Action_Not_Permitted
+[ ] AI_Error_Agent_Inactive
+[ ] AI_Error_Agent_Not_Assigned
+[ ] AI_Error_Agent_Not_Available
+[ ] AI_Error_Apex_Class_Not_Found
+[ ] AI_Error_Application_Inactive
+[ ] AI_Error_Channel_Not_Allowed
+[ ] AI_Error_Command_Unknown
+[ ] AI_Error_Concurrent_Limit
+[ ] AI_Error_Console_Load_Failed
+[ ] AI_Error_Console_Not_Authorised
+[ ] AI_Error_Console_Save_Failed
+[ ] AI_Error_Conversation_Busy
+[ ] AI_Error_Conversation_Closed
+[ ] AI_Error_Conversation_Limit_Daily
+[ ] AI_Error_Conversation_Not_Found
+[ ] AI_Error_Daily_Message_Budget
+[ ] AI_Error_Daily_Usage_Limit
+[ ] AI_Error_Data_Deletion_Not_Approved
+[ ] AI_Error_Data_Unavailable
+[ ] AI_Error_Feedback_Invalid
+[ ] AI_Error_Flow_Run_Mode
+[ ] AI_Error_Generic
+[ ] AI_Error_Integrity_Check
+[ ] AI_Error_Maintenance_Mode
+[ ] AI_Error_Message_Empty
+[ ] AI_Error_Message_Limit_Reached
+[ ] AI_Error_Message_Too_Long
+[ ] AI_Error_Named_Credential_Not_Found
+[ ] AI_Error_Not_Authorised
+[ ] AI_Error_Object_Not_Found
+[ ] AI_Error_Org_Limits_Paused
+[ ] AI_Error_Permission_Set_Not_Found
+[ ] AI_Error_Plan_AI_Rules_Not_Included
+[ ] AI_Error_Plan_Actions_Not_Included
+[ ] AI_Error_Plan_Apex_Not_Included
+[ ] AI_Error_Plan_Limit_Actions
+[ ] AI_Error_Plan_Limit_Agents
+[ ] AI_Error_Plan_Limit_Data_Sources
+[ ] AI_Error_Plan_Limit_Messages
+[ ] AI_Error_Plan_Limit_Tokens
+[ ] AI_Error_Plan_Providers_Limit
+[ ] AI_Error_Plan_Retention_Cap
+[ ] AI_Error_Privacy_Masking_Failed
+[ ] AI_Error_Provider_Authentication
+[ ] AI_Error_Provider_Model_Retired
+[ ] AI_Error_Provider_Not_Configured
+[ ] AI_Error_Provider_Rate_Limited
+[ ] AI_Error_Provider_Timeout
+[ ] AI_Error_Provider_Unavailable
+[ ] AI_Error_Rate_Limited
+[ ] AI_Error_Record_Access_Denied
+[ ] AI_Error_Request_Blocked
+[ ] AI_Error_Response_Empty
+[ ] AI_Error_Service_Busy
+[ ] AI_Error_Template_Already_Active
+[ ] AI_Error_Terms_Not_Acknowledged
+[ ] AI_Error_Terms_Version_Changed
+[ ] AI_Error_Token_Limit_Reached
+
+AI_Guidance_* (25):
+
+[ ] AI_Guidance_Agent_Access
+[ ] AI_Guidance_Apex_Class
+[ ] AI_Guidance_Conversation_Export
+[ ] AI_Guidance_Data_Access
+[ ] AI_Guidance_Data_Deletion_Kept
+[ ] AI_Guidance_Data_Deletion_Request
+[ ] AI_Guidance_Data_Source_Max_Rows
+[ ] AI_Guidance_Debug_Mode
+[ ] AI_Guidance_Delete_Agent
+[ ] AI_Guidance_Legal_Hold
+[ ] AI_Guidance_Log_Retention
+[ ] AI_Guidance_Named_Credential
+[ ] AI_Guidance_PII
+[ ] AI_Guidance_PII_Masking_Records
+[ ] AI_Guidance_Permission_Admin
+[ ] AI_Guidance_Permission_Super_User
+[ ] AI_Guidance_Permission_User
+[ ] AI_Guidance_Retention
+[ ] AI_Guidance_SOQL_Template
+[ ] AI_Guidance_Temperature
+[ ] AI_Guidance_Test_Mode
+[ ] AI_Guidance_Usage_Cost
+[ ] AI_Guidance_Usage_Limits
+[ ] AI_Guidance_Violation_Review
+[ ] AI_Guidance_Write_Actions
+
+AI_Settings_* (2):
+
+[ ] AI_Settings_Saved
+[ ] AI_Settings_Unsaved_Changes
+
+AI_Step_* (7):
+
+[ ] AI_Step_Calling_Model
+[ ] AI_Step_Checking_Rules
+[ ] AI_Step_Finalising
+[ ] AI_Step_Preparing_Request
+[ ] AI_Step_Protecting_Data
+[ ] AI_Step_Reading_Data
+[ ] AI_Step_Running_Action
+
+AI_Terms_* (8):
+
+[ ] AI_Terms_Accept
+[ ] AI_Terms_Confirmation
+[ ] AI_Terms_Intro
+[ ] AI_Terms_Link_Text
+[ ] AI_Terms_Signature_Help
+[ ] AI_Terms_Signature_Label
+[ ] AI_Terms_Signature_Required
+[ ] AI_Terms_Title
+
+AI_Wizard_* (10):
+
+[ ] AI_Wizard_Activate_Warning
+[ ] AI_Wizard_Draft_Saved
+[ ] AI_Wizard_Step_Actions
+[ ] AI_Wizard_Step_Basics
+[ ] AI_Wizard_Step_Conversation
+[ ] AI_Wizard_Step_Data
+[ ] AI_Wizard_Step_Guardrails
+[ ] AI_Wizard_Step_Model
+[ ] AI_Wizard_Step_Prompts
+[ ] AI_Wizard_Step_Review
+
+
+3.5 NOTIFICATIONS AND ASSETS
+----------------------------
+
+[ ] Custom notification type AIAssistLimitAlert
+[ ] Content asset AI_Assist_Logo (file and metadata)
+
+
+3.6 TABS AND PAGE LAYOUTS: ONE PASS ACROSS ALL OF THEM
+------------------------------------------------------
+
+Each tab and layout was ticked with its object in part 1. This pass is for consistency between them.
+
+[ ] 20 tabs: icons, and which are visible by default in each permission set
+[ ] 25 page layouts: section order, read-only system fields, related lists
+[ ] Objects with no layout or no tab (flagged in part 1) are settled
+
+
+3.7 PROJECT AND PACKAGING
+-------------------------
+
+[ ] sfdx-project.json: package name, namespace LoomConnect, version number, postInstallScript, API version
+[ ] config/project-scratch-def.json: features and settings the package needs
+[ ] .forceignore
+[ ] code-analyzer.yml
+[ ] package.json, .prettierrc, .prettierignore, eslint.config.js, jest.config.js
+[ ] .husky/pre-commit
+[ ] scripts/apex/hello.apex and scripts/soql/account.soql: project template leftovers, keep or remove
+
+
+3.8 CONTINUOUS INTEGRATION
+--------------------------
+
+[ ] .github/workflows/pr-validation.yml
+[ ] .github/workflows/pr-hygiene.yml
+[ ] .github/workflows/scratch-org-tests.yml
+[ ] .github/workflows/nightly.yml
+[ ] scripts/ci/assign-permsets.js
+[ ] scripts/ci/check-coverage.js
+[ ] scripts/ci/check-naming.js and .github/naming-exceptions.txt
+[ ] scripts/ci/pr-comment.js
+[ ] .github/labeler.yml, .github/dependabot.yml, .github/pull_request_template.md
+
+
+3.9 EXISTING DOCUMENTATION
+--------------------------
+
+Read each against what you signed off in parts 1 and 2 and correct what has drifted.
+
+[ ] README.txt
+[ ] CONTRIBUTING.md
+[ ] docs/SECURITY_MODEL.md
+[ ] docs/DATA_FLOW.md
+[ ] docs/MESSAGING_SERVICE.md
+[ ] docs/INSTALL.md
+[ ] docs/OPERATIONS.md
+
+
+3.10 NOT IN THE PACKAGE YET
+---------------------------
+
+Nothing to review, but each needs a decision before release. These metadata types have no folder in force-app/main/default today.
+
+[ ] Lightning web components (the chat window and the set-up console)
+[ ] Custom metadata records for the four __mdt types
+[ ] Lightning app and flexipages
+[ ] Named credentials or external credentials (created at set-up by AICredentialSetupController, or shipped?)
+[ ] Reports and dashboards
+[ ] Page layouts and tabs for the objects flagged in part 1
