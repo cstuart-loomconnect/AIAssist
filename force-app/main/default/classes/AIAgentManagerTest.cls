@@ -25,10 +25,9 @@ private class AIAgentManagerTest {
   // testScenario5: A callout exception is retryable, and one that says timed out is reported as a timeout while any other is a provider error.
   // testScenario6: A status that is neither a success nor retryable fails the turn for good with the provider's own error kept for the log.
   // testScenario7: A model configuration with no Named Credential, a credential or path of the wrong shape, or an unsupported provider fails as a configuration error before any callout.
-  // testScenario8: A data source that writes to the database throws AIDataSourceWriteException, carrying the tokens spent so far, before the next callout is attempted.
-  // testScenario9: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
-  // testScenario10: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
-  // testScenario11: The agent's persona opens the system prompt. A rejected credential, a retired model and an exhausted quota are never retried even when their status is listed as retryable, and say which record to fix; rate limiting is retried.
+  // testScenario8: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
+  // testScenario9: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
+  // testScenario10: The agent's persona opens the system prompt. A rejected credential, a retired model and an exhausted quota are never retried even when their status is listed as retryable, and say which record to fix; rate limiting is retried.
 
   @TestSetup
   static void setup() {
@@ -58,14 +57,6 @@ private class AIAgentManagerTest {
       if (next instanceof Exception)
         throw (Exception) next;
       return (HttpResponse) next;
-    }
-  }
-
-  // An Apex data source that writes to the database, which a data source must never do.
-  public class WritingExecutor implements IAIDataSourceExecutor {
-    public AIDataSourceResponse execute(AIDataSourceRequest request) {
-      insert new Account(Name = 'Written by a data source');
-      return new AIDataSourceResponse();
     }
   }
 
@@ -167,7 +158,7 @@ private class AIAgentManagerTest {
       new List<AIWorkflowAction__c>{ action },
       true
     );
-    List<AIWorkflowAction__c> actions = AIMessagingSelector.getAssignedActions(
+    List<AIWorkflowAction__c> actions = AIMessageProcessingQueueable.getAssignedActions(
       world.agent.Id
     );
     ScriptedMock mock = new ScriptedMock();
@@ -283,7 +274,7 @@ private class AIAgentManagerTest {
       new List<AIDataSource__c>{ dataSource },
       true
     );
-    List<AIDataSource__c> dataSources = AIMessagingSelector.getAssignedDataSources(
+    List<AIDataSource__c> dataSources = AIMessageProcessingQueueable.getAssignedDataSources(
       world.agent.Id
     );
     String accountName = [SELECT Name FROM Account WHERE Id = :account.Id].Name;
@@ -411,7 +402,7 @@ private class AIAgentManagerTest {
   static void testScenario4() {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    ); // The model allows two retries: three attempts.
+    ); // The settings allow two retries by default: three attempts.
     ScriptedMock mock = new ScriptedMock();
     mock.script.add(response(503, 'Unavailable'));
     mock.script.add(response(408, 'Request timeout'));
@@ -580,64 +571,6 @@ private class AIAgentManagerTest {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
-    AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(
-      1,
-      AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX,
-      'AIAgentManagerTest.WritingExecutor',
-      false
-    )[0];
-    dataSource.BindingType__c = AIAssistApplicationConstants.DATA_SOURCE_BINDING_UNBOUND;
-    insert dataSource;
-    AIAssistTestDataFactory.createAIAgentDataSources(
-      world.agent.Id,
-      new List<AIDataSource__c>{ dataSource },
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
-    List<AIDataSource__c> dataSources = AIMessagingSelector.getAssignedDataSources(
-      world.agent.Id
-    );
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        anthropicToolUse('toolu_1', dataSources[0].DeveloperName__c)
-      )
-    );
-    Test.setMock(HttpCalloutMock.class, mock);
-
-    Test.startTest();
-    try {
-      run(world, dataSources, null, 1, null);
-      Assert.fail('A data source that writes should have thrown.');
-    } catch (AIAgentManager.AIDataSourceWriteException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('wrote to the database'),
-        'The error says the data source wrote.'
-      );
-      Assert.areEqual(
-        6,
-        ex.tokensUsed,
-        'The tokens spent so far are kept so they can still be recorded after the rollback.'
-      );
-    }
-    Test.stopTest();
-
-    Assert.areEqual(
-      1,
-      mock.requests.size(),
-      'The next callout was never attempted.'
-    );
-  }
-
-  @IsTest
-  static void testScenario9() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    );
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.MaxToolCallsPerIteration__c = 1;
     update settings;
@@ -686,7 +619,7 @@ private class AIAgentManagerTest {
   }
 
   @IsTest
-  static void testScenario10() {
+  static void testScenario9() {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
@@ -722,7 +655,7 @@ private class AIAgentManagerTest {
   }
 
   @IsTest
-  static void testScenario11() {
+  static void testScenario10() {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );

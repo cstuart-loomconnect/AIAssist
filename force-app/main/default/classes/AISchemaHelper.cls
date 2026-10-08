@@ -6,20 +6,11 @@ Class Name: AISchemaHelper
 
 Description: One place for the schema questions the package asks: what object an Id belongs to, its labels and name
 field, and what a field is (type, length). Describe calls are slow and count against the transaction,
-so every answer is cached.
+so every answer is cached in a static map for the rest of the transaction. The answers are schema facts
+that are the same for every user, except whether the current user can read an object, which is cached
+the same way and so never outlives the transaction.
 
-Two levels of cache, both holding only schema facts that are the same for every user:
-[1] A static map, for the rest of the transaction.
-[2] An org cache partition (AIAssistSchema), kept between transactions and users when the subscriber has
-    created that partition (Setup > Platform Cache). The partition belongs to the subscriber, so it
-    cannot ship in the package: without it, or when Platform Cache is not available, the helper quietly
-    uses the static map alone. Values are stored as JSON, keyed by a hex encoding of the name, because
-    cache keys must be alphanumeric.
-Whether the current user can read an object depends on the user, so it is never persisted; it is cached
-for the transaction only.
-
-A cached answer can outlive a schema change (a field added later). clearCache empties both levels, and
-the persisted entries expire after SCHEMA_CACHE_TTL_SECONDS on their own.
+A cached answer can outlive a schema change made in the same transaction. clearCache empties it.
 
 =================================================================
 =================================================================
@@ -29,16 +20,6 @@ Version      Author                   Description
 */
 
 public inherited sharing class AISchemaHelper {
-  public static final String PARTITION_NAME = 'AIAssistSchema';
-  public static final Integer SCHEMA_CACHE_TTL_SECONDS = 86400;
-
-  // What the helper needs of a cache, so a test can replace the platform.
-  public interface ICache {
-    String get(String key);
-    void put(String key, String value, Integer ttlSeconds);
-    void clear(String key);
-  }
-
   public class ObjectInfo {
     public String apiName;
     public String label;
@@ -56,46 +37,6 @@ public inherited sharing class AISchemaHelper {
     public Boolean isNameField = false;
   }
 
-  // The org cache partition when the subscriber has one, otherwise nothing. Also holds the organisation's usage totals (AIOrgUsageService).
-  public class OrgPartitionCache implements ICache {
-    public String get(String key) {
-      Cache.OrgPartition orgPartition = null;
-      try {
-        orgPartition = Cache.Org.getPartition('local.' + PARTITION_NAME);
-      } catch (Exception noPartition) {
-        orgPartition = null;
-      }
-      return orgPartition == null ? null : (String) orgPartition.get(key);
-    }
-
-    public void put(String key, String value, Integer ttlSeconds) {
-      Cache.OrgPartition orgPartition = null;
-      try {
-        orgPartition = Cache.Org.getPartition('local.' + PARTITION_NAME);
-      } catch (Exception noPartition) {
-        orgPartition = null;
-      }
-      if (orgPartition != null)
-        orgPartition.put(key, value, ttlSeconds);
-    }
-
-    public void clear(String key) {
-      Cache.OrgPartition orgPartition = null;
-      try {
-        orgPartition = Cache.Org.getPartition('local.' + PARTITION_NAME);
-      } catch (Exception noPartition) {
-        orgPartition = null;
-      }
-      if (orgPartition != null)
-        orgPartition.remove(key);
-    }
-  }
-
-  @TestVisible
-  private static Boolean isPersistentCacheUnavailable = false;
-
-  @TestVisible
-  private static ICache persistentCache = new OrgPartitionCache();
   @TestVisible
   private static Map<String, ObjectInfo> infoByLowerName = new Map<String, ObjectInfo>();
   @TestVisible
@@ -118,75 +59,43 @@ public inherited sharing class AISchemaHelper {
     if (infoByLowerName.containsKey(lowerName))
       return infoByLowerName.get(lowerName);
 
-    // Cache keys must be alphanumeric, so the name is hex encoded; two different names can never share a key.
-    String cacheKey =
-      'obj' + EncodingUtil.convertToHex(Blob.valueOf(lowerName));
-
-    ObjectInfo objectInfo = null;
-
-    try {
-      String cachedJson = isPersistentCacheUnavailable
-        ? null
-        : persistentCache.get(cacheKey);
-      objectInfo = String.isBlank(cachedJson)
-        ? null
-        : (ObjectInfo) JSON.deserialize(cachedJson, ObjectInfo.class);
-    } catch (Exception cacheReadFailure) {
-      objectInfo = null; // A cache that is missing, full or unreadable just means a describe.
+    Schema.SObjectType objectType = Schema.getGlobalDescribe()
+      .get(objectApiName);
+    if (objectType == null) {
+      infoByLowerName.put(lowerName, null);
+      return null;
     }
 
-    if (objectInfo == null) {
-      Schema.SObjectType objectType = Schema.getGlobalDescribe()
-        .get(objectApiName);
-      if (objectType == null) {
-        infoByLowerName.put(lowerName, null);
-        return null;
-      }
+    describeCount++;
 
-      describeCount++;
+    Schema.DescribeSObjectResult describeResult = objectType.getDescribe(
+      SObjectDescribeOptions.DEFERRED
+    );
+    ObjectInfo objectInfo = new ObjectInfo();
+    objectInfo.apiName = describeResult.getName();
+    objectInfo.label = describeResult.getLabel();
+    objectInfo.pluralLabel = describeResult.getLabelPlural();
+    objectInfo.keyPrefix = describeResult.getKeyPrefix();
 
-      Schema.DescribeSObjectResult describeResult = objectType.getDescribe(
-        SObjectDescribeOptions.DEFERRED
+    for (
+      Schema.SObjectField fieldToken : describeResult.fields.getMap().values()
+    ) {
+      Schema.DescribeFieldResult fieldDescribe = fieldToken.getDescribe();
+      FieldInfo fieldInfo = new FieldInfo();
+      fieldInfo.apiName = fieldDescribe.getName();
+      fieldInfo.label = fieldDescribe.getLabel();
+      fieldInfo.dataType = String.valueOf(fieldDescribe.getType());
+      fieldInfo.length = fieldDescribe.getLength() > 0
+        ? fieldDescribe.getLength()
+        : null;
+      fieldInfo.isNameField = fieldDescribe.isNameField();
+
+      objectInfo.fieldsByLowerName.put(
+        fieldInfo.apiName.toLowerCase(),
+        fieldInfo
       );
-      objectInfo = new ObjectInfo();
-      objectInfo.apiName = describeResult.getName();
-      objectInfo.label = describeResult.getLabel();
-      objectInfo.pluralLabel = describeResult.getLabelPlural();
-      objectInfo.keyPrefix = describeResult.getKeyPrefix();
-
-      for (
-        Schema.SObjectField fieldToken : describeResult.fields.getMap().values()
-      ) {
-        Schema.DescribeFieldResult fieldDescribe = fieldToken.getDescribe();
-        FieldInfo fieldInfo = new FieldInfo();
-        fieldInfo.apiName = fieldDescribe.getName();
-        fieldInfo.label = fieldDescribe.getLabel();
-        fieldInfo.dataType = String.valueOf(fieldDescribe.getType());
-        fieldInfo.length = fieldDescribe.getLength() > 0
-          ? fieldDescribe.getLength()
-          : null;
-        fieldInfo.isNameField = fieldDescribe.isNameField();
-
-        objectInfo.fieldsByLowerName.put(
-          fieldInfo.apiName.toLowerCase(),
-          fieldInfo
-        );
-        if (fieldInfo.isNameField && objectInfo.nameField == null)
-          objectInfo.nameField = fieldInfo.apiName;
-      }
-
-      try {
-        if (!isPersistentCacheUnavailable) {
-          persistentCache.put(
-            cacheKey,
-            JSON.serialize(objectInfo),
-            SCHEMA_CACHE_TTL_SECONDS
-          );
-        }
-      } catch (Exception cacheWriteFailure) {
-        // Too large for the cache, or no cache: stop using it for the rest of the transaction; the static map still serves it.
-        isPersistentCacheUnavailable = true;
-      }
+      if (fieldInfo.isNameField && objectInfo.nameField == null)
+        objectInfo.nameField = fieldInfo.apiName;
     }
 
     infoByLowerName.put(lowerName, objectInfo);
@@ -252,23 +161,15 @@ public inherited sharing class AISchemaHelper {
     return accessibleByLowerName.get(lowerName);
   }
 
-  // Empties both levels for one object, or for everything the transaction has seen when no name is given.
+  // Empties the cache for one object, or for everything the transaction has seen when no name is given.
   public static void clearCache(String objectApiName) {
-    Set<String> namesToClear = String.isBlank(objectApiName)
-      ? new Set<String>(infoByLowerName.keySet())
-      : new Set<String>{ objectApiName.toLowerCase() };
-
-    for (String lowerName : namesToClear) {
-      infoByLowerName.remove(lowerName);
-      accessibleByLowerName.remove(lowerName);
-      try {
-        persistentCache.clear(
-          'obj' + EncodingUtil.convertToHex(Blob.valueOf(lowerName))
-        );
-      } catch (Exception cacheClearFailure) {
-        // Platform Cache is an optimisation, never a reason to fail.
-        isPersistentCacheUnavailable = true;
-      }
+    if (String.isBlank(objectApiName)) {
+      infoByLowerName.clear();
+      accessibleByLowerName.clear();
+      return;
     }
+
+    infoByLowerName.remove(objectApiName.toLowerCase());
+    accessibleByLowerName.remove(objectApiName.toLowerCase());
   }
 }

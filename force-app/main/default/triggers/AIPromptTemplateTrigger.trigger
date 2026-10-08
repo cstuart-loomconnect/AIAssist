@@ -11,17 +11,14 @@ Description: Trigger for AIPromptTemplate__c events related to AI Assist. Runs o
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 */
-trigger AIPromptTemplateTrigger on AIPromptTemplate__c(
-  before insert,
-  before update
-) {
+trigger AIPromptTemplateTrigger on AIPromptTemplate__c(before update) {
+  if (!AIAssistSettingsService.isEnabled())
+    return;
+
   // Before Context
   if (Trigger.isBefore) {
-    if (Trigger.isInsert) {
-      AIPromptTemplateTriggerHandler.handleBeforeInsert(Trigger.new);
-    } else if (Trigger.isUpdate) {
+    if (Trigger.isUpdate) {
       AIPromptTemplateTriggerHandler.handleBeforeUpdate(
         Trigger.oldMap,
         Trigger.newMap

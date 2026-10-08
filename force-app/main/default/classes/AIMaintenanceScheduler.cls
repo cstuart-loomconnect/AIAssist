@@ -5,7 +5,7 @@ Class Name: AIMaintenanceScheduler
 =================================================================
 
 Description: The package's one scheduled job. It runs the housekeeping: close idle conversations, delete
-expired conversations, delete old platform logs and old reviewed violations, and refresh the PII
+expired conversations, and refresh the PII
 registry. Without it retention is never applied and no field is ever registered as personal data.
 
 The post-install script schedules it once, daily, on a first install (scheduleDaily). That is the
@@ -22,7 +22,6 @@ for the application to be on.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development. Replaces the separate schedulable batches with one entry point.
 2.0          Chandler Stuart          scheduleDaily added, called by the post-install script.
-3.0          Chandler Stuart          Refreshes the reading of the org limits (AIOrgLimitMonitor).
 4.0          Chandler Stuart          Retention, the limit reading and the usage totals run even while the application is off; only idle closing and the PII registry sync wait for it to be on.
 5.0          Chandler Stuart          Fails messages left waiting at the cap on messages in flight.
 */
@@ -63,17 +62,13 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   }
 
   public void execute(SchedulableContext context) {
-    AIAssistSettingsService.recordActivatedOrg();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
-    AIOrgLimitMonitor.refreshIfStale(); // Keeps the mode and its alert current in an org where nobody is chatting. Never throws.
     AIConversationMessageService.failExpiredHeldMessages(false); // Messages held at the cap that no finalizer or chat window has failed since. Never throws.
 
-    // Retention and the usage totals run whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
+    // Retention runs whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
-      new AIConversationRetentionBatch(),
-      new AIRecordRetentionBatch(), // Logs, violations, steps and messages, one after another.
-      new AIOrgUsageTotalsBatch()
+      new AIConversationRetentionBatch()
     };
     // Closing idle conversations is part of the chat, so it waits for the application to be on.
     if (isEnabled)

@@ -18,12 +18,10 @@ Version      Author                   Description
 
 @IsTest
 private class AIAssistSettingsServiceTest {
-  // testScenario1: With the settings the TestSetup enabled and no UI settings row, the application and both logging switches are on and the UI settings are the field defaults.
-  // testScenario2: Unchecking the three switches turns the application and both kinds of logging off, and a UI settings row replaces the field defaults.
+  // testScenario1: With the settings the TestSetup enabled and no UI settings row, the application is on and the UI settings are the field defaults.
+  // testScenario2: Unchecking the switch turns the application off, and a UI settings row replaces the field defaults.
   // testScenario3: With no organisation settings row at all, the field defaults apply instead of every checkbox reading as off.
-  // testScenario4: Configured values are parsed and returned: success and retry status codes (skipping blanks and non-numbers), the callout timeout, and the tool-calling and lock limits, where a zero or negative limit falls back to its default.
-  // testScenario6: Settings activated in another org read as switched off, as a sandbox copied from production would be; blank and this org's Id do not. activate switches on and records this org, and recordActivatedOrg fills a blank one in.
-  // testScenario5: Blank or garbled values fall back safely: success codes to 200, retry codes to none, blank limits to their defaults, and a blank callout timeout throws rather than guessing.
+  // testScenario4: With a settings row, getSettings returns it and caches it for the transaction until clearCache is called.
 
   @TestSetup
   static void setup() {
@@ -38,14 +36,10 @@ private class AIAssistSettingsServiceTest {
   static void testScenario1() {
     Test.startTest();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
-    Boolean isExceptionLoggingEnabled = AIAssistSettingsService.isExceptionLoggingEnabled();
-    Boolean isPlatformLoggingEnabled = AIAssistSettingsService.isPlatformLoggingEnabled();
     AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
     Test.stopTest();
 
     Assert.isTrue(isEnabled, 'The application is on when the row enables it.');
-    Assert.isTrue(isExceptionLoggingEnabled, 'Exception logging is on.');
-    Assert.isTrue(isPlatformLoggingEnabled, 'Platform logging is on.');
     Assert.isTrue(
       uiSettings.IsUserInitiatedChatEnabled__c,
       'With no UI row the default-on switches stay on.'
@@ -60,10 +54,8 @@ private class AIAssistSettingsServiceTest {
   static void testScenario2() {
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.IsEnabled__c = false;
-    settings.IsExceptionLoggingEnabled__c = false;
-    settings.IsPlatformLoggingEnabled__c = false;
     update settings;
-    AIAssistSettingsService.cachedSettings = null;
+    AIAssistSettingsService.clearCache();
 
     AIAssistUISettings__c uiRow = AIAssistUISettings__c.getOrgDefaults();
     uiRow.IsMaintenanceMode__c = true;
@@ -72,22 +64,12 @@ private class AIAssistSettingsServiceTest {
 
     Test.startTest();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
-    Boolean isExceptionLoggingEnabled = AIAssistSettingsService.isExceptionLoggingEnabled();
-    Boolean isPlatformLoggingEnabled = AIAssistSettingsService.isPlatformLoggingEnabled();
     AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
     Test.stopTest();
 
     Assert.isFalse(
       isEnabled,
       'Unchecking IsEnabled__c switches the application off.'
-    );
-    Assert.isFalse(
-      isExceptionLoggingEnabled,
-      'Unchecking the exception switch stops events being published.'
-    );
-    Assert.isFalse(
-      isPlatformLoggingEnabled,
-      'Unchecking the platform switch stops events being saved.'
     );
     Assert.isTrue(
       uiSettings.IsMaintenanceMode__c,
@@ -102,12 +84,11 @@ private class AIAssistSettingsServiceTest {
   @IsTest
   static void testScenario3() {
     delete [SELECT Id FROM AIAssistSettings__c];
-    AIAssistSettingsService.cachedSettings = null;
+    AIAssistSettingsService.clearCache();
 
     Test.startTest();
     AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
-    Integer lockMinutes = AIAssistSettingsService.getProcessingLockMinutes();
     Test.stopTest();
 
     Assert.isNull(
@@ -118,159 +99,39 @@ private class AIAssistSettingsServiceTest {
       isEnabled,
       'The IsEnabled__c field default is on, so a missing row must not switch the application off.'
     );
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_PROCESSING_LOCK_MINUTES,
-      lockMinutes,
-      'The lock time falls back to its default.'
-    );
   }
 
   @IsTest
   static void testScenario4() {
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.AIProviderSuccessStatusCodes__c = '200, 201,abc,, 202 ';
-    settings.RetryableStatusCodes__c = '429,503, x';
-    settings.CalloutTimeoutMilliseconds__c = 45000;
-    settings.DefaultMaxToolCallingIterations__c = 7;
-    settings.MaxToolCallingIterationsCap__c = 0;
-    settings.MaxToolCallsPerIteration__c = -2;
     settings.ProcessingLockMinutes__c = 15;
     update settings;
-    AIAssistSettingsService.cachedSettings = null;
-
-    Test.startTest();
-    Set<Integer> successCodes = AIAssistSettingsService.getSuccessStatusCodes();
-    Set<Integer> retryCodes = AIAssistSettingsService.getRetryStatusCodes();
-    Integer timeout = AIAssistSettingsService.getCalloutTimeoutMilliseconds();
-    Integer iterations = AIAssistSettingsService.getDefaultMaxToolCallingIterations();
-    Integer iterationCap = AIAssistSettingsService.getMaxToolCallingIterationsCap();
-    Integer callsPerIteration = AIAssistSettingsService.getMaxToolCallsPerIteration();
-    Integer lockMinutes = AIAssistSettingsService.getProcessingLockMinutes();
-    Test.stopTest();
-
-    Assert.areEqual(
-      new Set<Integer>{ 200, 201, 202 },
-      successCodes,
-      'Numbers are kept; blanks and words are skipped.'
-    );
-    Assert.areEqual(
-      new Set<Integer>{ 429, 503 },
-      retryCodes,
-      'Retry codes are parsed the same way.'
-    );
-    Assert.areEqual(45000, timeout, 'The configured timeout is returned.');
-    Assert.areEqual(7, iterations, 'A configured default is returned.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_MAX_TOOL_CALLING_ITERATIONS_CAP,
-      iterationCap,
-      'A zero cap falls back to the default.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_MAX_TOOL_CALLS_PER_ITERATION,
-      callsPerIteration,
-      'A negative limit falls back to the default.'
-    );
-    Assert.areEqual(15, lockMinutes, 'A configured lock time is returned.');
-  }
-
-  @IsTest
-  static void testScenario5() {
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.AIProviderSuccessStatusCodes__c = 'none, x';
-    settings.RetryableStatusCodes__c = '';
-    settings.CalloutTimeoutMilliseconds__c = null;
-    settings.DefaultMaxToolCallingIterations__c = null;
-    settings.ProcessingLockMinutes__c = null;
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
-
-    Test.startTest();
-    Set<Integer> successCodes = AIAssistSettingsService.getSuccessStatusCodes();
-    Set<Integer> retryCodes = AIAssistSettingsService.getRetryStatusCodes();
-    Integer iterations = AIAssistSettingsService.getDefaultMaxToolCallingIterations();
-    Integer lockMinutes = AIAssistSettingsService.getProcessingLockMinutes();
-
-    try {
-      AIAssistSettingsService.getCalloutTimeoutMilliseconds();
-      Assert.fail('A blank callout timeout should have thrown.');
-    } catch (AIAssistSettingsService.AIAssistSettingsServiceException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('Callout Timeout'),
-        'The error should name the missing setting.'
-      );
-    }
-    Test.stopTest();
-
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_AI_PROVIDER_SUCCESS_STATUS_CODES,
-      successCodes,
-      'With nothing usable the default applies, so a bad setting never fails every response.'
-    );
-    Assert.isTrue(retryCodes.isEmpty(), 'A blank list retries nothing.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_MAX_TOOL_CALLING_ITERATIONS,
-      iterations,
-      'Blank falls back to the default iterations.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.DEFAULT_PROCESSING_LOCK_MINUTES,
-      lockMinutes,
-      'Blank falls back to the default lock time.'
-    );
-  }
-
-  @IsTest
-  static void testScenario6() {
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    String otherOrgId = '00D000000000001AAA';
-
-    Test.startTest();
-    settings.ActivatedOrgId__c = otherOrgId;
-    update settings;
     AIAssistSettingsService.clearCache();
-    Boolean isEnabledElsewhere = AIAssistSettingsService.isEnabled();
-    Boolean isElsewhere = AIAssistSettingsService.isActivatedElsewhere();
-    AIAssistSettingsService.recordActivatedOrg();
-    String afterRecordingOverAnother = AIAssistSettings__c.getOrgDefaults()
-      .ActivatedOrgId__c;
 
-    settings.ActivatedOrgId__c = null;
+    Test.startTest();
+    AIAssistSettings__c first = AIAssistSettingsService.getSettings();
+    settings.ProcessingLockMinutes__c = 30;
     update settings;
+    AIAssistSettings__c cached = AIAssistSettingsService.getSettings();
     AIAssistSettingsService.clearCache();
-    Boolean isEnabledBlank = AIAssistSettingsService.isEnabled();
-    AIAssistSettingsService.recordActivatedOrg();
-    String afterRecordingBlank = AIAssistSettings__c.getOrgDefaults()
-      .ActivatedOrgId__c;
-    Boolean isEnabledHere = AIAssistSettingsService.isEnabled();
-
-    settings.ActivatedOrgId__c = otherOrgId;
-    settings.IsEnabled__c = false;
-    update settings;
-    AIAssistSettingsService.activate();
+    AIAssistSettings__c refreshed = AIAssistSettingsService.getSettings();
     Test.stopTest();
 
-    Assert.isTrue(isElsewhere, 'Another org\'s Id.');
-    Assert.isFalse(
-      isEnabledElsewhere,
-      'A mismatched org Id is inactive although the switch is on.'
+    Assert.isNotNull(first.Id, 'The organisation row is returned.');
+    Assert.areEqual(
+      15,
+      first.ProcessingLockMinutes__c.intValue(),
+      'The configured value is read from the row.'
     );
     Assert.areEqual(
-      otherOrgId,
-      afterRecordingOverAnother,
-      'Another org\'s Id is never overwritten by itself: an administrator activates.'
+      15,
+      cached.ProcessingLockMinutes__c.intValue(),
+      'The settings are cached for the transaction.'
     );
-    Assert.isTrue(isEnabledBlank, 'Blank is not yet recorded, not a mismatch.');
     Assert.areEqual(
-      UserInfo.getOrganizationId(),
-      afterRecordingBlank,
-      'A blank one is filled in with this org.'
-    );
-    Assert.isTrue(isEnabledHere, 'This org\'s Id is active.');
-    Assert.isTrue(AIAssistSettingsService.isEnabled(), 'Activated here.');
-    Assert.areEqual(
-      UserInfo.getOrganizationId(),
-      AIAssistSettings__c.getOrgDefaults().ActivatedOrgId__c,
-      'Activation records this org.'
+      30,
+      refreshed.ProcessingLockMinutes__c.intValue(),
+      'Clearing the cache reads the change.'
     );
   }
 }

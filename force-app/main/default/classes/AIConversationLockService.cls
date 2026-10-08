@@ -36,23 +36,25 @@ rather than failing the user's send with a platform error.
 system-managed: the AI Assist User permission set can read it and cannot set it. Callers have already
 authorised the user against the conversation; this class only ever touches the lock.
 
-Throws AIMessagingException without logging; the caller logs it once.
+Throws its own exception without logging; the caller logs it once.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt: AIMessagingException, explicit system mode, lock row busy reported as a refusal, isLocked and release added, methods renamed (lock, isLocked, extend, release, handOff).
+2.0          Chandler Stuart          Rebuilt: its own exception, explicit system mode, lock row busy reported as a refusal, isLocked and release added, methods renamed (lock, isLocked, extend, release, handOff).
 */
 
 public without sharing class AIConversationLockService {
+  public class AIConversationLockServiceException extends Exception {
+  }
+
   // Locks the conversation if it is free. True when the caller now holds the lock and should start processing; false when another message is already being processed.
   public static Boolean acquireLock(Id conversationId) {
     AIConversation__c conversation = lockRow(conversationId);
     if (conversation == null)
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIConversationLockServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 
@@ -65,7 +67,10 @@ public without sharing class AIConversationLockService {
     setLockedUntil(
       conversationId,
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue()
+        )
     );
     return true;
   }
@@ -99,7 +104,10 @@ public without sharing class AIConversationLockService {
     setLockedUntil(
       conversationId,
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue()
+        )
     );
   }
 
@@ -138,7 +146,10 @@ public without sharing class AIConversationLockService {
       setLockedUntil(
         conversationId,
         System.now()
-          .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+          .addMinutes(
+            AIAssistSettingsService.getSettings()
+              .ProcessingLockMinutes__c.intValue()
+          )
       );
       return newestUserMessages[0].Id;
     }
@@ -167,8 +178,7 @@ public without sharing class AIConversationLockService {
       return conversations.isEmpty() ? null : conversations[0];
     } catch (QueryException lockWaitException) {
       // Another transaction holds the record past the platform's wait. The caller can only try again later.
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_BUSY,
+      throw new AIConversationLockServiceException(
         Label.AI_Error_Conversation_Busy
       );
     }
@@ -188,13 +198,18 @@ public without sharing class AIConversationLockService {
       AccessLevel.SYSTEM_MODE
     );
 
-    if (!saveResult.isSuccess())
-      throw AIMessagingException.newFailure(
+    if (!saveResult.isSuccess()) {
+      AIPlatformLogManager.logCustomMessage(
         'Failed to update the conversation lock for ' +
           conversationId +
           ': ' +
           saveResult.getErrors()[0].getMessage(),
+        null,
+        'AIConversationLockService',
+        'lockRow',
         null
       );
+      throw new AIConversationLockServiceException(Label.AI_Error_Generic);
+    }
   }
 }

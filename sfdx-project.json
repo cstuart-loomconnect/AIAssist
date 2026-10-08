@@ -6,8 +6,7 @@
       "package": "AIAssist",
       "versionName": "Initial Release",
       "versionDescription": "AI Assist for Salesforce",
-      "versionNumber": "0.1.0.NEXT",
-      "postInstallScript": "AIAssistInstallHandler"
+      "versionNumber": "0.1.0.NEXT"
     }
   ],
   "name": "AIAssist",

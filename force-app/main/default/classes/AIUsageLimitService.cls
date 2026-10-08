@@ -4,44 +4,28 @@ Class Name: AIUsageLimitService
 =================================================================
 =================================================================
 
-Description: Decides whether a message that has passed AIMessageValidator would take the user, or
-the organisation, past a limit. Refusals are AIMessagingException with a Custom Label and a stable
-code, checked in this order:
-[1] The user's own limits (AIUserSettings__c) against their usage today (AIUsageDaily__c), by
-    the behaviour in UsageLimitReachedBehavior__c:
-    - Notify Only never blocks.
-    - Block New Messages blocks every message once a limit is reached.
-    - Block New Conversations Only applies the limits only to a message that would start a
-      conversation, so an open one can carry on.
-    Limits: conversations open at once, conversations started today, tokens used today.
-[2] The organisation's limits: the plan's monthly messages and tokens (Feature Management) and
-    AIAssistSettings__c.GlobalTokenBudgetPerDay__c, against the running totals AIOrgUsageService
-    keeps. No usage row is read, however many there are.
-    The organisation's daily message budget (DailyMessageBudget__c) is checked with them. Before
-    any of this, a user who has sent MaxMessagesPerUserPerMinute__c messages in the last minute
-    is refused.
-[3] The organisation's asynchronous queue has room. It is shared with the subscriber's own
-    queueables, batches and flows, so new turns are refused before ours can crowd theirs out.
+Description: Decides whether a message may be accepted right now. A refusal is an exception with
+a Custom Label and a stable code, checked in this order:
+[1] How fast one user may send: AIAssistSettings__c.MaxMessagesPerUserPerMinute__c.
+[2] The user's concurrent conversations: AIUserSettings__c.MaxConcurrentConversations__c, only for a
+    message that would start a conversation and only when the user's behaviour blocks it.
+[3] The organisation's asynchronous queue has room. It is shared with the org's own queueables, batches
+    and flows, so new turns are refused before ours can crowd theirs out.
 
-"Today" and "this month" are the calendar day and month in the org's time zone
-(AIAssistGlobalUtility.getOrgToday): limits are read from AIUsageDaily__c, one row per user per
-day, instead of summing every message. The limit fields are labelled "per day"; their API names
-still say 24 hours.
-
-The token estimate of the message being sent counts towards the user's daily limit, so a message
-that would break it is refused before its request is made. Nothing here writes.
+Also says whether the cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached,
+so a message waits as Queued until a place is free.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, as the second half of AIMessageGuard.
-2.0          Chandler Stuart          The monthly message and token cap messages say how much the plan allows and when it renews.
-3.0          Chandler Stuart          Organisation totals read from AIOrgUsageService. A full queue says AI Assist is busy, not that the provider is unavailable.
-4.0          Chandler Stuart          Per-user messages per minute, the organisation's daily message budget, and the cap on messages in flight.
+TBC          TBC                      TBC
 */
 
 public inherited sharing class AIUsageLimitService {
+  public class AIUsageLimitServiceException extends Exception {
+  }
+
   // A test cannot queue hundreds of jobs, so it lowers the ceiling instead.
   @TestVisible
   private static Integer maxPendingJobsForTest;
@@ -51,196 +35,144 @@ public inherited sharing class AIUsageLimitService {
 
   public static void enforceUsageLimits(
     AIMessageValidator.ChatContext chatContext,
-    Boolean isNewConversation,
-    Decimal estimatedTokens
+    Boolean isNewConversation
   ) {
-    Date today = AIAssistGlobalUtility.getOrgToday();
     AIUserSettings__c userSettings = chatContext.userSettings;
     AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
 
-    // [0] How fast one user may send, whatever their other limits: the newest messages of theirs in the last minute.
+    // [1]
     if (
       settings.MaxMessagesPerUserPerMinute__c != null &&
       settings.MaxMessagesPerUserPerMinute__c >= 1 &&
-      AIMessagingSelector.countRecentUserMessages(chatContext.userId) >=
+      countRecentUserMessages(chatContext.userId) >=
       settings.MaxMessagesPerUserPerMinute__c
     )
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_RATE_LIMITED,
-        Label.AI_Error_Rate_Limited
-      );
+      throw new AIUsageLimitServiceException(Label.AI_Error_Rate_Limited);
 
-    // [1] The user's own limits.
+    // [2]
     if (
+      isNewConversation &&
       userSettings != null &&
       userSettings.IsActive__c == true &&
+      userSettings.MaxConcurrentConversations__c != null &&
       userSettings.UsageLimitReachedBehavior__c !=
-      AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY
-    ) {
-      Boolean blocksEverything =
-        userSettings.UsageLimitReachedBehavior__c ==
-        AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES;
-      Boolean blocksNewConversations =
-        userSettings.UsageLimitReachedBehavior__c ==
-        AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY &&
-        isNewConversation;
+      AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY &&
+      countActiveConversations(chatContext.userId) >=
+      userSettings.MaxConcurrentConversations__c
+    )
+      throw new AIUsageLimitServiceException(Label.AI_Error_Concurrent_Limit);
 
-      if (blocksEverything || blocksNewConversations) {
-        // Only a new conversation adds to either conversation count.
-        if (
-          isNewConversation &&
-          userSettings.MaxConcurrentConversations__c != null &&
-          AIMessagingSelector.countActiveConversations(chatContext.userId) >=
-          userSettings.MaxConcurrentConversations__c
-        ) {
-          throw limitReached(
-            chatContext,
-            AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-            Label.AI_Error_Concurrent_Limit
-          );
-        }
-
-        if (
-          (isNewConversation &&
-          userSettings.MaxConversationsPer24Hours__c != null) ||
-          userSettings.MaxTokensPer24Hours__c != null
-        ) {
-          AIMessagingSelector.UsageTotals userUsage = AIMessagingSelector.getUserDailyUsage(
-            chatContext.userId,
-            today
-          );
-
-          if (
-            isNewConversation &&
-            userSettings.MaxConversationsPer24Hours__c != null &&
-            userUsage.conversations >=
-            userSettings.MaxConversationsPer24Hours__c
-          ) {
-            throw limitReached(
-              chatContext,
-              AIAssistApplicationConstants.ERROR_CONVERSATION_LIMIT_DAILY,
-              Label.AI_Error_Conversation_Limit_Daily
-            );
-          }
-
-          if (
-            userSettings.MaxTokensPer24Hours__c != null &&
-            userUsage.tokens + estimatedTokens >=
-            userSettings.MaxTokensPer24Hours__c
-          ) {
-            throw limitReached(
-              chatContext,
-              AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-              Label.AI_Error_Daily_Usage_Limit
-            );
-          }
-        }
-      }
-    }
-
-    // [2] The organisation's limits.
-    Integer messageLimit = AIPlanLimitService.getMessageLimit();
-    Integer usageLimit = AIPlanLimitService.getUsageLimit();
-    Decimal dailyBudget = settings.GlobalTokenBudgetPerDay__c;
-    Decimal dailyMessageBudget = settings.DailyMessageBudget__c;
-
-    if (
-      messageLimit != null ||
-      usageLimit != null ||
-      dailyBudget != null ||
-      dailyMessageBudget != null
-    ) {
-      // The stored closed days and today's usage rows (AIOrgUsageService), not a sum of the month's usage rows on every send.
-      AIMessagingSelector.OrgUsage orgUsage = AIOrgUsageService.getUsage();
-
-      if (messageLimit != null && orgUsage.month.messages >= messageLimit)
-        throw limitReached(
-          chatContext,
-          AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-          planLimitMessage(
-            Label.AI_Error_Plan_Limit_Messages,
-            messageLimit,
-            today
-          )
-        );
-      if (usageLimit != null && orgUsage.month.tokens >= usageLimit)
-        throw limitReached(
-          chatContext,
-          AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE,
-          planLimitMessage(Label.AI_Error_Plan_Limit_Tokens, usageLimit, today)
-        );
-      if (
-        dailyMessageBudget != null &&
-        orgUsage.today.messages >= dailyMessageBudget
-      )
-        throw limitReached(
-          chatContext,
-          AIAssistApplicationConstants.ERROR_DAILY_MESSAGE_BUDGET,
-          Label.AI_Error_Daily_Message_Budget
-        );
-      if (dailyBudget != null && orgUsage.today.tokens >= dailyBudget)
-        throw limitReached(
-          chatContext,
-          AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-          Label.AI_Error_Daily_Usage_Limit
-        );
-    }
-
-    // [3] Room in the shared queue.
-    if (
-      AIMessagingSelector.countQueuedMessageJobs() >=
-      (maxPendingJobsForTest == null
-        ? AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
-        : maxPendingJobsForTest)
-    ) {
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_SERVICE_BUSY,
-        Label.AI_Error_Service_Busy
-      );
-    }
+    // [3]
+    Integer pendingJobLimit = maxPendingJobsForTest == null
+      ? AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
+      : maxPendingJobsForTest;
+    if (countQueuedMessageJobs() >= pendingJobLimit)
+      throw new AIUsageLimitServiceException(Label.AI_Error_Service_Busy);
   }
 
-  // True when the org-wide cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
+  // True when the org-wide cap on messages in flight is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
   public static Boolean isInFlightCapReached() {
     Decimal inFlightCap = AIAssistSettingsService.getSettings()
       .MaxMessagesInFlight__c;
+    Integer messagesInFlight = inFlightForTest == null
+      ? countQueuedMessageJobs()
+      : inFlightForTest;
 
     return inFlightCap != null &&
       inFlightCap >= 1 &&
-      (inFlightForTest == null
-        ? AIMessagingSelector.countQueuedMessageJobs()
-        : inFlightForTest) >= inFlightCap;
+      messagesInFlight >= inFlightCap;
   }
 
-  // A limit reached is the violation the object model calls Usage Limit Exceeded, when the agent has a rule for it.
-  private static AIMessagingException limitReached(
-    AIMessageValidator.ChatContext chatContext,
-    String errorCode,
-    String userMessageLabel
-  ) {
-    AIViolationService.recordDeterministicViolation(
-      AIAssistApplicationConstants.VIOLATION_TYPE_USAGE_LIMIT_EXCEEDED,
-      chatContext.agent == null ? null : chatContext.agent.Id,
-      chatContext.userId,
-      null,
-      null
-    );
-    return AIMessagingException.newRefusal(errorCode, userMessageLabel);
-  }
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
 
-  // The plan's cap, in words: how much the plan allows and when it renews (the first of next month, the month the usage rows are counted in). Without it a cap looks like a fault.
   @TestVisible
-  private static String planLimitMessage(
-    String template,
-    Integer allowance,
-    Date today
-  ) {
-    return String.format(
-      template,
-      new List<String>{
-        String.valueOf(allowance),
-        today.toStartOfMonth().addMonths(1).format()
+  private static Integer countActiveConversations(Id userId) {
+    return systemReader.countActiveConversations(userId);
+  }
+
+  @TestVisible
+  private static Integer countQueuedMessageJobs() {
+    return systemReader.countQueuedMessageJobs();
+  }
+
+  @TestVisible
+  private static Integer countRecentUserMessages(Id userId) {
+    return systemReader.countRecentUserMessages(userId);
+  }
+
+  private without sharing class SystemReader {
+    // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation.
+    public Integer countActiveConversations(Id userId) {
+      Datetime currentTime = System.now();
+      Integer activeConversations = 0;
+
+      for (AIConversation__c conversation : [
+        SELECT
+          CreatedDate,
+          LastMessageTimestamp__c,
+          AIAgent__r.IdleTimeoutMinutes__c
+        FROM AIConversation__c
+        WHERE
+          OwnerId = :userId
+          AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
+        WITH SYSTEM_MODE
+        ORDER BY LastModifiedDate DESC
+        LIMIT :AIAssistApplicationConstants.MAX_ACTIVE_CONVERSATIONS_COUNTED
+      ]) {
+        Datetime lastActivity = conversation.LastMessageTimestamp__c == null
+          ? conversation.CreatedDate
+          : conversation.LastMessageTimestamp__c;
+        if (
+          conversation.AIAgent__r?.IdleTimeoutMinutes__c == null ||
+          lastActivity.addMinutes(
+            Integer.valueOf(conversation.AIAgent__r.IdleTimeoutMinutes__c)
+          ) > currentTime
+        )
+          activeConversations++;
       }
-    );
+
+      return activeConversations;
+    }
+
+    // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
+    public Integer countQueuedMessageJobs() {
+      Datetime oneDayAgo = Datetime.now().addDays(-1);
+      String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
+
+      return [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE
+          ApexClass.Name = 'AIMessageProcessingQueueable'
+          AND ApexClass.NamespacePrefix = :packageNamespace
+          AND JobType = 'Queueable'
+          AND Status IN ('Queued', 'Preparing', 'Processing')
+          AND CreatedDate >= :oneDayAgo
+        WITH SYSTEM_MODE
+      ];
+    }
+
+    // Messages the user sent in the last 60 seconds, for the rate limit.
+    public Integer countRecentUserMessages(Id userId) {
+      Datetime oneMinuteAgo = System.now().addSeconds(-60);
+
+      return [
+        SELECT COUNT()
+        FROM AIConversationMessage__c
+        WHERE
+          CreatedById = :userId
+          AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
+          AND CreatedDate >= :oneMinuteAgo
+        WITH SYSTEM_MODE
+      ];
+    }
+
+    // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+    public String getPackageNamespace() {
+      return AIUsageLimitService.class.getName().contains('.')
+        ? AIUsageLimitService.class.getName().substringBefore('.')
+        : null;
+    }
   }
 }

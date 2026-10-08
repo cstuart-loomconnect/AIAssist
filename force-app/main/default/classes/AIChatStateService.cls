@@ -8,7 +8,7 @@ Description: What state the chat window is in for the signed-in user: the UI set
 (debug, export, Workflow Actions), whether the channel is allowed, and whether the terms have to be
 accepted. The settings behind ChatContext.state.
 
-The user's own AIUserSettings__c row is read in system mode through AIMessagingSelector, because the
+The user's own AIUserSettings__c row is read in system mode (AIUsagePolicyResolver.getUserSettings), because the
 User permission set cannot read it; only the signed-in user's row is ever asked for. With no row the
 user has no debug, no export and no Workflow Actions, matching AIWorkflowActionDispatcher.
 
@@ -21,10 +21,6 @@ Version      Author                   Description
 */
 
 public with sharing class AIChatStateService {
-  public static AIUserSettings__c getUserSettings() {
-    return AIMessagingSelector.getUserSettings(UserInfo.getUserId());
-  }
-
   public static AIChatDataStructure.UiSettings buildUiSettings(
     AIAssistUISettings__c uiSettings
   ) {
@@ -61,7 +57,7 @@ public with sharing class AIChatStateService {
     userState.userId = UserInfo.getUserId();
     userState.firstName = UserInfo.getFirstName();
 
-    // Plan, application and user in one place (AIFeatureService). A custom permission can grant debug mode or actions to a user with no settings row; export has no permission, so no row means no export.
+    // Application and user in one place (AIFeatureService). A custom permission can grant debug mode or actions to a user with no settings row; export has no permission, so no row means no export.
     AIUserSettings__c settings = userSettings == null
       ? new AIUserSettings__c()
       : userSettings;
@@ -111,10 +107,10 @@ public with sharing class AIChatStateService {
       : appSettings.CurrentTermsVersion__c.trim();
     termsState.policyUrl = appSettings.AIUsagePolicyUrl__c;
     termsState.required =
-      AIMessagingSelector.getTermsAcceptanceStatus(
+      AIMessageValidator.getTermsAcceptanceStatus(
         UserInfo.getUserId(),
         termsState.version
-      ) != AIMessagingSelector.TERMS_ACCEPTED;
+      ) != AIMessageValidator.TERMS_ACCEPTED;
 
     return termsState;
   }
@@ -123,39 +119,24 @@ public with sharing class AIChatStateService {
   @TestVisible
   private static Boolean isLicensedForTest;
 
-  // Fills in why the user cannot send a message right now, and the plan-cap warning. One reason is given, the first that applies, most fundamental first: the application, the org's limits, the user's licence and access, the terms, then usage. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
+  // Fills in why the user cannot send a message right now, One reason is given, the first that applies, most fundamental first: the application, the org's limits, the user's licence and access, the terms, then usage. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
   public static void setBlockedState(AIChatDataStructure.ChatContext context) {
     AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
-    Date today = AIAssistGlobalUtility.getOrgToday();
-    Integer messageLimit = AIPlanLimitService.getMessageLimit();
-    Integer usageLimit = AIPlanLimitService.getUsageLimit();
-    AIMessagingSelector.OrgUsage orgUsage = messageLimit == null &&
-      usageLimit == null
-      ? new AIMessagingSelector.OrgUsage()
-      : AIOrgUsageService.getUsage();
 
     Boolean isLicensed = true;
     if (isLicensedForTest != null) {
       isLicensed = isLicensedForTest;
     } else {
       try {
-        isLicensed = UserInfo.isCurrentUserLicensed(
-          AIMessagingSelector.getPackageNamespace()
-        );
+        isLicensed = UserInfo.isCurrentUserLicensed(getPackageNamespace());
       } catch (Exception notAManagedPackage) {
         isLicensed = true; // Not installed as a managed package (a development org): there is no licence to hold.
       }
     }
 
-    if (AIAssistSettingsService.isActivatedElsewhere()) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED;
-      context.blockedMessage = Label.AI_Chat_Blocked_Sandbox;
-    } else if (appSettings.IsEnabled__c == false) {
+    if (appSettings.IsEnabled__c == false) {
       context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE;
       context.blockedMessage = Label.AI_Error_Application_Inactive;
-    } else if (AIOrgLimitMonitor.isChatPaused()) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PAUSED;
-      context.blockedMessage = Label.AI_Error_Org_Limits_Paused;
     } else if (!isLicensed) {
       context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE;
       context.blockedMessage = Label.AI_Chat_Blocked_No_Licence;
@@ -168,67 +149,55 @@ public with sharing class AIChatStateService {
       context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
     } else if (
       context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
-      messageLimit != null &&
-      orgUsage.month.messages >= messageLimit
-    ) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP;
-      context.blockedMessage = String.format(
-        Label.AI_Error_Plan_Limit_Messages,
-        new List<String>{
-          String.valueOf(messageLimit),
-          today.toStartOfMonth().addMonths(1).format()
-        }
-      );
-    } else if (
-      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
-      usageLimit != null &&
-      orgUsage.month.tokens >= usageLimit
-    ) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP;
-      context.blockedMessage = String.format(
-        Label.AI_Error_Plan_Limit_Tokens,
-        new List<String>{
-          String.valueOf(usageLimit),
-          today.toStartOfMonth().addMonths(1).format()
-        }
-      );
-    } else if (context.usage != null && context.usage.blockMessages) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_USAGE_LIMIT;
-      context.blockedMessage = Label.AI_Error_Daily_Usage_Limit;
-    } else if (
-      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
-      AIMessagingSelector.countQueuedMessageJobs() >=
+      countQueuedMessageJobs() >=
       AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
     ) {
       context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_BUSY;
       context.blockedMessage = Label.AI_Error_Service_Busy;
     }
+  }
 
-    // Close to the plan's allowance but not at it: the window can say so before messages start being refused.
-    if (
-      context.blockedState != AIAssistApplicationConstants.CHAT_BLOCKED_PLAN_CAP
-    ) {
-      Decimal highestPercent = Math.max(
-        messageLimit == null ||
-          messageLimit <= 0
-          ? 0
-          : 100 * orgUsage.month.messages / messageLimit,
-        usageLimit == null ||
-          usageLimit <= 0
-          ? 0
-          : 100 * orgUsage.month.tokens / usageLimit
-      );
-      if (
-        highestPercent >= AIAssistApplicationConstants.PLAN_CAP_WARNING_PERCENT
-      )
-        context.planCapWarning = String.format(
-          Label.AI_Chat_Plan_Cap_Warning,
-          new List<String>{
-            String.valueOf(
-              highestPercent.round(System.RoundingMode.DOWN).intValue()
-            )
-          }
-        );
+  public static AIUserSettings__c getUserSettings() {
+    return AIUsagePolicyResolver.getUserSettings(UserInfo.getUserId());
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static Integer countQueuedMessageJobs() {
+    return systemReader.countQueuedMessageJobs();
+  }
+
+  @TestVisible
+  private static String getPackageNamespace() {
+    return systemReader.getPackageNamespace();
+  }
+
+  private without sharing class SystemReader {
+    // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
+    public Integer countQueuedMessageJobs() {
+      Datetime oneDayAgo = Datetime.now().addDays(-1);
+      String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
+
+      return [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE
+          ApexClass.Name = 'AIMessageProcessingQueueable'
+          AND ApexClass.NamespacePrefix = :packageNamespace
+          AND JobType = 'Queueable'
+          AND Status IN ('Queued', 'Preparing', 'Processing')
+          AND CreatedDate >= :oneDayAgo
+        WITH SYSTEM_MODE
+      ];
+    }
+
+    // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+    public String getPackageNamespace() {
+      return AIChatStateService.class.getName().contains('.')
+        ? AIChatStateService.class.getName().substringBefore('.')
+        : null;
     }
   }
 }

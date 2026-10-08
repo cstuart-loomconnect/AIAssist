@@ -98,7 +98,7 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Readonly</behavior>
+                <behavior>Required</behavior>
                 <field>DeveloperName__c</field>
             </layoutItems>
         </layoutColumns>

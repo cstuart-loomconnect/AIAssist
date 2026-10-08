@@ -24,6 +24,9 @@ Version      Author                   Description
 */
 
 public inherited sharing class AIPiiRegistrySyncWorker implements Queueable {
+  public class AIPiiRegistrySyncWorkerException extends Exception {
+  }
+
   private List<Id> registryIds;
 
   public AIPiiRegistrySyncWorker(List<Id> registryIds) {
@@ -84,14 +87,19 @@ public inherited sharing class AIPiiRegistrySyncWorker implements Queueable {
           AccessLevel.SYSTEM_MODE
         );
         for (Database.UpsertResult upsertResult : upsertResults) {
-          if (!upsertResult.isSuccess())
-            throw AIMessagingException.newFailure(
+          if (!upsertResult.isSuccess()) {
+            AIPlatformLogManager.logCustomMessage(
               'A field of ' +
                 objectName +
                 ' could not be saved: ' +
                 upsertResult.getErrors()[0].getMessage(),
+              null,
+              'AIPiiRegistrySyncWorker',
+              'execute',
               null
             );
+            throw new AIPiiRegistrySyncWorkerException(Label.AI_Error_Generic);
+          }
         }
 
         registry.SyncStatus__c = AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED;

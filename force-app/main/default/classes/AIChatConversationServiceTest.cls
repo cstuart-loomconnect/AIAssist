@@ -70,7 +70,7 @@ private class AIChatConversationServiceTest {
       1,
       true
     )[0];
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     Test.startTest();
     Id ownId = AIChatConversationService.assertOwnsConversation(conversation.Id)
@@ -80,8 +80,8 @@ private class AIChatConversationServiceTest {
       try {
         AIChatConversationService.assertOwnsConversation(bad);
         Assert.fail('Should be refused.');
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+        messages.add(ex.getMessage());
         Assert.areEqual(
           Label.AI_Error_Conversation_Not_Found,
           ex.getMessage(),
@@ -92,14 +92,14 @@ private class AIChatConversationServiceTest {
     try {
       AIChatConversationService.assertOwnsAgentMessage(userMessage.Id);
       Assert.fail('A user message is not a reply.');
-    } catch (AIMessagingException ex) {
-      codes.add(ex.code);
+    } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+      messages.add(ex.getMessage());
     }
     Test.stopTest();
 
     Assert.areEqual(conversation.Id, ownId, 'Own conversation.');
     Assert.areEqual(reply.Id, replyId, 'Own reply.');
-    Assert.areEqual(4, codes.size(), 'Four refusals.');
+    Assert.areEqual(4, messages.size(), 'Four refusals.');
   }
 
   @IsTest
@@ -385,7 +385,7 @@ private class AIChatConversationServiceTest {
     try {
       AIChatConversationService.resumeConversation(conversations[1].Id);
       Assert.fail('Should be refused.');
-    } catch (AIMessagingException ex) {
+    } catch (AIChatConversationService.AIChatConversationServiceException ex) {
       shown = ex.getMessage();
     }
     Test.stopTest();
@@ -434,20 +434,20 @@ private class AIChatConversationServiceTest {
     closed.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
     closed.ConversationClosedTimestamp__c = System.now();
     insert closed;
-    String code;
+    String shown;
 
     Test.startTest();
     try {
       AIChatConversationService.resumeConversation(closed.Id);
       Assert.fail('At the limit.');
-    } catch (AIMessagingException ex) {
-      code = ex.code;
+    } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+      shown = ex.getMessage();
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-      code,
+      Label.AI_Error_Concurrent_Limit,
+      shown,
       'The concurrent limit.'
     );
   }

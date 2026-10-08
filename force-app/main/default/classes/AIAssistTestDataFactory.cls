@@ -13,7 +13,7 @@ it built and inserts them only when asked, so a test can adjust them first:
 
 Records are valid against the object model's validation rules (an active model configuration has
 its connection details, an active prompt template has a prompt, and so on). Names are made unique
-with a counter, because the unique Developer Name stamped by the triggers is derived from them.
+with a counter. Developer Names are typed by the user, never stamped, so the factory sets a unique valid one on agents, data sources and workflow actions.
 
 Custom metadata cannot be inserted, so the PII masking rule is built in memory and handed to
 AIPiiPseudonymizationService through its test seam.
@@ -27,7 +27,9 @@ that user proves the security model rather than the code alone.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: users without AIAssistUserType__c, usage, assignment, terms and execution step builders, active agents and models that satisfy the validation rules.
-3.0          Chandler Stuart          Violation rules are assigned to an agent through AIAgentViolationRule__c; builders for agent objects, usage policies and their assignments.
+3.0          Chandler Stuart          Builders for agent objects, usage policies and their assignments.
+4.0          Chandler Stuart          Cut down to a basic chat bot: builders for violation rules, violations, usage rows removed.
+5.0          Chandler Stuart          Developer Names are no longer stamped: agents, data sources and workflow actions get a unique one from the factory.
 */
 
 @IsTest
@@ -35,13 +37,23 @@ public class AIAssistTestDataFactory {
   private static Integer sequence = 0;
   private static Id standardProfileId;
 
-  // A name unique within the test run, for fields whose value is derived into a unique Developer Name.
+  // A name unique within the test run.
   private static String uniqueName(String prefix) {
     sequence++;
     return prefix +
       ' ' +
       sequence +
       ' ' +
+      System.Uuid.randomUUID().toString().left(8);
+  }
+
+  // A unique Developer Name (letters, numbers and underscores only), under 64 characters.
+  private static String uniqueDeveloperName(String prefix) {
+    sequence++;
+    return prefix +
+      '_' +
+      sequence +
+      '_' +
       System.Uuid.randomUUID().toString().left(8);
   }
 
@@ -122,44 +134,6 @@ public class AIAssistTestDataFactory {
     }
   }
 
-  // Gives each user a permission set group (created here, containing the named permission set), so they hold that permission set only through the group and have no assignment row for it. The users must already be inserted.
-  public static void assignPermissionSetGroup(
-    List<User> users,
-    String groupDeveloperName,
-    String memberPermissionSetName
-  ) {
-    Id memberId = [
-      SELECT Id
-      FROM PermissionSet
-      WHERE Name = :memberPermissionSetName
-      LIMIT 1
-    ]
-    .Id;
-
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      PermissionSetGroup permissionSetGroup = new PermissionSetGroup(
-        DeveloperName = groupDeveloperName,
-        MasterLabel = groupDeveloperName
-      );
-      insert permissionSetGroup;
-      insert new PermissionSetGroupComponent(
-        PermissionSetGroupId = permissionSetGroup.Id,
-        PermissionSetId = memberId
-      );
-      Test.calculatePermissionSetGroup(permissionSetGroup.Id);
-
-      List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
-      for (User assignedUser : users)
-        assignments.add(
-          new PermissionSetAssignment(
-            AssigneeId = assignedUser.Id,
-            PermissionSetGroupId = permissionSetGroup.Id
-          )
-        );
-      insert assignments;
-    }
-  }
-
   public static List<Account> createAccounts(
     Integer numberOfAccounts,
     Boolean shouldDoInsert
@@ -195,8 +169,7 @@ public class AIAssistTestDataFactory {
           ModelIdentifier__c = 'test-model',
           NamedCredential__c = 'Test_Credential',
           ApiPath__c = '/v1/messages',
-          IsActive__c = true,
-          RetryAttempts__c = 2
+          IsActive__c = true
         )
       );
     }
@@ -214,7 +187,12 @@ public class AIAssistTestDataFactory {
   ) {
     List<AIAgent__c> agents = new List<AIAgent__c>();
     for (Integer itemIndex = 0; itemIndex < numberOfAgents; itemIndex++)
-      agents.add(new AIAgent__c(Name = uniqueName('AI Assist Test Agent')));
+      agents.add(
+        new AIAgent__c(
+          Name = uniqueName('AI Assist Test Agent'),
+          DeveloperName__c = uniqueDeveloperName('Agent')
+        )
+      );
 
     if (shouldDoInsert && !agents.isEmpty())
       insert agents;
@@ -280,6 +258,7 @@ public class AIAssistTestDataFactory {
     for (Integer itemIndex = 0; itemIndex < numberOfDataSources; itemIndex++) {
       AIDataSource__c dataSource = new AIDataSource__c(
         SourceName__c = uniqueName('AI Assist Test Source'),
+        DeveloperName__c = uniqueDeveloperName('Source'),
         SourceType__c = sourceType,
         IsActive__c = true
       );
@@ -307,16 +286,10 @@ public class AIAssistTestDataFactory {
   ) {
     List<AIWorkflowAction__c> actions = new List<AIWorkflowAction__c>();
 
-    // Flow versions cannot be created in a test, so the Flow is declared to run in the default mode.
-    if (
-      actionType == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW &&
-      String.isNotBlank(sourceValue)
-    )
-      AIFlowRunModeService.setRunModeForTest(sourceValue, null);
-
     for (Integer itemIndex = 0; itemIndex < numberOfActions; itemIndex++) {
       AIWorkflowAction__c workflowAction = new AIWorkflowAction__c(
         ActionName__c = uniqueName('Action').left(50),
+        DeveloperName__c = uniqueDeveloperName('Action'),
         ActionType__c = actionType,
         ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY,
         RequiresConfirmation__c = false,
@@ -589,53 +562,6 @@ public class AIAssistTestDataFactory {
     return acknowledgments;
   }
 
-  // One row per day, counting back from today, each with the key the package would give it.
-  public static List<AIUsageDaily__c> createAIUsageDailies(
-    Id userId,
-    Id agentId,
-    Id modelConfigurationId,
-    Integer numberOfDays,
-    Boolean shouldDoInsert
-  ) {
-    List<AIUsageDaily__c> usageRows = new List<AIUsageDaily__c>();
-
-    for (Integer itemIndex = 0; itemIndex < numberOfDays; itemIndex++) {
-      Date usageDate = AIAssistGlobalUtility.getOrgToday().addDays(-itemIndex);
-
-      usageRows.add(
-        new AIUsageDaily__c(
-          User__c = userId,
-          AIAgent__c = agentId,
-          AIModelConfiguration__c = modelConfigurationId,
-          UsageDate__c = usageDate,
-          UsageKey__c = userId +
-            '|' +
-            agentId +
-            '|' +
-            modelConfigurationId +
-            '|' +
-            Datetime.newInstanceGmt(
-                usageDate.year(),
-                usageDate.month(),
-                usageDate.day()
-              )
-              .formatGmt('yyyyMMdd'),
-          MessageCount__c = 0,
-          ConversationCount__c = 0,
-          FailedTurnCount__c = 0,
-          InputTokens__c = 0,
-          OutputTokens__c = 0,
-          ViolationCount__c = 0
-        )
-      );
-    }
-
-    if (shouldDoInsert && !usageRows.isEmpty())
-      insert usageRows;
-
-    return usageRows;
-  }
-
   // =============================================================
   // PII
   // =============================================================
@@ -722,66 +648,8 @@ public class AIAssistTestDataFactory {
   }
 
   // =============================================================
-  // Violations, feedback and data deletion
+  // Agent objects, usage policies and feedback
   // =============================================================
-
-  public static List<AIViolationRule__c> createAIViolationRules(
-    Id agentId,
-    Integer numberOfRules,
-    String detectionMethod,
-    Boolean shouldDoInsert
-  ) {
-    List<AIViolationRule__c> rules = new List<AIViolationRule__c>();
-
-    for (Integer itemIndex = 0; itemIndex < numberOfRules; itemIndex++) {
-      AIViolationRule__c violationRule = new AIViolationRule__c(
-        Name = uniqueName('AI Assist Test Violation Rule').left(80),
-        IsActive__c = true,
-        DetectionMethod__c = detectionMethod,
-        ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_AI_FLAGGED_INTENT,
-        SignalTag__c = 'TAG_' +
-          String.valueOf(Math.abs(Crypto.getRandomLong())).left(30)
-      );
-
-      if (
-        detectionMethod ==
-        AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED
-      )
-        violationRule.AIDetectionInstruction__c = 'The user asks for a bulk export of records.';
-
-      rules.add(violationRule);
-    }
-
-    if (shouldDoInsert && !rules.isEmpty()) {
-      insert rules;
-      if (agentId != null)
-        createAIAgentViolationRules(agentId, rules, true);
-    }
-
-    return rules;
-  }
-
-  // Assigns existing rules to an agent, so the agent applies them.
-  public static List<AIAgentViolationRule__c> createAIAgentViolationRules(
-    Id agentId,
-    List<AIViolationRule__c> rules,
-    Boolean shouldDoInsert
-  ) {
-    List<AIAgentViolationRule__c> links = new List<AIAgentViolationRule__c>();
-    for (AIViolationRule__c rule : rules)
-      links.add(
-        new AIAgentViolationRule__c(
-          AIAgent__c = agentId,
-          AIViolationRule__c = rule.Id,
-          IsActive__c = true
-        )
-      );
-
-    if (shouldDoInsert && !links.isEmpty())
-      insert links;
-
-    return links;
-  }
 
   // Adds objects to an agent, one record per object API name.
   public static List<AIAgentObject__c> createAIAgentObjects(
@@ -805,90 +673,6 @@ public class AIAssistTestDataFactory {
     return agentObjects;
   }
 
-  public static List<AIUsagePolicy__c> createAIUsagePolicies(
-    Integer numberOfPolicies,
-    Boolean shouldDoInsert
-  ) {
-    List<AIUsagePolicy__c> policies = new List<AIUsagePolicy__c>();
-    for (Integer itemIndex = 0; itemIndex < numberOfPolicies; itemIndex++)
-      policies.add(
-        new AIUsagePolicy__c(
-          Name = uniqueName('AI Assist Test Usage Policy').left(80),
-          IsActive__c = true
-        )
-      );
-
-    if (shouldDoInsert && !policies.isEmpty())
-      insert policies;
-
-    return policies;
-  }
-
-  // Assigns a policy to users (one record each), or to a permission set by name when the user list is null.
-  public static List<AIUsagePolicyAssignment__c> createAIUsagePolicyAssignments(
-    Id policyId,
-    List<User> users,
-    String permissionSetName,
-    Boolean shouldDoInsert
-  ) {
-    List<AIUsagePolicyAssignment__c> assignments = new List<AIUsagePolicyAssignment__c>();
-    if (users != null) {
-      for (User assignedUser : users)
-        assignments.add(
-          new AIUsagePolicyAssignment__c(
-            AIUsagePolicy__c = policyId,
-            AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER,
-            User__c = assignedUser.Id,
-            IsActive__c = true
-          )
-        );
-    } else {
-      assignments.add(
-        new AIUsagePolicyAssignment__c(
-          AIUsagePolicy__c = policyId,
-          AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET,
-          PermissionSetName__c = permissionSetName,
-          IsActive__c = true
-        )
-      );
-    }
-
-    if (shouldDoInsert && !assignments.isEmpty())
-      insert assignments;
-
-    return assignments;
-  }
-
-  // Violations are written by the package, so they are inserted in system mode.
-  public static List<AIViolation__c> createAIViolations(
-    Id ruleId,
-    Id userId,
-    Id conversationId,
-    Integer numberOfViolations,
-    Boolean shouldDoInsert
-  ) {
-    List<AIViolation__c> violations = new List<AIViolation__c>();
-
-    for (Integer itemIndex = 0; itemIndex < numberOfViolations; itemIndex++) {
-      violations.add(
-        new AIViolation__c(
-          AIViolationRule__c = ruleId,
-          User__c = userId,
-          AIConversation__c = conversationId,
-          ViolationType__c = AIAssistApplicationConstants.VIOLATION_TYPE_AI_FLAGGED_INTENT,
-          Severity__c = AIAssistApplicationConstants.SEVERITY_MEDIUM,
-          ReviewStatus__c = AIAssistApplicationConstants.REVIEW_STATUS_NEW,
-          Detail__c = 'Test violation ' + itemIndex
-        )
-      );
-    }
-
-    if (shouldDoInsert && !violations.isEmpty())
-      Database.insert(violations, true, AccessLevel.SYSTEM_MODE);
-
-    return violations;
-  }
-
   public static List<AIFeedback__c> createAIFeedback(
     Id conversationId,
     Id messageId,
@@ -910,34 +694,5 @@ public class AIAssistTestDataFactory {
       insert feedback;
 
     return feedback;
-  }
-
-  // A request about one user, or about one record when subjectRecordId is given.
-  public static List<AIDataDeletionRequest__c> createAIDataDeletionRequests(
-    Id subjectUserId,
-    String subjectRecordId,
-    Integer numberOfRequests,
-    Boolean shouldDoInsert
-  ) {
-    List<AIDataDeletionRequest__c> requests = new List<AIDataDeletionRequest__c>();
-
-    for (Integer itemIndex = 0; itemIndex < numberOfRequests; itemIndex++) {
-      requests.add(
-        new AIDataDeletionRequest__c(
-          ReceivedDate__c = Datetime.now().dateGmt(),
-          RequestReference__c = uniqueName('Request').left(80),
-          Scope__c = subjectRecordId == null
-            ? AIAssistApplicationConstants.DELETION_SCOPE_USER
-            : AIAssistApplicationConstants.DELETION_SCOPE_RELATED_RECORD,
-          SubjectUser__c = subjectRecordId == null ? subjectUserId : null,
-          SubjectRecordId__c = subjectRecordId
-        )
-      );
-    }
-
-    if (shouldDoInsert && !requests.isEmpty())
-      insert requests;
-
-    return requests;
   }
 }

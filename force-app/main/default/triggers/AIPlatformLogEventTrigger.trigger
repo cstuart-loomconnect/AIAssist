@@ -11,9 +11,11 @@ Description: Trigger for AIPlatformLogEvent__e events related to AI Assist. Runs
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 */
 trigger AIPlatformLogEventTrigger on AIPlatformLogEvent__e(after insert) {
+  if (!AIAssistSettingsService.isEnabled())
+    return;
+
   // After Context
   if (Trigger.isAfter) {
     if (Trigger.isInsert) {

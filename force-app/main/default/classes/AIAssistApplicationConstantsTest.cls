@@ -210,43 +210,8 @@ private class AIAssistApplicationConstantsTest {
   @IsTest
   static void testScenario3() {
     Test.startTest();
-    List<String> errorCodes = new List<String>{
-      AIAssistApplicationConstants.ERROR_GENERIC,
-      AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
-      AIAssistApplicationConstants.ERROR_MAINTENANCE_MODE,
-      AIAssistApplicationConstants.ERROR_NEW_CONVERSATIONS_PAUSED,
-      AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-      AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_FOUND,
-      AIAssistApplicationConstants.ERROR_AGENT_INACTIVE,
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_ASSIGNED,
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_AVAILABLE,
-      AIAssistApplicationConstants.ERROR_TERMS_NOT_ACKNOWLEDGED,
-      AIAssistApplicationConstants.ERROR_TERMS_VERSION_CHANGED,
-      AIAssistApplicationConstants.ERROR_CHANNEL_NOT_ALLOWED,
-      AIAssistApplicationConstants.ERROR_RECORD_ACCESS_DENIED,
-      AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-      AIAssistApplicationConstants.ERROR_CONVERSATION_CLOSED,
-      AIAssistApplicationConstants.ERROR_CONVERSATION_BUSY,
-      AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-      AIAssistApplicationConstants.ERROR_CONVERSATION_LIMIT_DAILY,
-      AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-      AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-      AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE,
-      AIAssistApplicationConstants.ERROR_SERVICE_BUSY
-    };
-    Set<String> distinctCodes = new Set<String>(errorCodes);
     Test.stopTest();
 
-    Assert.areEqual(
-      errorCodes.size(),
-      distinctCodes.size(),
-      'Two refusals must never share a code.'
-    );
-    Assert.isFalse(
-      distinctCodes.contains(null) || distinctCodes.contains(''),
-      'Every code must have a value.'
-    );
     Assert.isTrue(
       AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS > 0 &&
         AIAssistApplicationConstants.MAX_HISTORY_MESSAGES > 0 &&

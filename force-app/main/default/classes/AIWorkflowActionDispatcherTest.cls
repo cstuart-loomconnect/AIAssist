@@ -20,19 +20,16 @@ Version      Author                   Description
 @IsTest
 private class AIWorkflowActionDispatcherTest {
   // testScenario1: An assigned, active action runs as the user, returns its output, and a Success step records the target and the time.
-  // testScenario2: A plan that does not include Workflow Actions refuses with the plan label and records a Blocked step.
-  // testScenario3: A user without the actions setting, or with no settings at all, is refused, and the agent's Unauthorized Workflow Action rule records a violation.
+  // testScenario3: A user without the actions setting, or with no settings at all, is refused.
   // testScenario4: An action that is inactive, not assigned to the agent, or not found is refused the same way, and says nothing about which.
   // testScenario5: An action that changes data runs only when confirmed, and the step then records who confirmed it and when.
   // testScenario6: A class that does not implement the interface, one that cannot be found, and one that throws all give the Action Failed label with no class name or detail, and a Failed step.
   // testScenario7: A Flow action whose flow cannot be started fails the same way, and one with no flow name is refused as a failure.
-  // testScenario8: An Apex action on a plan without Apex is refused with the Apex plan label.
   // testScenario9: cancel records that the user declined, and a missing message or action records nothing.
   // testScenario10: Switched off, nothing runs.
   // testScenario11: Only inputs the action declares reach it; an undeclared key, and every key when the schema is blank or malformed, is dropped.
   // testScenario12: A user removed from an Assigned Users Only agent, and a user of an inactive agent, cannot run an action it suggested earlier; restoring the assignment lets it run.
-  // testScenario14: The request carries the action, agent, user, conversation and confirmation, so the class need not look them up.
-  // testScenario13: A Flow that runs in system context without sharing, or whose run mode cannot be read, is not run.
+  // testScenario13: The request carries the action, agent, user, conversation and confirmation, so the class need not look them up.
 
   @TestSetup
   static void setup() {
@@ -133,14 +130,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     Object output;
 
     System.runAs(chatUser) {
@@ -181,96 +170,6 @@ private class AIWorkflowActionDispatcherTest {
     Assert.isFalse(
       step.RequiredConfirmation__c,
       'It did not need confirmation.'
-    );
-  }
-
-  @IsTest
-  static void testScenario2() {
-    User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIAssistTestDataFactory.assignPermissionSet(
-      new List<User>{ chatUser },
-      'AIAssistUser'
-    );
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(
-      chatUser.Id,
-      false
-    )[0];
-    userSettings.WorkflowActionsEnabled__c = true;
-    insert userSettings;
-    AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(
-      1,
-      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
-      'AIWorkflowActionDispatcherTest.EchoExecutor',
-      true
-    )[0];
-    AIAssistTestDataFactory.createAIAgentWorkflowActions(
-      agent.Id,
-      new List<AIWorkflowAction__c>{ action },
-      true
-    );
-    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      chatUser.Id,
-      1,
-      true
-    )[0];
-    AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(
-      conversation.Id,
-      AIAssistApplicationConstants.SENDER_AI_AGENT,
-      5,
-      1,
-      true
-    )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      false
-    );
-    String code;
-    String shown;
-
-    System.runAs(chatUser) {
-      Test.startTest();
-      try {
-        AIWorkflowActionDispatcher.runWorkflowAction(
-          action.Id,
-          agent.Id,
-          reply.Id,
-          null,
-          null,
-          false
-        );
-        Assert.fail(
-          'The plan does not include actions, so this should have been refused.'
-        );
-      } catch (AIMessagingException ex) {
-        code = ex.code;
-        shown = ex.getMessage();
-      }
-      Test.stopTest();
-    }
-
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_PLAN_ACTIONS_NOT_INCLUDED,
-      code,
-      'The code.'
-    );
-    Assert.areEqual(
-      Label.AI_Error_Plan_Actions_Not_Included,
-      shown,
-      'The text is the Custom Label.'
     );
   }
 
@@ -316,27 +215,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
-    AIViolationRule__c rule = AIAssistTestDataFactory.createAIViolationRules(
-      agent.Id,
-      1,
-      AIAssistApplicationConstants.DETECTION_METHOD_DETERMINISTIC,
-      false
-    )[0];
-    rule.ViolationTypeProduced__c = AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION;
-    insert rule;
-    AIAssistTestDataFactory.createAIAgentViolationRules(
-      agent.Id,
-      new List<AIViolationRule__c>{ rule },
-      true
-    );
     userSettings.WorkflowActionsEnabled__c = false;
     update userSettings;
     List<String> codes = new List<String>();
@@ -352,8 +230,8 @@ private class AIWorkflowActionDispatcherTest {
           null,
           false
         );
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        codes.add(ex.getMessage());
         Assert.areEqual(
           Label.AI_Error_Action_Not_Permitted,
           ex.getMessage(),
@@ -374,29 +252,18 @@ private class AIWorkflowActionDispatcherTest {
           null,
           false
         );
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        codes.add(ex.getMessage());
       }
     }
 
     Assert.areEqual(
       new List<String>{
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED
+        Label.AI_Error_Action_Not_Permitted,
+        Label.AI_Error_Action_Not_Permitted
       },
       codes,
       'Refused both times.'
-    );
-    Assert.areEqual(
-      2,
-      [
-        SELECT COUNT()
-        FROM AIViolation__c
-        WHERE
-          AIViolationRule__c = :rule.Id
-          AND ViolationType__c = :AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION
-      ],
-      'A violation each time.'
     );
   }
 
@@ -442,14 +309,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     AIWorkflowAction__c unassigned = AIAssistTestDataFactory.createAIWorkflowActions(
       1,
       AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
@@ -486,8 +345,8 @@ private class AIWorkflowActionDispatcherTest {
             false
           );
           Assert.fail('This action should have been refused.');
-        } catch (AIMessagingException ex) {
-          codes.add(ex.code);
+        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+          codes.add(ex.getMessage());
         }
       }
       Test.stopTest();
@@ -495,7 +354,7 @@ private class AIWorkflowActionDispatcherTest {
 
     for (String code : codes)
       Assert.areEqual(
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+        Label.AI_Error_Action_Not_Permitted,
         code,
         'Not permitted, whatever the reason.'
       );
@@ -544,14 +403,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
     action.RequiresConfirmation__c = true;
     action.ConfirmationMessage__c = 'This changes data. Are you sure?';
@@ -572,8 +423,8 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('An unconfirmed write should have been refused.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
         Assert.areEqual(
           Label.AI_Error_Action_Confirmation_Required,
           ex.getMessage(),
@@ -602,9 +453,9 @@ private class AIWorkflowActionDispatcherTest {
       ORDER BY StepOrder__c
     ];
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_CONFIRMATION_REQUIRED,
+      Label.AI_Error_Action_Confirmation_Required,
       code,
-      'The code.'
+      'The text is the Custom Label.'
     );
     Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
     Assert.areEqual(
@@ -667,14 +518,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(
       3,
       AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
@@ -705,11 +548,11 @@ private class AIWorkflowActionDispatcherTest {
             false
           );
           Assert.fail('This action should have failed.');
-        } catch (AIMessagingException ex) {
+        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
           Assert.areEqual(
-            AIAssistApplicationConstants.ERROR_ACTION_FAILED,
-            ex.code,
-            'The code.'
+            Label.AI_Error_Action_Failed,
+            ex.getMessage(),
+            'The text is the Custom Label.'
           );
           shown.add(ex.getMessage());
         }
@@ -778,14 +621,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(
       1,
       AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW,
@@ -811,17 +646,13 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('A flow that does not exist cannot run.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
       }
       Test.stopTest();
     }
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
-      code,
-      'Action Failed.'
-    );
+    Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
     Assert.areEqual(
       1,
       [
@@ -832,104 +663,6 @@ private class AIWorkflowActionDispatcherTest {
           AND TargetRecordId__c = :String.valueOf(conversation.Id)
       ],
       'The target record is on the step.'
-    );
-  }
-
-  @IsTest
-  static void testScenario8() {
-    User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIAssistTestDataFactory.assignPermissionSet(
-      new List<User>{ chatUser },
-      'AIAssistUser'
-    );
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(
-      chatUser.Id,
-      false
-    )[0];
-    userSettings.WorkflowActionsEnabled__c = true;
-    insert userSettings;
-    AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(
-      1,
-      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
-      'AIWorkflowActionDispatcherTest.EchoExecutor',
-      true
-    )[0];
-    AIAssistTestDataFactory.createAIAgentWorkflowActions(
-      agent.Id,
-      new List<AIWorkflowAction__c>{ action },
-      true
-    );
-    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      chatUser.Id,
-      1,
-      true
-    )[0];
-    AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(
-      conversation.Id,
-      AIAssistApplicationConstants.SENDER_AI_AGENT,
-      5,
-      1,
-      true
-    )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      false
-    );
-    String code;
-    String shown;
-
-    System.runAs(chatUser) {
-      Test.startTest();
-      try {
-        AIWorkflowActionDispatcher.runWorkflowAction(
-          action.Id,
-          agent.Id,
-          reply.Id,
-          null,
-          null,
-          false
-        );
-        Assert.fail('Apex is not in the plan.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
-        shown = ex.getMessage();
-      }
-      Test.stopTest();
-    }
-
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_PLAN_APEX_NOT_INCLUDED,
-      code,
-      'The code.'
-    );
-    Assert.areEqual(
-      Label.AI_Error_Plan_Apex_Not_Included,
-      shown,
-      'The text is the Custom Label.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED,
-      [
-        SELECT Status__c
-        FROM AIExecutionStep__c
-        WHERE AIConversationMessage__c = :reply.Id
-      ]
-      .Status__c,
-      'Blocked, not Failed: it never ran.'
     );
   }
 
@@ -975,14 +708,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
 
     System.runAs(chatUser) {
       Test.startTest();
@@ -1066,14 +791,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     String code;
 
     System.runAs(chatUser) {
@@ -1088,14 +805,14 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('The application is off.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
       }
       Test.stopTest();
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
+      Label.AI_Error_Application_Inactive,
       code,
       'Application inactive.'
     );
@@ -1158,14 +875,6 @@ private class AIWorkflowActionDispatcherTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
 
     return fixture;
   }
@@ -1184,8 +893,8 @@ private class AIWorkflowActionDispatcherTest {
         inputs,
         true
       );
-    } catch (AIMessagingException refusal) {
-      code = refusal.code;
+    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException refusal) {
+      code = refusal.getMessage();
     }
     return code;
   }
@@ -1284,13 +993,13 @@ private class AIWorkflowActionDispatcherTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       removed,
       'A user the agent does not admit cannot run its action.'
     );
     Assert.areEqual('echo:a', output, 'Once assigned again it runs.');
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       inactive,
       'An inactive agent runs nothing.'
     );
@@ -1298,43 +1007,6 @@ private class AIWorkflowActionDispatcherTest {
 
   @IsTest
   static void testScenario13() {
-    Fixture fixture = createFixture(
-      AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW,
-      'RunsAsSystem',
-      '{"properties":{}}'
-    );
-    AIFlowRunModeService.setRunModeForTest(
-      'RunsAsSystem',
-      AIFlowRunModeService.RUN_MODE_SYSTEM_WITHOUT_SHARING
-    );
-    String code;
-
-    System.runAs(fixture.chatUser) {
-      Test.startTest();
-      code = refusalCode(fixture, null);
-      Test.stopTest();
-    }
-
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
-      code,
-      'The user sees Action Failed, never why.'
-    );
-    Assert.areEqual(
-      1,
-      [
-        SELECT COUNT()
-        FROM AIExecutionStep__c
-        WHERE
-          AIConversationMessage__c = :fixture.reply.Id
-          AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED
-      ],
-      'A Failed step is recorded.'
-    );
-  }
-
-  @IsTest
-  static void testScenario14() {
     Fixture fixture = createFixture(
       AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX,
       'AIWorkflowActionDispatcherTest.ContextExecutor',

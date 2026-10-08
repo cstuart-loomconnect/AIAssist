@@ -131,10 +131,6 @@
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>PublicId__c</field>
-            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -163,14 +159,6 @@
         <fields>Comment__c</fields>
         <fields>CREATED_DATE</fields>
         <relatedList>AIFeedback__c.AIConversation__c</relatedList>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>ViolationType__c</fields>
-        <fields>Severity__c</fields>
-        <fields>ReviewStatus__c</fields>
-        <fields>CREATED_DATE</fields>
-        <relatedList>AIViolation__c.AIConversation__c</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>

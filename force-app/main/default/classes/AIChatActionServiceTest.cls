@@ -132,16 +132,7 @@ private class AIChatActionServiceTest {
     )[0];
     reply.SuggestedWorkflowAction__c = action.Id;
     AIMessagingDataService.insertAsPackage(new List<SObject>{ reply });
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     AIChatDataStructure.ActionResult ran;
-    AIChatDataStructure.ActionResult refused;
 
     System.runAs(chatUser) {
       AIConversationMessage__c loaded = AIChatConversationService.assertOwnsAgentMessage(
@@ -149,22 +140,11 @@ private class AIChatActionServiceTest {
       );
       Test.startTest();
       ran = AIChatActionService.runSuggestedAction(loaded, '{"x":"hi"}', true);
-      AIPlanLimitService.setLimitForTest(
-        AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-        false
-      );
-      refused = AIChatActionService.runSuggestedAction(loaded, null, true);
       Test.stopTest();
     }
 
     Assert.isTrue(ran.isSuccess, 'It ran.');
     Assert.areEqual('echo:hi', ran.message, 'Its output.');
-    Assert.isFalse(refused.isSuccess, 'Refused.');
-    Assert.areEqual(
-      Label.AI_Error_Plan_Actions_Not_Included,
-      refused.message,
-      'The text is the Custom Label.'
-    );
   }
 
   @IsTest
@@ -190,20 +170,20 @@ private class AIChatActionServiceTest {
     AIConversationMessage__c loaded = AIChatConversationService.assertOwnsAgentMessage(
       reply.Id
     );
-    String code;
+    String shown;
 
     Test.startTest();
     try {
       AIChatActionService.runSuggestedAction(loaded, null, true);
       Assert.fail('Nothing to run.');
-    } catch (AIMessagingException ex) {
-      code = ex.code;
+    } catch (AIChatActionService.AIChatActionServiceException ex) {
+      shown = ex.getMessage();
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
-      code,
+      Label.AI_Error_Action_Not_Permitted,
+      shown,
       'Not permitted.'
     );
   }

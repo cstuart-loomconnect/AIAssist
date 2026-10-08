@@ -18,10 +18,10 @@ Version      Author                   Description
 
 @IsTest
 private class AIMessageOutcomeServiceTest {
-  // testScenario1: A successful turn stores the reply with the provider's tokens, latency and model, marks the question Complete and adds the usage.
+  // testScenario1: A successful turn stores the reply with the provider's tokens, latency and model, and marks the question Complete.
   // testScenario2: An Estimate agent counts the reply by its length, and a provider that reports only a total has it counted as input.
   // testScenario3: A suggested workflow action is stored when it is a real action Id, and ignored when it is the wrong type or not an Id.
-  // testScenario4: A failed result records the reason on the question, a System message holding the tokens spent, the failed turn in the usage, and the cause in the log.
+  // testScenario4: A failed result records the reason on the question, a System message holding the tokens spent, and the cause in the log.
   // testScenario5: A null result and a blank reason both fail the turn as Other.
   // testScenario6: recordFailure fails the turn with the given reason and tokens, and treats null tokens as none.
   // testScenario7: notifyFailure returns the Custom Label that matches each reason, and the generic one for any other.
@@ -95,15 +95,6 @@ private class AIMessageOutcomeServiceTest {
         AIConversation__c = :conversation.Id
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
     ];
-    AIUsageDaily__c usage = [
-      SELECT
-        MessageCount__c,
-        FailedTurnCount__c,
-        InputTokens__c,
-        OutputTokens__c
-      FROM AIUsageDaily__c
-      WHERE User__c = :chatUser.Id
-    ];
 
     Assert.areEqual('The answer', reply.MessageBody__c, 'The reply.');
     Assert.areEqual(
@@ -129,9 +120,6 @@ private class AIMessageOutcomeServiceTest {
       .ProcessingStatus__c,
       'The question is Complete.'
     );
-    Assert.areEqual(1, usage.MessageCount__c, 'One responseContext.');
-    Assert.areEqual(0, usage.FailedTurnCount__c, 'None failed.');
-    Assert.areEqual(40, usage.InputTokens__c, 'Input tokens counted.');
   }
 
   @IsTest
@@ -198,8 +186,14 @@ private class AIMessageOutcomeServiceTest {
     );
     Assert.areEqual(
       77,
-      [SELECT InputTokens__c FROM AIUsageDaily__c WHERE User__c = :chatUser.Id]
-      .InputTokens__c,
+      [
+        SELECT InputTokenCount__c
+        FROM AIConversationMessage__c
+        WHERE
+          AIConversation__c = :conversation.Id
+          AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
+      ]
+      .InputTokenCount__c,
       'The only figure there is counts as input.'
     );
   }
@@ -360,16 +354,6 @@ private class AIMessageOutcomeServiceTest {
       50,
       systemMessage.TokenCount__c,
       'The tokens a failed turn spent still count.'
-    );
-    Assert.areEqual(
-      1,
-      [
-        SELECT FailedTurnCount__c
-        FROM AIUsageDaily__c
-        WHERE User__c = :chatUser.Id
-      ]
-      .FailedTurnCount__c,
-      'A failed turn is counted.'
     );
     Assert.areEqual(
       0,

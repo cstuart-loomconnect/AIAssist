@@ -282,10 +282,6 @@ private class AIDataSourceDispatcherTest {
       dataSources,
       true
     );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
     List<Object> goodResults;
     List<String> refusals = new List<String>();
 
@@ -330,52 +326,6 @@ private class AIDataSourceDispatcherTest {
       wasNotAnExecutorConstructed,
       'Not even the constructor of the refused class ran.'
     );
-  }
-
-  @IsTest
-  static void testScenario6() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(
-      1,
-      AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX,
-      'AIDataSourceDispatcherTest.NoRecordsExecutor',
-      false
-    )[0];
-    dataSource.BindingType__c = AIAssistApplicationConstants.DATA_SOURCE_BINDING_UNBOUND;
-    insert dataSource;
-    AIAssistTestDataFactory.createAIAgentDataSources(
-      agent.Id,
-      new List<AIDataSource__c>{ dataSource },
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      false
-    );
-
-    Test.startTest();
-    try {
-      AIDataSourceDispatcher.runDataSource(
-        dataSource.Id,
-        agent.Id,
-        null,
-        null,
-        null
-      );
-      Assert.fail(
-        'An Apex data source should be refused on a plan without it.'
-      );
-    } catch (AIDataSourceDispatcher.AIDataSourceExecutorException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('not included in the plan'),
-        'The refusal names the plan.'
-      );
-    }
-    Test.stopTest();
   }
 
   @IsTest

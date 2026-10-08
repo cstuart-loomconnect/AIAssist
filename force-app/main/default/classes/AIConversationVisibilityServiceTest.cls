@@ -118,10 +118,10 @@ private class AIConversationVisibilityServiceTest {
       try {
         AIConversationVisibilityService.assertCanView(conversation.Id);
         answers.add(true);
-      } catch (AIMessagingException refusal) {
+      } catch (AIConversationVisibilityService.AIConversationVisibilityServiceException refusal) {
         Assert.areEqual(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-          refusal.code,
+          Label.AI_Error_Conversation_Not_Found,
+          refusal.getMessage(),
           'The same answer as for a missing conversation.'
         );
         answers.add(false);
@@ -372,7 +372,7 @@ private class AIConversationVisibilityServiceTest {
     );
     List<Boolean> ownScope;
     List<Boolean> noSettings;
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     Test.startTest();
     System.runAs(users[0]) {
@@ -380,8 +380,8 @@ private class AIConversationVisibilityServiceTest {
       for (Id badId : new List<Id>{ null, UserInfo.getUserId() }) {
         try {
           AIConversationVisibilityService.assertCanView(badId);
-        } catch (AIMessagingException refusal) {
-          codes.add(refusal.code);
+        } catch (AIConversationVisibilityService.AIConversationVisibilityServiceException refusal) {
+          messages.add(refusal.getMessage());
         }
       }
     }
@@ -395,10 +395,10 @@ private class AIConversationVisibilityServiceTest {
     Assert.isFalse(noSettings[0], 'No settings is the narrowest scope.');
     Assert.areEqual(
       new List<String>{
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND
+        Label.AI_Error_Conversation_Not_Found,
+        Label.AI_Error_Conversation_Not_Found
       },
-      codes,
+      messages,
       'No Id and a wrong-type Id are refused the same way.'
     );
   }

@@ -12,7 +12,7 @@ Flow:
     assigned to the user, terms accepted, channel allowed, related record readable.
 [2] Find an Active conversation to reuse, or start a new one (AIAgent__c.SingleActiveConversationPerRecord__c),
     closing the existing one first if it hit the agent's per-conversation message or token cap.
-[3] AIUsageLimitService checks the user's and the organisation's limits.
+[3] AIUsageLimitService checks the send rate, concurrent conversations and queue room.
 [4] Take the conversation's processing lock, insert the user's message, and enqueue
     AIMessageProcessingQueueable, but only if the lock was free. If another message is still being
     processed this one waits, and that job's finalizer starts it.
@@ -28,7 +28,7 @@ Runs as the user (`with sharing`) and authorises as the user:
 - What the user may not write themselves (the message's token estimate and processing status) goes
   through AIMessagingDataService, after the checks above.
 
-Every refusal is an AIMessagingException whose message is a Custom Label; the UI reads its code,
+Every refusal is an exception whose message is a Custom Label; the UI shows it,
 not its text. An unexpected failure reaches the caller as the generic label and is logged in full.
 
 =================================================================
@@ -40,6 +40,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIConversationMessageService {
+  public class AIConversationMessageServiceException extends Exception {
+  }
+
   // Validates the request, finds or creates the Active conversation, inserts the user's message, and enqueues the asynchronous turn. Returns the inserted message.
   public static AIConversationMessage__c sendMessage(
     Id agentId,
@@ -147,8 +150,7 @@ public with sharing class AIConversationMessageService {
             AccessLevel.USER_MODE
           );
           if (!messageLimitCloseResult.isSuccess())
-            throw AIMessagingException.newRefusal(
-              AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+            throw new AIConversationMessageServiceException(
               Label.AI_Error_Conversation_Not_Found
             ); // A failure is reported as "not found", which reveals nothing about what exists.
           conversation = null;
@@ -167,8 +169,7 @@ public with sharing class AIConversationMessageService {
             AccessLevel.USER_MODE
           );
           if (!tokenLimitCloseResult.isSuccess())
-            throw AIMessagingException.newRefusal(
-              AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+            throw new AIConversationMessageServiceException(
               Label.AI_Error_Conversation_Not_Found
             );
           conversation = null;
@@ -182,17 +183,12 @@ public with sharing class AIConversationMessageService {
         AIAssistSettingsService.getUiSettings().IsUserInitiatedChatEnabled__c ==
         false
       ) {
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NEW_CONVERSATIONS_PAUSED,
+        throw new AIConversationMessageServiceException(
           Label.AI_Chat_New_Chats_Paused
         );
       }
 
-      AIUsageLimitService.enforceUsageLimits(
-        chatContext,
-        isNewConversation,
-        tokensCountedForLimits
-      );
+      AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);
 
       if (isNewConversation) {
         // The new conversation is the user's own, so it is created in user mode: only fields the AI Assist User permission set can set.
@@ -211,28 +207,19 @@ public with sharing class AIConversationMessageService {
           false,
           AccessLevel.USER_MODE
         );
-        if (!conversationResult.isSuccess())
-          throw AIMessagingException.newFailure(
+        if (!conversationResult.isSuccess()) {
+          AIPlatformLogManager.logCustomMessage(
             'Failed to create conversation: ' +
               conversationResult.getErrors()[0].getStatusCode() +
               ' ' +
               conversationResult.getErrors()[0].getMessage(),
+            null,
+            'AIConversationMessageService',
+            'sendMessage',
             null
           );
-
-        // Counts towards the user's conversations for the day. Bookkeeping: a failure must not stop the user chatting.
-        try {
-          AIMessagingDataService.UsageDelta usageDelta = new AIMessagingDataService.UsageDelta();
-          usageDelta.userId = chatContext.userId;
-          usageDelta.agentId = chatContext.agent.Id;
-          usageDelta.modelConfigurationId = chatContext.agent.AIModelConfiguration__c;
-          usageDelta.conversations = 1;
-          AIMessagingDataService.addToDailyUsage(usageDelta);
-        } catch (Exception usageException) {
-          AIPlatformLogManager.logException(
-            usageException,
-            'AIConversationMessageService',
-            'sendMessage'
+          throw new AIConversationMessageServiceException(
+            Label.AI_Error_Generic
           );
         }
       }
@@ -269,18 +256,9 @@ public with sharing class AIConversationMessageService {
 
       return userMessage;
     } catch (Exception caughtException) {
-      // Logs only what is unexpected and hands the caller a safe exception. A refusal is the system working, not a fault.
-      if (caughtException instanceof AIMessagingException) {
-        AIMessagingException knownException = (AIMessagingException) caughtException;
-        if (!knownException.isRefusal)
-          AIPlatformLogManager.logCustomMessage(
-            knownException.getMessage(),
-            knownException.detail,
-            'AIConversationMessageService',
-            'sendMessage',
-            null
-          );
-        throw knownException;
+      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
+      if (!caughtException.getTypeName().startsWith('System.')) {
+        throw caughtException;
       }
 
       AIPlatformLogManager.logException(
@@ -288,10 +266,19 @@ public with sharing class AIConversationMessageService {
         'AIConversationMessageService',
         'sendMessage'
       );
-      throw AIMessagingException.newFailure(
-        caughtException.getMessage(),
-        caughtException
-      );
+      {
+        AIPlatformLogManager.logCustomMessage(
+          caughtException.getMessage(),
+          null,
+          'AIConversationMessageService',
+          'sendMessage',
+          null
+        );
+        throw new AIConversationMessageServiceException(
+          Label.AI_Error_Generic,
+          caughtException
+        );
+      }
     }
   }
 
@@ -304,7 +291,7 @@ public with sharing class AIConversationMessageService {
       Set<Id> conversationIds = new Set<Id>();
 
       for (
-        AIConversationMessage__c heldMessage : AIMessagingSelector.lockExpiredHeldMessages(
+        AIConversationMessage__c heldMessage : lockExpiredHeldMessages(
           heldBefore,
           isRecentOnly ? heldBefore.addDays(-1) : null,
           AIAssistApplicationConstants.HELD_MESSAGE_SWEEP_SIZE
@@ -422,8 +409,7 @@ public with sharing class AIConversationMessageService {
         conversationId == null ||
         conversationId.getSobjectType() != AIConversation__c.SObjectType
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
@@ -442,8 +428,7 @@ public with sharing class AIConversationMessageService {
       ];
 
       if (ownConversations.isEmpty())
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
@@ -452,8 +437,7 @@ public with sharing class AIConversationMessageService {
         conversation.Status__c !=
         AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_CLOSED,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Closed
         );
 
@@ -469,8 +453,7 @@ public with sharing class AIConversationMessageService {
       ];
 
       if (newestUserMessages.isEmpty())
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Message_Empty
         );
 
@@ -484,11 +467,10 @@ public with sharing class AIConversationMessageService {
           ? null
           : Id.valueOf(conversation.RelatedRecordId__c)
       );
-      AIUsageLimitService.enforceUsageLimits(chatContext, false, 0);
+      AIUsageLimitService.enforceUsageLimits(chatContext, false);
 
       if (!AIConversationLockService.acquireLock(conversationId))
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_BUSY,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Busy
         );
 
@@ -511,18 +493,9 @@ public with sharing class AIConversationMessageService {
 
       return newestUserMessages[0].Id;
     } catch (Exception caughtException) {
-      // Logs only what is unexpected and hands the caller a safe exception. A refusal is the system working, not a fault.
-      if (caughtException instanceof AIMessagingException) {
-        AIMessagingException knownException = (AIMessagingException) caughtException;
-        if (!knownException.isRefusal)
-          AIPlatformLogManager.logCustomMessage(
-            knownException.getMessage(),
-            knownException.detail,
-            'AIConversationMessageService',
-            'retryMessage',
-            null
-          );
-        throw knownException;
+      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
+      if (!caughtException.getTypeName().startsWith('System.')) {
+        throw caughtException;
       }
 
       AIPlatformLogManager.logException(
@@ -530,10 +503,19 @@ public with sharing class AIConversationMessageService {
         'AIConversationMessageService',
         'retryLatestUserMessage'
       );
-      throw AIMessagingException.newFailure(
-        caughtException.getMessage(),
-        caughtException
-      );
+      {
+        AIPlatformLogManager.logCustomMessage(
+          caughtException.getMessage(),
+          null,
+          'AIConversationMessageService',
+          'retryLatestUserMessage',
+          null
+        );
+        throw new AIConversationMessageServiceException(
+          Label.AI_Error_Generic,
+          caughtException
+        );
+      }
     }
   }
 
@@ -545,8 +527,7 @@ public with sharing class AIConversationMessageService {
         conversationId == null ||
         conversationId.getSobjectType() != AIConversation__c.SObjectType
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
@@ -565,8 +546,7 @@ public with sharing class AIConversationMessageService {
       ];
 
       if (closableConversations.isEmpty())
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
@@ -583,23 +563,13 @@ public with sharing class AIConversationMessageService {
       );
 
       if (!closeResult.isSuccess())
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+        throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
     } catch (Exception caughtException) {
-      // Logs only what is unexpected and hands the caller a safe exception. A refusal is the system working, not a fault.
-      if (caughtException instanceof AIMessagingException) {
-        AIMessagingException knownException = (AIMessagingException) caughtException;
-        if (!knownException.isRefusal)
-          AIPlatformLogManager.logCustomMessage(
-            knownException.getMessage(),
-            knownException.detail,
-            'AIConversationMessageService',
-            'closeConversation',
-            null
-          );
-        throw knownException;
+      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
+      if (!caughtException.getTypeName().startsWith('System.')) {
+        throw caughtException;
       }
 
       AIPlatformLogManager.logException(
@@ -607,10 +577,19 @@ public with sharing class AIConversationMessageService {
         'AIConversationMessageService',
         'closeConversation'
       );
-      throw AIMessagingException.newFailure(
-        caughtException.getMessage(),
-        caughtException
-      );
+      {
+        AIPlatformLogManager.logCustomMessage(
+          caughtException.getMessage(),
+          null,
+          'AIConversationMessageService',
+          'closeConversation',
+          null
+        );
+        throw new AIConversationMessageServiceException(
+          Label.AI_Error_Generic,
+          caughtException
+        );
+      }
     }
   }
 
@@ -622,5 +601,43 @@ public with sharing class AIConversationMessageService {
           text.length() /
           (Decimal) AIAssistApplicationConstants.CHARACTERS_PER_TOKEN_ESTIMATE
         );
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static List<AIConversationMessage__c> lockExpiredHeldMessages(
+    Datetime heldBefore,
+    Datetime heldSince,
+    Integer maximum
+  ) {
+    return systemReader.lockExpiredHeldMessages(heldBefore, heldSince, maximum);
+  }
+
+  private without sharing class SystemReader {
+    // Messages still held at the cap on messages in flight that were sent before heldBefore, whoever sent them. heldSince, when given, keeps the query to a range of the CreatedDate index. Locked and read again by the caller's check, so one its sender is starting at this moment is seen as it ends up.
+    public List<AIConversationMessage__c> lockExpiredHeldMessages(
+      Datetime heldBefore,
+      Datetime heldSince,
+      Integer maximum
+    ) {
+      Datetime earliest = heldSince == null
+        ? Datetime.newInstanceGmt(2000, 1, 1)
+        : heldSince;
+
+      return [
+        SELECT Id, AIConversation__c, IsAwaitingCapacity__c, ProcessingStatus__c
+        FROM AIConversationMessage__c
+        WHERE
+          IsAwaitingCapacity__c = TRUE
+          AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+          AND CreatedDate < :heldBefore
+          AND CreatedDate >= :earliest
+        WITH SYSTEM_MODE
+        LIMIT :maximum
+        FOR UPDATE
+      ];
+    }
   }
 }

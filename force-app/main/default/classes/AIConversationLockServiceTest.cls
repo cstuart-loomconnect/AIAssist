@@ -74,7 +74,10 @@ private class AIConversationLockServiceTest {
     Assert.isTrue(
       lockedUntil >
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes() - 1),
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue() - 1
+        ),
       'The lock lasts the configured time.'
     );
   }
@@ -122,15 +125,15 @@ private class AIConversationLockServiceTest {
     );
     Id deletedId = conversations[0].Id;
     delete conversations[0];
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     Test.startTest();
     for (Id badId : new List<Id>{ deletedId, agent.Id, null }) {
       try {
         AIConversationLockService.acquireLock(badId);
         Assert.fail('Nothing to lock, so this should have thrown.');
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIConversationLockService.AIConversationLockServiceException ex) {
+        messages.add(ex.getMessage());
         Assert.areEqual(
           Label.AI_Error_Conversation_Not_Found,
           ex.getMessage(),
@@ -140,12 +143,7 @@ private class AIConversationLockServiceTest {
     }
     Test.stopTest();
 
-    Assert.areEqual(3, codes.size(), 'Each bad Id was refused.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-      codes[0],
-      'Not found.'
-    );
+    Assert.areEqual(3, messages.size(), 'Each bad Id was refused.');
   }
 
   @IsTest
@@ -218,7 +216,10 @@ private class AIConversationLockServiceTest {
     Assert.isTrue(
       extended >
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes() - 1),
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue() - 1
+        ),
       'The lock was reset to its full time.'
     );
     Assert.isFalse(lockedAfterRelease, 'Released.');

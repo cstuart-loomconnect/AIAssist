@@ -21,7 +21,7 @@ changes.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development - Request/ToolDefinition/Response/ToolCall and stringifyToolResult moved from AIAgentManager, plus the provider lookup.
-2.0          Chandler Stuart          Azure OpenAI, provider presets for the credential set-up, and getFailureReason.
+2.0          Chandler Stuart          Provider presets for the credential set-up, and getFailureReason.
 */
 
 public inherited sharing class AIProvider {
@@ -31,19 +31,17 @@ public inherited sharing class AIProvider {
   // Keyed by the lower-cased AIProvider__c value, so the match is case-insensitive.
   private static final Map<String, Type> REQUEST_BUILDER_BY_PROVIDER = new Map<String, Type>{
     AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC.toLowerCase() => AIAnthropicRequestBuilder.class, // Anthropic - Messages API
-    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiRequestBuilder.class, // OpenAI, and any service with an OpenAI-compatible Chat Completions API: the base URL is the Named Credential's
-    AIAssistApplicationConstants.AI_PROVIDER_AZURE_OPEN_AI.toLowerCase() => AIAzureOpenAiRequestBuilder.class // Azure OpenAI - the deployment is in the URL
+    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiRequestBuilder.class // OpenAI, and any service with an OpenAI-compatible Chat Completions API: the base URL is the Named Credential's
   };
 
   private static final Map<String, Type> RESPONSE_HANDLER_BY_PROVIDER = new Map<String, Type>{
     AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC.toLowerCase() => AIAnthropicResponseHandler.class,
-    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiResponseHandler.class,
-    AIAssistApplicationConstants.AI_PROVIDER_AZURE_OPEN_AI.toLowerCase() => AIOpenAiResponseHandler.class // The same reply shape as OpenAI
+    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiResponseHandler.class
   };
 
   // How a provider is connected to: what a Named Credential and a Model Configuration for it start from. The key itself is never here; headerValue is the formula that reads it from the External Credential named in {0}.
   public class Preset {
-    public String baseUrl; // Null when the customer has their own (Azure: https://{resource}.openai.azure.com).
+    public String baseUrl; // Null when the customer has their own.
     public String apiPath;
     public String headerName;
     public String headerValue;
@@ -51,7 +49,7 @@ public inherited sharing class AIProvider {
     public String versionHeaderValue;
   }
 
-  // The preset for a provider, or null for one this package does not know. modelIdentifier is the Azure deployment name; other providers ignore it. An OpenAI-compatible service uses the OpenAI preset with its own base URL.
+  // The preset for a provider, or null for one this package does not know. An OpenAI-compatible service uses the OpenAI preset with its own base URL.
   public static Preset getPreset(String providerName, String modelIdentifier) {
     if (!isSupported(providerName))
       return null;
@@ -68,20 +66,6 @@ public inherited sharing class AIProvider {
       preset.headerValue = '{!$Credential.{0}.ApiKey}';
       preset.versionHeaderName = 'anthropic-version';
       preset.versionHeaderValue = '2023-06-01';
-    } else if (
-      providerName.equalsIgnoreCase(
-        AIAssistApplicationConstants.AI_PROVIDER_AZURE_OPEN_AI
-      )
-    ) {
-      preset.apiPath =
-        '/openai/deployments/' +
-        (String.isBlank(modelIdentifier)
-          ? 'deployment'
-          : EncodingUtil.urlEncode(modelIdentifier.trim(), 'UTF-8')) +
-        '/chat/completions?api-version=' +
-        AIAssistApplicationConstants.AZURE_OPEN_AI_DEFAULT_API_VERSION;
-      preset.headerName = 'api-key';
-      preset.headerValue = '{!$Credential.{0}.ApiKey}';
     } else {
       preset.baseUrl = 'https://api.openai.com';
       preset.apiPath = '/v1/chat/completions';

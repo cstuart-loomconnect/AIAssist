@@ -4,7 +4,7 @@ Class Name: AIConversationTriggerHandlerTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIConversationTrigger and AIConversationTriggerHandler: Public Id, retention expiry and the close timestamp, bulk-safe and quiet when the application is switched off.
+Description: Testing utility for AIConversationTrigger and AIConversationTriggerHandler: retention expiry and the close timestamp, bulk-safe and quiet when the application is switched off.
 
 =================================================================
 =================================================================
@@ -18,12 +18,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationTriggerHandlerTest {
-  // testScenario1: A new conversation gets a Public Id, and one supplied is kept.
   // testScenario2: Retention counted from creation or from the last message sets the expiry date at insert, and one counted from closing does not.
   // testScenario3: Closing a conversation stamps the close time and starts a retention that counts from closing, once.
   // testScenario4: A later update of a closed conversation leaves its close time and expiry alone.
-  // testScenario5: Bulk: 201 conversations, across the 200-record chunk boundary, all get a Public Id and an expiry, within a few queries.
-  // testScenario6: Switched off, the trigger does nothing: no Public Id and no expiry, and the conversation still saves.
+  // testScenario5: Bulk: 201 conversations, across the 200-record chunk boundary, all get an expiry, within a few queries.
+  // testScenario6: Switched off, the trigger does nothing: no expiry, and the conversation still saves.
   // testScenario7: Calling the handler with nothing, or with no old values, does nothing and does not throw.
   // testScenario8: An unexpected failure inside the handler is logged and never stops the save.
 
@@ -34,39 +33,6 @@ private class AIConversationTriggerHandlerTest {
     settings.IsExceptionLoggingEnabled__c = true;
     settings.IsPlatformLoggingEnabled__c = true;
     upsert settings;
-  }
-
-  @IsTest
-  static void testScenario1() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      2,
-      false
-    );
-    conversations[1].PublicId__c = 'supplied-public-id';
-
-    Test.startTest();
-    insert conversations;
-    Test.stopTest();
-
-    Map<Id, AIConversation__c> byId = new Map<Id, AIConversation__c>(
-      [SELECT PublicId__c FROM AIConversation__c WHERE Id IN :conversations]
-    );
-    Assert.areEqual(
-      36,
-      byId.get(conversations[0].Id).PublicId__c.length(),
-      'A UUID was generated.'
-    );
-    Assert.areEqual(
-      'supplied-public-id',
-      byId.get(conversations[1].Id).PublicId__c,
-      'A supplied value is kept.'
-    );
   }
 
   @IsTest
@@ -235,7 +201,7 @@ private class AIConversationTriggerHandlerTest {
       [
         SELECT COUNT()
         FROM AIConversation__c
-        WHERE PublicId__c != NULL AND RetentionExpiryDate__c != NULL
+        WHERE RetentionExpiryDate__c != NULL
       ],
       'Every conversation was stamped, in both chunks.'
     );
@@ -274,7 +240,7 @@ private class AIConversationTriggerHandlerTest {
       [
         SELECT COUNT()
         FROM AIConversation__c
-        WHERE PublicId__c = NULL AND RetentionExpiryDate__c = NULL
+        WHERE RetentionExpiryDate__c = NULL
       ],
       'Nothing was added while switched off.'
     );

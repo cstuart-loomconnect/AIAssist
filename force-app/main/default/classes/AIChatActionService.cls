@@ -20,6 +20,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIChatActionService {
+  public class AIChatActionServiceException extends Exception {
+  }
+
   // Runs the action suggested on reply. isConfirmed is whether the user pressed the confirmation.
   public static AIChatDataStructure.ActionResult runSuggestedAction(
     AIConversationMessage__c reply,
@@ -29,8 +32,7 @@ public with sharing class AIChatActionService {
     AIChatDataStructure.ActionResult result = new AIChatDataStructure.ActionResult();
 
     if (reply.SuggestedWorkflowAction__c == null)
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      throw new AIChatActionServiceException(
         Label.AI_Error_Action_Not_Permitted
       );
 
@@ -54,7 +56,10 @@ public with sharing class AIChatActionService {
         String.isNotBlank((String) output)
         ? (String) output
         : null;
-    } catch (AIMessagingException refusal) {
+    } catch (Exception refusal) {
+      if (refusal.getTypeName().startsWith('System.')) {
+        throw refusal;
+      }
       result.message = refusal.getMessage();
     }
 

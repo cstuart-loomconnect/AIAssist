@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RetryAttempts__c</fullName>
+    <defaultValue>2</defaultValue>
+    <description
+  >How many times a callout to any model is retried after a retryable failure (see Retryable Status Codes, and timeouts) before the turn fails. 0 means never retry. Between 0 and 5; anything outside that range, or blank, is read as the default (2) or the nearest limit.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Extra attempts after a failed call to a model, for every model. 0 means never retry. Maximum 5.</inlineHelpText>
+    <label>Retry Attempts</label>
+    <precision>1</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

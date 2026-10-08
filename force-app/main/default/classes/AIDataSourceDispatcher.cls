@@ -113,14 +113,6 @@ public inherited sharing class AIDataSourceDispatcher {
       dataSource.SourceType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX
     ) {
-      if (
-        !AIFeatureService.isFeatureEnabled(
-          AIAssistApplicationConstants.APP_FEATURE_APEX
-        )
-      )
-        throw new AIDataSourceExecutorException(
-          'Apex data sources are not included in the plan.'
-        );
       if (String.isBlank(dataSource.ApexClassName__c))
         throw new AIDataSourceExecutorException(
           'Data source "' + dataSource.DeveloperName__c + '" has no Apex class.'

@@ -36,6 +36,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIConversationVisibilityService {
+  public class AIConversationVisibilityServiceException extends Exception {
+  }
+
   private static final Integer RECORD_ACCESS_BATCH = 200; // UserRecordAccess answers for at most 200 records per query.
 
   // The narrowest scope when nothing, or something unrecognised, is set.
@@ -136,7 +139,7 @@ public with sharing class AIConversationVisibilityService {
     if (!conversations.isEmpty()) {
       AIConversation__c conversation = conversations[0];
       String scope = getEffectiveScope(
-        AIMessagingSelector.getUserSettings(UserInfo.getUserId())
+        AIUsagePolicyResolver.getUserSettings(UserInfo.getUserId())
       );
 
       if (conversation.OwnerId == UserInfo.getUserId()) {
@@ -172,8 +175,7 @@ public with sharing class AIConversationVisibilityService {
     }
 
     if (!isReadable)
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIConversationVisibilityServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 

@@ -26,7 +26,7 @@ private class AIExecutionStepRecorderTest {
   // testScenario6: Nothing is saved, and nothing throws, for no message, no trace or a trace with no steps.
   // testScenario7: A value longer than its field is cut instead of losing the evidence row.
   // testScenario8: Bulk: two hundred steps are saved in one insert, in order.
-  // testScenario9: Each capture mode: Off stores no step for the turn, Summary and a blank or unknown setting store steps, and only Full is the mode that carries payloads.
+  // testScenario9: Each capture mode: Off stores no step for the turn, Summary, Full and a blank or unknown setting store steps.
 
   @TestSetup
   static void setup() {
@@ -618,7 +618,6 @@ private class AIExecutionStepRecorderTest {
       1,
       true
     )[0];
-    Map<String, String> modeBySetting = new Map<String, String>();
     Map<String, Integer> stepsBySetting = new Map<String, Integer>();
 
     Test.startTest();
@@ -634,11 +633,7 @@ private class AIExecutionStepRecorderTest {
       AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
       settings.StepCaptureMode__c = configured;
       update settings;
-      AIAssistSettingsService.cachedSettings = null;
-      modeBySetting.put(
-        configured,
-        AIAssistSettingsService.getStepCaptureMode()
-      );
+      AIAssistSettingsService.clearCache();
 
       AIExecutionStepTracker trace = new AIExecutionStepTracker(
         conversation.Id,
@@ -659,29 +654,14 @@ private class AIExecutionStepRecorderTest {
     }
     Test.stopTest();
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.STEP_CAPTURE_OFF,
-      modeBySetting.get('Off'),
-      'Off.'
-    );
     Assert.areEqual(0, stepsBySetting.get('Off'), 'Off stores no step.');
     Assert.areEqual(1, stepsBySetting.get('Summary'), 'Summary stores it.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.STEP_CAPTURE_FULL,
-      modeBySetting.get('full'),
-      'Full, in any case.'
-    );
     Assert.areEqual(1, stepsBySetting.get('full'), 'Full stores it.');
+    Assert.areEqual(1, stepsBySetting.get(''), 'A blank setting stores steps.');
     Assert.areEqual(
-      AIAssistApplicationConstants.STEP_CAPTURE_SUMMARY,
-      modeBySetting.get(''),
-      'Blank is Summary.'
+      1,
+      stepsBySetting.get('Everything'),
+      'And so does an unknown one.'
     );
-    Assert.areEqual(
-      AIAssistApplicationConstants.STEP_CAPTURE_SUMMARY,
-      modeBySetting.get('Everything'),
-      'An unknown value is Summary.'
-    );
-    Assert.areEqual(1, stepsBySetting.get('Everything'), 'And stores steps.');
   }
 }

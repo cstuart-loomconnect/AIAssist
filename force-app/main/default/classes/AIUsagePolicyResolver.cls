@@ -5,8 +5,8 @@ Class Name: AIUsagePolicyResolver
 =================================================================
 
 Description: Works out what one user is allowed, from the usage policies that apply to them and their own
-AIUserSettings__c row. It is plain logic with no queries; AIMessagingSelector.getUserSettings finds the
-policies and the row and passes them in.
+AIUserSettings__c row. getUserSettings finds the policies and the row, in system mode, and resolve works
+the answer out from them.
 
 The answer is an AIUserSettings__c that is never saved, so everything that already reads a user's
 settings (limits, channels, debug mode, workflow actions, visibility) carries on unchanged.
@@ -180,5 +180,144 @@ public inherited sharing class AIUsagePolicyResolver {
     return channels.isEmpty()
       ? null
       : String.join(new List<String>(channels), ';');
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  public static AIUserSettings__c getUserSettings(Id userId) {
+    return systemReader.getUserSettings(userId);
+  }
+
+  private without sharing class SystemReader {
+    // The API names of every permission set the user holds: assigned directly, and the name of each permission set group assigned to them together with the permission sets inside that group. A permission set reached only through a group has no assignment row of its own, so matching on assignment rows alone would miss it.
+    public Set<String> getHeldPermissionSetNames(Id userId) {
+      Set<String> heldNames = new Set<String>();
+      Set<Id> heldGroupIds = new Set<Id>();
+
+      for (PermissionSetAssignment heldAssignment : [
+        SELECT
+          PermissionSet.Name,
+          PermissionSetGroupId,
+          PermissionSetGroup.DeveloperName
+        FROM PermissionSetAssignment
+        WHERE AssigneeId = :userId
+        WITH SYSTEM_MODE
+        LIMIT 2000
+      ]) {
+        heldNames.add(heldAssignment.PermissionSet.Name);
+        if (heldAssignment.PermissionSetGroupId != null) {
+          heldGroupIds.add(heldAssignment.PermissionSetGroupId);
+          heldNames.add(heldAssignment.PermissionSetGroup.DeveloperName);
+        }
+      }
+
+      if (!heldGroupIds.isEmpty()) {
+        for (PermissionSetGroupComponent member : [
+          SELECT PermissionSet.Name
+          FROM PermissionSetGroupComponent
+          WHERE PermissionSetGroupId IN :heldGroupIds
+          WITH SYSTEM_MODE
+          LIMIT 2000
+        ])
+          heldNames.add(member.PermissionSet.Name);
+      }
+
+      return heldNames;
+    }
+
+    // The active policies that apply to a user: those assigned to them or to a permission set they hold, or, when there are none, the default policies.
+    public List<AIUsagePolicy__c> getUsagePoliciesForUser(Id userId) {
+      if (userId == null)
+        return new List<AIUsagePolicy__c>();
+
+      Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
+
+      Set<Id> policyIds = new Set<Id>();
+      for (AIUsagePolicyAssignment__c assignment : [
+        SELECT AIUsagePolicy__c
+        FROM AIUsagePolicyAssignment__c
+        WHERE
+          IsActive__c = TRUE
+          AND AIUsagePolicy__r.IsActive__c = TRUE
+          AND ((AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_USER
+          AND User__c = :userId)
+          OR (AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET
+          AND PermissionSetName__c IN :heldPermissionSets))
+        WITH SYSTEM_MODE
+        LIMIT 200
+      ])
+        policyIds.add(assignment.AIUsagePolicy__c);
+
+      // Nothing assigned: the default policies cover the user instead.
+      if (policyIds.isEmpty()) {
+        return [
+          SELECT
+            Id,
+            AllowedChannels__c,
+            ConversationExportEnabled__c,
+            ConversationVisibilityScope__c,
+            DebugModeEnabled__c,
+            MaxConcurrentConversations__c,
+            MaxConversationsPer24Hours__c,
+            MaxTokensPer24Hours__c,
+            UsageLimitReachedBehavior__c,
+            WorkflowActionsEnabled__c
+          FROM AIUsagePolicy__c
+          WHERE IsActive__c = TRUE AND IsDefault__c = TRUE
+          WITH SYSTEM_MODE
+          LIMIT 200
+        ];
+      }
+
+      return [
+        SELECT
+          Id,
+          AllowedChannels__c,
+          ConversationExportEnabled__c,
+          ConversationVisibilityScope__c,
+          DebugModeEnabled__c,
+          MaxConcurrentConversations__c,
+          MaxConversationsPer24Hours__c,
+          MaxTokensPer24Hours__c,
+          UsageLimitReachedBehavior__c,
+          WorkflowActionsEnabled__c
+        FROM AIUsagePolicy__c
+        WHERE IsActive__c = TRUE AND Id IN :policyIds
+        WITH SYSTEM_MODE
+        LIMIT 200
+      ];
+    }
+
+    // What this user is allowed: their own settings row as an override, over the usage policies that apply to them (see AIUsagePolicyResolver). Null when they have neither, which callers treat as "no personal limits".
+    public AIUserSettings__c getUserSettings(Id userId) {
+      if (userId == null)
+        return null;
+
+      List<AIUserSettings__c> userSettingsRows = [
+        SELECT
+          Id,
+          User__c,
+          IsActive__c,
+          AllowedChannels__c,
+          MaxConcurrentConversations__c,
+          MaxConversationsPer24Hours__c,
+          MaxTokensPer24Hours__c,
+          UsageLimitReachedBehavior__c,
+          DebugModeEnabled__c,
+          WorkflowActionsEnabled__c,
+          ConversationExportEnabled__c,
+          ConversationVisibilityScope__c
+        FROM AIUserSettings__c
+        WHERE User__c = :userId
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ];
+
+      return AIUsagePolicyResolver.resolve(
+        userSettingsRows.isEmpty() ? null : userSettingsRows[0],
+        getUsagePoliciesForUser(userId)
+      );
+    }
   }
 }

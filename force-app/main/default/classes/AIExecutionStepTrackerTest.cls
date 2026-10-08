@@ -21,7 +21,6 @@ private class AIExecutionStepTrackerTest {
   // testScenario1: A data source phase and a provider phase each become a timed, typed step, in the order they ended.
   // testScenario2: Ending a phase that was never started records nothing and returns null.
   // testScenario3: addMasking flags the step and copies each tally as a masking entry, and ignores a null step or no tallies.
-  // testScenario4: Live progress is published only when it is switched on, and debug detail is a flag the tracker simply holds.
 
   @TestSetup
   static void setup() {
@@ -29,7 +28,6 @@ private class AIExecutionStepTrackerTest {
     settings.IsEnabled__c = true;
     settings.IsExceptionLoggingEnabled__c = true;
     settings.IsPlatformLoggingEnabled__c = true;
-    settings.IsEventNotificationEnabled__c = true; // Events are optional and off by default; these tests are about the events.
     upsert settings;
   }
 
@@ -144,55 +142,5 @@ private class AIExecutionStepTrackerTest {
       step.maskingEntries[0].complianceGroup,
       'The compliance group.'
     );
-  }
-
-  @IsTest
-  static void testScenario4() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
-    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      1,
-      true
-    )[0];
-    AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
-      conversation.Id,
-      null,
-      1,
-      true
-    )[0];
-    AIExecutionStepTracker silent = new AIExecutionStepTracker(
-      conversation.Id,
-      message.Id,
-      false,
-      false
-    );
-    AIExecutionStepTracker live = new AIExecutionStepTracker(
-      conversation.Id,
-      message.Id,
-      true,
-      true
-    );
-    Integer publishedBefore = Limits.getPublishImmediateDML();
-
-    Test.startTest();
-    silent.startStep('Thinking', null);
-    Integer publishedBySilent =
-      Limits.getPublishImmediateDML() - publishedBefore;
-    live.startStep('Thinking', null);
-    Integer publishedByLive = Limits.getPublishImmediateDML() - publishedBefore;
-    Test.stopTest();
-
-    Assert.areEqual(
-      0,
-      publishedBySilent,
-      'No progress is published when it is switched off.'
-    );
-    Assert.areEqual(
-      1,
-      publishedByLive,
-      'One progress event is published when it is on.'
-    );
-    Assert.isFalse(silent.captureFullDetail, 'Debug detail is off by default.');
-    Assert.isTrue(live.captureFullDetail, 'And on when asked.');
   }
 }
