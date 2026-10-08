@@ -14,15 +14,13 @@ A successful turn:
   that produced it;
 - marks the user's message Complete;
 - records the execution evidence (AIExecutionStepRecorder) on the reply;
-- adds the turn to the user's usage for the day (AIUsageDaily__c);
 - publishes AIMessageReadyEvent__e so the chat window fetches the reply.
 
 A failed turn:
 - records the tokens it still spent, as a System message, so they count towards the conversation's
-  total and the user's limits;
+  total;
 - marks the user's message Failed with a failure reason;
 - records the execution evidence on the user's message (there is no reply to attach it to);
-- counts the failed turn in usage;
 - tells the chat window with the Custom Label that matches the reason, never the provider's own
   error text, which can carry configuration detail or an echo of the prompt.
 
@@ -55,7 +53,6 @@ public inherited sharing class AIMessageOutcomeService {
     public Id promptTemplateId;
     public Decimal promptTemplateVersion;
     public String tokenTrackingMethod;
-    public List<AIViolationRule__c> aiRules; // The AI evaluated rules the turn was asked to flag.
   }
 
   // Records the outcome of one finished turn and tells the chat window. Never throws.
@@ -96,25 +93,9 @@ public inherited sharing class AIMessageOutcomeService {
             suggestedActionId = null;
           }
 
-          // The model flags a rule by putting its signal tag in the reply. The tag is taken out, and a blocking rule withholds the reply.
-          AIViolationService.Inspection replyInspection = AIViolationService.checkReplyForSignalTags(
-            responseContext,
-            agentResult.replyText
-          );
-          if (replyInspection.isBlocked) {
-            fail(
-              responseContext,
-              AIAssistApplicationConstants.FAILURE_REASON_REQUEST_BLOCKED,
-              'A blocking violation rule fired.',
-              agentResult,
-              executionTrace
-            );
-            return;
-          }
-
-          agentResult.replyText = String.isBlank(replyInspection.replyText)
+          agentResult.replyText = String.isBlank(agentResult.replyText)
             ? Label.AI_Chat_Fallback_Default
-            : replyInspection.replyText;
+            : agentResult.replyText;
 
           AIConversationMessage__c replyMessage = new AIConversationMessage__c(
             AIConversation__c = responseContext.conversationId,
@@ -175,39 +156,15 @@ public inherited sharing class AIMessageOutcomeService {
             responseContext.modelIdentifier
           );
 
-          // Adds the turn to the user's usage for the day. Bookkeeping: a failure is logged and the turn stands.
-          try {
-            if (responseContext.userId != null) {
-              AIMessagingDataService.UsageDelta successUsageDelta = new AIMessagingDataService.UsageDelta();
-              successUsageDelta.userId = responseContext.userId;
-              successUsageDelta.agentId = responseContext.agentId;
-              successUsageDelta.modelConfigurationId = responseContext.modelConfigurationId;
-              successUsageDelta.messages = 1;
-              successUsageDelta.failedTurns = 0;
-              successUsageDelta.inputTokens = inputTokens;
-              successUsageDelta.outputTokens = outputTokens;
-
-              AIMessagingDataService.addToDailyUsage(successUsageDelta);
-            }
-          } catch (Exception usageException) {
-            AIPlatformLogManager.logException(
-              usageException,
-              'AIMessageOutcomeService',
-              'recordAiResponseOutcome'
-            );
-          }
-
-          // Published and checked: a refused publish (event limits) would leave the chat window waiting for a reply that never announces itself. Events are optional: when they are off, or the org is near a limit, the window polls and nothing is published.
-          Database.SaveResult replyPublishResult = AIOrgLimitMonitor.isEventNotificationAllowed()
-            ? EventBus.publish(
-                new AIMessageReadyEvent__e(
-                  AIConversationId__c = responseContext.conversationId,
-                  AIConversationMessageId__c = replyMessage.Id,
-                  IsSuccess__c = true
-                )
-              )
-            : null;
-          if (replyPublishResult != null && !replyPublishResult.isSuccess())
+          // Published and checked: a refused publish would leave the chat window waiting for a reply that never announces itself.
+          Database.SaveResult replyPublishResult = EventBus.publish(
+            new AIMessageReadyEvent__e(
+              AIConversationId__c = responseContext.conversationId,
+              AIConversationMessageId__c = replyMessage.Id,
+              IsSuccess__c = true
+            )
+          );
+          if (!replyPublishResult.isSuccess())
             AIPlatformLogManager.logCustomMessage(
               'AIMessageReadyEvent__e was not published.',
               replyPublishResult.getErrors()[0].getMessage(),
@@ -339,19 +296,17 @@ public inherited sharing class AIMessageOutcomeService {
 
     try {
       if (conversationId != null) {
-        // Published and checked: a refused publish (event limits) would leave the chat window waiting.
-        Database.SaveResult failurePublishResult = AIOrgLimitMonitor.isEventNotificationAllowed()
-          ? EventBus.publish(
-              new AIMessageReadyEvent__e(
-                AIConversationId__c = conversationId,
-                IsSuccess__c = false,
-                ErrorMessage__c = userMessage.left(
-                  AIAssistApplicationConstants.EVENT_ERROR_MESSAGE_LENGTH
-                )
-              )
+        // Published and checked: a refused publish would leave the chat window waiting.
+        Database.SaveResult failurePublishResult = EventBus.publish(
+          new AIMessageReadyEvent__e(
+            AIConversationId__c = conversationId,
+            IsSuccess__c = false,
+            ErrorMessage__c = userMessage.left(
+              AIAssistApplicationConstants.EVENT_ERROR_MESSAGE_LENGTH
             )
-          : null;
-        if (failurePublishResult != null && !failurePublishResult.isSuccess())
+          )
+        );
+        if (!failurePublishResult.isSuccess())
           AIPlatformLogManager.logCustomMessage(
             'AIMessageReadyEvent__e was not published.',
             failurePublishResult.getErrors()[0].getMessage(),
@@ -396,18 +351,8 @@ public inherited sharing class AIMessageOutcomeService {
       agentResult.totalTokensUsed == null
       ? 0
       : agentResult.totalTokensUsed;
-    Decimal inputTokens = agentResult == null ||
-      agentResult.inputTokens == null
-      ? 0
-      : agentResult.inputTokens;
-    Decimal outputTokens = agentResult == null ||
-      agentResult.outputTokens == null
-      ? 0
-      : agentResult.outputTokens;
-    if (inputTokens + outputTokens == 0)
-      inputTokens = tokensSpent;
 
-    // The tokens a failed turn spent still count towards the conversation's total and the user's limits. A System message is never sent to the model or shown in the chat.
+    // The tokens a failed turn spent still count towards the conversation's total. A System message is never sent to the model or shown in the chat.
     if (responseContext.conversationId != null && tokensSpent > 0) {
       AIMessagingDataService.insertAndLogFailures(
         new List<SObject>{
@@ -425,28 +370,6 @@ public inherited sharing class AIMessageOutcomeService {
       );
     }
 
-    // Masking that failed, or a setup that is wrong, is a violation the agent's rules may be waiting for.
-    if (
-      reason == AIAssistApplicationConstants.FAILURE_REASON_PII_MASKING_FAILED
-    )
-      AIViolationService.recordDeterministicViolation(
-        AIAssistApplicationConstants.VIOLATION_TYPE_PII_MASKING_FAILURE,
-        responseContext.agentId,
-        responseContext.userId,
-        responseContext.conversationId,
-        responseContext.triggeringMessageId
-      );
-    else if (
-      reason == AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR
-    )
-      AIViolationService.recordDeterministicViolation(
-        AIAssistApplicationConstants.VIOLATION_TYPE_CONFIGURATION,
-        responseContext.agentId,
-        responseContext.userId,
-        responseContext.conversationId,
-        responseContext.triggeringMessageId
-      );
-
     closeWaitingMessages(
       responseContext,
       AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
@@ -460,28 +383,6 @@ public inherited sharing class AIMessageOutcomeService {
       responseContext.providerName,
       responseContext.modelIdentifier
     );
-
-    // Adds the turn to the user's usage for the day. Bookkeeping: a failure is logged and the turn stands.
-    try {
-      if (responseContext.userId != null) {
-        AIMessagingDataService.UsageDelta failedUsageDelta = new AIMessagingDataService.UsageDelta();
-        failedUsageDelta.userId = responseContext.userId;
-        failedUsageDelta.agentId = responseContext.agentId;
-        failedUsageDelta.modelConfigurationId = responseContext.modelConfigurationId;
-        failedUsageDelta.messages = 1;
-        failedUsageDelta.failedTurns = 1;
-        failedUsageDelta.inputTokens = inputTokens;
-        failedUsageDelta.outputTokens = outputTokens;
-
-        AIMessagingDataService.addToDailyUsage(failedUsageDelta);
-      }
-    } catch (Exception usageException) {
-      AIPlatformLogManager.logException(
-        usageException,
-        'AIMessageOutcomeService',
-        'fail'
-      );
-    }
 
     publishMessageFailure(responseContext.conversationId, reason);
   }

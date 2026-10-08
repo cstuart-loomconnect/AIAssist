@@ -13,12 +13,19 @@ Reviewed first because objects below refer to them.
 
 Global value sets:
 
-[ ] AIChannel: Record Page Chat, Utility Bar, Mobile
-[ ] AIViolationType: UnauthorizedDataAccess, UnauthorizedWorkflowAction, UsageLimitExceeded, PIIMaskingFailure, ConfigurationViolation, AIFlaggedIntent
+[x] AIChannel: Record Page Chat, Utility Bar, Mobile
+  [x] $CustomLabel.AI_Channel_Record_Page_Chat [Record Page Chat]
+  [x] $CustomLabel.AI_Channel_Utility_Bar [Utility Bar]
+  [x] $CustomLabel.AI_Channel_Mobile [Mobile]
+[x] AIViolationType: UnauthorizedDataAccess, UnauthorizedWorkflowAction, UsageLimitExceeded, PIIMaskingFailure, ConfigurationViolation, AIFlaggedIntent
+  [x] $CustomLabel.AI_Violation_Type_Unauthorised_Data_Access [Unauthorised Data Access]
+  [x] $CustomLabel.AI_Violation_Type_Unauthorised_Workflow_Action [Unauthorised Workflow Action]
+  [x] $CustomLabel.AI_Violation_Type_Usage_Limit_Exceeded [Usage Limit Exceeded]
+  [x] $CustomLabel.AI_Violation_Type_PII_Masking_Failure [PII Masking Failure]
+  [x] $CustomLabel.AI_Violation_Type_Configuration_Violation [Configuration Violation]
+  [x] $CustomLabel.AI_Violation_Type_AI_Flagged_Intent [AI Flagged Intent]
 
 Standard object extension:
-
-[ ] User.AIAssistUserType__c (Picklist: Standard User, Admin, Super User)
 
 
 1.2 CONFIGURATION: WHAT AN AGENT IS MADE OF
@@ -29,51 +36,46 @@ Standard object extension:
 
 Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+[x] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (15):
+Fields (10):
 
-[ ] AIProvider__c (Picklist, required)
-[ ] ApiPath__c (Text)
-[ ] ApiVersionHeaderName__c (Text)
-[ ] ApiVersionHeaderValue__c (Text)
-[ ] ConnectionTestedDate__c (DateTime)
-[ ] CostCurrency__c (Text)
-[ ] DeveloperName__c (Text, unique, external ID)
-[ ] InputCostPerMillionTokens__c (Number)
-[ ] IsActive__c (Checkbox)
-[ ] MaximumOutputTokens__c (Number)
-[ ] ModelIdentifier__c (Text)
-[ ] NamedCredential__c (Text)
-[ ] OutputCostPerMillionTokens__c (Number)
-[ ] RetryAttempts__c (Number)
-[ ] Temperature__c (Number)
+[x] AIProvider__c (Picklist, required)
+  [x] $CustomLabel.AI_Provider_Anthropic [Anthropic]
+  [x] $CustomLabel.AI_Provider_OpenAI [OpenAI]
+[x] ApiPath__c (Text)
+[x] ApiVersionHeaderName__c (Text)
+[x] ApiVersionHeaderValue__c (Text)
+[x] ConnectionTestedDate__c (DateTime)
+[x] DeveloperName__c (Text, unique, external ID)
+[x] IsActive__c (Checkbox)
+[x] MaximumOutputTokens__c (Number)
+[x] ModelIdentifier__c (Text)
+[x] NamedCredential__c (Text)
+[x] Temperature__c (Number)
 
-Validation rules (8):
+Validation rules (5):
 
-[ ] ActiveRequiresConnectionDetails
-[ ] ApiPathFormat
-[ ] CostCurrencyFormat
-[ ] CostsMustBeZeroOrMore
-[ ] MaximumOutputTokensPositive
-[ ] NamedCredentialFormat
-[ ] RetryAttemptsRange
-[ ] TemperatureRange
+[x] ActiveRequiresConnectionDetails
+[x] ApiPathFormat
+[x] MaximumOutputTokensPositive
+[x] NamedCredentialFormat
+[x] TemperatureRange
 
 List views (2):
 
-[ ] Active
-[ ] All
+[x] Active
+[x] All
 
 Compact layouts (1):
 
-[ ] AIModelConfigurationCompact
+[x] AIModelConfigurationCompact
 
 Presentation and platform:
 
-[ ] Page layout: AI Model Configuration Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[x] Page layout: AI Model Configuration Layout
+[x] Tab
+[x] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
 
 Trigger and handler:
 
@@ -310,63 +312,6 @@ Sign-off:
 
 [ ] Documented in docs/objects/AIWorkflowAction__c.md
 
-1.2.6 AIViolationRule__c (AI Violation Rule)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (12):
-
-[ ] AIDetectionInstruction__c (LongTextArea)
-[ ] AppliesToAllAgents__c (Checkbox)
-[ ] BlockRequest__c (Checkbox)
-[ ] DetectionMethod__c (Picklist, required)
-[ ] DeveloperName__c (Text, unique, external ID)
-[ ] IsActive__c (Checkbox)
-[ ] LastTriggeredDate__c (DateTime)
-[ ] PublicId__c (Text, unique, external ID)
-[ ] RuleName__c (Text)
-[ ] SignalTag__c (Text, unique, external ID)
-[ ] TriggerCount__c (Number)
-[ ] ViolationTypeProduced__c (Picklist, global value set AIViolationType, required)
-
-Validation rules (3):
-
-[ ] InstructionRequiredForAI
-[ ] SignalTagFormat
-[ ] SignalTagRequiredForAI
-
-List views (2):
-
-[ ] All
-[ ] Blocking
-
-Compact layouts (1):
-
-[ ] AIViolationRuleCompact
-
-Presentation and platform:
-
-[ ] Page layout: AI Violation Rule Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIViolationRuleTrigger (before insert, before update, after insert, after update)
-[ ] AIViolationRuleTriggerHandler (inherited sharing, 137 lines): Business logic for AIViolationRule__c, before insert and update.
-  [ ] Test: AIViolationRuleTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIViolationRule__c.md
-
-
-1.3 AGENT JUNCTIONS: WHAT AN AGENT MAY USE AND WHO MAY USE IT
--------------------------------------------------------------
-
 1.3.1 AIAgentObject__c (AI Agent Object)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -397,9 +342,6 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIAgentObjectTrigger (before insert, before update)
-[ ] AIAgentObjectTriggerHandler (inherited sharing, 88 lines): Business logic for AIAgentObject__c, before insert and before update.
-  [ ] Test: AIAgentObjectTriggerHandlerTest
 
 Sign-off:
 
@@ -435,9 +377,6 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIAgentDataSourceTrigger (before insert, before update)
-[ ] AIAgentDataSourceTriggerHandler (inherited sharing, 68 lines): Fills in AIAgentDataSource__c.AssignmentKey__c from the agent and the data source, before insert and before update.
-  [ ] Test: AIAgentDataSourceTriggerHandlerTest
 
 Sign-off:
 
@@ -473,51 +412,10 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIAgentWorkflowActionTrigger (before insert, before update)
-[ ] AIAgentWorkflowActionTriggerHandler (inherited sharing, 72 lines): Fills in AIAgentWorkflowAction__c.AssignmentKey__c from the agent and the workflow action, before insert and before update.
-  [ ] Test: AIAgentWorkflowActionTriggerHandlerTest
 
 Sign-off:
 
 [ ] Documented in docs/objects/AIAgentWorkflowAction__c.md
-
-1.3.4 AIAgentViolationRule__c (AI Agent Violation Rule)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AIViolationRule__c.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (4):
-
-[ ] AIAgent__c (MasterDetail to AIAgent__c)
-[ ] AIViolationRule__c (Lookup to AIViolationRule__c, required)
-[ ] AssignmentKey__c (Text, unique, external ID)
-[ ] IsActive__c (Checkbox)
-
-List views (1):
-
-[ ] All
-
-Compact layouts (1):
-
-[ ] AIAgentViolationRuleCompact
-
-Presentation and platform:
-
-[ ] No page layout in the package: confirm that is intended
-[ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIAgentViolationRuleTrigger (before insert, before update, after insert, after update)
-[ ] AIAgentViolationRuleTriggerHandler (inherited sharing, 90 lines): Fills in AIAgentViolationRule__c.AssignmentKey__c from the agent and the violation rule, before insert and before update.
-  [ ] Test: AIAgentViolationRuleTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentViolationRule__c.md
 
 1.3.5 AIAgentAssignment__c (AI Agent Assignment)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -526,11 +424,10 @@ Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumbe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (6):
+Fields (5):
 
 [ ] AIAgent__c (MasterDetail to AIAgent__c)
 [ ] AssigneeType__c (Picklist, required)
-[ ] AssignmentKey__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 [ ] PermissionSetName__c (Text)
 [ ] User__c (Lookup to User)
@@ -556,9 +453,6 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIAgentAssignmentTrigger (before insert, before update)
-[ ] AIAgentAssignmentTriggerHandler (inherited sharing, 82 lines): Fills in AIAgentAssignment__c.AssignmentKey__c from the agent and who it is assigned to (the user, or the permission set by name), before insert and before update.
-  [ ] Test: AIAgentAssignmentTriggerHandlerTest
 
 Sign-off:
 
@@ -575,7 +469,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (14):
+Fields (13):
 
 [ ] AllowedChannels__c (MultiselectPicklist, global value set AIChannel)
 [ ] ConversationExportEnabled__c (Checkbox)
@@ -657,9 +551,6 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIUsagePolicyAssignmentTrigger (before insert, before update)
-[ ] AIUsagePolicyAssignmentTriggerHandler (inherited sharing, 84 lines): Fills in AIUsagePolicyAssignment__c.AssignmentKey__c from the usage policy and the assignee (a user, or a permission set by name), before insert and before update.
-  [ ] Test: AIUsagePolicyAssignmentHandlerTest: AIUsagePolicyAssignmentTrigger and AIUsagePolicyAssignmentTriggerHandler
 
 Sign-off:
 
@@ -815,7 +706,6 @@ Trigger and handler:
 [ ] Trigger AIConversationTrigger (before insert, before update)
 [ ] AIConversationTriggerHandler (inherited sharing, 195 lines): Business logic that runs before an AIConversation__c is saved.
   [ ] Test: AIConversationTriggerHandlerTest
-[ ] Trigger test: AIConversationTriggerTest
 
 Sign-off:
 
@@ -867,7 +757,6 @@ Trigger and handler:
 [ ] Trigger AIConversationMessageTrigger (before insert, after insert)
 [ ] AIConversationMessageTriggerHandler (inherited sharing, 212 lines): Business logic that runs when an AIConversationMessage__c is saved.
   [ ] Test: AIConversationMessageTriggerHandlerTest
-[ ] Trigger test: AIConversationMessageTriggerTest
 
 Sign-off:
 
@@ -984,107 +873,6 @@ Trigger and handler:
 Sign-off:
 
 [ ] Documented in docs/objects/AIFeedback__c.md
-
-1.5.5 AIViolation__c (AI Violation)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on. Depends on: AIConversationMessage__c, AIConversation__c, AIViolationRule__c.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (11):
-
-[ ] AIConversationMessage__c (Lookup to AIConversationMessage__c)
-[ ] AIConversation__c (Lookup to AIConversation__c)
-[ ] AIViolationRule__c (Lookup to AIViolationRule__c)
-[ ] Detail__c (TextArea)
-[ ] RequestBlocked__c (Checkbox)
-[ ] ReviewStatus__c (Picklist)
-[ ] ReviewedBy__c (Lookup to User)
-[ ] ReviewedDate__c (DateTime)
-[ ] Severity__c (Picklist)
-[ ] User__c (Lookup to User)
-[ ] ViolationType__c (Picklist, global value set AIViolationType)
-
-Validation rules (1):
-
-[ ] AuditFieldsImmutable
-
-List views (3):
-
-[ ] All
-[ ] HighSeverityOpen
-[ ] NeedsReview
-
-Compact layouts (1):
-
-[ ] AIViolationCompact
-
-Presentation and platform:
-
-[ ] Page layout: AI Violation Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIViolationTrigger (before update, after insert)
-[ ] AIViolationTriggerHandler (inherited sharing, 129 lines): Business logic for AIViolation__c.
-  [ ] Test: AIViolationTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIViolation__c.md
-
-1.5.6 AIUsageDaily__c (AI Usage Daily)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: Private (external Private). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AIModelConfiguration__c.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (13):
-
-[ ] AIAgent__c (Lookup to AIAgent__c)
-[ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
-[ ] ConversationCount__c (Number)
-[ ] EstimatedCost__c (Number)
-[ ] FailedTurnCount__c (Number)
-[ ] InputTokens__c (Number)
-[ ] MessageCount__c (Number)
-[ ] OutputTokens__c (Number)
-[ ] TotalTokens__c (Number, formula)
-[ ] UsageDate__c (Date)
-[ ] UsageKey__c (Text, unique, external ID)
-[ ] User__c (Lookup to User)
-[ ] ViolationCount__c (Number)
-
-List views (2):
-
-[ ] All
-[ ] Last7Days
-
-Compact layouts (1):
-
-[ ] AIUsageDailyCompact
-
-Presentation and platform:
-
-[ ] Page layout: AI Usage Daily Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIUsageDaily__c.md
-
-
-1.6 PRIVACY: THE PII REGISTRY AND MASKING EVIDENCE
---------------------------------------------------
 
 1.6.1 AIPIIRegistry__c (AI PII Registry)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1253,72 +1041,6 @@ Sign-off:
 1.7 COMPLIANCE AND OPERATIONS
 -----------------------------
 
-1.7.1 AIDataDeletionRequest__c (AI Data Deletion Request)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (19):
-
-[ ] ApprovalDecision__c (Picklist)
-[ ] ApprovedBy__c (Lookup to User)
-[ ] ApprovedDate__c (DateTime)
-[ ] CompletedDate__c (DateTime)
-[ ] ConversationsDeleted__c (Number)
-[ ] ConversationsSkippedOnHold__c (Number)
-[ ] FailureDetail__c (TextArea)
-[ ] FeedbackDeleted__c (Number)
-[ ] MessagesDeleted__c (Number)
-[ ] Notes__c (TextArea)
-[ ] ReceivedDate__c (Date)
-[ ] RejectionReason__c (TextArea)
-[ ] RequestReference__c (Text)
-[ ] Scope__c (Picklist)
-[ ] Status__c (Picklist)
-[ ] SubjectRecordId__c (Text, external ID)
-[ ] SubjectUser__c (Lookup to User)
-[ ] UsageRowsAnonymised__c (Number)
-[ ] ViolationsAnonymised__c (Number)
-
-Validation rules (7):
-
-[ ] CompletedRequestLocked
-[ ] FourEyesApproval
-[ ] ReceivedDateNotFuture
-[ ] ReceivedDateRequired
-[ ] RejectionNeedsReason
-[ ] ScopeMatchesSubject
-[ ] SubjectRecordIdFormat
-
-List views (4):
-
-[ ] All
-[ ] AwaitingApproval
-[ ] Failed
-[ ] Open
-
-Compact layouts (1):
-
-[ ] AIDataDeletionRequestCompact
-
-Presentation and platform:
-
-[ ] Page layout: AI Data Deletion Request Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIDataDeletionRequestTrigger (before insert, before update, after update)
-[ ] AIDataDeletionRequestTriggerHandler (inherited sharing, 148 lines): Business logic for AIDataDeletionRequest__c.
-  [ ] Test: AIDataDeletionRequestTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIDataDeletionRequest__c.md
-
 1.7.2 AIPlatformLog__c (AI Platform Log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1422,61 +1144,6 @@ Trigger and handler:
 Sign-off:
 
 [ ] Documented in docs/objects/AIMessageReadyEvent__e.md
-
-1.8.3 AIAgentProgressEvent__e (AI Agent Progress Event)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Platform event, publish behaviour: PublishImmediately.
-
-[ ] Object definition: label, description, event type, publish behaviour
-
-Fields (3):
-
-[ ] AIConversationId__c (Text, required)
-[ ] StepLabel__c (Text, required)
-[ ] UserMessageId__c (Text, required)
-
-Presentation and platform:
-
-Trigger and handler:
-
-[ ] No Apex subscriber in the package: confirm who listens to this event
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentProgressEvent__e.md
-
-1.8.4 AIViolationEvent__e (AI Violation Event)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Platform event, publish behaviour: PublishImmediately.
-
-[ ] Object definition: label, description, event type, publish behaviour
-
-Fields (8):
-
-[ ] ConversationId__c (Text)
-[ ] Detail__c (Text)
-[ ] OccurredAt__c (DateTime)
-[ ] RequestBlocked__c (Checkbox)
-[ ] Severity__c (Text)
-[ ] UserId__c (Text)
-[ ] ViolationRuleId__c (Text)
-[ ] ViolationType__c (Text)
-
-Presentation and platform:
-
-Trigger and handler:
-
-[ ] No Apex subscriber in the package: confirm who listens to this event
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIViolationEvent__e.md
-
-
-1.9 CUSTOM METADATA TYPES
--------------------------
 
 1.9.1 AIPiiComplianceGroup__mdt (AI PII Compliance Group)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1605,7 +1272,7 @@ Hierarchy custom setting, visibility Public.
 
 [ ] Object definition: label, description, type, visibility
 
-Fields (44):
+Fields (45):
 
 [ ] AIProviderSuccessStatusCodes__c (Text)
 [ ] AIUsagePolicyUrl__c (Url)
@@ -1646,6 +1313,7 @@ Fields (44):
 [ ] OrgUsageStateJson__c (Text)
 [ ] PlatformLogRetentionDays__c (Number)
 [ ] ProcessingLockMinutes__c (Number)
+[ ] RetryAttempts__c (Number, default 2, clamped 0 to 5 in AIAssistSettingsService)
 [ ] RetryableStatusCodes__c (Text)
 [ ] StepCaptureMode__c (Text)
 [ ] StepRetentionDays__c (Number)
@@ -1694,7 +1362,6 @@ Sign-off:
 1.11 ACROSS THE OBJECT MODEL
 ----------------------------
 
-[ ] AIIntegrityTriggerFailClosedTest (no sharing keyword, 175 lines): the before-save integrity handlers
 [ ] Every relationship in docs/objects/ERD.md matches the fields signed off above
 [ ] Every master-detail child inherits the sharing its parent is meant to give it
 [ ] Every picklist that repeats across objects uses a global value set or is deliberately local

@@ -28,6 +28,7 @@ private class AIAssistGlobalUtilityTest {
   // testScenario8: A Data Source and a Workflow Action, whose Name is an auto-number, derive their Developer Name from SourceName__c and ActionName__c, and a record with no name yet is skipped.
   // testScenario9: A name made entirely of characters that cannot be kept still gets a usable Developer Name.
   // testScenario10: Stamping does not depend on the field-level security of the running user: a user who can only read the fields still gets an agent stamped.
+  // testScenario11: toIntegerSet parses a comma separated setting into numbers, skipping blank and non-numeric entries, and returns an empty set for blank input.
 
   @TestSetup
   static void setup() {
@@ -359,5 +360,26 @@ private class AIAssistGlobalUtilityTest {
       agent.DeveloperName__c,
       'And a Developer Name.'
     );
+  }
+
+  @IsTest
+  static void testScenario11() {
+    Test.startTest();
+    Set<Integer> parsed = AIAssistGlobalUtility.toIntegerSet(
+      '200, 201,abc,, 202 '
+    );
+    Set<Integer> fromBlank = AIAssistGlobalUtility.toIntegerSet('');
+    Set<Integer> fromNull = AIAssistGlobalUtility.toIntegerSet(null);
+    Set<Integer> noneNumeric = AIAssistGlobalUtility.toIntegerSet('none, x');
+    Test.stopTest();
+
+    Assert.areEqual(
+      new Set<Integer>{ 200, 201, 202 },
+      parsed,
+      'Numbers are kept; blanks and words are skipped.'
+    );
+    Assert.isTrue(fromBlank.isEmpty(), 'Blank input gives an empty set.');
+    Assert.isTrue(fromNull.isEmpty(), 'Null input gives an empty set.');
+    Assert.isTrue(noneNumeric.isEmpty(), 'Words alone give an empty set.');
   }
 }

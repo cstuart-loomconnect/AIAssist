@@ -45,12 +45,11 @@ Text a user types into a message is not masked unless it matches a registered va
 
 ## 5. Providers
 
-| Provider          | Endpoint                          | Notes                                                      |
-| ----------------- | --------------------------------- | ---------------------------------------------------------- |
-| Anthropic         | `api.anthropic.com`               | Messages API.                                              |
-| OpenAI            | `api.openai.com`                  | Chat Completions API.                                      |
-| OpenAI-compatible | The base URL the customer enters  | Same request shape as OpenAI.                              |
-| Azure OpenAI      | The customer's own Azure resource | The deployment is in the URL; data stays in that resource. |
+| Provider          | Endpoint                         | Notes                         |
+| ----------------- | -------------------------------- | ----------------------------- |
+| Anthropic         | `api.anthropic.com`              | Messages API.                 |
+| OpenAI            | `api.openai.com`                 | Chat Completions API.         |
+| OpenAI-compatible | The base URL the customer enters | Same request shape as OpenAI. |
 
 What the provider does with the data, where it is processed and how long it is kept are set by **the customer's agreement with that provider**, not by AI Assist. Check the provider's terms for retention, training use and region before choosing a tier. AI Assist sends no instruction that changes them.
 
@@ -67,7 +66,6 @@ All of it is in the customer's org, in the package's objects.
 | PII mapping    | Real to stand-in values                                         | With the conversation                          |
 | Feedback       | Rating and comment                                              | With the conversation                          |
 | Usage          | Counts per user, agent, model and day                           | Kept; anonymised by a deletion request         |
-| Violation      | Rule, type, severity; no message content                        | 365 days, once reviewed                        |
 | Platform log   | Errors and audit entries                                        | 30 days                                        |
 
 Retention runs daily and continues while AI Assist is switched off. A conversation on legal hold, with its messages and steps, is kept until the hold is lifted. A data deletion request removes a person's conversations on approval and records what was removed.

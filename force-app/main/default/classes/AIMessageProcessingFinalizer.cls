@@ -11,14 +11,13 @@ once and always:
 
 [1] If the job died on an unhandled error, log it, record the tokens it had spent, mark the
     message failed and tell the chat UI. The job never got the chance. This covers an uncatchable
-    governor limit, and a data source that wrote to the database (AIDataSourceWriteException),
-    which the job lets escape on purpose so the write is rolled back.
+    governor limit.
 [2] If the job found its lock had expired, fail the stale turn and leave the lock alone: it now
     belongs to whatever message took the conversation over.
 [3] If the job asked for a retry, enqueue it: straight away for the first retry, after
     RETRY_DELAY_MINUTES for later ones so a rate-limited provider is not hit again at once. The
     conversation stays locked until the retry has run. The agent manager stops asking for retries
-    once the model's RetryAttempts__c are used up, and the turn fails.
+    once AIAssistSettings__c.RetryAttempts__c are used up, and the turn fails.
 [4] Otherwise hand the lock on: start the user's newest message if one arrived during this turn,
     or release it.
 [5] With nothing to hand on, start a message of the same user's that was held at the org-wide cap on
@@ -39,7 +38,6 @@ the waiting message is picked up by the retry's own finalizer.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Runs with sharing. Failure recorded through AIMessageOutcomeService. Stale-lock handling, delayed later retries, and a graceful path when the next job cannot be enqueued.
-3.0          Chandler Stuart          Takes a fresh reading of the org limits when the last is stale, before anything else (AIOrgLimitMonitor).
 4.0          Chandler Stuart          Starts a message held at the cap on messages in flight when this turn leaves nothing else to queue.
 */
 
@@ -97,7 +95,6 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
   }
 
   public void execute(FinalizerContext finalizerContext) {
-    AIOrgLimitMonitor.refreshIfStale(); // A finalizer has finished its callout, so writing is safe here. Never throws.
     AIAssistSettingsService.recordActivatedOrg();
 
     try {

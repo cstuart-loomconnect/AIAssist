@@ -39,7 +39,7 @@ What has happened when this event is published, and who needs to know.
 
 ## Volume and limits
 
-Events an hour at expected load, the org allowance it counts against, and what happens when the allowance is short (see `AIOrgLimitMonitor`).
+Events an hour at expected load, the org allowance it counts against, and what happens when the allowance is short.
 
 ## Failure behaviour
 

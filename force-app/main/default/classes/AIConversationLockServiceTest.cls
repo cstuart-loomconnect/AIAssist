@@ -74,7 +74,10 @@ private class AIConversationLockServiceTest {
     Assert.isTrue(
       lockedUntil >
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes() - 1),
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue() - 1
+        ),
       'The lock lasts the configured time.'
     );
   }
@@ -218,7 +221,10 @@ private class AIConversationLockServiceTest {
     Assert.isTrue(
       extended >
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes() - 1),
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue() - 1
+        ),
       'The lock was reset to its full time.'
     );
     Assert.isFalse(lockedAfterRelease, 'Released.');

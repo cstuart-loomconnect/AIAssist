@@ -26,8 +26,7 @@ private class AIMessageProcessingQueueableTest {
   // testScenario6: A failed provider result is recorded as a failed turn with its reason.
   // testScenario7: An unexpected exception is logged and recorded as Other, and one from the messaging layer as a configuration error.
   // testScenario8: A retryable result records nothing yet: the finalizer retries it as a new job.
-  // testScenario9: As a real job, a data source write rolls the turn back and the finalizer records the failure and frees the lock.
-  // testScenario10: As a real job, a retryable turn is retried by the finalizer as a second attempt that answers, and the lock is freed.
+  // testScenario9: As a real job, a retryable turn is retried by the finalizer as a second attempt that answers, and the lock is freed.
 
   @TestSetup
   static void setup() {
@@ -53,13 +52,6 @@ private class AIMessageProcessingQueueableTest {
         throw new CalloutException('Boom');
       if (kind == 'config')
         throw AIMessagingException.newFailure('No model', null);
-      if (kind == 'write') {
-        AIAgentManager.AIDataSourceWriteException writeException = new AIAgentManager.AIDataSourceWriteException(
-          'Wrote'
-        );
-        writeException.tokensUsed = 25;
-        throw writeException;
-      }
 
       AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
       result.inputTokens = 10;
@@ -526,61 +518,6 @@ private class AIMessageProcessingQueueableTest {
 
   @IsTest
   static void testScenario9() {
-    User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      chatUser.Id,
-      1,
-      true
-    )[0];
-    AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
-      conversation.Id,
-      0,
-      1,
-      true
-    )[0];
-    AIConversationLockService.acquireLock(conversation.Id);
-    AIMessageProcessingQueueable.aiResponseExecutor = new FakeExecutor('write');
-
-    Boolean wasRolledBack = false;
-
-    try {
-      Test.startTest();
-      System.enqueueJob(
-        new AIMessageProcessingQueueable(question.Id, conversation.Id)
-      );
-      Test.stopTest();
-    } catch (AIAgentManager.AIDataSourceWriteException ex) {
-      wasRolledBack = true;
-    }
-
-    AIConversationMessage__c failed = [
-      SELECT ProcessingStatus__c
-      FROM AIConversationMessage__c
-      WHERE Id = :question.Id
-    ];
-    Assert.isTrue(
-      wasRolledBack,
-      'The job let the exception out on purpose, so the write is rolled back.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      failed.ProcessingStatus__c,
-      'The finalizer recorded the failure.'
-    );
-    Assert.isFalse(
-      AIConversationLockService.isConversationLocked(conversation.Id),
-      'And freed the conversation.'
-    );
-  }
-
-  @IsTest
-  static void testScenario10() {
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,

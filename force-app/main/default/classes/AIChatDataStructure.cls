@@ -5,7 +5,7 @@ Class Name: AIChatDataStructure
 =================================================================
 
 Description: The response shapes returned to the aiAssistChat component family, and the small pieces shared by
-the chat services (AIChatStateService, AIChatContextService, AIChatCommandService, AIChatUsageService,
+the chat services (AIChatStateService, AIChatContextService, AIChatCommandService,
 AIChatConversationService, AIChatActionService, AIChatFeedbackService, AIChatDebugService). Kept in one
 place so the services can pass the same wrapper types to each other without depending on
 AIChatController.
@@ -31,8 +31,6 @@ public class AIChatDataStructure {
     @AuraEnabled
     public UserState user;
     @AuraEnabled
-    public UsageState usage;
-    @AuraEnabled
     public TermsState terms;
     @AuraEnabled
     public RecordContext record;
@@ -51,9 +49,6 @@ public class AIChatDataStructure {
     public String blockedState;
     @AuraEnabled
     public String blockedMessage;
-    // Set when the organisation is close to its monthly plan allowance but not yet at it.
-    @AuraEnabled
-    public String planCapWarning;
   }
 
   public class UiSettings {
@@ -86,25 +81,6 @@ public class AIChatDataStructure {
     public Boolean exportEnabled = false;
     @AuraEnabled
     public Boolean workflowActionsEnabled = false;
-  }
-
-  public class UsageState {
-    @AuraEnabled
-    public Decimal tokensUsed = 0;
-    @AuraEnabled
-    public Decimal tokenLimit;
-    @AuraEnabled
-    public String behavior;
-    @AuraEnabled
-    public Boolean limitReached = false;
-    @AuraEnabled
-    public Boolean blockMessages = false;
-    @AuraEnabled
-    public Boolean blockNewConversations = false;
-    @AuraEnabled
-    public Boolean notifyOnly = false;
-    @AuraEnabled
-    public Integer resetsInMinutes;
   }
 
   public class TermsState {
@@ -301,8 +277,6 @@ public class AIChatDataStructure {
     public Boolean isProcessing = false;
     @AuraEnabled
     public String status;
-    @AuraEnabled
-    public UsageState usage;
   }
 
   public class SendRequest {
@@ -328,8 +302,6 @@ public class AIChatDataStructure {
     public Boolean isNewConversation = false;
     @AuraEnabled
     public ChatMessage userMessage;
-    @AuraEnabled
-    public UsageState usage;
   }
 
   public class FailureDetail {

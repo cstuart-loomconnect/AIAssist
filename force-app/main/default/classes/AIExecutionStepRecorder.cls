@@ -43,7 +43,7 @@ public inherited sharing class AIExecutionStepRecorder {
         messageId == null ||
         executionTrace == null ||
         executionTrace.steps.isEmpty() ||
-        AIAssistSettingsService.getStepCaptureMode() ==
+        AIAssistSettingsService.getSettings().StepCaptureMode__c ==
         AIAssistApplicationConstants.STEP_CAPTURE_OFF
       )
         return; // Off stores nothing for the turn. A Workflow Action a user runs is still recorded (recordWorkflowActionStep).

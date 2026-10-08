@@ -12,7 +12,7 @@ Flow:
     assigned to the user, terms accepted, channel allowed, related record readable.
 [2] Find an Active conversation to reuse, or start a new one (AIAgent__c.SingleActiveConversationPerRecord__c),
     closing the existing one first if it hit the agent's per-conversation message or token cap.
-[3] AIUsageLimitService checks the user's and the organisation's limits.
+[3] AIUsageLimitService checks the send rate, concurrent conversations and queue room.
 [4] Take the conversation's processing lock, insert the user's message, and enqueue
     AIMessageProcessingQueueable, but only if the lock was free. If another message is still being
     processed this one waits, and that job's finalizer starts it.
@@ -188,11 +188,7 @@ public with sharing class AIConversationMessageService {
         );
       }
 
-      AIUsageLimitService.enforceUsageLimits(
-        chatContext,
-        isNewConversation,
-        tokensCountedForLimits
-      );
+      AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);
 
       if (isNewConversation) {
         // The new conversation is the user's own, so it is created in user mode: only fields the AI Assist User permission set can set.
@@ -219,22 +215,6 @@ public with sharing class AIConversationMessageService {
               conversationResult.getErrors()[0].getMessage(),
             null
           );
-
-        // Counts towards the user's conversations for the day. Bookkeeping: a failure must not stop the user chatting.
-        try {
-          AIMessagingDataService.UsageDelta usageDelta = new AIMessagingDataService.UsageDelta();
-          usageDelta.userId = chatContext.userId;
-          usageDelta.agentId = chatContext.agent.Id;
-          usageDelta.modelConfigurationId = chatContext.agent.AIModelConfiguration__c;
-          usageDelta.conversations = 1;
-          AIMessagingDataService.addToDailyUsage(usageDelta);
-        } catch (Exception usageException) {
-          AIPlatformLogManager.logException(
-            usageException,
-            'AIConversationMessageService',
-            'sendMessage'
-          );
-        }
       }
 
       // Locked before the message is inserted, so a job finishing at the same moment either sees this message or finds the lock already released. It cannot miss it.
@@ -484,7 +464,7 @@ public with sharing class AIConversationMessageService {
           ? null
           : Id.valueOf(conversation.RelatedRecordId__c)
       );
-      AIUsageLimitService.enforceUsageLimits(chatContext, false, 0);
+      AIUsageLimitService.enforceUsageLimits(chatContext, false);
 
       if (!AIConversationLockService.acquireLock(conversationId))
         throw AIMessagingException.newRefusal(

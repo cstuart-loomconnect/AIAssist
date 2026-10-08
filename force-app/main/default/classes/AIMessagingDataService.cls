@@ -27,19 +27,6 @@ Version      Author                   Description
 */
 
 public without sharing class AIMessagingDataService {
-  // What one turn (or one new conversation) adds to the user's row in AIUsageDaily__c.
-  public class UsageDelta {
-    public Id userId;
-    public Id agentId;
-    public Id modelConfigurationId;
-    public Integer messages = 0;
-    public Integer conversations = 0;
-    public Integer failedTurns = 0;
-    public Integer violations = 0;
-    public Decimal inputTokens = 0;
-    public Decimal outputTokens = 0;
-  }
-
   @TestVisible
   private static Integer writeDepth = 0;
 
@@ -109,88 +96,6 @@ public without sharing class AIMessagingDataService {
     }
 
     return deletedCount;
-  }
-
-  // Adds a turn's usage to the user's row for the day, creating the row on first use. The row is read FOR UPDATE so two of the user's conversations finishing together add to each other instead of overwriting. Two simultaneous first-use inserts are settled by the unique UsageKey__c: the loser re-reads and adds.
-  public static void addToDailyUsage(UsageDelta usageDelta) {
-    if (usageDelta == null || usageDelta.userId == null)
-      return;
-
-    Date usageDate = AIAssistGlobalUtility.getOrgToday(); // The org's day, not the UTC day.
-    String usageKey =
-      usageDelta.userId +
-      '|' +
-      usageDelta.agentId +
-      '|' +
-      usageDelta.modelConfigurationId +
-      '|' +
-      Datetime.newInstanceGmt(
-          usageDate.year(),
-          usageDate.month(),
-          usageDate.day()
-        )
-        .formatGmt('yyyyMMdd');
-
-    AIUsageDaily__c usageRow = AIMessagingSelector.lockDailyUsageRow(usageKey);
-
-    if (usageRow == null) {
-      usageRow = new AIUsageDaily__c(
-        UsageKey__c = usageKey,
-        UsageDate__c = usageDate,
-        User__c = usageDelta.userId,
-        AIAgent__c = usageDelta.agentId,
-        AIModelConfiguration__c = usageDelta.modelConfigurationId,
-        MessageCount__c = usageDelta.messages,
-        ConversationCount__c = usageDelta.conversations,
-        FailedTurnCount__c = usageDelta.failedTurns,
-        InputTokens__c = usageDelta.inputTokens,
-        OutputTokens__c = usageDelta.outputTokens,
-        ViolationCount__c = usageDelta.violations
-      );
-
-      Database.SaveResult insertResult = Database.insert(
-        usageRow,
-        false,
-        AccessLevel.SYSTEM_MODE
-      );
-      if (insertResult.isSuccess()) {
-        AIOrgUsageService.forgetForTransaction();
-        return;
-      }
-
-      usageRow = AIMessagingSelector.lockDailyUsageRow(usageKey);
-      if (usageRow == null)
-        throw AIMessagingException.newFailure(
-          'Could not create usage row ' +
-            usageKey +
-            ': ' +
-            insertResult.getErrors()[0].getMessage(),
-          null
-        );
-    }
-
-    usageRow.MessageCount__c =
-      (usageRow.MessageCount__c == null ? 0 : usageRow.MessageCount__c) +
-      usageDelta.messages;
-    usageRow.ConversationCount__c =
-      (usageRow.ConversationCount__c == null
-        ? 0
-        : usageRow.ConversationCount__c) + usageDelta.conversations;
-    usageRow.FailedTurnCount__c =
-      (usageRow.FailedTurnCount__c == null ? 0 : usageRow.FailedTurnCount__c) +
-      usageDelta.failedTurns;
-    usageRow.ViolationCount__c =
-      (usageRow.ViolationCount__c == null ? 0 : usageRow.ViolationCount__c) +
-      usageDelta.violations;
-    usageRow.InputTokens__c =
-      (usageRow.InputTokens__c == null ? 0 : usageRow.InputTokens__c) +
-      usageDelta.inputTokens;
-    usageRow.OutputTokens__c =
-      (usageRow.OutputTokens__c == null ? 0 : usageRow.OutputTokens__c) +
-      usageDelta.outputTokens;
-
-    updateAsPackage(new List<SObject>{ usageRow });
-    AIOrgUsageService.forgetForTransaction();
   }
 
   private static void write(

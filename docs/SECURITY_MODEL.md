@@ -9,7 +9,7 @@ How AI Assist decides who may see and do what, where it runs with more access th
 3. **Sharing decides first.** A setting inside AI Assist can narrow what the org's sharing allows. It never widens it.
 4. **Configuration is read in system mode, the user's data in user mode.** The user is never given access to prompts, connection details or other users' usage in order to chat.
 5. **Nobody reads PII mappings.** `AIPIIMapping__c` (real value to stand-in value) is granted to no permission set.
-6. **Audit records are write-once.** Violations (except Review Status) and terms acknowledgments are locked by validation rules as well as field permissions.
+6. **Audit records are write-once.** Terms acknowledgments are locked by validation rules as well as field permissions.
 7. **The key is never held.** A provider API key goes straight to the platform's credential store. AI Assist does not store, log or return it.
 
 ## 2. Access matrix
@@ -21,12 +21,10 @@ CRED = create / read / edit / delete. `+all` = View All Records.
 | AIAgentAssignment__c       | ControlledByParent | -    | R          | CRED     |
 | AIAgentDataSource__c       | ControlledByParent | -    | R          | CRED     |
 | AIAgentObject__c           | ControlledByParent | -    | R          | CRED     |
-| AIAgentViolationRule__c    | ControlledByParent | -    | R          | CRED     |
 | AIAgentWorkflowAction__c   | ControlledByParent | -    | R          | CRED     |
 | AIAgent__c                 | ReadWrite          | R    | R          | CRED     |
 | AIConversationMessage__c   | ControlledByParent | CR   | CR +all    | CR       |
 | AIConversation__c          | Private            | CRE  | CRE +all   | CRE +all |
-| AIDataDeletionRequest__c   | ReadWrite          | -    | -          | CRE      |
 | AIDataSource__c            | ReadWrite          | -    | R          | CRED     |
 | AIExecutionStep__c         | ControlledByParent | -    | R +all     | R +all   |
 | AIFeedback__c              | Private            | CR   | CR +all    | CR +all  |
@@ -38,12 +36,9 @@ CRED = create / read / edit / delete. `+all` = View All Records.
 | AIPlatformLog__c           | Private            | -    | R +all     | R +all   |
 | AIPromptTemplate__c        | ReadWrite          | -    | R          | CRED     |
 | AITermsAcknowledgment__c   | Private            | CR   | CR         | CR +all  |
-| AIUsageDaily__c            | Private            | -    | R +all     | R +all   |
 | AIUsagePolicyAssignment__c | ControlledByParent | -    | R          | CRED     |
 | AIUsagePolicy__c           | ReadOnly           | -    | R          | CRED     |
 | AIUserSettings__c          | ReadWrite          | -    | R          | CRE      |
-| AIViolationRule__c         | ReadOnly           | -    | R          | CRED     |
-| AIViolation__c             | ReadWrite          | -    | RE         | R        |
 | AIWorkflowAction__c        | ReadWrite          | -    | R          | CRED     |
 | The four platform events   | -                  | CR   | CR         | CR       |
 
@@ -52,17 +47,17 @@ Field permissions: User 39, Super User 233, Admin 246. `AIChatCommand__mdt` is P
 **Roles.** Each permission set is self-contained: assign one.
 
 - **AI Assist User** chats. Creates and reads their own conversations, messages, feedback and terms acknowledgment. Cannot edit a message once written.
-- **AI Assist Super User** reads every conversation, message, step, feedback and log, reads configuration except connection details, and reviews violations.
+- **AI Assist Super User** reads every conversation, message, step, feedback and log, reads all configuration, including connection details, but cannot change it, and reviews violations.
 - **AI Assist Admin** builds configuration and sets per-user limits. Sees all conversations, feedback, logs and acknowledgments. Admin has no View All on messages, so cannot read other users' message bodies.
 
 **Custom permissions.**
 
-| Permission                        | Grants                                                                                             | In           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- | ------------ |
-| `AIAssistManageConfiguration`     | The set-up controllers: credentials, connection test, health check, plan usage, checklist.         | Admin        |
-| `AIAssistViewSharedConversations` | Lets the All Conversations scope take effect without View All. Never widens sharing.               | Super, Admin |
-| `AIAssistDebugMode`               | The debug trace of the user's own replies, as Debug Mode Enabled on a policy does.                 | Super, Admin |
-| `AIAssistRunActions`              | Running suggested Workflow Actions, as Workflow Actions Enabled on a policy does. Plan permitting. | Admin        |
+| Permission                        | Grants                                                                                     | In           |
+| --------------------------------- | ------------------------------------------------------------------------------------------ | ------------ |
+| `AIAssistManageConfiguration`     | The set-up controllers: credentials, connection test, health check, plan usage, checklist. | Admin        |
+| `AIAssistViewSharedConversations` | Lets the All Conversations scope take effect without View All. Never widens sharing.       | Super, Admin |
+| `AIAssistDebugMode`               | The debug trace of the user's own replies, as Debug Mode Enabled on a policy does.         | Super, Admin |
+| `AIAssistRunActions`              | Running suggested Workflow Actions, as Workflow Actions Enabled on a policy does.          | Admin        |
 
 ## 3. Where AI Assist runs with more access than the user
 
@@ -115,27 +110,20 @@ An Id that is not a shareable record (a record type, a queue) has no access row 
 ## 6. Provider credentials
 
 - Calls go through a Named Credential and nowhere else. The endpoint is the credential named on the model configuration plus its API path; there is no free URL field.
-- `AICredentialSetupController` creates the External Credential, stores the key and creates the Named Credential. It needs `AIAssistManageConfiguration` **and** Customize Application.
 - The key is passed to the platform's credential store. It is never written to a record or a log, never returned, and is removed from any error text before that is logged or shown. Tests assert this.
 - The header that carries the key is a formula on the External Credential, so the key is added by the platform at callout time.
 - Users reach the credential through a named principal mapped to a permission set (`AI Assist Credential Access`, created on request).
-- Every credential change is written to the Platform Log by name and user, even while logging is reduced under limit pressure.
+- Every credential change is written to the Platform Log by name and user.
 
-## 7. Protecting the org's limits
+## 7. Limits on use
 
-`AIOrgLimitMonitor` gives each of three features (Chat, Events, Logging) a mode: Normal, Degraded or Paused.
-
-| Control              | Setting on `AIAssistSettings__c`                       | Behaviour                                                                                          |
-| -------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Org headroom         | `{Group}DegradedPercent__c`, `{Group}PausedPercent__c` | How full the org's own limit is. Blank uses the `OrgLimit*` fields, then 70 and 85.                |
-| AI Assist's share    | `{Group}AppSharePercent__c`, `StorageBudgetPercent__c` | AI Assist's own usage of the limit. Reaching it pauses the feature even when the org has headroom. |
-| Hard floor           | none                                                   | A feature pauses at 95 percent of any limit whatever the settings say.                             |
-| Messages in flight   | `MaxMessagesInFlight__c`                               | Extra messages wait as Queued and start when a place is free. Never more than 200 jobs.            |
-| Daily message budget | `DailyMessageBudget__c`                                | New messages are refused for the rest of the org's day.                                            |
-| Rate limit           | `MaxMessagesPerUserPerMinute__c`                       | One user's messages in any 60 seconds.                                                             |
-| Message length       | `MaxMessageLength__c`                                  | At most 8,000 characters.                                                                          |
-
-Custom settings cannot have validation rules, so a value out of range is replaced by a safe one when read, and `AIOrgLimitMonitor.validateSettings` reports it. The stricter of headroom and share always applies. Violation events stop only while Events is Paused; the violation record is always saved.
+| Control              | Setting on `AIAssistSettings__c` | Behaviour                                                                               |
+| -------------------- | -------------------------------- | --------------------------------------------------------------------------------------- |
+| Messages in flight   | `MaxMessagesInFlight__c`         | Extra messages wait as Queued and start when a place is free. Never more than 200 jobs. |
+| Daily message budget | `DailyMessageBudget__c`          | New messages are refused for the rest of the org's day.                                 |
+| Daily token budget   | `GlobalTokenBudgetPerDay__c`     | New messages are refused for the rest of the org's day.                                 |
+| Rate limit           | `MaxMessagesPerUserPerMinute__c` | One user's messages in any 60 seconds.                                                  |
+| Message length       | `MaxMessageLength__c`            | At most 8,000 characters.                                                               |
 
 ## 8. Sandbox guard
 
@@ -144,23 +132,13 @@ Custom settings cannot have validation rules, so a value out of range is replace
 ## 9. Retention, deletion and legal hold
 
 - Deletion happens only inside the package. No user holds Delete on conversations, violations or acknowledgments.
-- Conversations expire by their agent's retention. Steps, messages, logs and violations also have their own lifetimes (section 3 of OPERATIONS.md).
+- Conversations expire by their agent's retention.
 - A conversation on legal hold is never deleted, and neither are its messages or steps.
 - Retention runs while the application is off.
-- A data deletion request needs a second person's approval, deletes conversations, messages and feedback, anonymises violations and usage, and records what it removed.
 
-## 10. Plan and features
+## 10. Features
 
-One check, `AIFeatureService.isFeatureEnabled`, answers whether a feature may be used: the plan (Feature Management parameter), then the org (application on), then the user (custom permission or usage policy). Security features are never gated by plan: masking, violations, deletion requests and evidence.
-
-| Parameter                                                                                                 | Direction         | Purpose                                       |
-| --------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------- |
-| `MaxActiveAgents`, `MaxActiveDataSources`, `MaxActiveWorkflowActions`                                     | LMO to subscriber | Activation limits.                            |
-| `MaxMonthlyMessages`, `MaxMonthlyTokens`                                                                  | LMO to subscriber | Monthly allowances.                           |
-| `MaxConversationRetentionDays`                                                                            | LMO to subscriber | Cap on an agent's retention.                  |
-| `WorkflowActionsAllowed`, `ApexDataSourcesAllowed`, `AIEvaluatedRulesAllowed`, `MultipleProvidersAllowed` | LMO to subscriber | Features in the plan.                         |
-| `BetaFeaturesEnabled`, `ContinuationChatEnabled`, `ReservedInteger1`                                      | LMO to subscriber | Spare; nothing reads them yet.                |
-| `MonthlyMessagesUsed`, `MonthlyErrors`                                                                    | Subscriber to LMO | Counts only, reported by the maintenance job. |
+One check, `AIFeatureService.isFeatureEnabled`, answers whether a feature may be used: the org (application on), then the user (custom permission or usage policy). Features are running actions, debug mode and conversation export.
 
 ## 11. Integrity rules
 
@@ -175,4 +153,3 @@ One check, `AIFeatureService.isFeatureEnabled`, answers whether a feature may be
 - Steps are the evidence of what was sent and which actions ran. They default to 7 days. Raise `StepRetentionDays__c` if your audit policy needs longer.
 - With `StepCaptureMode__c` set to Off, no steps are stored for a turn, so there is no masking evidence for it. Workflow Action steps are always stored.
 - The four platform events are readable by every chat user. Their payloads carry Ids and step names, no content.
-- `User.AIAssistUserType__c` is still in source and should be removed before release: a field that could assign permission sets is a privilege-escalation path.

@@ -5,13 +5,13 @@ Script Name: 04-activity.apex
 =================================================================
 
 Description: What using the agents leaves behind: conversations with messages, execution steps and masking
-evidence, PII mappings, feedback, violations, daily usage, a terms acknowledgment, data deletion
-requests and platform logs. Run 02-agents.apex and 03-tools-and-rules.apex first.
+evidence, PII mappings, feedback, a terms acknowledgment
+and platform logs. Run 02-agents.apex and 03-tools-and-rules.apex first.
 
 Skipped when a sample agent already has a conversation.
 
 It writes through AIMessagingDataService, as the package does, for what a user may not write (the
-assistant's messages, evidence, usage), so it does not run where AI Assist is installed as a
+assistant's messages, evidence), so it does not run where AI Assist is installed as a
 managed package.
 
 Part of the sample data set: run scripts/load-sample-data.sh <org alias> to load all five parts in
@@ -31,7 +31,6 @@ public class SampleDataLoader {
 
   Boolean isProductionAllowed = false; // The script refuses to run outside a sandbox or scratch org unless this is set.
   Integer conversationsPerAgent = 8;
-  Integer usageDays = 14;
 
   // =============================================================
 
@@ -142,12 +141,6 @@ public class SampleDataLoader {
       LIMIT 1
     ];
     Id firstActionId = actions.isEmpty() ? null : actions[0].Id;
-    List<AIViolationRule__c> rules = [
-      SELECT Id, RuleName__c, ViolationTypeProduced__c, BlockRequest__c
-      FROM AIViolationRule__c
-      WHERE Name LIKE 'Sample - %' AND IsActive__c = TRUE
-      ORDER BY Name
-    ];
 
     // ---------- Conversations.
     List<String> channels = new List<String>{
@@ -309,18 +302,6 @@ public class SampleDataLoader {
           StepOrder__c = stepOrder++,
           DurationMilliseconds__c = 12,
           StepDetail__c = 'Matched the agent\'s active prompt template.'
-        )
-      );
-      steps.add(
-        new AIExecutionStep__c(
-          AIConversationMessage__c = userMessage.Id,
-          StepType__c = 'Violation Check',
-          Status__c = userMessage.FailureReason__c == 'Request Blocked'
-            ? 'Blocked'
-            : 'Success',
-          StepOrder__c = stepOrder++,
-          DurationMilliseconds__c = 20,
-          StepDetail__c = 'Checked the message against the agent\'s rules.'
         )
       );
       if (dataSourceId != null)
@@ -495,86 +476,6 @@ public class SampleDataLoader {
     }
     save('AIFeedback__c', feedback, false);
 
-    // ---------- Violations.
-    List<String> severities = new List<String>{ 'Low', 'Medium', 'High' };
-    List<String> reviewStatuses = new List<String>{
-      'New',
-      'New',
-      'Reviewed',
-      'Dismissed'
-    };
-    List<AIViolation__c> violations = new List<AIViolation__c>();
-    for (
-      Integer violationIndex = 0;
-      violationIndex < 12 &&
-      violationIndex * 2 < userMessages.size() &&
-      !rules.isEmpty();
-      violationIndex++
-    ) {
-      AIViolationRule__c rule = rules[Math.mod(violationIndex, rules.size())];
-      AIConversationMessage__c userMessage = userMessages[violationIndex * 2];
-      if (rule.Id == null || userMessage.Id == null)
-        continue;
-      String reviewStatus = reviewStatuses[
-        Math.mod(violationIndex, reviewStatuses.size())
-      ];
-      violations.add(
-        new AIViolation__c(
-          AIViolationRule__c = rule.Id,
-          AIConversation__c = userMessage.AIConversation__c,
-          AIConversationMessage__c = userMessage.Id,
-          User__c = conversations[conversationIndexByTurn[violationIndex * 2]]
-            .OwnerId,
-          ViolationType__c = rule.ViolationTypeProduced__c,
-          Severity__c = severities[Math.mod(violationIndex, severities.size())],
-          RequestBlocked__c = rule.BlockRequest__c == true,
-          Detail__c = 'Sample: ' + rule.RuleName__c + ' was detected.',
-          ReviewStatus__c = reviewStatus,
-          ReviewedBy__c = reviewStatus == 'New' ? null : runningUserId,
-          ReviewedDate__c = reviewStatus == 'New' ? null : Datetime.now()
-        )
-      );
-    }
-    save('AIViolation__c', violations, true);
-
-    // ---------- Daily usage: one row per user, agent and day.
-    List<AIUsageDaily__c> usageRows = new List<AIUsageDaily__c>();
-    for (Integer userIndex = 0; userIndex < userIds.size(); userIndex++) {
-      for (Integer agentIndex = 0; agentIndex < chatAgents.size(); agentIndex++) {
-        AIAgent__c agent = chatAgents[agentIndex];
-        for (Integer dayIndex = 0; dayIndex < usageDays; dayIndex++) {
-          Date usageDate = Date.today().addDays(-dayIndex);
-          Integer messageCount =
-            4 + Math.mod(dayIndex * 7 + agentIndex * 3 + userIndex * 5, 30);
-          Decimal inputTokens = messageCount * 850;
-          Decimal outputTokens = messageCount * 240;
-          usageRows.add(
-            new AIUsageDaily__c(
-              User__c = userIds[userIndex],
-              AIAgent__c = agent.Id,
-              AIModelConfiguration__c = agent.AIModelConfiguration__c,
-              UsageDate__c = usageDate,
-              UsageKey__c = userIds[userIndex] +
-                '|' +
-                agent.Id +
-                '|' +
-                agent.AIModelConfiguration__c +
-                '|' +
-                Datetime.newInstance(usageDate, Time.newInstance(0, 0, 0, 0))
-                  .format('yyyyMMdd'),
-              MessageCount__c = messageCount,
-              ConversationCount__c = 1 + Math.mod(messageCount, 4),
-              FailedTurnCount__c = Math.mod(dayIndex, 5) == 0 ? 1 : 0,
-              ViolationCount__c = Math.mod(dayIndex, 6) == 0 ? 1 : 0,
-              InputTokens__c = inputTokens,
-              OutputTokens__c = outputTokens
-            )
-          );
-        }
-      }
-    }
-    save('AIUsageDaily__c', usageRows, true);
-
     // ---------- Terms: an acknowledgment can only be the running user's own.
     save(
       'AITermsAcknowledgment__c',
@@ -589,45 +490,12 @@ public class SampleDataLoader {
       false
     );
 
-    // ---------- Data deletion requests. None is approved: approval needs a second person and starts the deletion.
-    List<AIDataDeletionRequest__c> deletionRequests = new List<AIDataDeletionRequest__c>{
-      new AIDataDeletionRequest__c(
-        RequestReference__c = 'SAMPLE-DSR-001',
-        ReceivedDate__c = Date.today().addDays(-3),
-        Scope__c = 'User',
-        SubjectUser__c = userIds[userIds.size() - 1],
-        Notes__c = 'Received by email from the data subject. Waiting for approval.'
-      ),
-      new AIDataDeletionRequest__c(
-        RequestReference__c = 'SAMPLE-DSR-003',
-        ReceivedDate__c = Date.today().addDays(-20),
-        Scope__c = 'User',
-        SubjectUser__c = runningUserId,
-        ApprovalDecision__c = 'Rejected',
-        Status__c = 'Rejected',
-        RejectionReason__c = 'Identity of the requester could not be confirmed.',
-        Notes__c = 'Rejected after two attempts to verify.'
-      )
-    };
-    if (accounts[0].Id != null)
-      deletionRequests.add(
-        new AIDataDeletionRequest__c(
-          RequestReference__c = 'SAMPLE-DSR-002',
-          ReceivedDate__c = Date.today().addDays(-1),
-          Scope__c = 'Related Record',
-          SubjectRecordId__c = accounts[0].Id,
-          Notes__c = 'Customer asked for conversations about their account to be removed.'
-        )
-      );
-    save('AIDataDeletionRequest__c', deletionRequests, false);
-
     // ---------- Platform logs.
     List<AIPlatformLog__c> logs = new List<AIPlatformLog__c>();
     List<List<String>> logRows = new List<List<String>>{
       new List<String>{ 'Error', 'AIMessageProcessingQueueable', 'execute', 'System.CalloutException', 'Read timed out' },
       new List<String>{ 'Error', 'AIDataSourceDispatcher', 'run', 'System.QueryException', 'No such column \'Segment__c\' on entity \'Account\'' },
       new List<String>{ 'Warning', 'AIPiiPseudonymizationService', 'pseudonymize', null, 'No masking rule for field type Other; a generic value was used.' },
-      new List<String>{ 'Warning', 'AIOrgLimitMonitor', 'check', null, 'Daily API requests at 72 percent: chat is degraded.' },
       new List<String>{ 'Info', 'AIMaintenanceScheduler', 'execute', null, 'Housekeeping finished: 14 conversations closed as idle.' },
       new List<String>{ 'Info', 'AIPiiRegistrySyncWorker', 'execute', null, 'Contact registry synced: 9 fields, 7 PII.' }
     };
@@ -698,7 +566,7 @@ public class SampleDataLoader {
     }
   }
 
-  // Inserts what it can and records the rest. asPackage writes in system mode, as the package does, for the objects and fields a user may not write (the assistant's messages, evidence, usage).
+  // Inserts what it can and records the rest. asPackage writes in system mode, as the package does, for the objects and fields a user may not write (the assistant's messages, evidence).
   void save(String label, List<SObject> records, Boolean asPackage) {
     if (records.isEmpty())
       return;

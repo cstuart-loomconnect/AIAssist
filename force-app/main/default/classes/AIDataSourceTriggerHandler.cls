@@ -10,7 +10,6 @@ Safe in the subscriber's transactions: the trigger is on the package's own AIDat
 DML of its own and cannot recurse. It does nothing while AIAssistSettings__c.IsEnabled__c is off.
 A failure is logged and the record still saves.
 
-An active data source the plan does not include is refused with the plan label; see AIPlanActivationService.
 
 =================================================================
 =================================================================
@@ -18,8 +17,6 @@ An active data source the plan does not include is refused with the plan label; 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
-4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
-5.0          Chandler Stuart          The Apex class named must exist and implement IAIDataSourceExecutor (AIConfigurationValidator).
 */
 
 public inherited sharing class AIDataSourceTriggerHandler {
@@ -30,15 +27,6 @@ public inherited sharing class AIDataSourceTriggerHandler {
   private static Boolean isTestCustomExceptionThrown = false;
 
   public static void handleBeforeInsert(List<AIDataSource__c> newRecords) {
-    AIPlanActivationService.checkDataSources(newRecords, null);
-    AIConfigurationValidator.checkApexClasses(
-      newRecords,
-      null,
-      AIDataSource__c.ApexClassName__c,
-      AIDataSource__c.SourceType__c,
-      IAIDataSourceExecutor.class
-    );
-
     try {
       if (!AIAssistSettingsService.isEnabled())
         return;
@@ -68,20 +56,5 @@ public inherited sharing class AIDataSourceTriggerHandler {
         'handleBeforeInsert'
       );
     }
-  }
-
-  // Only the plan check: identifiers are stamped once, on insert.
-  public static void handleBeforeUpdate(
-    Map<Id, AIDataSource__c> oldRecordsById,
-    List<AIDataSource__c> newRecords
-  ) {
-    AIPlanActivationService.checkDataSources(newRecords, oldRecordsById);
-    AIConfigurationValidator.checkApexClasses(
-      newRecords,
-      oldRecordsById,
-      AIDataSource__c.ApexClassName__c,
-      AIDataSource__c.SourceType__c,
-      IAIDataSourceExecutor.class
-    );
   }
 }

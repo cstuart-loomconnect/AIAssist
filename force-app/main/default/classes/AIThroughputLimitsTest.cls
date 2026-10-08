@@ -4,7 +4,7 @@ Class Name: AIThroughputLimitsTest
 =================================================================
 =================================================================
 
-Description: Testing utility for the org-wide throughput controls on AIAssistSettings__c: the cap on messages in flight (extra messages wait and are started when a place is free), the daily message budget, the per-user messages-per-minute limit and the maximum message length.
+Description: Testing utility for the org-wide throughput controls on AIAssistSettings__c: the cap on messages in flight (extra messages wait and are started when a place is free), the per-user messages-per-minute limit and the maximum message length.
 
 =================================================================
 =================================================================
@@ -22,7 +22,6 @@ private class AIThroughputLimitsTest {
   // testScenario2: A waiting message is started by its sender once a place is free, and not while the cap is still reached or by another user.
   // testScenario3: A user at the messages-per-minute limit is refused, and another user is not.
   // testScenario4: A message longer than the configured maximum is refused, and one at the maximum is accepted.
-  // testScenario5: The daily message budget refuses once the day's messages reach it.
   // testScenario6: A message that has waited at the cap for longer than the timeout is failed as Service Busy by any user's poll or by the maintenance job, is not started afterwards, and one still inside the timeout is left waiting.
 
   @TestSetup
@@ -247,45 +246,6 @@ private class AIThroughputLimitsTest {
       'One character over the configured maximum.'
     );
     Assert.isNull(atTheMaximum, 'At the maximum is accepted.');
-  }
-
-  @IsTest
-  static void testScenario5() {
-    World world = createWorld();
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.DailyMessageBudget__c = 100;
-    update settings;
-    AIAssistSettingsService.clearCache();
-    AIUsageDaily__c usedToday = AIAssistTestDataFactory.createAIUsageDailies(
-      world.users[1].Id,
-      world.agent.Id,
-      null,
-      1,
-      false
-    )[0];
-    usedToday.MessageCount__c = 99;
-    insert usedToday;
-    String underBudget;
-    String atBudget;
-
-    Test.startTest();
-    System.runAs(world.users[0]) {
-      underBudget = refusalCode(world, 'The hundredth');
-    }
-    usedToday.MessageCount__c = 100;
-    update usedToday;
-    AIOrgUsageService.forgetForTransaction();
-    System.runAs(world.users[0]) {
-      atBudget = refusalCode(world, 'One too many');
-    }
-    Test.stopTest();
-
-    Assert.isNull(underBudget, 'Ninety-nine of a hundred used.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_DAILY_MESSAGE_BUDGET,
-      atBudget,
-      'The budget for the day is used up.'
-    );
   }
 
   @IsTest

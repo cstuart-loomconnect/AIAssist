@@ -8,8 +8,7 @@ Description: Runs one Workflow Action a user has chosen to run from a suggestion
 AIDataSourceDispatcher, with the extra care an action that can change data needs.
 
 In order, and each refusal is an AIMessagingException with a Custom Label and a stable code:
-[1] The application is on, the plan includes Workflow Actions (and Apex, for an Apex action), and the
-    user may run them: the AIAssistRunActions custom permission, or Workflow Actions Enabled on
+[1] The application is on and the user may run Workflow Actions: the AIAssistRunActions custom permission, or Workflow Actions Enabled on
     their policy or settings (AIFeatureService.isFeatureEnabled, one check for all three).
     The agent is active and still admits the user (AIMessageValidator.isUserAllowedOnAgent), so a user
     who has been removed from an agent cannot run an action it suggested earlier.
@@ -24,8 +23,7 @@ In order, and each refusal is an AIMessagingException with a Custom Label and a 
     started from Apex runs in system context, so the user's object and field permissions are not applied,
     and only record sharing is (this class is called from the with sharing chat controller). So before a
     Flow starts, the user must have access to every record Id passed to it (UserRecordAccess: read, or
-    edit when the action's Execution Type is Write), and a Flow set to run in system context without
-    sharing is refused (AIFlowRunModeService). A failure is logged in full and the user sees the Action
+    edit when the action's Execution Type is Write). A failure is logged in full and the user sees the Action
     Failed label, never class or flow names.
 Whatever happens at [1] to [5] is recorded as a Workflow Action step on the reply the action was
 suggested on: Success, Failed, or Blocked (refused before it ran), with the target, whether
@@ -60,7 +58,7 @@ public inherited sharing class AIWorkflowActionDispatcher {
     AIMessagingException problem = null;
 
     try {
-      // Plan, then the application, then the user (AIFeatureService). The layer that refused chooses what the user is told.
+      // The application, then the user (AIFeatureService). The layer that refused chooses what the user is told.
       String blockedBy = AIFeatureService.getBlockingLayer(
         AIAssistApplicationConstants.APP_FEATURE_RUN_ACTIONS,
         AIMessagingSelector.getUserSettings(UserInfo.getUserId())
@@ -73,11 +71,6 @@ public inherited sharing class AIWorkflowActionDispatcher {
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
           Label.AI_Error_Application_Inactive
-        );
-      if (blockedBy == AIFeatureService.LAYER_PLAN)
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_PLAN_ACTIONS_NOT_INCLUDED,
-          Label.AI_Error_Plan_Actions_Not_Included
         );
       if (blockedBy == AIFeatureService.LAYER_USER)
         throw AIMessagingException.newRefusal(
@@ -126,17 +119,6 @@ public inherited sharing class AIWorkflowActionDispatcher {
         action.ActionType__c ==
         AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX
       ) {
-        if (
-          !AIFeatureService.isFeatureEnabled(
-            AIAssistApplicationConstants.APP_FEATURE_APEX
-          )
-        ) {
-          hasRun = false;
-          throw AIMessagingException.newRefusal(
-            AIAssistApplicationConstants.ERROR_PLAN_APEX_NOT_INCLUDED,
-            Label.AI_Error_Plan_Apex_Not_Included
-          );
-        }
         if (String.isBlank(action.ApexClassName__c))
           throw AIMessagingException.newFailure(
             'Action ' + action.DeveloperName__c + ' has no Apex class.',
@@ -188,8 +170,6 @@ public inherited sharing class AIWorkflowActionDispatcher {
             'Action ' + action.DeveloperName__c + ' has no Flow.',
             null
           );
-
-        AIFlowRunModeService.assertAllowed(action.FlowAPIName__c);
 
         Map<String, Object> flowInputs = new Map<String, Object>(parameters);
         if (recordId != null)
@@ -271,17 +251,6 @@ public inherited sharing class AIWorkflowActionDispatcher {
     } catch (AIMessagingException caughtException) {
       if (caughtException.isRefusal) {
         problem = caughtException;
-        if (
-          caughtException.code ==
-          AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED
-        )
-          AIViolationService.recordDeterministicViolation(
-            AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_WORKFLOW_ACTION,
-            agentId,
-            UserInfo.getUserId(),
-            null,
-            messageId
-          );
       } else {
         AIPlatformLogManager.logCustomMessage(
           caughtException.getMessage(),

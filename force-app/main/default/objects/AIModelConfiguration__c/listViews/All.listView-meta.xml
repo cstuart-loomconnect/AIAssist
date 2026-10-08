@@ -7,9 +7,6 @@
     <columns>ModelIdentifier__c</columns>
     <columns>Temperature__c</columns>
     <columns>MaximumOutputTokens__c</columns>
-    <columns>InputCostPerMillionTokens__c</columns>
-    <columns>OutputCostPerMillionTokens__c</columns>
-    <columns>CostCurrency__c</columns>
     <columns>NamedCredential__c</columns>
     <columns>LAST_UPDATE</columns>
     <filterScope>Everything</filterScope>

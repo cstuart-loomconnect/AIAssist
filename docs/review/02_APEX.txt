@@ -19,12 +19,8 @@ Everything else calls these. Review them first so later classes can be read with
   [ ] Test: AIAssistGlobalUtilityTest
 [ ] AISchemaHelper (inherited sharing, 274 lines): One place for the schema questions the package asks
   [ ] Test: AISchemaHelperTest
-[ ] AIGovernorLimits (inherited sharing, 92 lines): Checks, before work starts, that enough of a Salesforce limit is left to finish it, so the work stops cleanly instead of running into an uncatchable LimitException.
-  [ ] Test: AIGovernorLimitsTest
 [ ] AIAssistSettingsService (inherited sharing, 252 lines): The one reader of AIAssistSettings__c and AIAssistUISettings__c.
   [ ] Test: AIAssistSettingsServiceTest
-[ ] AIConfigurationValidator (inherited sharing, 222 lines): Checks, when a configuration record is saved, that what it names exists in this org
-  [ ] Test: AIConfigurationValidatorTest
 [ ] AIAssistTestDataFactory (no sharing keyword, 943 lines): The one place the test suite builds records.
   [ ] Test: AIAssistTestDataFactoryTest
 [ ] Documented in docs/features/FOUNDATION_AND_UTILITIES.md
@@ -59,14 +55,8 @@ Per-user policy first, then org totals, then the check on every send, then the g
 
 [ ] AIUsagePolicyResolver (inherited sharing, 184 lines): Works out what one user is allowed, from the usage policies that apply to them and their own AIUserSettings__c row.
   [ ] Test: AIUsagePolicyResolverTest
-[ ] AIOrgUsageService (inherited sharing, 229 lines): The organisation's usage totals for the current day and the current month
-  [ ] Test: AIOrgUsageServiceTest
-[ ] AIOrgUsageTotalsBatch (inherited sharing, implements Database.Batchable<SObject>, Database.Stateful, 93 lines): Counts the organisation's usage for the current month exactly, from the AIUsageDaily__c rows, and stores the total of its closed days (every day before today) through AIOrgUsageService,...
-  [ ] No test class of its own: confirm where it is covered
 [ ] AIUsageLimitService (inherited sharing, 246 lines): Decides whether a message that has passed AIMessageValidator would take the user, or the organisation, past a limit.
   [ ] Test: AIUsageLimitServiceTest
-[ ] AIOrgLimitMonitor (inherited sharing, 940 lines): Keeps AI Assist from using up the limits it shares with the subscriber's own processes.
-  [ ] Test: AIOrgLimitMonitorTest
 [ ] AIThroughputLimitsTest (no sharing keyword, 391 lines): the org-wide throughput controls on AIAssistSettings__c
 [ ] Documented in docs/features/USAGE_LIMITS.md
 
@@ -78,7 +68,6 @@ The feature parameters are the metadata these classes read and write, so they ar
 
 Feature parameters (15):
 
-[ ] AIEvaluatedRulesAllowed (Boolean, LmoToSubscriber, default false)
 [ ] ApexDataSourcesAllowed (Boolean, LmoToSubscriber, default false)
 [ ] BetaFeaturesEnabled (Boolean, LmoToSubscriber, default false)
 [ ] ContinuationChatEnabled (Boolean, LmoToSubscriber, default false)
@@ -96,14 +85,8 @@ Feature parameters (15):
 
 Classes:
 
-[ ] AIPlanLimitService (inherited sharing, 164 lines): Reads the plan limits the package owner sets per customer in the License Management Org, through Feature Management parameters.
-  [ ] Test: AIPlanLimitServiceTest
 [ ] AIFeatureService (inherited sharing, 136 lines): The one answer to "may this feature be used here, now, by this user".
   [ ] Test: AIFeatureServiceTest
-[ ] AIPlanActivationService (inherited sharing, 345 lines): Refuses configuration the customer's plan does not include, at the moment it is saved.
-  [ ] Test: AIPlanActivationServiceTest
-[ ] AILicenceUsageReporter (inherited sharing, implements Queueable, 44 lines): Reports the month's messages and failed turns from the subscriber's org to the License Management Org, through the MonthlyMessagesUsed and MonthlyErrors feature parameters (subscriber to...
-  [ ] Test: AILicenceUsageReporterTest
 [ ] Documented in docs/features/PLAN_AND_LICENCE.md
 
 
@@ -112,10 +95,6 @@ Classes:
 
 Interfaces first, then the dispatcher, then each provider.
 
-[ ] IAICredentialGateway (interface, 59 lines): What AICredentialSetupController needs from the platform to create and update External Credentials, their stored key, and Named Credentials.
-  [ ] No test class of its own: confirm where it is covered
-[ ] AICredentialGateway (inherited sharing, implements IAICredentialGateway, 176 lines): The real IAICredentialGateway
-  [ ] No test class of its own: confirm where it is covered
 [ ] IAIProviderRequestBuilder (interface, 24 lines): Contract for shaping one AI provider's request body, implemented per provider (e.g.
   [ ] No test class of its own: confirm where it is covered
 [ ] IAIProviderResponseHandler (interface, 28 lines): Contract for one AI provider's response shape - a single method covering everything response-side.
@@ -130,8 +109,6 @@ Interfaces first, then the dispatcher, then each provider.
   [ ] Test: AIOpenAiRequestBuilderTest
 [ ] AIOpenAiResponseHandler (inherited sharing, implements IAIProviderResponseHandler, 204 lines): IAIProviderResponseHandler for OpenAI's Chat Completions API - parses a response and shapes providerMessages.
   [ ] Test: AIOpenAiResponseHandlerTest
-[ ] AIAzureOpenAiRequestBuilder (inherited sharing, implements IAIProviderRequestBuilder, 33 lines): Builds the request body for Azure OpenAI.
-  [ ] Test: AIAzureOpenAiRequestBuilderTest
 [ ] Documented in docs/features/PROVIDERS_AND_CREDENTIALS.md
 
 
@@ -186,8 +163,6 @@ Includes the second global extension point. Same permanence rule as data sources
   [ ] Test: AIWorkflowActionRequestTest
 [ ] AIWorkflowActionResponse (global, no sharing keyword, 29 lines): What an Apex Workflow Action (IAIWorkflowActionExecutor.execute) returns.
   [ ] No test class of its own: confirm where it is covered
-[ ] AIFlowRunModeService (inherited sharing, 142 lines): Decides whether a Flow may be run as an AI Assist Workflow Action.
-  [ ] Test: AIFlowRunModeServiceTest
 [ ] AIWorkflowActionDispatcher (inherited sharing, 397 lines): Runs one Workflow Action a user has chosen to run from a suggestion in the chat.
   [ ] Test: AIWorkflowActionDispatcherTest
   [ ] Test: AIWorkflowActionDispatcherAccessTest: the record checks AIWorkflowActionDispatcher makes before an action runs
@@ -197,10 +172,6 @@ Includes the second global extension point. Same permanence rule as data sources
 2.10 GUARDRAILS AND VIOLATIONS
 ------------------------------
 
-[ ] AIViolationService (inherited sharing, 356 lines): Records violations of the rules an administrator set up (AIViolationRule__c), in the two ways the object model describes.
-  [ ] Test: AIViolationServiceTest
-[ ] AIViolationRuleCapService (inherited sharing, 95 lines): Warns an administrator, at the moment a rule is saved or assigned, that an agent now has more AI evaluated rules than the package will use...
-  [ ] Test: AIViolationRuleCapServiceTest
 [ ] Documented in docs/features/GUARDRAILS_AND_VIOLATIONS.md
 
 
@@ -237,8 +208,6 @@ In the order a message travels: validate, lock, check visibility, save, process,
   [ ] Test: AIExecutionStepTrackerTest
 [ ] AIExecutionStepRecorder (inherited sharing, 272 lines): Turns one AIExecutionStepTracker into the AIExecutionStep__c rows (and the AIPIIMaskingRecord__c rows under them) for a turn that has just ended.
   [ ] Test: AIExecutionStepRecorderTest
-[ ] AIAgentProgressPublisher (inherited sharing, 52 lines): Publishes AIAgentProgressEvent__e (PublishImmediately) so the chat window can show "Looking up information" or "Thinking" while a turn is still running, before the reply exists.
-  [ ] Test: AIAgentProgressPublisherTest
 [ ] Documented in docs/features/MESSAGING_PIPELINE.md
 
 
@@ -263,8 +232,6 @@ What the chat window calls. The data contract first, then the controller, then t
   [ ] Test: AIChatActionServiceTest
 [ ] AIChatFeedbackService (with sharing, 102 lines): Thumbs up or down on an AI reply, and accepting the usage terms.
   [ ] Test: AIChatFeedbackServiceTest
-[ ] AIChatUsageService (with sharing, 88 lines): The usage meter the chat window shows, and the three behaviours of UsageLimitReachedBehavior__c.
-  [ ] Test: AIChatUsageServiceTest
 [ ] AIChatDebugService (with sharing, 227 lines): Everything the chat window shows only to a user with debug mode
   [ ] Test: AIChatDebugServiceTest
 [ ] Documented in docs/features/CHAT_API.md
@@ -283,10 +250,6 @@ The scheduler first, then each batch it starts, then the deletion batch started 
   [ ] Test: AIConversationRetentionBatchTest
 [ ] AIConversationRetentionRecalcBatch (inherited sharing, implements Database.Batchable<SObject>, 110 lines): Recalculates RetentionExpiryDate__c on every conversation of the agents whose retention settings changed (ConversationRetentionDays__c or RetentionTrigger__c), started by...
   [ ] Test: AIConversationRetentionRecalcBatchTest
-[ ] AIRecordRetentionBatch (inherited sharing, implements Database.Batchable<SObject>, 150 lines): Deletes the package's platform logs, violations, execution steps and conversation messages once they are older than the lifetime set on AIAssistSettings__c (PlatformLogRetentionDays__c...
-  [ ] Test: AIRecordRetentionBatchTest
-[ ] AIDataDeletionBatch (inherited sharing, implements Database.Batchable<SObject>, Database.Stateful, 309 lines): Carries out an approved AIDataDeletionRequest__c.
-  [ ] Test: AIDataDeletionBatchTest
 [ ] Documented in docs/features/RETENTION_DELETION_AND_SCHEDULED_JOBS.md
 
 
@@ -297,16 +260,6 @@ The access gate first, then each controller that asks it.
 
 [ ] AIConfigurationAccess (with sharing, 73 lines): Who may call the set-up controllers.
   [ ] No test class of its own: confirm where it is covered
-[ ] AISetupChecklistController (with sharing, 161 lines): The Getting Started checklist
-  [ ] Test: AISetupChecklistControllerTest
-[ ] AICredentialSetupController (with sharing, 429 lines): Sets up the connection to an AI provider without the administrator building it by hand in Setup.
-  [ ] Test: AICredentialSetupControllerTest
-[ ] AIConnectionTestController (with sharing, 167 lines): Test Connection for a model configuration
-  [ ] Test: AIConnectionTestControllerTest
-[ ] AIHealthCheckController (with sharing, 421 lines): Everything wrong with the configuration, in one list, each finding with the record to open and fix.
-  [ ] Test: AIHealthCheckControllerTest
-[ ] AIPlanUsageController (with sharing, 230 lines): What the organisation has used of its plan and of the org's limits, for an administrator's usage page.
-  [ ] Test: AIPlanUsageControllerTest
 [ ] Documented in docs/features/SET_UP_AND_ADMINISTRATION_CONTROLLERS.md
 
 

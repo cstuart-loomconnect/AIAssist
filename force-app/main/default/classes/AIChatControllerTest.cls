@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest
 private class AIChatControllerTest {
-  // testScenario1: A ready context offers the agent, the usage meter and no open conversation.
+  // testScenario1: A ready context offers the agent and no open conversation.
   // testScenario2: The context stops early with the right state when the application is off, in maintenance, the channel is not allowed, the terms are unsigned, or no agent is offered.
   // testScenario3: Sending a message creates the conversation, and the window gets SENT with the conversation and message.
   // testScenario4: A refusal comes back as a status chosen from its code, with the Custom Label and the code: LIMIT for a limit, BLOCKED for access, ERROR for a bad message.
@@ -74,7 +74,6 @@ private class AIChatControllerTest {
       'Ready.'
     );
     Assert.areEqual(agent.Id, context.agent.id, 'The agent.');
-    Assert.isNotNull(context.usage, 'The usage meter.');
     Assert.isNull(context.openConversation, 'No conversation yet.');
   }
 

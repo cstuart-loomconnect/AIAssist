@@ -10,8 +10,7 @@ their assignments and objects, and prompt templates.
 Skipped when an agent named "Sample - ..." already exists.
 
 A model configuration is linked to a Named Credential, and made active, only when the org already
-has one whose endpoint names the provider; otherwise it is saved inactive. Agents are active up to
-the number the plan still allows.
+has one whose endpoint names the provider; otherwise it is saved inactive. Agents with a model are active.
 
 Part of the sample data set: run scripts/load-sample-data.sh <org alias> to load all five parts in
 order, or this part alone with sf apex run --file.
@@ -91,9 +90,7 @@ public class SampleDataLoader {
         : credential.Endpoint.toLowerCase();
       String provider = endpoint.contains('anthropic')
         ? 'Anthropic'
-        : endpoint.contains('azure')
-            ? 'Azure OpenAI'
-            : endpoint.contains('openai') ? 'OpenAI' : null;
+        : endpoint.contains('openai') ? 'OpenAI' : null;
       if (provider != null && !credentialByProvider.containsKey(provider))
         credentialByProvider.put(
           provider,
@@ -103,12 +100,6 @@ public class SampleDataLoader {
         );
     }
 
-    Boolean isMultipleProvidersAllowed = AIFeatureService.isFeatureEnabled(
-      'MultipleProviders'
-    );
-    Boolean hasActiveModel =
-      [SELECT COUNT() FROM AIModelConfiguration__c WHERE IsActive__c = TRUE] >
-      0;
     List<AIModelConfiguration__c> models = new List<AIModelConfiguration__c>{
       new AIModelConfiguration__c(
         Name = PREFIX + 'Claude Sonnet',
@@ -118,11 +109,7 @@ public class SampleDataLoader {
         ApiVersionHeaderName__c = 'anthropic-version',
         ApiVersionHeaderValue__c = '2023-06-01',
         MaximumOutputTokens__c = 2048,
-        Temperature__c = 0.2,
-        RetryAttempts__c = 2,
-        InputCostPerMillionTokens__c = 3,
-        OutputCostPerMillionTokens__c = 15,
-        CostCurrency__c = 'USD'
+        Temperature__c = 0.2
       ),
       new AIModelConfiguration__c(
         Name = PREFIX + 'OpenAI GPT',
@@ -130,23 +117,7 @@ public class SampleDataLoader {
         ModelIdentifier__c = 'gpt-4o',
         ApiPath__c = '/v1/chat/completions',
         MaximumOutputTokens__c = 1024,
-        Temperature__c = 0.7,
-        RetryAttempts__c = 3,
-        InputCostPerMillionTokens__c = 2.5,
-        OutputCostPerMillionTokens__c = 10,
-        CostCurrency__c = 'USD'
-      ),
-      new AIModelConfiguration__c(
-        Name = PREFIX + 'Azure OpenAI GPT',
-        AIProvider__c = 'Azure OpenAI',
-        ModelIdentifier__c = 'gpt-4o',
-        ApiPath__c = '/openai/deployments/gpt-4o/chat/completions?api-version=2024-06-01',
-        MaximumOutputTokens__c = 1024,
-        Temperature__c = 0.5,
-        RetryAttempts__c = 1,
-        InputCostPerMillionTokens__c = 2.5,
-        OutputCostPerMillionTokens__c = 10,
-        CostCurrency__c = 'GBP'
+        Temperature__c = 0.7
       )
     };
     for (AIModelConfiguration__c model : models) {
@@ -154,11 +125,7 @@ public class SampleDataLoader {
       if (credentialName == null)
         continue;
       model.NamedCredential__c = credentialName;
-      if (isMultipleProvidersAllowed || !hasActiveModel) {
-        model.IsActive__c = true;
-        model.ConnectionTestedDate__c = Datetime.now();
-        hasActiveModel = true;
-      }
+      model.IsActive__c = true;
     }
     save('AIModelConfiguration__c', models, false);
 
@@ -271,12 +238,7 @@ public class SampleDataLoader {
     }
     save('AIUserSettings__c', userSettings, false);
 
-    // ---------- Agents. Active up to what the plan still allows; an active agent needs a model configuration.
-    Integer agentLimit = AIPlanLimitService.getActiveAgentLimit();
-    Integer activeAgentsLeft = agentLimit == null
-      ? 99
-      : agentLimit -
-        [SELECT COUNT() FROM AIAgent__c WHERE IsActive__c = TRUE];
+    // ---------- Agents. An active agent needs a model configuration.
     Id firstModelId = models[0].Id;
     Id secondModelId = models[1].Id == null ? firstModelId : models[1].Id;
 
@@ -336,10 +298,8 @@ public class SampleDataLoader {
       )
     };
     for (AIAgent__c agent : agents) {
-      if (agent.AIModelConfiguration__c != null && activeAgentsLeft > 0) {
+      if (agent.AIModelConfiguration__c != null)
         agent.IsActive__c = true;
-        activeAgentsLeft--;
-      }
     }
     save('AIAgent__c', agents, false);
     List<AIAgent__c> chatAgents = new List<AIAgent__c>();

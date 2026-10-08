@@ -13,19 +13,12 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 4.0          Chandler Stuart          After update, for a change to the retention settings.
+5.0          Chandler Stuart          Before update removed with the plan checks.
 */
-trigger AIAgentTrigger on AIAgent__c(
-  before insert,
-  before update,
-  after update
-) {
+trigger AIAgentTrigger on AIAgent__c(before insert, after update) {
   // Before Context
-  if (Trigger.isBefore) {
-    if (Trigger.isInsert) {
-      AIAgentTriggerHandler.handleBeforeInsert(Trigger.new);
-    } else if (Trigger.isUpdate) {
-      AIAgentTriggerHandler.handleBeforeUpdate(Trigger.oldMap, Trigger.new);
-    }
+  if (Trigger.isBefore && Trigger.isInsert) {
+    AIAgentTriggerHandler.handleBeforeInsert(Trigger.new);
   }
 
   // After Context

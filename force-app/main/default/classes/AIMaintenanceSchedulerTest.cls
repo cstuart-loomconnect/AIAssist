@@ -18,9 +18,9 @@ Version      Author                   Description
 
 @IsTest
 private class AIMaintenanceSchedulerTest {
-  // testScenario1: A scheduled run starts the four housekeeping batches.
+  // testScenario1: A scheduled run starts the housekeeping batches: conversation retention and idle closing.
   // testScenario2: It can be scheduled and fires through the platform's scheduler.
-  // testScenario3: Switched off, retention and the usage totals still run and only the idle batch does not.
+  // testScenario3: Switched off, retention still runs and only the idle batch does not.
   // testScenario4: A batch that cannot be started is logged and the others still start.
 
   @TestSetup
@@ -55,23 +55,6 @@ private class AIMaintenanceSchedulerTest {
         WHERE ApexClass.Name = 'AIConversationRetentionBatch'
       ],
       'Retention batch.'
-    );
-    Assert.isTrue(
-      [
-        SELECT COUNT()
-        FROM AsyncApexJob
-        WHERE ApexClass.Name = 'AIRecordRetentionBatch'
-      ] >= 1,
-      'Logs, violations, steps and messages, as one chained batch.'
-    );
-    Assert.areEqual(
-      1,
-      [
-        SELECT COUNT()
-        FROM AsyncApexJob
-        WHERE ApexClass.Name = 'AIOrgUsageTotalsBatch'
-      ],
-      'Usage totals.'
     );
   }
 
@@ -119,19 +102,13 @@ private class AIMaintenanceSchedulerTest {
       'Idle closing waits for the application to be on.'
     );
     Assert.areEqual(
-      3,
+      1,
       [
-          SELECT COUNT_DISTINCT(ApexClass.Name)
-          FROM AsyncApexJob
-          WHERE
-            ApexClass.Name IN (
-              'AIConversationRetentionBatch',
-              'AIRecordRetentionBatch',
-              'AIOrgUsageTotalsBatch'
-            )
-        ][0]
-        .get('expr0'),
-      'Retention (conversations and the record kinds) and the usage totals run while off.'
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE ApexClass.Name = 'AIConversationRetentionBatch'
+      ],
+      'Retention runs while off.'
     );
   }
 
@@ -148,7 +125,7 @@ private class AIMaintenanceSchedulerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      4,
+      2,
       [
         SELECT COUNT()
         FROM AIPlatformLog__c

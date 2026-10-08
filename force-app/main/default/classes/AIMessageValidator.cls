@@ -8,8 +8,7 @@ Description: Decides whether a request to chat is allowed at all, before anythin
 Every refusal is an AIMessagingException whose message is a Custom Label (so it translates) and
 whose code is a stable AIAssistApplicationConstants.ERROR_* value, checked in this order, cheapest
 first:
-[1] The application is switched on (AIAssistSettings__c.IsEnabled__c), not in maintenance, and not
-    paused to protect the org's limits (AIOrgLimitMonitor).
+[1] The application is switched on (AIAssistSettings__c.IsEnabled__c) and not in maintenance.
 [2] The message has text and is no longer than MAX_USER_MESSAGE_CHARACTERS.
 [3] The agent exists, is active, and the user may use it: an agent set to Assigned Users Only
     needs an active AIAgentAssignment__c for the user or a permission set they hold.
@@ -68,13 +67,6 @@ public inherited sharing class AIMessageValidator {
       throw AIMessagingException.newRefusal(
         AIAssistApplicationConstants.ERROR_MAINTENANCE_MODE,
         Label.AI_Error_Maintenance_Mode
-      );
-
-    // Paused to protect the org's limits: refused with a plain message, and resumes by itself (AIOrgLimitMonitor).
-    if (AIOrgLimitMonitor.isChatPaused())
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_ORG_LIMITS_PAUSED,
-        Label.AI_Error_Org_Limits_Paused
       );
 
     // [2]
@@ -195,13 +187,6 @@ public inherited sharing class AIMessageValidator {
         !relatedObjectApiName.equalsIgnoreCase(relatedRecordType.getName()) &&
         !relatedObjectApiName.equalsIgnoreCase(relatedRecordType.getLocalName())
       ) {
-        AIViolationService.recordDeterministicViolation(
-          AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_DATA_ACCESS,
-          chatContext.agent.Id,
-          chatContext.userId,
-          null,
-          null
-        ); // A user pointing a chat at a record they may not read is the violation the object model calls Unauthorized Data Access.
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_RECORD_ACCESS_DENIED,
           Label.AI_Error_Record_Access_Denied
@@ -232,13 +217,6 @@ public inherited sharing class AIMessageValidator {
         : new List<UserRecordAccess>();
 
       if (recordAccess.isEmpty() || recordAccess[0].HasReadAccess != true) {
-        AIViolationService.recordDeterministicViolation(
-          AIAssistApplicationConstants.VIOLATION_TYPE_UNAUTHORIZED_DATA_ACCESS,
-          chatContext.agent.Id,
-          chatContext.userId,
-          null,
-          null
-        ); // A user pointing a chat at a record they may not read is the violation the object model calls Unauthorized Data Access.
         throw AIMessagingException.newRefusal(
           AIAssistApplicationConstants.ERROR_RECORD_ACCESS_DENIED,
           Label.AI_Error_Record_Access_Denied

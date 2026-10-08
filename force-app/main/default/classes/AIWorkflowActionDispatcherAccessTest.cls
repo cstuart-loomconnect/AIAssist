@@ -114,14 +114,6 @@ private class AIWorkflowActionDispatcherAccessTest {
       1,
       true
     )[0];
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_WORKFLOW_ACTIONS_ALLOWED,
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
 
     return fixture;
   }

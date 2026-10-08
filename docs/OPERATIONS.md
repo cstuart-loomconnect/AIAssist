@@ -39,8 +39,6 @@ When a ceiling is reached: at the in-flight cap a message waits and starts when 
 | Storage used per 1,000 messages at each capture mode | Not measured |
 | Behaviour at the in-flight cap and at 200 jobs       | Not measured |
 
-`AIPlanUsageController.getPlanUsage` reports AI Assist's actual jobs, events and storage, which is the figure to watch during a test.
-
 ## 2. The maintenance job
 
 One scheduled job, daily at 02:00 in the time zone of the user who scheduled it. Find it under Setup > Scheduled Jobs as **AI Assist Maintenance**.
@@ -55,17 +53,16 @@ One scheduled job, daily at 02:00 in the time zone of the user who scheduled it.
 | Close idle conversations                        | No                          |
 | Sync the PII registry                           | No                          |
 
-If the job is deleted, none of this happens. The health check reports it, and `AISetupChecklistController.scheduleMaintenance` puts it back.
+If the job is deleted, none of this happens. Schedule `AIMaintenanceScheduler` again to put it back.
 
 ## 3. Retention
 
-| Record       | Setting                                     | Default  | Blank means                |
-| ------------ | ------------------------------------------- | -------- | -------------------------- |
-| Conversation | `ConversationRetentionDays__c` on the agent | 90 days  | Kept indefinitely          |
-| Message      | `MessageRetentionDays__c`                   | 30 days  | Kept with its conversation |
-| Step         | `StepRetentionDays__c`                      | 7 days   | Kept with its conversation |
-| Log          | `PlatformLogRetentionDays__c`               | 30 days  | Kept indefinitely          |
-| Violation    | `ViolationRetentionDays__c`                 | 365 days | Kept indefinitely          |
+| Record       | Setting                                     | Default | Blank means                |
+| ------------ | ------------------------------------------- | ------- | -------------------------- |
+| Conversation | `ConversationRetentionDays__c` on the agent | 90 days | Kept indefinitely          |
+| Message      | `MessageRetentionDays__c`                   | 30 days | Kept with its conversation |
+| Step         | `StepRetentionDays__c`                      | 7 days  | Kept with its conversation |
+| Log          | `PlatformLogRetentionDays__c`               | 30 days | Kept indefinitely          |
 
 - **Retention runs even while AI Assist is switched off**, and in a sandbox that has not been activated. Switching the application off does not keep data past its retention.
 - A conversation on **legal hold** is never deleted, and neither are its messages or steps.
@@ -89,13 +86,9 @@ Daily limits and the monthly plan allowance are counted in **the org's time zone
 
 ## 6. Watching it
 
-| Question                      | Where                                                       |
-| ----------------------------- | ----------------------------------------------------------- |
-| Is anything misconfigured?    | `AIHealthCheckController.getFindings`                       |
-| How much of the plan is used? | `AIPlanUsageController.getPlanUsage`                        |
-| Why is chat paused?           | The same call: each feature's mode and the limit behind it  |
-| What failed?                  | AI Platform Log, 30 days                                    |
-| Who changed a credential?     | AI Platform Log, entries from `AICredentialSetupController` |
+| Question     | Where                    |
+| ------------ | ------------------------ |
+| What failed? | AI Platform Log, 30 days |
 
 Administrators are told when a feature changes mode, at most every 15 minutes unless something pauses.
 

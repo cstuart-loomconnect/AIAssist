@@ -63,11 +63,9 @@ Step    Object                      Kind                  Fields  Rules  Trigger
 1.6.2   AIPIIFieldMetadata__c       Object                9       0      No
 1.6.3   AIPIIMapping__c             Object                2       0      No
 1.6.4   AIPIIMaskingRecord__c       Object                8       1      No
-1.7.1   AIDataDeletionRequest__c    Object                19      7      Yes
 1.7.2   AIPlatformLog__c            Object                10      0      No
 1.8.1   AIPlatformLogEvent__e       Platform event        10      0      Yes
 1.8.2   AIMessageReadyEvent__e      Platform event        4       0      No
-1.8.3   AIAgentProgressEvent__e     Platform event        3       0      No
 1.8.4   AIViolationEvent__e         Platform event        8       0      No
 1.9.1   AIPiiComplianceGroup__mdt   Custom metadata type  2       0      No
 1.9.2   AIPiiDataMaskingRule__mdt   Custom metadata type  6       0      No
@@ -184,8 +182,8 @@ Gap                                                                             
 No page layout for AIAgentObject__c, AIAgentViolationRule__c, AIPIIMapping__c, AIUsagePolicy__c, AIUsagePolicyAssignment__c, AIChatCommand__mdt                                 Part 1, each object
 No tab for the five agent junction objects, AIUsagePolicyAssignment__c and AIPIIMapping__c                                                                                      Part 1, each object
 No custom metadata records in the package for any of the four __mdt types                                                                                                       Part 1, section 1.9
-Three platform events have no Apex subscriber in the package: AIMessageReadyEvent__e, AIAgentProgressEvent__e, AIViolationEvent__e                                              Part 1, section 1.8
-Classes with no test class of their own: AIChatDataStructure, AIConfigurationAccess, AICredentialGateway, AIOrgUsageTotalsBatch, the two response classes, the five interfaces  Part 2, each class
+Two platform events have no Apex subscriber in the package: AIMessageReadyEvent__e, AIViolationEvent__e                                              Part 1, section 1.8
+Classes with no test class of their own: AIChatDataStructure, AIConfigurationAccess, AICredentialGateway, the two response classes, the five interfaces  Part 2, each class
 Mixed casing in names: AIPIIRegistry__c and AIPiiFieldType__mdt; ObjectAPIName__c and ObjectApiName__c                                                                          Part 1, last section
 No Lightning components, app, flexipages, named credentials or reports in the package                                                                                           Part 3, section 3.10
 

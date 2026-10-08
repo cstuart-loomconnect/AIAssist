@@ -63,7 +63,6 @@ public inherited sharing class AIExecutionStepTracker {
 
   private final Id conversationId;
   private final Id userMessageId;
-  private final Boolean showLiveProgress;
 
   // True when AIAssistSettings__c.StepCaptureMode__c is Full: gates the request and response payloads and the sent preview.
   public final Boolean captureFullDetail;
@@ -87,7 +86,6 @@ public inherited sharing class AIExecutionStepTracker {
   ) {
     this.conversationId = conversationId;
     this.userMessageId = userMessageId;
-    this.showLiveProgress = showLiveProgress == true;
     this.captureFullDetail = captureFullDetail == true;
   }
 
@@ -95,13 +93,6 @@ public inherited sharing class AIExecutionStepTracker {
   public void startStep(String liveLabel, Id dataSourceId) {
     phaseStartedAtMillis = System.currentTimeMillis();
     phaseDataSourceId = dataSourceId;
-
-    if (showLiveProgress)
-      AIAgentProgressPublisher.publishStep(
-        conversationId,
-        userMessageId,
-        liveLabel
-      );
   }
 
   // Ends the phase started by startPhase and returns its step, so a provider call can be completed with what was sent. Null if no phase was started.

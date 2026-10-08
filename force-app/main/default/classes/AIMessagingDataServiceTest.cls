@@ -4,7 +4,7 @@ Class Name: AIMessagingDataServiceTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIMessagingDataService: the package's system-mode writes, the marker that tells the message trigger a write is the package's own, and the daily usage row.
+Description: Testing utility for AIMessagingDataService: the package's system-mode writes, the marker that tells the message trigger a write is the package's own.
 
 =================================================================
 =================================================================
@@ -22,7 +22,6 @@ private class AIMessagingDataServiceTest {
   // testScenario2: A write that fails throws the generic label with the real reason in detail, for an insert and for an update, and still clears the package marker.
   // testScenario3: insertQuietly and updateQuietly never throw: a failure is logged and the rest of the batch is still written.
   // testScenario4: A message from the AI Agent is accepted when the package writes it and refused when a user writes it, because the trigger reads the package marker.
-  // testScenario5: addUsage creates the user's row for the day on first use, adds to it afterwards, keeps a separate row for another agent, and ignores a missing user.
 
   @TestSetup
   static void setup() {
@@ -263,92 +262,6 @@ private class AIMessagingDataServiceTest {
       Label.AI_Error_Not_Authorised,
       forgedResult.getErrors()[0].getMessage(),
       'The refusal is a Custom Label.'
-    );
-  }
-
-  @IsTest
-  static void testScenario5() {
-    User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
-      1,
-      true
-    )[0];
-    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
-      2,
-      model.Id,
-      true
-    );
-
-    AIMessagingDataService.UsageDelta aiResponseUsage = new AIMessagingDataService.UsageDelta();
-    aiResponseUsage.userId = chatUser.Id;
-    aiResponseUsage.agentId = agents[0].Id;
-    aiResponseUsage.modelConfigurationId = model.Id;
-    aiResponseUsage.messages = 1;
-    aiResponseUsage.inputTokens = 100;
-    aiResponseUsage.outputTokens = 20;
-
-    AIMessagingDataService.UsageDelta conversationStart = new AIMessagingDataService.UsageDelta();
-    conversationStart.userId = chatUser.Id;
-    conversationStart.agentId = agents[0].Id;
-    conversationStart.modelConfigurationId = model.Id;
-    conversationStart.conversations = 1;
-    conversationStart.failedTurns = 1;
-
-    AIMessagingDataService.UsageDelta otherAgentTurn = new AIMessagingDataService.UsageDelta();
-    otherAgentTurn.userId = chatUser.Id;
-    otherAgentTurn.agentId = agents[1].Id;
-    otherAgentTurn.modelConfigurationId = model.Id;
-    otherAgentTurn.messages = 1;
-
-    Test.startTest();
-    AIMessagingDataService.addToDailyUsage(aiResponseUsage);
-    AIMessagingDataService.addToDailyUsage(aiResponseUsage);
-    AIMessagingDataService.addToDailyUsage(conversationStart);
-    AIMessagingDataService.addToDailyUsage(otherAgentTurn);
-    AIMessagingDataService.addToDailyUsage(null);
-    AIMessagingDataService.addToDailyUsage(
-      new AIMessagingDataService.UsageDelta()
-    );
-    Test.stopTest();
-
-    List<AIUsageDaily__c> rows = [
-      SELECT
-        AIAgent__c,
-        MessageCount__c,
-        ConversationCount__c,
-        FailedTurnCount__c,
-        InputTokens__c,
-        OutputTokens__c,
-        UsageDate__c,
-        UsageKey__c
-      FROM AIUsageDaily__c
-      WHERE User__c = :chatUser.Id
-      ORDER BY MessageCount__c DESC
-    ];
-
-    Assert.areEqual(
-      2,
-      rows.size(),
-      'One row per user, agent, model and day: the unique key guarantees it.'
-    );
-    Assert.areEqual(2, rows[0].MessageCount__c, 'The two turns are added.');
-    Assert.areEqual(
-      1,
-      rows[0].ConversationCount__c,
-      'The conversation is added.'
-    );
-    Assert.areEqual(1, rows[0].FailedTurnCount__c, 'The failed turn is added.');
-    Assert.areEqual(200, rows[0].InputTokens__c, 'Input tokens are added.');
-    Assert.areEqual(40, rows[0].OutputTokens__c, 'Output tokens are added.');
-    Assert.areEqual(
-      AIAssistGlobalUtility.getOrgToday(),
-      rows[0].UsageDate__c,
-      'The day is the UTC day.'
-    );
-    Assert.isTrue(
-      rows[0].UsageKey__c.endsWith(Datetime.now().formatGmt('yyyyMMdd')) &&
-      rows[0].UsageKey__c.length() <= 80,
-      'The key ends with the day and fits its field.'
     );
   }
 }

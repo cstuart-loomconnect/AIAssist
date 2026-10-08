@@ -29,10 +29,7 @@ A job can wait in a busy org's queue longer than the lock lasts. If the lock has
 job starts, the job stands down rather than run beside whatever took the conversation over; the
 finalizer then fails the stale turn and leaves the lock alone.
 
-A data source that wrote to the database (AIAgentManager.AIDataSourceWriteException) is the one
-exception deliberately let out: an unhandled exception rolls the whole transaction back, undoing the
-write, and the finalizer records the failure and tells the chat UI. Any other failure is caught here,
-recorded as a failed turn and reported to the chat UI. The conversation Id is passed in up front, so
+A failure is caught here, recorded as a failed turn and reported to the chat UI. The conversation Id is passed in up front, so
 that works even when the triggering message was deleted before the job ran.
 
 How much is loaded is bounded: at most MAX_HISTORY_MESSAGES of history within MAX_HISTORY_CHARACTERS,
@@ -59,7 +56,6 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
     public List<AIWorkflowAction__c> workflowActions;
     public Integer attemptNumber;
     public AIExecutionStepTracker trace;
-    public List<AIViolationRule__c> aiRules;
   }
 
   // The seam between the messaging layer and the AI Agent Manager. A test replaces it so the messaging layer is tested on its own behaviour, not on a provider's.
@@ -80,8 +76,7 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         responseRequest.dataSources,
         responseRequest.workflowActions,
         responseRequest.attemptNumber,
-        responseRequest.trace,
-        responseRequest.aiRules
+        responseRequest.trace
       );
     }
   }
@@ -271,8 +266,6 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         agent.Id
       );
       responseRequest.attemptNumber = attemptNumber;
-      responseRequest.aiRules = AIViolationService.loadActiveAiRules(agent.Id);
-      responseContext.aiRules = responseRequest.aiRules;
 
       // Live progress follows the org-wide setting. Request and response payloads are captured only when the step capture mode is Full.
       responseRequest.trace = new AIExecutionStepTracker(
@@ -280,7 +273,7 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         triggeringMessageId,
         AIAssistSettingsService.getUiSettings().ShowExecutionTraceToUser__c ==
         true,
-        AIAssistSettingsService.getStepCaptureMode() ==
+        AIAssistSettingsService.getSettings().StepCaptureMode__c ==
         AIAssistApplicationConstants.STEP_CAPTURE_FULL
       );
 
@@ -325,15 +318,6 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         agentResult,
         responseRequest.trace
       );
-    } catch (AIAgentManager.AIDataSourceWriteException dataSourceWriteException) {
-      // Rethrown on purpose, unlogged here: escaping the job rolls back the write, and the finalizer records the failure once.
-      finalizer.recordTokensSpent(
-        dataSourceWriteException.tokensUsed +
-          priorInputTokens +
-          priorOutputTokens,
-        0
-      );
-      throw dataSourceWriteException;
     } catch (Exception caughtException) {
       AIPlatformLogManager.logException(
         caughtException,

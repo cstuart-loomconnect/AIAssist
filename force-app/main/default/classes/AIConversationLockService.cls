@@ -65,7 +65,10 @@ public without sharing class AIConversationLockService {
     setLockedUntil(
       conversationId,
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue()
+        )
     );
     return true;
   }
@@ -99,7 +102,10 @@ public without sharing class AIConversationLockService {
     setLockedUntil(
       conversationId,
       System.now()
-        .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+        .addMinutes(
+          AIAssistSettingsService.getSettings()
+            .ProcessingLockMinutes__c.intValue()
+        )
     );
   }
 
@@ -138,7 +144,10 @@ public without sharing class AIConversationLockService {
       setLockedUntil(
         conversationId,
         System.now()
-          .addMinutes(AIAssistSettingsService.getProcessingLockMinutes())
+          .addMinutes(
+            AIAssistSettingsService.getSettings()
+              .ProcessingLockMinutes__c.intValue()
+          )
       );
       return newestUserMessages[0].Id;
     }

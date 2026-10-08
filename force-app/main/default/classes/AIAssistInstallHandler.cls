@@ -39,8 +39,7 @@ Version      Author                   Description
 public with sharing class AIAssistInstallHandler implements InstallHandler {
   // Upgrade steps by number, with the version each first shipped in. A step runs when the version being upgraded from is older than that, so each runs once, and they run in number order. Add a step with the next number; never renumber or remove one.
   private static final Map<Integer, Version> UPGRADE_STEP_VERSIONS = new Map<Integer, Version>{
-    1 => new Version(0, 2), // Record the org the application is switched on in (the sandbox guard).
-    2 => new Version(0, 2) // Count the organisation's usage totals, which the limit check now reads.
+    1 => new Version(0, 2) // Record the org the application is switched on in (the sandbox guard).
   };
 
   // A test cannot change what kind of org it runs in.
@@ -119,11 +118,6 @@ public with sharing class AIAssistInstallHandler implements InstallHandler {
       try {
         if (stepNumber == 1)
           AIAssistSettingsService.recordActivatedOrg();
-        else if (stepNumber == 2)
-          Database.executeBatch(
-            new AIOrgUsageTotalsBatch(),
-            AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-          );
 
         upgradeStepsRun.add(stepNumber);
       } catch (Exception stepException) {

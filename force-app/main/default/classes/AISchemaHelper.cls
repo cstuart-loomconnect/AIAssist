@@ -56,7 +56,7 @@ public inherited sharing class AISchemaHelper {
     public Boolean isNameField = false;
   }
 
-  // The org cache partition when the subscriber has one, otherwise nothing. Also holds the organisation's usage totals (AIOrgUsageService).
+  // The org cache partition when the subscriber has one, otherwise nothing.
   public class OrgPartitionCache implements ICache {
     public String get(String key) {
       Cache.OrgPartition orgPartition = null;

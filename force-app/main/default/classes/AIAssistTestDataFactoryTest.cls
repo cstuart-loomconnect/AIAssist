@@ -20,7 +20,7 @@ Version      Author                   Description
 private class AIAssistTestDataFactoryTest {
   // testScenario1: createUsers builds standard users and assignPermissionSet gives each the permission set, so a test can run as a real end user.
   // testScenario2: The configuration builders insert valid records: an active model, an agent open to all users, a template, data sources, workflow actions and their links, with unique Developer Names stamped by the triggers.
-  // testScenario3: The conversation, message, usage, terms, PII and step builders insert valid records, and an AI Agent message goes in through the package gateway.
+  // testScenario3: The conversation, message, settings, PII and step builders insert valid records, and an AI Agent message goes in through the package gateway.
 
   @TestSetup
   static void setup() {
@@ -174,13 +174,6 @@ private class AIAssistTestDataFactoryTest {
       2,
       true
     );
-    List<AIUsageDaily__c> usage = AIAssistTestDataFactory.createAIUsageDailies(
-      chatUser.Id,
-      agent.Id,
-      agent.AIModelConfiguration__c,
-      3,
-      true
-    );
     List<AIUserSettings__c> settings = AIAssistTestDataFactory.createAIUserSettings(
       chatUser.Id,
       true
@@ -223,11 +216,6 @@ private class AIAssistTestDataFactoryTest {
       'The AI message was inserted as the package.'
     );
     Assert.areEqual(2, steps.size(), 'Two steps.');
-    Assert.areEqual(
-      3,
-      [SELECT COUNT() FROM AIUsageDaily__c WHERE User__c = :chatUser.Id],
-      'One usage row per day.'
-    );
     Assert.areEqual(1, settings.size(), 'One settings row.');
     Assert.isNotNull(piiFields[0].Id, 'The PII field metadata is saved.');
     Assert.isNotNull(mappings[0].Id, 'The PII mapping is saved.');

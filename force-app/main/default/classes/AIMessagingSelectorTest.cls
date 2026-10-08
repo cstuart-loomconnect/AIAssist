@@ -25,8 +25,7 @@ private class AIMessagingSelectorTest {
   // testScenario5: getUserSettings returns the settings row of a user, and null for a user without one or no user.
   // testScenario6: isAssigned is true for an active assignment to the user or to a permission set they hold, and false for an inactive one, another user or no agent.
   // testScenario7: getTermsStatus distinguishes a user who accepted the current version, one who accepted only an earlier version, one who never accepted, and no terms configured.
-  // testScenario8: The usage queries count a user's active conversations, sum their usage for a day, sum the organisation's day and month, and lock a usage row by key.
-  // testScenario10: A rule reaches an agent through an active assignment or because it applies to all agents; an inactive assignment, an inactive rule and another agent's rule do not.
+  // testScenario8: countActiveConversations counts only the user's own Active conversations.
   // testScenario11: getUserSettings combines the usage policies of a user (assigned to them, to a permission set they hold, or the default) with their own row as an personalSettings.
   // testScenario12: An agent is offered on its own Object Type and on every object added to it, a general agent on any object, and an agent added to other objects only is not general.
   // testScenario13: A permission set held only through a permission set group still matches an agent assignment and a usage policy assignment, by the permission set's name or the group's, and a user outside the group does not match.
@@ -376,49 +375,9 @@ private class AIMessagingSelectorTest {
       .ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
     conversations[2].ConversationClosedTimestamp__c = Datetime.now();
     insert conversations;
-    AIUsageDaily__c firstUsage = AIAssistTestDataFactory.createAIUsageDailies(
-      users[0].Id,
-      agent.Id,
-      agent.AIModelConfiguration__c,
-      1,
-      false
-    )[0];
-    firstUsage.ConversationCount__c = 2;
-    firstUsage.InputTokens__c = 100;
-    firstUsage.OutputTokens__c = 50;
-    firstUsage.MessageCount__c = 3;
-    AIUsageDaily__c secondUsage = AIAssistTestDataFactory.createAIUsageDailies(
-      users[1].Id,
-      agent.Id,
-      agent.AIModelConfiguration__c,
-      1,
-      false
-    )[0];
-    secondUsage.InputTokens__c = 10;
-    secondUsage.OutputTokens__c = 10;
-    secondUsage.MessageCount__c = 1;
-    insert new List<AIUsageDaily__c>{ firstUsage, secondUsage };
-    Date today = AIAssistGlobalUtility.getOrgToday();
 
     Test.startTest();
     Integer active = AIMessagingSelector.countActiveConversations(users[0].Id);
-    AIMessagingSelector.UsageTotals userUsage = AIMessagingSelector.getUserDailyUsage(
-      users[0].Id,
-      today
-    );
-    AIMessagingSelector.UsageTotals yesterdayUsage = AIMessagingSelector.getUserDailyUsage(
-      users[0].Id,
-      today.addDays(-1)
-    );
-    AIMessagingSelector.OrgUsage orgUsage = AIMessagingSelector.getOrganisationUsage(
-      today
-    );
-    AIUsageDaily__c lockedRow = AIMessagingSelector.lockDailyUsageRow(
-      firstUsage.UsageKey__c
-    );
-    AIUsageDaily__c missingRow = AIMessagingSelector.lockDailyUsageRow(
-      'no-such-key'
-    );
     Test.stopTest();
 
     Assert.areEqual(
@@ -426,17 +385,6 @@ private class AIMessagingSelectorTest {
       active,
       'Only the user\'s own Active conversations count.'
     );
-    Assert.areEqual(2, userUsage.conversations, 'Conversations started today.');
-    Assert.areEqual(150, userUsage.tokens, 'Tokens are input plus output.');
-    Assert.areEqual(0, yesterdayUsage.tokens, 'Yesterday has no usage.');
-    Assert.areEqual(4, orgUsage.month.messages, 'The month sums every user.');
-    Assert.areEqual(170, orgUsage.today.tokens, 'And so does today.');
-    Assert.areEqual(
-      firstUsage.Id,
-      lockedRow.Id,
-      'The usage row is found by its key.'
-    );
-    Assert.isNull(missingRow, 'No row, null.');
   }
 
   @IsTest
@@ -481,56 +429,6 @@ private class AIMessagingSelectorTest {
     Assert.isTrue(
       noRetention.isEmpty() && noTargets.isEmpty(),
       'Nothing asked for, nothing returned.'
-    );
-  }
-
-  @IsTest
-  static void testScenario10() {
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_AI_EVALUATED_RULES_ALLOWED,
-      true
-    );
-    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, true);
-    List<AIViolationRule__c> rules = AIAssistTestDataFactory.createAIViolationRules(
-      null,
-      4,
-      AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED,
-      false
-    );
-    rules[1].AppliesToAllAgents__c = true;
-    rules[3].IsActive__c = false;
-    insert rules;
-    List<AIAgentViolationRule__c> links = AIAssistTestDataFactory.createAIAgentViolationRules(
-      agents[0].Id,
-      new List<AIViolationRule__c>{ rules[0], rules[2], rules[3] },
-      false
-    );
-    links[1].IsActive__c = false;
-    insert links;
-    AIAssistTestDataFactory.createAIAgentViolationRules(
-      agents[1].Id,
-      new List<AIViolationRule__c>{ rules[0] },
-      true
-    );
-
-    Test.startTest();
-    Map<Id, AIViolationRule__c> forFirst = new Map<Id, AIViolationRule__c>(
-      AIMessagingSelector.getActiveAiEvaluatedRules(agents[0].Id)
-    );
-    Map<Id, AIViolationRule__c> forSecond = new Map<Id, AIViolationRule__c>(
-      AIMessagingSelector.getActiveAiEvaluatedRules(agents[1].Id)
-    );
-    Test.stopTest();
-
-    Assert.areEqual(
-      new Set<Id>{ rules[0].Id, rules[1].Id },
-      forFirst.keySet(),
-      'The assigned rule and the rule for all agents; not the inactive assignment or the inactive rule.'
-    );
-    Assert.areEqual(
-      new Set<Id>{ rules[0].Id, rules[1].Id },
-      forSecond.keySet(),
-      'One rule is shared by two agents.'
     );
   }
 

@@ -72,7 +72,8 @@ public inherited sharing class AIPlatformLogManager {
           .getDmlId(0);
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         exceptionLogEvent.OccurredAt__c = System.now();
@@ -188,7 +189,8 @@ public inherited sharing class AIPlatformLogManager {
       );
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         dmlFailureLogEvent.OccurredAt__c = System.now();
@@ -281,7 +283,7 @@ public inherited sharing class AIPlatformLogManager {
     }
   }
 
-  // As above with a severity. Under org limit pressure (AIOrgLimitMonitor) only an Error is published: a log entry is itself an event, and the allowance is the thing running out.
+  // As above with a severity.
   public static void logCustomMessage(
     String message,
     String logDetail,
@@ -293,13 +295,6 @@ public inherited sharing class AIPlatformLogManager {
     try {
       if (String.isBlank(message) && String.isBlank(logDetail))
         return;
-      if (
-        severity != AIAssistApplicationConstants.LOG_SEVERITY_ERROR &&
-        !isAuditEntry &&
-        AIOrgLimitMonitor.isErrorOnlyLogging()
-      )
-        return;
-
       AIPlatformLogEvent__e customMessageLogEvent = new AIPlatformLogEvent__e(
         ClassName__c = className,
         MethodName__c = methodName,
@@ -311,7 +306,8 @@ public inherited sharing class AIPlatformLogManager {
       );
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         customMessageLogEvent.OccurredAt__c = System.now();

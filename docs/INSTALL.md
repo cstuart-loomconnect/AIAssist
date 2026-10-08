@@ -14,58 +14,25 @@ A first install also schedules the daily maintenance job. Nothing else is create
 
 ## 2. Getting started
 
-`AISetupChecklistController.getChecklist` reports these five steps. Each is complete when the condition holds.
-
-| Step                  | Complete when                                                           |
-| --------------------- | ----------------------------------------------------------------------- |
-| Permission sets       | Somebody holds AI Assist User, Super User or Admin.                     |
-| Credential tested     | A model configuration has passed Test Connection.                       |
-| First agent           | An active agent exists.                                                 |
-| Agent assigned        | That agent is open to all AI Assist users, or has an active assignment. |
-| Maintenance scheduled | The daily job exists. `scheduleMaintenance` schedules it.               |
-
-Assign **AI Assist Admin** to yourself first. Setting up a credential also needs **Customize Application**, which comes from your own profile or permission set: the package's permission sets carry no system permission.
+Assign **AI Assist Admin** to yourself first. Setting up a credential also needs **Customize Application**, which comes from your own profile or permission set: the package's permission sets carry no setup rights.
 
 ## 3. Connecting a provider
-
-### With the credential controller
-
-`AICredentialSetupController` builds the connection in four calls. They are separate because the platform will not mix them in one transaction.
-
-| Call                                                            | What it does                                                                                                                                 |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `saveCredential(provider, apiKey, baseUrl, developerName)`      | Creates the External Credential and Named Credential and stores the key. `baseUrl` and `developerName` are optional.                         |
-| `grantAccess(externalCredential)`                               | Maps the credential's principal to the permission set **AI Assist Credential Access**, creating it if needed. Assign that set to your users. |
-| `linkModelConfiguration(modelConfigurationId, namedCredential)` | Puts the Named Credential on the model configuration, with the provider's path and version header where blank.                               |
-| `testConnection(modelConfigurationId)`                          | Sends one small request and returns a readable result.                                                                                       |
-
-Running `saveCredential` again with the same name updates what exists: the key is replaced and nothing is duplicated. `rotateKey(externalCredential, apiKey)` replaces the key alone.
-
-The key is never stored by AI Assist, never logged and never returned. Each change is recorded in the Platform Log by name and user.
-
-### By hand
-
-If `grantAccess` returns instructions, or you prefer Setup:
 
 1. **External Credential**: protocol Custom. Add a principal named `AIAssist` and an authentication parameter `ApiKey` holding the key. Add a custom header from the table below.
 2. **Named Credential**: the provider's URL, your External Credential, **Allow Formulas in HTTP Header** on, **Generate Authorization Header** off, and `LoomConnect` under Allowed Namespaces for Callouts.
 3. **Principal access**: on the External Credential, map the principal to a permission set your AI Assist users hold. They also need Read on User External Credentials.
 4. **Model configuration**: enter the Named Credential's name, the model, and the API path.
-5. Run Test Connection.
+5. Send a test message to check the connection.
 
 ## 4. Providers
 
-| Provider value | Use for                                   | Base URL                              | API path                                                                   | Key header                                           |
-| -------------- | ----------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Anthropic      | Claude models                             | `https://api.anthropic.com`           | `/v1/messages`                                                             | `x-api-key: {!$Credential.<name>.ApiKey}`            |
-| OpenAI         | OpenAI, and any OpenAI-compatible service | `https://api.openai.com` or your own  | `/v1/chat/completions` or the service's path                               | `Authorization: Bearer {!$Credential.<name>.ApiKey}` |
-| Azure OpenAI   | Models deployed in your Azure resource    | `https://<resource>.openai.azure.com` | `/openai/deployments/<deployment>/chat/completions?api-version=2024-10-21` | `api-key: {!$Credential.<name>.ApiKey}`              |
+| Provider value | Use for                                   | Base URL                             | API path                                     | Key header                                           |
+| -------------- | ----------------------------------------- | ------------------------------------ | -------------------------------------------- | ---------------------------------------------------- |
+| Anthropic      | Claude models                             | `https://api.anthropic.com`          | `/v1/messages`                               | `x-api-key: {!$Credential.<name>.ApiKey}`            |
+| OpenAI         | OpenAI, and any OpenAI-compatible service | `https://api.openai.com` or your own | `/v1/chat/completions` or the service's path | `Authorization: Bearer {!$Credential.<name>.ApiKey}` |
 
-- **Anthropic** also needs the version header `anthropic-version: 2023-06-01` on the model configuration. `linkModelConfiguration` fills it in.
-- **OpenAI-compatible**: choose OpenAI and pass the service's base URL to `saveCredential`. The model name goes in Model Identifier.
-- **Azure OpenAI**: the deployment name is the Model Identifier and is part of the path. There is no default base URL; pass your resource's.
-
-Using more than one provider at a time needs `MultipleProvidersAllowed` in your plan.
+- **Anthropic** also needs the version header `anthropic-version: 2023-06-01` on the model configuration.
+- **OpenAI-compatible**: choose OpenAI and use the service's base URL on the Named Credential. The model name goes in Model Identifier.
 
 ## 5. Build in production as Assigned Users Only
 
@@ -81,19 +48,12 @@ A sandbox is switched off after a refresh (the sandbox guard), so production is 
 
 Configuration records carry a unique `DeveloperName__c`, set when they are created. Use it as the External Id when you load them into another org, so a record is matched to itself and lookups resolve by name:
 
-| Object                 | Match on                                      |
-| ---------------------- | --------------------------------------------- |
-| AI Agent               | `DeveloperName__c`                            |
-| AI Model Configuration | `DeveloperName__c`                            |
-| AI Prompt Template     | `DeveloperName__c`                            |
-| AI Data Source         | `DeveloperName__c`                            |
-| AI Workflow Action     | `DeveloperName__c`                            |
-| AI Violation Rule      | `DeveloperName__c` (or its unique Signal Tag) |
+| Object                 | Match on           |
+| ---------------------- | ------------------ |
+| AI Agent               | `DeveloperName__c` |
+| AI Model Configuration | `DeveloperName__c` |
+| AI Prompt Template     | `DeveloperName__c` |
+| AI Data Source         | `DeveloperName__c` |
+| AI Workflow Action     | `DeveloperName__c` |
 
 Order: model configurations, agents, prompt templates, data sources and actions, then the junction records. Not moved by this: the Named Credential and its key (create them in the target org), permission set assignments, and the custom settings.
-
-Names are checked when a record is saved. An Apex class, Named Credential or permission set that does not exist in the target org is refused with an error on the field, so load the things a record names first.
-
-## 7. After set-up
-
-`AIHealthCheckController.getFindings` lists anything wrong, each with the record to fix: the application off or not activated, maintenance not scheduled, a missing class, Flow, credential or permission set, a model the provider has retired, and an agent nobody can use.

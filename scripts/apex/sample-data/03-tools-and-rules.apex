@@ -4,14 +4,13 @@ Script Name: 03-tools-and-rules.apex
 =================================================================
 =================================================================
 
-Description: Data sources, workflow actions and violation rules, each linked to the sample agents, and PII
+Description: Data sources and workflow actions, each linked to the sample agents, and PII
 registries with the fields found in them. Run 02-agents.apex first.
 
 Skipped when a data source named "Sample - ..." already exists.
 
 Workflow actions and the Apex data source are created only when the options name a class or Flow
-that exists in the org: the package refuses one that does not. Anything the plan does not include
-(active workflow actions, an active Apex data source, active AI evaluated rules) is saved inactive.
+that exists in the org: the package refuses one that does not.
 
 Part of the sample data set: run scripts/load-sample-data.sh <org alias> to load all five parts in
 order, or this part alone with sf apex run --file.
@@ -184,7 +183,7 @@ public class SampleDataLoader {
           ApexClassName__c = dataSourceApexClass,
           OutputDescription__c = 'Whatever the class returns.',
           MaxRows__c = 20,
-          IsActive__c = AIFeatureService.isFeatureEnabled('Apex')
+          IsActive__c = true
         )
       );
     else
@@ -227,9 +226,7 @@ public class SampleDataLoader {
     save('AIAgentDataSource__c', agentDataSources, false);
 
     // ---------- Workflow actions: only for a class or Flow that exists in this org.
-    Boolean isActionActive = AIFeatureService.isFeatureEnabled(
-      'WorkflowActions'
-    );
+    Boolean isActionActive = true;
     List<AIWorkflowAction__c> actions = new List<AIWorkflowAction__c>();
     if (String.isNotBlank(workflowActionApexClass)) {
       actions.add(
@@ -297,86 +294,6 @@ public class SampleDataLoader {
         );
     }
     save('AIAgentWorkflowAction__c', agentActions, false);
-
-    // ---------- Violation rules. AI evaluated rules are active only when the plan includes them.
-    Boolean isAiRuleActive = AIFeatureService.isFeatureEnabled(
-      'AIEvaluatedRules'
-    );
-    List<AIViolationRule__c> rules = new List<AIViolationRule__c>{
-      new AIViolationRule__c(
-        Name = PREFIX + 'Unauthorised Data Access',
-        RuleName__c = 'Unauthorised data access',
-        DetectionMethod__c = 'DeterministicApex',
-        ViolationTypeProduced__c = 'UnauthorizedDataAccess',
-        AppliesToAllAgents__c = true,
-        BlockRequest__c = true
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'Unauthorised Workflow Action',
-        RuleName__c = 'Unauthorised workflow action',
-        DetectionMethod__c = 'DeterministicApex',
-        ViolationTypeProduced__c = 'UnauthorizedWorkflowAction',
-        AppliesToAllAgents__c = true,
-        BlockRequest__c = true
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'Usage Limit Exceeded',
-        RuleName__c = 'Usage limit exceeded',
-        DetectionMethod__c = 'DeterministicApex',
-        ViolationTypeProduced__c = 'UsageLimitExceeded',
-        AppliesToAllAgents__c = true
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'PII Masking Failure',
-        RuleName__c = 'PII masking failure',
-        DetectionMethod__c = 'DeterministicApex',
-        ViolationTypeProduced__c = 'PIIMaskingFailure',
-        AppliesToAllAgents__c = true,
-        BlockRequest__c = true
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'Bulk Export Request',
-        RuleName__c = 'Bulk export request',
-        DetectionMethod__c = 'AIEvaluated',
-        ViolationTypeProduced__c = 'AIFlaggedIntent',
-        SignalTag__c = 'BULK_EXPORT',
-        AIDetectionInstruction__c = 'The user asks for a bulk export, a full list or a download of customer records.',
-        IsActive__c = isAiRuleActive
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'Competitor Disparagement',
-        RuleName__c = 'Competitor disparagement',
-        DetectionMethod__c = 'AIEvaluated',
-        ViolationTypeProduced__c = 'AIFlaggedIntent',
-        SignalTag__c = 'COMPETITOR_TALK',
-        AIDetectionInstruction__c = 'The user asks for wording that disparages a named competitor.',
-        BlockRequest__c = true,
-        IsActive__c = isAiRuleActive
-      ),
-      new AIViolationRule__c(
-        Name = PREFIX + 'Retired Configuration Rule',
-        RuleName__c = 'Retired configuration rule',
-        DetectionMethod__c = 'DeterministicApex',
-        ViolationTypeProduced__c = 'ConfigurationViolation',
-        IsActive__c = false
-      )
-    };
-    save('AIViolationRule__c', rules, false);
-
-    List<AIAgentViolationRule__c> agentRules = new List<AIAgentViolationRule__c>();
-    for (Integer ruleIndex = 4; ruleIndex < rules.size(); ruleIndex++) {
-      if (rules[ruleIndex].Id == null)
-        continue;
-      for (AIAgent__c agent : chatAgents)
-        agentRules.add(
-          new AIAgentViolationRule__c(
-            AIAgent__c = agent.Id,
-            AIViolationRule__c = rules[ruleIndex].Id,
-            IsActive__c = rules[ruleIndex].IsActive__c
-          )
-        );
-    }
-    save('AIAgentViolationRule__c', agentRules, false);
 
     // ---------- PII registries and the fields found in them.
     List<AIPIIRegistry__c> registries = new List<AIPIIRegistry__c>{

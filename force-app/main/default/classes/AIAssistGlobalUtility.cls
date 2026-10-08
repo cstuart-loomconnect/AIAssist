@@ -59,13 +59,19 @@ public inherited sharing class AIAssistGlobalUtility {
   private static Map<Schema.SObjectType, IdentifierFieldDescription> developerNameFieldByType = new Map<Schema.SObjectType, IdentifierFieldDescription>();
   private static Map<Schema.SObjectType, List<Schema.SObjectField>> sourceFieldsByType = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
 
-  // For a before-save check that could not run: refuses the save instead of letting an unchecked record through. A record saved with a blank unique key would allow duplicates, and one with an unchecked object name would fail later in front of a user. Null-safe.
-  public static void refuseSave(List<SObject> records) {
-    if (records == null)
-      return;
+  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
+  public static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+    Set<Integer> numbers = new Set<Integer>();
 
-    for (SObject record : records)
-      record.addError(Label.AI_Error_Integrity_Check);
+    if (String.isBlank(commaSeparatedNumbers))
+      return numbers;
+
+    for (String entry : commaSeparatedNumbers.split(',')) {
+      if (entry.trim().isNumeric())
+        numbers.add(Integer.valueOf(entry.trim()));
+    }
+
+    return numbers;
   }
 
   public static void generatePublicId(List<SObject> records) {

@@ -231,8 +231,6 @@ private class AIAssistApplicationConstantsTest {
       AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
       AIAssistApplicationConstants.ERROR_CONVERSATION_LIMIT_DAILY,
       AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-      AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-      AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE,
       AIAssistApplicationConstants.ERROR_SERVICE_BUSY
     };
     Set<String> distinctCodes = new Set<String>(errorCodes);

@@ -219,15 +219,6 @@
         <value>AI Assist</value>
     </labels>
     <labels>
-        <fullName>AI_Chat_Usage_Warning</fullName>
-        <categories>AI Assist,Chat</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: usage banner before a limit is hit.</shortDescription>
-        <value>You&apos;re close to your AI Assist usage limit.</value>
-    </labels>
-    <labels>
         <fullName>AI_Chat_Working</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
@@ -347,30 +338,6 @@
         <value>Yes</value>
     </labels>
     <labels>
-        <fullName>AI_Console_Agents_Empty</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: empty agent list.</shortDescription>
-        <value>No agents yet. Create your first agent to get started.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Delete_Confirm</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: delete confirmation.</shortDescription>
-        <value>Delete this record? This cannot be undone.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_List_Empty</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: empty list.</shortDescription>
-        <value>No records to show.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Action_Confirmation_Required</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -427,16 +394,6 @@
     >Chat: no active agent matches the current record or channel.</shortDescription>
         <value
     >No AI agent is available for this record. Contact your administrator if you think one should be.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Apex_Class_Not_Found</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Config save: the Apex class named does not exist.</shortDescription>
-        <value
-    >Apex class {0} was not found, or does not implement {1}. Check the spelling and include its namespace prefix if it has one.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Application_Inactive</fullName>
@@ -518,16 +475,6 @@
     >This conversation has ended. Start a new conversation to continue.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Conversation_Limit_Daily</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: Max Conversations Per Day reached.</shortDescription>
-        <value
-    >You&apos;ve reached the number of conversations allowed in a day. Try again tomorrow.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -538,16 +485,6 @@
     >This conversation could not be found. It may have been closed or removed.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Daily_Message_Budget</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: the org-wide daily message budget is used up.</shortDescription>
-        <value
-    >Your organisation has used today&apos;s AI Assist messages. You can send more tomorrow.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Daily_Usage_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -555,15 +492,6 @@
         <shortDescription>Chat: Max Tokens Per Day reached.</shortDescription>
         <value
     >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Data_Deletion_Not_Approved</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: deletion run attempted before approval.</shortDescription>
-        <value>This data deletion request has not been approved yet.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Data_Unavailable</fullName>
@@ -643,16 +571,6 @@
     >Your message is too long. Please shorten it and try again.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Named_Credential_Not_Found</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Config save: the Named Credential does not exist.</shortDescription>
-        <value
-    >Named Credential {0} does not exist in this org. Enter the Name of a Named Credential from Setup, or create one first.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Not_Authorised</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -661,114 +579,6 @@
     >Chat: user lacks the permission set or object access.</shortDescription>
         <value
     >You don&apos;t have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_AI_Rules_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: AI Evaluated rule not licensed.</shortDescription>
-        <value
-    >AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Permission_Set_Not_Found</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Config save: no such permission set or group.</shortDescription>
-        <value
-    >No permission set or permission set group named {0} exists in this org. Enter its API name.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Actions_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console and chat: workflow actions are not licensed.</shortDescription>
-        <value
-    >Workflow actions are not included in your plan. Ask your account team about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Apex_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Apex source or action not licensed.</shortDescription>
-        <value
-    >Apex data sources and actions are not included in your plan. Use a SOQL data source or a Flow action, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Actions</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Workflow Actions reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active workflow actions. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Agents</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Agents reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active agents. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Data_Sources</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Data Sources reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active data sources. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Messages</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Chat: Max Monthly Messages reached.</shortDescription>
-        <value
-    >Your organisation has used all {0} messages allowed this month. The allowance renews on {1}. Ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Tokens</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Chat: Max Monthly Tokens reached.</shortDescription>
-        <value
-    >Your organisation has used all {0} tokens allowed this month. The allowance renews on {1}. Ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Providers_Limit</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: a second provider was activated.</shortDescription>
-        <value
-    >Your plan allows one AI provider. Deactivate the other configurations, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Retention_Cap</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: retention above Max Conversation Retention Days. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows conversations to be kept for up to {0} days. Choose a shorter period.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Privacy_Masking_Failed</fullName>
@@ -966,24 +776,6 @@
     >AI Assist only reads data the signed-in user already has access to. Sharing rules and field-level security always apply.</value>
     </labels>
     <labels>
-        <fullName>AI_Guidance_Data_Deletion_Kept</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: data deletion request.</shortDescription>
-        <value
-    >After deletion the request keeps counts only, never the deleted content. Violations and usage totals are kept with the person removed.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Data_Deletion_Request</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: data deletion request.</shortDescription>
-        <value
-    >A data deletion request removes a person&apos;s conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
-    </labels>
-    <labels>
         <fullName>AI_Guidance_Data_Source_Max_Rows</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
@@ -1120,35 +912,6 @@
     >Test mode lets administrators try an agent without opening it to users.</value>
     </labels>
     <labels>
-        <fullName>AI_Guidance_Usage_Cost</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: usage and model configuration.</shortDescription>
-        <value
-    >Costs are estimates from the prices you enter. Your provider invoice is the source of truth.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Usage_Limits</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: user settings and agent settings.</shortDescription>
-        <value
-    >Limits protect your AI spend. Leave a limit blank only if you intend it to be unlimited.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Violation_Review</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: violation review.</shortDescription>
-        <value
-    >Review each violation and mark it Reviewed or Dismissed. Dismiss only when the rule fired incorrectly.</value>
-    </labels>
-    <labels>
         <fullName>AI_Guidance_Write_Actions</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
@@ -1181,14 +944,6 @@
         <protected>false</protected>
         <shortDescription>Progress event Step Label.</shortDescription>
         <value>Thinking</value>
-    </labels>
-    <labels>
-        <fullName>AI_Step_Checking_Rules</fullName>
-        <categories>AI Assist,Step</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Progress event Step Label.</shortDescription>
-        <value>Checking usage rules</value>
     </labels>
     <labels>
         <fullName>AI_Step_Finalising</fullName>
@@ -1400,236 +1155,6 @@
     >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Flow_Run_Mode</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Workflow Action: Flow runs with more access than the user.</shortDescription>
-        <value
-    >This Flow cannot be used as an action: it runs in system context without sharing, or its run mode could not be confirmed. Set the Flow to run in system context with sharing, or leave its run mode as the default.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Integrity_Check</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Save refused: a required integrity check could not be completed.</shortDescription>
-        <value
-    >This record could not be saved because a required check could not be completed. Try again, and contact your administrator if it keeps happening.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Org_Limits_Paused</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat is paused to protect the org limits; it resumes by itself.</shortDescription>
-        <value
-    >AI Assist is paused to protect your org's daily limits and will resume automatically. Please try again shortly.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Alert_Org_Limits_Title</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Admin notification title when AI Assist changes mode because of org limits.</shortDescription>
-        <value>AI Assist: {0} is now {1}</value>
-    </labels>
-    <labels>
-        <fullName>AI_Alert_Org_Limits_Body</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Admin notification body when AI Assist changes mode because of org limits.</shortDescription>
-        <value
-    >{0} usage is at {1} percent. {2} Thresholds are set in AI Assist Settings.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Alert_Org_Limits_Effect_Degraded</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Admin notification: what Degraded means.</shortDescription>
-        <value>Live push updates are off and only errors are logged.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Alert_Org_Limits_Effect_Paused</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Admin notification: what Paused means.</shortDescription>
-        <value>New chat messages are paused until usage falls.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Alert_Org_Limits_Effect_Normal</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Admin notification: what Normal means.</shortDescription>
-        <value>AI Assist is back to normal.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Credential_Created</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Credential set-up: created.</shortDescription>
-        <value
-    >The credential {0} was created and the key stored. Next, grant your users access to it.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Credential_Rotated</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Credential set-up: key replaced.</shortDescription>
-        <value>The key for {0} was replaced. Nothing else was changed.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Credential_Access_Granted</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Credential set-up: permission set created.</shortDescription>
-        <value
-    >Access is granted through the permission set {0}. Assign it to everyone who uses AI Assist.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Credential_Access_Manual</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Credential set-up: grant access by hand.</shortDescription>
-        <value
-    >Access could not be granted automatically. In Setup, open External Credentials, open {0}, and under Principals add a permission set your AI Assist users hold. They also need Read on the User External Credentials object.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Credential_Linked</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Credential set-up: model configuration updated.</shortDescription>
-        <value
-    >The model configuration now uses the credential {0}. Test the connection to finish.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Connection_Ok</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Connection test: success.</shortDescription>
-        <value>Connected. The provider answered in {0} ms.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_App_Inactive</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: application switched off.</shortDescription>
-        <value
-    >AI Assist is switched off in this org, so nobody can chat. Switch it on in AI Assist Settings.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Sandbox</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: activated in another org.</shortDescription>
-        <value
-    >These settings were activated in another org (a sandbox copied from production). AI Assist stays off here until you activate it in this org.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_No_Maintenance</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: maintenance job missing.</shortDescription>
-        <value
-    >The daily maintenance job is not scheduled, so retention and idle closing are not running. Schedule it from the set-up checklist.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Apex_Missing</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Health check: Apex class not found.</shortDescription>
-        <value
-    >{0} names the Apex class {1}, which does not exist or does not implement the required interface.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Flow_Missing</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: Flow missing or not allowed.</shortDescription>
-        <value
-    >{0} names the Flow {1}, which does not exist or runs in system context without sharing.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Credential_Missing</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: no usable Named Credential.</shortDescription>
-        <value
-    >{0} has no Named Credential, or names one ({1}) that does not exist in this org.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Model_Retired</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: provider says model is retired.</shortDescription>
-        <value
-    >The provider reported that the model {1} used by {0} is no longer available. Update its Model Identifier.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Model_Inactive</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: agent has no active model.</shortDescription>
-        <value
-    >The agent {0} has no active model configuration, so it cannot answer.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_No_Users</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: agent has nobody assigned.</shortDescription>
-        <value
-    >The agent {0} is limited to assigned users and has none, so nobody can use it.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Health_Permission_Set_Missing</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Health check: assignment names a missing set.</shortDescription>
-        <value
-    >An assignment on {0} names the permission set {1}, which does not exist in this org.</value>
-    </labels>
-    <labels>
         <fullName>AI_Chat_Blocked_Sandbox</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
@@ -1660,13 +1185,48 @@
     >You haven&apos;t been given access to an AI Assist agent here. Ask your administrator.</value>
     </labels>
     <labels>
-        <fullName>AI_Chat_Plan_Cap_Warning</fullName>
-        <categories>AI Assist,Chat</categories>
+        <fullName>AI_Channel_Record_Page_Chat</fullName>
+        <categories>AI Assist,Picklist Values</categories>
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: plan allowance nearly used. {0} is percent.</shortDescription>
-        <value
-    >Your organisation has used {0}% of this month&apos;s AI Assist allowance.</value>
+    >Channel picklist value label: Record Page Chat.</shortDescription>
+        <value>Record Page Chat</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Utility_Bar</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Utility Bar.</shortDescription>
+        <value>Utility Bar</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Mobile</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Mobile.</shortDescription>
+        <value>Mobile</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_Anthropic</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: Anthropic.</shortDescription>
+        <value>Anthropic</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_OpenAI</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: OpenAI.</shortDescription>
+        <value>OpenAI</value>
     </labels>
 </CustomLabels>

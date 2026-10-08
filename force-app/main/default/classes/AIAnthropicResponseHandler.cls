@@ -79,7 +79,10 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
 
       // Status not in AIAssistSettings__c.AIProviderSuccessStatusCodes__c - expose Anthropic's error, e.g. { "type": "error", "error": { "type": "invalid_request_error", "message": "..." } }, falling back to the raw body.
       if (
-        !AIAssistSettingsService.getSuccessStatusCodes()
+        !AIAssistGlobalUtility.toIntegerSet(
+            AIAssistSettingsService.getSettings()
+              .AIProviderSuccessStatusCodes__c
+          )
           .contains(anthropicHttpResponse.getStatusCode())
       ) {
         String providerErrorDetail = rawResponseBody;

@@ -74,7 +74,6 @@ AIPIIRegistry__c            ReadWrite           Private
 AIPIIFieldMetadata__c       ControlledByParent  ControlledByParent
 AIPIIMapping__c             ControlledByParent  ControlledByParent
 AIPIIMaskingRecord__c       ControlledByParent  ControlledByParent
-AIDataDeletionRequest__c    ReadWrite           Private
 AIPlatformLog__c            Private             Private
 
 [ ] Each row matches docs/SECURITY_MODEL.md
@@ -85,15 +84,16 @@ AIPlatformLog__c            Private             Private
 3.4 CUSTOM LABELS
 -----------------
 
-181 labels in CustomLabels.labels-meta.xml, grouped by prefix. For each: wording, category, whether it is still referenced, and whether it is protected.
+192 labels in CustomLabels.labels-meta.xml, grouped by prefix. For each: wording, category, whether it is still referenced, and whether it is protected.
 
 AI_Alert_* (5):
 
-[ ] AI_Alert_Org_Limits_Body
-[ ] AI_Alert_Org_Limits_Effect_Degraded
-[ ] AI_Alert_Org_Limits_Effect_Normal
-[ ] AI_Alert_Org_Limits_Effect_Paused
-[ ] AI_Alert_Org_Limits_Title
+
+AI_Channel_* (3), labels for the AIChannel picklist values:
+
+[ ] AI_Channel_Mobile
+[ ] AI_Channel_Record_Page_Chat
+[ ] AI_Channel_Utility_Bar
 
 AI_Chat_* (31):
 
@@ -121,12 +121,10 @@ AI_Chat_* (31):
 [ ] AI_Chat_New_Chat
 [ ] AI_Chat_New_Chats_Paused
 [ ] AI_Chat_PII_Notice
-[ ] AI_Chat_Plan_Cap_Warning
 [ ] AI_Chat_Retry
 [ ] AI_Chat_Send
 [ ] AI_Chat_Suggested_Actions_Heading
 [ ] AI_Chat_Title
-[ ] AI_Chat_Usage_Warning
 [ ] AI_Chat_Working
 
 AI_Common_* (13):
@@ -147,25 +145,6 @@ AI_Common_* (13):
 
 AI_Console_* (19):
 
-[ ] AI_Console_Agents_Empty
-[ ] AI_Console_Connection_Ok
-[ ] AI_Console_Credential_Access_Granted
-[ ] AI_Console_Credential_Access_Manual
-[ ] AI_Console_Credential_Created
-[ ] AI_Console_Credential_Linked
-[ ] AI_Console_Credential_Rotated
-[ ] AI_Console_Delete_Confirm
-[ ] AI_Console_Health_Apex_Missing
-[ ] AI_Console_Health_App_Inactive
-[ ] AI_Console_Health_Credential_Missing
-[ ] AI_Console_Health_Flow_Missing
-[ ] AI_Console_Health_Model_Inactive
-[ ] AI_Console_Health_Model_Retired
-[ ] AI_Console_Health_No_Maintenance
-[ ] AI_Console_Health_No_Users
-[ ] AI_Console_Health_Permission_Set_Missing
-[ ] AI_Console_Health_Sandbox
-[ ] AI_Console_List_Empty
 
 AI_Error_* (61):
 
@@ -175,7 +154,6 @@ AI_Error_* (61):
 [ ] AI_Error_Agent_Inactive
 [ ] AI_Error_Agent_Not_Assigned
 [ ] AI_Error_Agent_Not_Available
-[ ] AI_Error_Apex_Class_Not_Found
 [ ] AI_Error_Application_Inactive
 [ ] AI_Error_Channel_Not_Allowed
 [ ] AI_Error_Command_Unknown
@@ -185,35 +163,17 @@ AI_Error_* (61):
 [ ] AI_Error_Console_Save_Failed
 [ ] AI_Error_Conversation_Busy
 [ ] AI_Error_Conversation_Closed
-[ ] AI_Error_Conversation_Limit_Daily
 [ ] AI_Error_Conversation_Not_Found
-[ ] AI_Error_Daily_Message_Budget
 [ ] AI_Error_Daily_Usage_Limit
-[ ] AI_Error_Data_Deletion_Not_Approved
 [ ] AI_Error_Data_Unavailable
 [ ] AI_Error_Feedback_Invalid
-[ ] AI_Error_Flow_Run_Mode
 [ ] AI_Error_Generic
-[ ] AI_Error_Integrity_Check
 [ ] AI_Error_Maintenance_Mode
 [ ] AI_Error_Message_Empty
 [ ] AI_Error_Message_Limit_Reached
 [ ] AI_Error_Message_Too_Long
-[ ] AI_Error_Named_Credential_Not_Found
 [ ] AI_Error_Not_Authorised
 [ ] AI_Error_Object_Not_Found
-[ ] AI_Error_Org_Limits_Paused
-[ ] AI_Error_Permission_Set_Not_Found
-[ ] AI_Error_Plan_AI_Rules_Not_Included
-[ ] AI_Error_Plan_Actions_Not_Included
-[ ] AI_Error_Plan_Apex_Not_Included
-[ ] AI_Error_Plan_Limit_Actions
-[ ] AI_Error_Plan_Limit_Agents
-[ ] AI_Error_Plan_Limit_Data_Sources
-[ ] AI_Error_Plan_Limit_Messages
-[ ] AI_Error_Plan_Limit_Tokens
-[ ] AI_Error_Plan_Providers_Limit
-[ ] AI_Error_Plan_Retention_Cap
 [ ] AI_Error_Privacy_Masking_Failed
 [ ] AI_Error_Provider_Authentication
 [ ] AI_Error_Provider_Model_Retired
@@ -231,14 +191,12 @@ AI_Error_* (61):
 [ ] AI_Error_Terms_Version_Changed
 [ ] AI_Error_Token_Limit_Reached
 
-AI_Guidance_* (25):
+AI_Guidance_* (24):
 
 [ ] AI_Guidance_Agent_Access
 [ ] AI_Guidance_Apex_Class
 [ ] AI_Guidance_Conversation_Export
 [ ] AI_Guidance_Data_Access
-[ ] AI_Guidance_Data_Deletion_Kept
-[ ] AI_Guidance_Data_Deletion_Request
 [ ] AI_Guidance_Data_Source_Max_Rows
 [ ] AI_Guidance_Debug_Mode
 [ ] AI_Guidance_Delete_Agent
@@ -254,10 +212,12 @@ AI_Guidance_* (25):
 [ ] AI_Guidance_SOQL_Template
 [ ] AI_Guidance_Temperature
 [ ] AI_Guidance_Test_Mode
-[ ] AI_Guidance_Usage_Cost
-[ ] AI_Guidance_Usage_Limits
-[ ] AI_Guidance_Violation_Review
 [ ] AI_Guidance_Write_Actions
+
+AI_Provider_* (3), labels for the AIProvider__c picklist values:
+
+[ ] AI_Provider_Anthropic
+[ ] AI_Provider_OpenAI
 
 AI_Settings_* (2):
 
@@ -267,7 +227,6 @@ AI_Settings_* (2):
 AI_Step_* (7):
 
 [ ] AI_Step_Calling_Model
-[ ] AI_Step_Checking_Rules
 [ ] AI_Step_Finalising
 [ ] AI_Step_Preparing_Request
 [ ] AI_Step_Protecting_Data
@@ -284,6 +243,9 @@ AI_Terms_* (8):
 [ ] AI_Terms_Signature_Label
 [ ] AI_Terms_Signature_Required
 [ ] AI_Terms_Title
+
+AI_Violation_Type_* (6), labels for the AIViolationType picklist values:
+
 
 AI_Wizard_* (10):
 
@@ -302,7 +264,6 @@ AI_Wizard_* (10):
 3.5 NOTIFICATIONS AND ASSETS
 ----------------------------
 
-[ ] Custom notification type AIAssistLimitAlert
 [ ] Content asset AI_Assist_Logo (file and metadata)
 
 

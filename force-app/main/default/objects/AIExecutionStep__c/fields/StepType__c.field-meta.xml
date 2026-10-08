@@ -43,11 +43,6 @@
                 <label>PII Masking</label>
             </value>
             <value>
-                <fullName>Violation Check</fullName>
-                <default>false</default>
-                <label>Violation Check</label>
-            </value>
-            <value>
                 <fullName>Other</fullName>
                 <default>false</default>
                 <label>Other</label>

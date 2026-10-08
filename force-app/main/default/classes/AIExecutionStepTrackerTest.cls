@@ -29,7 +29,6 @@ private class AIExecutionStepTrackerTest {
     settings.IsEnabled__c = true;
     settings.IsExceptionLoggingEnabled__c = true;
     settings.IsPlatformLoggingEnabled__c = true;
-    settings.IsEventNotificationEnabled__c = true; // Events are optional and off by default; these tests are about the events.
     upsert settings;
   }
 

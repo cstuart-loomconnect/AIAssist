@@ -101,7 +101,6 @@ public with sharing class AIChatController {
     }
 
     context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
-    context.usage = AIChatUsageService.buildUsageState(userSettings);
     context.commands = AIChatCommandService.getAvailableCommands(
       context.agent.id,
       context.record
@@ -186,10 +185,6 @@ public with sharing class AIChatController {
           AIAssistSettingsService.getUiSettings()
         )
       );
-      conversationUpdate.usage = AIChatUsageService.buildUsageState(
-        userSettings
-      );
-
       return conversationUpdate;
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getConversationUpdate');
@@ -255,13 +250,7 @@ public with sharing class AIChatController {
         if (!refusal.isRefusal) {
           result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
         } else if (
-          new Set<String>{
-              AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-              AIAssistApplicationConstants.ERROR_CONVERSATION_LIMIT_DAILY,
-              AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-              AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-              AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE
-            }
+          new Set<String>{ AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT }
             .contains(refusal.code)
         ) {
           result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_LIMIT;
@@ -280,10 +269,6 @@ public with sharing class AIChatController {
         result.code = refusal.code;
         result.message = refusal.getMessage();
       }
-
-      result.usage = AIChatUsageService.buildUsageState(
-        AIChatStateService.getUserSettings()
-      );
 
       return result;
     } catch (Exception caughtException) {

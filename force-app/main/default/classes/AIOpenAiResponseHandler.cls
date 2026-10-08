@@ -68,7 +68,10 @@ public inherited sharing class AIOpenAiResponseHandler implements IAIProviderRes
 
       // Status not in AIAssistSettings__c.AIProviderSuccessStatusCodes__c - expose OpenAI's error, e.g. { "error": { "message": "...", "type": "invalid_request_error", ... } }, falling back to the raw body.
       if (
-        !AIAssistSettingsService.getSuccessStatusCodes()
+        !AIAssistGlobalUtility.toIntegerSet(
+            AIAssistSettingsService.getSettings()
+              .AIProviderSuccessStatusCodes__c
+          )
           .contains(openAiHttpResponse.getStatusCode())
       ) {
         String providerErrorDetail = rawResponseBody;

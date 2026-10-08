@@ -3,15 +3,14 @@
     <fullName>RetryAttempts__c</fullName>
     <defaultValue>2</defaultValue>
     <description
-  >How many times to retry a callout to this model after a retryable failure (timeout, 429, 5xx) before giving up.</description>
+  >How many times a callout to any model is retried after a retryable failure (see Retryable Status Codes, and timeouts) before the turn fails. 0 means never retry. Between 0 and 5; anything outside that range, or blank, is read as the default (2) or the nearest limit.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Set how many additional attempts to make after a failed call to this model before giving up.</inlineHelpText>
+  >Extra attempts after a failed call to a model, for every model. 0 means never retry. Maximum 5.</inlineHelpText>
     <label>Retry Attempts</label>
-    <precision>2</precision>
+    <precision>1</precision>
     <required>false</required>
     <scale>0</scale>
-    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Number</type>
     <unique>false</unique>

@@ -71,15 +71,11 @@ public class SampleDataLoader {
       : null;
     settings.AIUsagePolicyUrl__c = 'https://example.com/ai-usage-policy';
     settings.CurrentTermsVersion__c = '1.0';
-    settings.IsEventNotificationEnabled__c = true;
     settings.StepCaptureMode__c = 'Full';
     settings.MaxMessageLength__c = 4000;
     settings.MaxMessagesPerUserPerMinute__c = 10;
     settings.MaxMessagesInFlight__c = 20;
-    settings.DailyMessageBudget__c = 2000;
-    settings.GlobalTokenBudgetPerDay__c = 2000000;
     settings.MaxPIIRegistryObjects__c = 10;
-    settings.StorageBudgetPercent__c = 20;
 
     // Each row starts from the field defaults: a checkbox is never blank, so a profile or user row built empty would switch the default-on settings off.
     AIAssistUISettings__c organisationUi = uiSettingsFor(

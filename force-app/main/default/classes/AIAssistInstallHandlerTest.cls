@@ -217,7 +217,7 @@ private class AIAssistInstallHandlerTest {
 
     Assert.isTrue(onFirstInstall.isEmpty(), 'A first install runs no step.');
     Assert.areEqual(
-      new List<Integer>{ 1, 2 },
+      new List<Integer>{ 1 },
       fromOlder,
       'Every newer step, once, in order.'
     );
@@ -229,14 +229,6 @@ private class AIAssistInstallHandlerTest {
       UserInfo.getOrganizationId(),
       AIAssistSettings__c.getOrgDefaults().ActivatedOrgId__c,
       'Step 1 recorded the org.'
-    );
-    Assert.isTrue(
-      [
-        SELECT COUNT()
-        FROM AsyncApexJob
-        WHERE ApexClass.Name = 'AIOrgUsageTotalsBatch' AND JobType = 'BatchApex'
-      ] >= 1,
-      'Step 2 started the usage count.'
     );
   }
 }

@@ -161,7 +161,6 @@ public inherited sharing class AIPromptTemplateTriggerHandler {
         'AIPromptTemplateTriggerHandler',
         methodName
       );
-      AIAssistGlobalUtility.refuseSave(newRecords); // Fails closed: an unchecked record must not be saved.
     }
   }
 }

@@ -25,29 +25,14 @@ filter, never as a permission check.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, as the read half of AIMessagingRepository.
-2.0          Chandler Stuart          Rules reach an agent through AIAgentViolationRule__c or AppliesToAllAgents__c; an agent can be offered on several objects (AIAgentObject__c); user settings are the user row over the usage policies that apply to them.
-3.0          Chandler Stuart          Permission set groups count as held permission sets. Rules are taken blocking first and a cut-short list is logged.
+2.0          Chandler Stuart          An agent can be offered on several objects (AIAgentObject__c); user settings are the user row over the usage policies that apply to them.
+3.0          Chandler Stuart          Permission set groups count as held permission sets.
 */
 
 public without sharing class AIMessagingSelector {
   public static final String TERMS_ACCEPTED = 'ACCEPTED';
   public static final String TERMS_OUTDATED = 'OUTDATED';
   public static final String TERMS_NONE = 'NONE';
-
-  private static Set<String> loggedRuleCaps = new Set<String>(); // Agent and kind already logged as cut short in this transaction.
-
-  // Tokens and counts for one user or one organisation over a period.
-  public class UsageTotals {
-    public Decimal messages = 0;
-    public Decimal conversations = 0;
-    public Decimal tokens = 0;
-  }
-
-  // Organisation-wide totals for the current month and the current day, from one query.
-  public class OrgUsage {
-    public UsageTotals month = new UsageTotals();
-    public UsageTotals today = new UsageTotals();
-  }
 
   // =============================================================
   // What a turn runs on
@@ -97,8 +82,7 @@ public without sharing class AIMessagingSelector {
         ApiVersionHeaderName__c,
         ApiVersionHeaderValue__c,
         MaximumOutputTokens__c,
-        Temperature__c,
-        RetryAttempts__c
+        Temperature__c
       FROM AIModelConfiguration__c
       WHERE Id = :modelConfigurationId
       WITH SYSTEM_MODE
@@ -159,117 +143,6 @@ public without sharing class AIMessagingSelector {
       ORDER BY DeveloperName__c
       LIMIT :AIAssistApplicationConstants.MAX_TOOLS_PER_KIND
     ];
-  }
-
-  // The rules assigned to an agent through an active AI Agent Violation Rule. A rule that applies to every agent needs no assignment and is matched by its own flag.
-  private static Set<Id> getAssignedRuleIds(Id agentId) {
-    Set<Id> ruleIds = new Set<Id>();
-
-    for (AIAgentViolationRule__c assignment : [
-      SELECT AIViolationRule__c
-      FROM AIAgentViolationRule__c
-      WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
-      WITH SYSTEM_MODE
-      LIMIT 2000
-    ])
-      ruleIds.add(assignment.AIViolationRule__c);
-
-    return ruleIds;
-  }
-
-  // The active AI evaluated rules of an agent, capped so their instructions cannot bloat every request.
-  public static List<AIViolationRule__c> getActiveAiEvaluatedRules(Id agentId) {
-    if (agentId == null)
-      return new List<AIViolationRule__c>();
-
-    Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
-    Integer ruleQueryLimit =
-      AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT + 1; // One more than is used, to learn whether the list was cut short.
-
-    List<AIViolationRule__c> rules = [
-      SELECT
-        Id,
-        Name,
-        SignalTag__c,
-        AIDetectionInstruction__c,
-        BlockRequest__c,
-        ViolationTypeProduced__c
-      FROM AIViolationRule__c
-      WHERE
-        (AppliesToAllAgents__c = TRUE
-        OR Id IN :assignedRuleIds)
-        AND IsActive__c = TRUE
-        AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_AI_EVALUATED
-        AND SignalTag__c != NULL
-      WITH SYSTEM_MODE
-      ORDER BY BlockRequest__c DESC, Name
-      LIMIT :ruleQueryLimit
-    ];
-
-    return capRules(rules, agentId, 'AI evaluated');
-  }
-
-  // The active deterministic rules of an agent that produce one violation type.
-  public static List<AIViolationRule__c> getActiveRulesForViolationType(
-    Id agentId,
-    String violationType
-  ) {
-    if (agentId == null || violationType == null)
-      return new List<AIViolationRule__c>();
-
-    Set<Id> assignedRuleIds = getAssignedRuleIds(agentId);
-    Integer ruleQueryLimit =
-      AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT + 1;
-
-    List<AIViolationRule__c> rules = [
-      SELECT Id, Name, BlockRequest__c, ViolationTypeProduced__c
-      FROM AIViolationRule__c
-      WHERE
-        (AppliesToAllAgents__c = TRUE
-        OR Id IN :assignedRuleIds)
-        AND IsActive__c = TRUE
-        AND DetectionMethod__c = :AIAssistApplicationConstants.DETECTION_METHOD_DETERMINISTIC
-        AND ViolationTypeProduced__c = :violationType
-      WITH SYSTEM_MODE
-      ORDER BY BlockRequest__c DESC, Name
-      LIMIT :ruleQueryLimit
-    ];
-
-    return capRules(rules, agentId, 'deterministic');
-  }
-
-  // Keeps the first MAX_AI_RULES_PER_AGENT rules, which are the blocking rules first and then by name, so a rule that stops a request is never the one dropped for a rule that only notes it. When rules are dropped it is logged, once per agent and kind in a transaction, so an administrator can find out; nothing else tells them.
-  private static List<AIViolationRule__c> capRules(
-    List<AIViolationRule__c> rules,
-    Id agentId,
-    String kind
-  ) {
-    Integer cap = AIAssistApplicationConstants.MAX_AI_RULES_PER_AGENT;
-    if (rules.size() <= cap)
-      return rules;
-
-    List<AIViolationRule__c> kept = new List<AIViolationRule__c>();
-    for (Integer index = 0; index < cap; index++)
-      kept.add(rules[index]);
-
-    String logKey = agentId + '|' + kind;
-    if (loggedRuleCaps.add(logKey)) {
-      Boolean droppedBlockingRule = rules[cap].BlockRequest__c == true;
-      AIPlatformLogManager.logCustomMessage(
-        'More than ' +
-          cap +
-          ' active ' +
-          kind +
-          ' violation rules apply to one agent; the rest were not used' +
-          (droppedBlockingRule ? ', INCLUDING A BLOCKING RULE.' : '.'),
-        'Rules beyond the limit are skipped. Blocking rules are kept first, then rules by name. Deactivate rules or stop assigning them to this agent.',
-        'AIMessagingSelector',
-        'capRules',
-        agentId
-      );
-    }
-
-    return kept;
   }
 
   // One action the agent may offer: active, and linked to the agent through an active assignment. Null when it is neither.
@@ -778,110 +651,8 @@ public without sharing class AIMessagingSelector {
   }
 
   // =============================================================
-  // Usage
+  // Queue
   // =============================================================
-
-  public static UsageTotals getUserDailyUsage(Id userId, Date usageDate) {
-    UsageTotals totals = new UsageTotals();
-
-    List<AggregateResult> usageRows = [
-      SELECT
-        SUM(ConversationCount__c) conversations,
-        SUM(InputTokens__c) inputTokens,
-        SUM(OutputTokens__c) outputTokens
-      FROM AIUsageDaily__c
-      WHERE User__c = :userId AND UsageDate__c = :usageDate
-      WITH SYSTEM_MODE
-    ];
-
-    if (usageRows.isEmpty())
-      return totals;
-
-    totals.conversations = usageRows[0].get('conversations') == null
-      ? 0
-      : (Decimal) usageRows[0].get('conversations');
-    totals.tokens =
-      (usageRows[0].get('inputTokens') == null
-        ? 0
-        : (Decimal) usageRows[0].get('inputTokens')) +
-      (usageRows[0].get('outputTokens') == null
-        ? 0
-        : (Decimal) usageRows[0].get('outputTokens'));
-
-    return totals;
-  }
-
-  // The month so far and the day, added up from every usage row of the month.
-  public static OrgUsage getOrganisationUsage(Date today) {
-    return getOrganisationUsage(today, today.toStartOfMonth());
-  }
-
-  // One grouped query gives the usage from countFrom (a day of this month) to today, and today's on its own. Every row it adds up counts against the query row limit, so a caller on a send passes a recent day (AIOrgUsageService). CreatedDate is the indexed filter that keeps it selective as the table grows: a row is created on the first use of its day, so the rows of a day are never created before it.
-  public static OrgUsage getOrganisationUsage(Date today, Date countFrom) {
-    OrgUsage orgUsage = new OrgUsage();
-
-    // A day early: the day starts at the org's midnight, which can be up to 14 hours before the UTC one. UsageDate__c is the exact filter.
-    Datetime countFromDatetime = Datetime.newInstanceGmt(
-        countFrom.year(),
-        countFrom.month(),
-        countFrom.day()
-      )
-      .addDays(-1);
-
-    for (AggregateResult dailyRow : [
-      SELECT
-        UsageDate__c usageDate,
-        SUM(MessageCount__c) messages,
-        SUM(InputTokens__c) inputTokens,
-        SUM(OutputTokens__c) outputTokens
-      FROM AIUsageDaily__c
-      WHERE CreatedDate >= :countFromDatetime AND UsageDate__c >= :countFrom
-      WITH SYSTEM_MODE
-      GROUP BY UsageDate__c
-    ]) {
-      Decimal rowMessages = dailyRow.get('messages') == null
-        ? 0
-        : (Decimal) dailyRow.get('messages');
-      Decimal rowTokens =
-        (dailyRow.get('inputTokens') == null
-          ? 0
-          : (Decimal) dailyRow.get('inputTokens')) +
-        (dailyRow.get('outputTokens') == null
-          ? 0
-          : (Decimal) dailyRow.get('outputTokens'));
-
-      orgUsage.month.messages += rowMessages;
-      orgUsage.month.tokens += rowTokens;
-
-      if ((Date) dailyRow.get('usageDate') == today) {
-        orgUsage.today.messages += rowMessages;
-        orgUsage.today.tokens += rowTokens;
-      }
-    }
-
-    return orgUsage;
-  }
-
-  // The user's usage row for one key, locked so the caller can add to it. Null if there is no row yet.
-  public static AIUsageDaily__c lockDailyUsageRow(String usageKey) {
-    List<AIUsageDaily__c> usageDailyRows = [
-      SELECT
-        Id,
-        MessageCount__c,
-        ConversationCount__c,
-        FailedTurnCount__c,
-        ViolationCount__c,
-        InputTokens__c,
-        OutputTokens__c
-      FROM AIUsageDaily__c
-      WHERE UsageKey__c = :usageKey
-      WITH SYSTEM_MODE
-      LIMIT 1
-      FOR UPDATE
-    ];
-
-    return usageDailyRows.isEmpty() ? null : usageDailyRows[0];
-  }
 
   // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
   public static Integer countQueuedMessageJobs() {

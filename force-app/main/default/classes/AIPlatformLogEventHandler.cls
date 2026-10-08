@@ -36,7 +36,8 @@ public inherited sharing class AIPlatformLogEventHandler {
     try {
       if (
         !AIAssistSettingsService.isEnabled() ||
-        !AIAssistSettingsService.isPlatformLoggingEnabled()
+        AIAssistSettingsService.getSettings().IsPlatformLoggingEnabled__c ==
+        false
       )
         return;
       if (isTestCustomExceptionThrown) {

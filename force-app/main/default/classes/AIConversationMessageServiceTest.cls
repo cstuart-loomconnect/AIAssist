@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationMessageServiceTest {
-  // testScenario1: A first message creates the conversation, stores the user message, takes the lock, and the queued job answers it and counts the usage.
+  // testScenario1: A first message creates the conversation, stores the user message, takes the lock, and and the queued job answers it.
   // testScenario2: A second message continues the open conversation named by its Id, and an agent that keeps one conversation per record reuses it for the same record.
   // testScenario3: A conversation Id that is closed, on another agent, another user's or of the wrong type is not continued: a new conversation is started.
   // testScenario4: A conversation at the agent's message cap, and one at its token cap, are closed with the matching reason and the message starts a new conversation.
@@ -90,16 +90,11 @@ private class AIConversationMessageServiceTest {
       WHERE Id = :sent.Id
     ];
     List<AIConversationMessage__c> replies = [
-      SELECT MessageBody__c, TokenCount__c
+      SELECT MessageBody__c, TokenCount__c, InputTokenCount__c
       FROM AIConversationMessage__c
       WHERE
         AIConversation__c = :sent.AIConversation__c
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-    ];
-    AIUsageDaily__c usage = [
-      SELECT MessageCount__c, ConversationCount__c, InputTokens__c
-      FROM AIUsageDaily__c
-      WHERE User__c = :chatUser.Id
     ];
 
     Assert.areEqual(
@@ -114,12 +109,10 @@ private class AIConversationMessageServiceTest {
       'It is the executor\'s answer.'
     );
     Assert.areEqual(
-      1,
-      usage.ConversationCount__c,
-      'The conversation is counted.'
+      10,
+      replies[0].InputTokenCount__c,
+      'The reply carries the executor\'s tokens.'
     );
-    Assert.areEqual(1, usage.MessageCount__c, 'And the AI response.');
-    Assert.areEqual(10, usage.InputTokens__c, 'And its tokens.');
     Assert.areEqual(
       1,
       [
