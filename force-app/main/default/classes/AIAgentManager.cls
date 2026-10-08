@@ -110,7 +110,7 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has no Named Credential or API path.'
         );
       if (
@@ -121,7 +121,7 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has a Named Credential name of the wrong shape.'
         );
       if (
@@ -134,13 +134,13 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has an API path of the wrong shape.'
         );
       if (!AIProvider.isSupported(modelConfiguration.AIProvider__c))
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has an unsupported provider "' +
             modelConfiguration.AIProvider__c +
             '".'
@@ -483,9 +483,7 @@ public inherited sharing class AIAgentManager {
         // Any status that is not a success ends this attempt with a reason the user can be told and a message that says which record to fix. It is retried only when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could succeed next time: a rejected credential, a retired model, an exhausted quota and a bad request never are.
         Integer statusCode = httpResponse.getStatusCode();
         if (
-          !AIAssistGlobalUtility.toIntegerSet(
-              settings.AIProviderSuccessStatusCodes__c
-            )
+          !toIntegerSet(settings.AIProviderSuccessStatusCodes__c)
             .contains(statusCode)
         ) {
           providerStep.isSuccess = false;
@@ -500,7 +498,7 @@ public inherited sharing class AIAgentManager {
             calloutFailureReason ==
             AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
           isCalloutErrorRetryable =
-            AIAssistGlobalUtility.toIntegerSet(settings.RetryableStatusCodes__c)
+            toIntegerSet(settings.RetryableStatusCodes__c)
               .contains(statusCode) &&
             !AIAssistApplicationConstants.NEVER_RETRIED_STATUS_CODES.contains(
               statusCode
@@ -755,5 +753,20 @@ public inherited sharing class AIAgentManager {
       // Deferral only applies while the loop runs. The mappings stay cached in memory; the caller must still save them.
       AIPiiMappingService.isDeferringWrites = false;
     }
+  }
+
+  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
+  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+    Set<Integer> numbers = new Set<Integer>();
+
+    if (String.isBlank(commaSeparatedNumbers))
+      return numbers;
+
+    for (String entry : commaSeparatedNumbers.split(',')) {
+      if (entry.trim().isNumeric())
+        numbers.add(Integer.valueOf(entry.trim()));
+    }
+
+    return numbers;
   }
 }

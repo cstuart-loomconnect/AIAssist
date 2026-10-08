@@ -8,7 +8,7 @@ Description: What state the chat window is in for the signed-in user: the UI set
 (debug, export, Workflow Actions), whether the channel is allowed, and whether the terms have to be
 accepted. The settings behind ChatContext.state.
 
-The user's own AIUserSettings__c row is read in system mode through AIMessagingSelector, because the
+The user's own AIUserSettings__c row is read in system mode (AIUsagePolicyResolver.getUserSettings), because the
 User permission set cannot read it; only the signed-in user's row is ever asked for. With no row the
 user has no debug, no export and no Workflow Actions, matching AIWorkflowActionDispatcher.
 
@@ -21,10 +21,6 @@ Version      Author                   Description
 */
 
 public with sharing class AIChatStateService {
-  public static AIUserSettings__c getUserSettings() {
-    return AIMessagingSelector.getUserSettings(UserInfo.getUserId());
-  }
-
   public static AIChatDataStructure.UiSettings buildUiSettings(
     AIAssistUISettings__c uiSettings
   ) {
@@ -111,10 +107,10 @@ public with sharing class AIChatStateService {
       : appSettings.CurrentTermsVersion__c.trim();
     termsState.policyUrl = appSettings.AIUsagePolicyUrl__c;
     termsState.required =
-      AIMessagingSelector.getTermsAcceptanceStatus(
+      AIMessageValidator.getTermsAcceptanceStatus(
         UserInfo.getUserId(),
         termsState.version
-      ) != AIMessagingSelector.TERMS_ACCEPTED;
+      ) != AIMessageValidator.TERMS_ACCEPTED;
 
     return termsState;
   }
@@ -132,18 +128,13 @@ public with sharing class AIChatStateService {
       isLicensed = isLicensedForTest;
     } else {
       try {
-        isLicensed = UserInfo.isCurrentUserLicensed(
-          AIMessagingSelector.getPackageNamespace()
-        );
+        isLicensed = UserInfo.isCurrentUserLicensed(getPackageNamespace());
       } catch (Exception notAManagedPackage) {
         isLicensed = true; // Not installed as a managed package (a development org): there is no licence to hold.
       }
     }
 
-    if (AIAssistSettingsService.isActivatedElsewhere()) {
-      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED;
-      context.blockedMessage = Label.AI_Chat_Blocked_Sandbox;
-    } else if (appSettings.IsEnabled__c == false) {
+    if (appSettings.IsEnabled__c == false) {
       context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE;
       context.blockedMessage = Label.AI_Error_Application_Inactive;
     } else if (!isLicensed) {
@@ -158,11 +149,55 @@ public with sharing class AIChatStateService {
       context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
     } else if (
       context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
-      AIMessagingSelector.countQueuedMessageJobs() >=
+      countQueuedMessageJobs() >=
       AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
     ) {
       context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_BUSY;
       context.blockedMessage = Label.AI_Error_Service_Busy;
+    }
+  }
+
+  public static AIUserSettings__c getUserSettings() {
+    return AIUsagePolicyResolver.getUserSettings(UserInfo.getUserId());
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static Integer countQueuedMessageJobs() {
+    return systemReader.countQueuedMessageJobs();
+  }
+
+  @TestVisible
+  private static String getPackageNamespace() {
+    return systemReader.getPackageNamespace();
+  }
+
+  private without sharing class SystemReader {
+    // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
+    public Integer countQueuedMessageJobs() {
+      Datetime oneDayAgo = Datetime.now().addDays(-1);
+      String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
+
+      return [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE
+          ApexClass.Name = 'AIMessageProcessingQueueable'
+          AND ApexClass.NamespacePrefix = :packageNamespace
+          AND JobType = 'Queueable'
+          AND Status IN ('Queued', 'Preparing', 'Processing')
+          AND CreatedDate >= :oneDayAgo
+        WITH SYSTEM_MODE
+      ];
+    }
+
+    // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+    public String getPackageNamespace() {
+      return AIChatStateService.class.getName().contains('.')
+        ? AIChatStateService.class.getName().substringBefore('.')
+        : null;
     }
   }
 }

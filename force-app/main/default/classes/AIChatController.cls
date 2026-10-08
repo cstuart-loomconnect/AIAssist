@@ -10,7 +10,7 @@ asks for and what it is shown.
 
 Sending and processing a message belongs to AIConversationMessageService. A refusal the window should
 render in place (limits, paused, not assigned, terms) comes back as a SendResult whose status is
-SENT, BLOCKED, LIMIT or ERROR, chosen from AIMessagingException.code and never from message text, with
+SENT, BLOCKED, LIMIT or ERROR, the exception's own message is a Custom Label, with
 the code itself and the Custom Label to show. Anything unexpected is logged once and the window gets
 the generic label; provider, configuration and class names never reach it.
 
@@ -26,6 +26,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIChatController {
+  public class AIChatControllerException extends Exception {
+  }
+
   @AuraEnabled
   public static AIChatDataStructure.ChatContext getChatContext(
     String recordId,
@@ -244,30 +247,13 @@ public with sharing class AIChatController {
           null,
           null
         );
-      } catch (AIMessagingException refusal) {
-        // Already logged by the service when it was a fault; a refusal is the system working. The message is always a Custom Label.
-        // How the window shows a refusal: LIMIT refreshes the usage banner, BLOCKED shows the "Not sent" card, ERROR is anything else. Chosen from the code, never from the text.
-        if (!refusal.isRefusal) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-        } else if (
-          new Set<String>{ AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT }
-            .contains(refusal.code)
-        ) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_LIMIT;
-        } else if (
-          new Set<String>{
-              AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-              AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,
-              AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND
-            }
-            .contains(refusal.code)
-        ) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-        } else {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_BLOCKED;
+      } catch (Exception sendException) {
+        // A package exception's message is always a Custom Label. Anything else goes to the outer handler, which logs it and shows the generic label.
+        if (sendException.getTypeName().startsWith('System.')) {
+          throw sendException;
         }
-        result.code = refusal.code;
-        result.message = refusal.getMessage();
+        result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
+        result.message = sendException.getMessage();
       }
 
       return result;
@@ -373,10 +359,7 @@ public with sharing class AIChatController {
           )
           .feedbackEnabled
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       AIChatFeedbackService.submitFeedback(messageId, rating, reason, comment);
     } catch (Exception caughtException) {
@@ -404,8 +387,7 @@ public with sharing class AIChatController {
         AIAssistSettingsService.getUiSettings()
       );
       if (!uiSettings.inlineActionsEnabled)
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+        throw new AIChatControllerException(
           Label.AI_Error_Action_Not_Permitted
         );
 
@@ -446,10 +428,7 @@ public with sharing class AIChatController {
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .debugMode
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       return AIChatDebugService.getDebugTrace(
         AIChatConversationService.assertOwnsAgentMessage(messageId)
@@ -483,10 +462,7 @@ public with sharing class AIChatController {
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .exportEnabled
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       AIChatConversationService.assertOwnsConversation(conversationId);
 
@@ -503,7 +479,7 @@ public with sharing class AIChatController {
   ) {
     String errorText = Label.AI_Error_Generic;
 
-    if (caughtException instanceof AIMessagingException) {
+    if (!caughtException.getTypeName().startsWith('System.')) {
       errorText = caughtException.getMessage();
     } else {
       AIPlatformLogManager.logException(

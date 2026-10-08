@@ -158,7 +158,7 @@ private class AIAgentManagerTest {
       new List<AIWorkflowAction__c>{ action },
       true
     );
-    List<AIWorkflowAction__c> actions = AIMessagingSelector.getAssignedActions(
+    List<AIWorkflowAction__c> actions = AIMessageProcessingQueueable.getAssignedActions(
       world.agent.Id
     );
     ScriptedMock mock = new ScriptedMock();
@@ -274,7 +274,7 @@ private class AIAgentManagerTest {
       new List<AIDataSource__c>{ dataSource },
       true
     );
-    List<AIDataSource__c> dataSources = AIMessagingSelector.getAssignedDataSources(
+    List<AIDataSource__c> dataSources = AIMessageProcessingQueueable.getAssignedDataSources(
       world.agent.Id
     );
     String accountName = [SELECT Name FROM Account WHERE Id = :account.Id].Name;

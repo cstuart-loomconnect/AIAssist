@@ -1,7 +1,7 @@
 REVIEW CHECKLIST 1: OBJECT MODEL
 ================================
 
-Part 1 of 3. Start here. Objects are in dependency order: a parent is always reviewed before the objects that look up to it, so each relationship is checked once, from the child side, against a parent you have already signed off.
+Objects are in dependency order: a parent is always checked before the objects that look up to it, so each relationship is checked once, from the child side, against a parent already signed off.
 
 Each object carries its own trigger, handler and handler test, so an object is finished only when what enforces it on save is finished too.
 
@@ -13,19 +13,7 @@ Reviewed first because objects below refer to them.
 
 Global value sets:
 
-[x] AIChannel: Record Page Chat, Utility Bar, Mobile
-  [x] $CustomLabel.AI_Channel_Record_Page_Chat [Record Page Chat]
-  [x] $CustomLabel.AI_Channel_Utility_Bar [Utility Bar]
-  [x] $CustomLabel.AI_Channel_Mobile [Mobile]
-[x] AIViolationType: UnauthorizedDataAccess, UnauthorizedWorkflowAction, UsageLimitExceeded, PIIMaskingFailure, ConfigurationViolation, AIFlaggedIntent
-  [x] $CustomLabel.AI_Violation_Type_Unauthorised_Data_Access [Unauthorised Data Access]
-  [x] $CustomLabel.AI_Violation_Type_Unauthorised_Workflow_Action [Unauthorised Workflow Action]
-  [x] $CustomLabel.AI_Violation_Type_Usage_Limit_Exceeded [Usage Limit Exceeded]
-  [x] $CustomLabel.AI_Violation_Type_PII_Masking_Failure [PII Masking Failure]
-  [x] $CustomLabel.AI_Violation_Type_Configuration_Violation [Configuration Violation]
-  [x] $CustomLabel.AI_Violation_Type_AI_Flagged_Intent [AI Flagged Intent]
-
-Standard object extension:
+[ ] AIChannel: Record Page Chat, Utility Bar, Mobile
 
 
 1.2 CONFIGURATION: WHAT AN AGENT IS MADE OF
@@ -36,56 +24,42 @@ Standard object extension:
 
 Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
-[x] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (10):
+Fields (9):
 
-[x] AIProvider__c (Picklist, required)
-  [x] $CustomLabel.AI_Provider_Anthropic [Anthropic]
-  [x] $CustomLabel.AI_Provider_OpenAI [OpenAI]
-[x] ApiPath__c (Text)
-[x] ApiVersionHeaderName__c (Text)
-[x] ApiVersionHeaderValue__c (Text)
-[x] ConnectionTestedDate__c (DateTime)
-[x] DeveloperName__c (Text, unique, external ID)
-[x] IsActive__c (Checkbox)
-[x] MaximumOutputTokens__c (Number)
-[x] ModelIdentifier__c (Text)
-[x] NamedCredential__c (Text)
-[x] Temperature__c (Number)
+[ ] AIProvider__c (Picklist, required)
+[ ] ApiPath__c (Text)
+[ ] ApiVersionHeaderName__c (Text)
+[ ] ApiVersionHeaderValue__c (Text)
+[ ] IsActive__c (Checkbox)
+[ ] MaximumOutputTokens__c (Number)
+[ ] ModelIdentifier__c (Text)
+[ ] NamedCredential__c (Text)
+[ ] Temperature__c (Number)
 
 Validation rules (5):
 
-[x] ActiveRequiresConnectionDetails
-[x] ApiPathFormat
-[x] MaximumOutputTokensPositive
-[x] NamedCredentialFormat
-[x] TemperatureRange
+[ ] ActiveRequiresConnectionDetails
+[ ] ApiPathFormat
+[ ] MaximumOutputTokensPositive
+[ ] NamedCredentialFormat
+[ ] TemperatureRange
 
 List views (2):
 
-[x] Active
-[x] All
+[ ] Active
+[ ] All
 
 Compact layouts (1):
 
-[x] AIModelConfigurationCompact
+[ ] AIModelConfigurationCompact
 
 Presentation and platform:
 
-[x] Page layout: AI Model Configuration Layout
-[x] Tab
-[x] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIModelConfigurationTrigger (before insert, before update)
-[ ] AIModelConfigurationTriggerHandler (inherited sharing, 71 lines): Stamps the Developer Name on a new model configuration
-  [ ] Test: AIModelConfigurationTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIModelConfiguration__c.md
+[ ] Page layout: AI Model Configuration Layout
+[ ] Tab
+[ ] Access in each permission set (object, field, tab) is correct
 
 1.2.2 AIAgent__c (AI Agent)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +68,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (19):
+Fields (18):
 
 [ ] AIAgentPersona__c (TextArea)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
@@ -104,14 +78,13 @@ Fields (19):
 [ ] ConversationRetentionDays__c (Number)
 [ ] ConversationVisibility__c (Picklist)
 [ ] Description__c (TextArea)
-[ ] DeveloperName__c (Text, unique, external ID)
+[ ] DeveloperName__c (Text, required, unique, external ID)
 [ ] GreetingMessage__c (TextArea)
 [ ] IdleTimeoutMinutes__c (Number)
 [ ] IsActive__c (Checkbox)
 [ ] MaxMessagesPerConversation__c (Number)
 [ ] MaxTokensPerConversation__c (Number)
 [ ] MaxToolCallingIterations__c (Number)
-[ ] PublicId__c (Text, unique, external ID)
 [ ] RetentionTrigger__c (Picklist)
 [ ] SingleActiveConversationPerRecord__c (Checkbox)
 [ ] TokenTrackingMethod__c (Picklist)
@@ -134,18 +107,13 @@ Presentation and platform:
 
 [ ] Page layout: AI Agent Layout
 [ ] Tab
-[ ] Custom index on PublicId__c
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 Trigger and handler:
 
-[ ] Trigger AIAgentTrigger (before insert, before update, after update)
-[ ] AIAgentTriggerHandler (inherited sharing, 106 lines): Stamps the Public Id and Developer Name on a new agent.
+[ ] Trigger AIAgentTrigger (after update)
+[ ] AIAgentTriggerHandler (without sharing, 66 lines): Handler for managing AI Agent events related to AI Assist, performing the business logic that runs on the AI Agent trigger.
   [ ] Test: AIAgentTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgent__c.md
 
 1.2.3 AIPromptTemplate__c (AI Prompt Template)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,16 +122,14 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (11):
+Fields (9):
 
 [ ] AIAgent__c (Lookup to AIAgent__c, required)
 [ ] AIExclusionRules__c (TextArea)
 [ ] AIPrompt__c (LongTextArea)
 [ ] AISystemContext__c (TextArea)
 [ ] AITone__c (TextArea)
-[ ] ActiveAgentKey__c (Text, unique)
 [ ] Description__c (TextArea)
-[ ] DeveloperName__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 [ ] MaxResponseLength__c (Number)
 [ ] Version__c (Number)
@@ -186,17 +152,13 @@ Presentation and platform:
 
 [ ] Page layout: AI Prompt Template Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 Trigger and handler:
 
-[ ] Trigger AIPromptTemplateTrigger (before insert, before update)
-[ ] AIPromptTemplateTriggerHandler (inherited sharing, 167 lines): Stamps the Developer Name on a new prompt template, raises Version__c whenever the wording the model is given changes (the prompt, system context, tone or exclusion rules), and allows an...
+[ ] Trigger AIPromptTemplateTrigger (before update)
+[ ] AIPromptTemplateTriggerHandler (without sharing, 84 lines): Handler for managing AI Prompt Template events related to AI Assist, performing the business logic that runs on the AI Prompt Template trigger.
   [ ] Test: AIPromptTemplateTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPromptTemplate__c.md
 
 1.2.4 AIDataSource__c (AI Data Source)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,7 +172,7 @@ Fields (12):
 [ ] ApexClassName__c (Text)
 [ ] BindingType__c (Picklist)
 [ ] Description__c (TextArea)
-[ ] DeveloperName__c (Text, unique, external ID)
+[ ] DeveloperName__c (Text, required, unique, external ID)
 [ ] InputSchema__c (LongTextArea)
 [ ] IsActive__c (Checkbox)
 [ ] MaxRows__c (Number)
@@ -241,17 +203,7 @@ Presentation and platform:
 
 [ ] Page layout: AI Data Source Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] Trigger AIDataSourceTrigger (before insert, before update)
-[ ] AIDataSourceTriggerHandler (inherited sharing, 87 lines): Stamps the Developer Name on a new data source, derived from its required Source Name.
-  [ ] Test: AIDataSourceTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIDataSource__c.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 1.2.5 AIWorkflowAction__c (AI Workflow Action)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,7 +219,7 @@ Fields (13):
 [ ] ApexClassName__c (Text)
 [ ] ConfirmationMessage__c (TextArea)
 [ ] Description__c (TextArea)
-[ ] DeveloperName__c (Text, unique, external ID)
+[ ] DeveloperName__c (Text, required, unique, external ID)
 [ ] ExecutionType__c (Picklist, required)
 [ ] FlowAPIName__c (Text)
 [ ] InputSchema__c (LongTextArea)
@@ -300,29 +252,18 @@ Presentation and platform:
 
 [ ] Page layout: AI Workflow Action Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] Trigger AIWorkflowActionTrigger (before insert, before update)
-[ ] AIWorkflowActionTriggerHandler (inherited sharing, 153 lines): Stamps the Developer Name on a new workflow action, derived from its required Action Name.
-  [ ] Test: AIWorkflowActionTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIWorkflowAction__c.md
-
-1.3.1 AIAgentObject__c (AI Agent Object)
+1.2.6 AIAgentObject__c (AI Agent Object)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (4):
+Fields (3):
 
 [ ] AIAgent__c (MasterDetail to AIAgent__c)
-[ ] AssignmentKey__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 [ ] ObjectApiName__c (Text, required)
 
@@ -336,29 +277,20 @@ Compact layouts (1):
 
 Presentation and platform:
 
-[ ] No page layout in the package: confirm that is intended
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentObject__c.md
-
-1.3.2 AIAgentDataSource__c (AI Agent Data Source)
+1.2.7 AIAgentDataSource__c (AI Agent Data Source)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AIDataSource__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (4):
+Fields (3):
 
 [ ] AIAgent__c (MasterDetail to AIAgent__c)
 [ ] AIDataSource__c (Lookup to AIDataSource__c, required)
-[ ] AssignmentKey__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 
 List views (1):
@@ -373,27 +305,19 @@ Presentation and platform:
 
 [ ] Page layout: AI Agent Data Source Layout
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentDataSource__c.md
-
-1.3.3 AIAgentWorkflowAction__c (AI Agent Workflow Action)
+1.2.8 AIAgentWorkflowAction__c (AI Agent Workflow Action)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AIWorkflowAction__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (4):
+Fields (3):
 
 [ ] AIAgent__c (MasterDetail to AIAgent__c)
 [ ] AIWorkflowAction__c (Lookup to AIWorkflowAction__c, required)
-[ ] AssignmentKey__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 
 List views (1):
@@ -408,16 +332,9 @@ Presentation and platform:
 
 [ ] Page layout: AI Agent Workflow Action Layout
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentWorkflowAction__c.md
-
-1.3.5 AIAgentAssignment__c (AI Agent Assignment)
+1.2.9 AIAgentAssignment__c (AI Agent Assignment)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: on. Depends on: AIAgent__c.
@@ -449,40 +366,31 @@ Presentation and platform:
 
 [ ] Page layout: AI Agent Assignment Layout
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIAgentAssignment__c.md
-
-
-1.4 USERS: POLICY, PER-USER SETTINGS AND TERMS
+1.3 USERS: POLICY, PER-USER SETTINGS AND TERMS
 ----------------------------------------------
 
-1.4.1 AIUsagePolicy__c (AI Usage Policy)
+1.3.1 AIUsagePolicy__c (AI Usage Policy)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (13):
+Fields (12):
 
-[ ] AllowedChannels__c (MultiselectPicklist, global value set AIChannel)
+[ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
 [ ] ConversationVisibilityScope__c (Picklist)
 [ ] DebugModeEnabled__c (Checkbox)
 [ ] Description__c (Text)
-[ ] DeveloperName__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 [ ] IsDefault__c (Checkbox)
 [ ] MaxConcurrentConversations__c (Number)
 [ ] MaxConversationsPer24Hours__c (Number)
 [ ] MaxTokensPer24Hours__c (Number)
-[ ] PublicId__c (Text, unique, external ID)
 [ ] UsageLimitReachedBehavior__c (Picklist)
 [ ] WorkflowActionsEnabled__c (Checkbox)
 
@@ -500,32 +408,20 @@ Compact layouts (1):
 
 Presentation and platform:
 
-[ ] No page layout in the package: confirm that is intended
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] Trigger AIUsagePolicyTrigger (before insert)
-[ ] AIUsagePolicyTriggerHandler (inherited sharing, 48 lines): Stamps the Public Id and Developer Name on a new usage policy, derived from its Name, before insert.
-  [ ] Test: AIUsagePolicyTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIUsagePolicy__c.md
-
-1.4.2 AIUsagePolicyAssignment__c (AI Usage Policy Assignment)
+1.3.2 AIUsagePolicyAssignment__c (AI Usage Policy Assignment)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: on. Depends on: AIUsagePolicy__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (6):
+Fields (5):
 
 [ ] AIUsagePolicy__c (MasterDetail to AIUsagePolicy__c)
 [ ] AssigneeType__c (Picklist, required)
-[ ] AssignmentKey__c (Text, unique, external ID)
 [ ] IsActive__c (Checkbox)
 [ ] PermissionSetName__c (Text)
 [ ] User__c (Lookup to User)
@@ -545,27 +441,19 @@ Compact layouts (1):
 
 Presentation and platform:
 
-[ ] No page layout in the package: confirm that is intended
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIUsagePolicyAssignment__c.md
-
-1.4.3 AIUserSettings__c (AI User Settings)
+1.3.3 AIUserSettings__c (AI User Settings)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (12):
+Fields (11):
 
-[ ] AllowedChannels__c (MultiselectPicklist, global value set AIChannel)
+[ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
 [ ] ConversationVisibilityScope__c (Picklist)
 [ ] DebugModeEnabled__c (Checkbox)
@@ -574,7 +462,6 @@ Fields (12):
 [ ] MaxConversationsPer24Hours__c (Number)
 [ ] MaxTokensPer24Hours__c (Number)
 [ ] UsageLimitReachedBehavior__c (Picklist)
-[ ] UserKey__c (Text, unique, external ID)
 [ ] User__c (Lookup to User)
 [ ] WorkflowActionsEnabled__c (Checkbox)
 
@@ -595,29 +482,18 @@ Presentation and platform:
 
 [ ] Page layout: AI User Settings Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] Trigger AIUserSettingsTrigger (before insert, before update)
-[ ] AIUserSettingsTriggerHandler (inherited sharing, 67 lines): Fills in AIUserSettings__c.UserKey__c from the user the settings belong to, before insert and before update.
-  [ ] Test: AIUserSettingsTriggerHandlerTest
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIUserSettings__c.md
-
-1.4.4 AITermsAcknowledgment__c (AI Terms Acknowledgment)
+1.3.4 AITermsAcknowledgment__c (AI Terms Acknowledgment)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: Private (external Private). Name field: AutoNumber. Field history: off.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (5):
+Fields (4):
 
 [ ] AcknowledgedDate__c (DateTime)
-[ ] LoginHistoryId__c (Text)
 [ ] SignatureText__c (Text)
 [ ] TermsVersion__c (Text)
 [ ] User__c (Lookup to User)
@@ -640,28 +516,20 @@ Presentation and platform:
 
 [ ] Page layout: AI Terms Acknowledgment Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AITermsAcknowledgment__c.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-1.5 RUNTIME: CONVERSATIONS AND WHAT THEY PRODUCE
+1.4 RUNTIME: CONVERSATIONS AND WHAT THEY PRODUCE
 ------------------------------------------------
 
-1.5.1 AIConversation__c (AI Conversation)
+1.4.1 AIConversation__c (AI Conversation)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: Private (external Private). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AIPromptTemplate__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (15):
+Fields (14):
 
 [ ] AIAgent__c (Lookup to AIAgent__c)
 [ ] AIPromptTemplate__c (Lookup to AIPromptTemplate__c)
@@ -671,9 +539,8 @@ Fields (15):
 [ ] ConversationTokenUsage__c (Number)
 [ ] IsOnLegalHold__c (Checkbox)
 [ ] LastMessageTimestamp__c (DateTime)
-[ ] MessageCount__c (Roll-Up Summary)
+[ ] MessageCount__c (Summary)
 [ ] ProcessingLockedUntil__c (DateTime)
-[ ] PublicId__c (Text, unique, external ID)
 [ ] RelatedObjectAPIName__c (Text)
 [ ] RelatedRecordId__c (Text, external ID)
 [ ] RetentionExpiryDate__c (Date)
@@ -698,20 +565,15 @@ Presentation and platform:
 
 [ ] Page layout: AI Conversation Layout
 [ ] Tab
-[ ] Custom index on PublicId__c
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 Trigger and handler:
 
 [ ] Trigger AIConversationTrigger (before insert, before update)
-[ ] AIConversationTriggerHandler (inherited sharing, 195 lines): Business logic that runs before an AIConversation__c is saved.
+[ ] AIConversationTriggerHandler (without sharing, 178 lines): Handler for managing AI Conversation events related to AI Assist, performing the business logic that runs on the AI Conversation trigger.
   [ ] Test: AIConversationTriggerHandlerTest
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIConversation__c.md
-
-1.5.2 AIConversationMessage__c (AI Conversation Message)
+1.4.2 AIConversationMessage__c (AI Conversation Message)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversation__c, AIModelConfiguration__c, AIPromptTemplate__c, AIWorkflowAction__c.
@@ -750,19 +612,15 @@ Presentation and platform:
 
 [ ] Page layout: AI Conversation Message Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 Trigger and handler:
 
-[ ] Trigger AIConversationMessageTrigger (before insert, after insert)
-[ ] AIConversationMessageTriggerHandler (inherited sharing, 212 lines): Business logic that runs when an AIConversationMessage__c is saved.
+[ ] Trigger AIConversationMessageTrigger (after insert)
+[ ] AIConversationMessageTriggerHandler (without sharing, 176 lines): Handler for managing AI Conversation Message events related to AI Assist, performing the business logic that runs on the AI Conversation Message trigger.
   [ ] Test: AIConversationMessageTriggerHandlerTest
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIConversationMessage__c.md
-
-1.5.3 AIExecutionStep__c (AI Execution Step)
+1.4.3 AIExecutionStep__c (AI Execution Step)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversationMessage__c, AIDataSource__c, AIWorkflowAction__c.
@@ -783,7 +641,7 @@ Fields (27):
 [ ] ModelIdentifier__c (Text)
 [ ] ObjectsSent__c (TextArea)
 [ ] PIIMaskingApplied__c (Checkbox)
-[ ] PIIValuesMasked__c (Roll-Up Summary)
+[ ] PIIValuesMasked__c (Summary)
 [ ] Provider__c (Text)
 [ ] RecordsSentCount__c (Number)
 [ ] RequestJson__c (LongTextArea)
@@ -822,17 +680,9 @@ Presentation and platform:
 
 [ ] Page layout: AI Execution Step Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIExecutionStep__c.md
-
-1.5.4 AIFeedback__c (AI Feedback)
+1.4.4 AIFeedback__c (AI Feedback)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: Private (external Private). Name field: AutoNumber. Field history: off. Depends on: AIConversationMessage__c, AIConversation__c.
@@ -864,17 +714,9 @@ Presentation and platform:
 
 [ ] Page layout: AI Feedback Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIFeedback__c.md
-
-1.6.1 AIPIIRegistry__c (AI PII Registry)
+1.4.5 AIPIIRegistry__c (AI PII Registry)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
@@ -885,7 +727,7 @@ Fields (8):
 
 [ ] CacheResetDate__c (Date)
 [ ] Description__c (TextArea)
-[ ] FieldCount__c (Roll-Up Summary)
+[ ] FieldCount__c (Summary)
 [ ] IsActive__c (Checkbox)
 [ ] LastSynced__c (DateTime)
 [ ] MaxFieldsToQuery__c (Number)
@@ -910,17 +752,9 @@ Presentation and platform:
 
 [ ] Page layout: AI PII Registry Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPIIRegistry__c.md
-
-1.6.2 AIPIIFieldMetadata__c (AI PII Field Metadata)
+1.4.6 AIPIIFieldMetadata__c (AI PII Field Metadata)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: Text. Field history: off. Depends on: AIPIIRegistry__c.
@@ -952,17 +786,9 @@ Presentation and platform:
 
 [ ] Page layout: AI PII Field Metadata Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPIIFieldMetadata__c.md
-
-1.6.3 AIPIIMapping__c (AI PII Mapping)
+1.4.7 AIPIIMapping__c (AI PII Mapping)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: Text. Field history: off. Depends on: AIConversation__c.
@@ -980,19 +806,10 @@ Compact layouts (1):
 
 Presentation and platform:
 
-[ ] No page layout in the package: confirm that is intended
 [ ] No tab in the package: confirm that is intended
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPIIMapping__c.md
-
-1.6.4 AIPIIMaskingRecord__c (AI PII Masking Record)
+1.4.8 AIPIIMaskingRecord__c (AI PII Masking Record)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIExecutionStep__c.
@@ -1027,21 +844,13 @@ Presentation and platform:
 
 [ ] Page layout: AI PII Masking Record Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPIIMaskingRecord__c.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-1.7 COMPLIANCE AND OPERATIONS
+1.5 COMPLIANCE AND OPERATIONS
 -----------------------------
 
-1.7.2 AIPlatformLog__c (AI Platform Log)
+1.5.1 AIPlatformLog__c (AI Platform Log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sharing: Private (external Private). Name field: AutoNumber. Field history: off.
@@ -1075,21 +884,13 @@ Presentation and platform:
 
 [ ] Page layout: AI Platform Log Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Trigger and handler:
-
-[ ] No trigger in the package: confirm nothing needs enforcing on save
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIPlatformLog__c.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-1.8 PLATFORM EVENTS
+1.6 PLATFORM EVENTS
 -------------------
 
-1.8.1 AIPlatformLogEvent__e (AI Platform Log Event)
+1.6.1 AIPlatformLogEvent__e (AI Platform Log Event)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Platform event, publish behaviour: PublishImmediately.
@@ -1111,17 +912,14 @@ Fields (10):
 
 Presentation and platform:
 
+
 Trigger and handler:
 
 [ ] Trigger AIPlatformLogEventTrigger (after insert)
-[ ] AIPlatformLogEventHandler (inherited sharing, 78 lines): Saves published AIPlatformLogEvent__e entries as AIPlatformLog__c records, which the Admin and Super User permission sets can read.
+[ ] AIPlatformLogEventHandler (without sharing, 69 lines): Handler for managing AI Platform Log Event events related to AI Assist, performing the business logic that runs on the AI Platform Log Event trigger.
   [ ] Test: AIPlatformLogEventHandlerTest
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIPlatformLogEvent__e.md
-
-1.8.2 AIMessageReadyEvent__e (AI Message Ready Event)
+1.6.2 AIMessageReadyEvent__e (AI Message Ready Event)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Platform event, publish behaviour: PublishAfterCommit.
@@ -1137,15 +935,16 @@ Fields (4):
 
 Presentation and platform:
 
+
 Trigger and handler:
 
 [ ] No Apex subscriber in the package: confirm who listens to this event
 
-Sign-off:
 
-[ ] Documented in docs/objects/AIMessageReadyEvent__e.md
+1.7 CUSTOM METADATA TYPES
+-------------------------
 
-1.9.1 AIPiiComplianceGroup__mdt (AI PII Compliance Group)
+1.7.1 AIPiiComplianceGroup__mdt (AI PII Compliance Group)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Custom metadata type, visibility Public.
@@ -1164,13 +963,10 @@ List views (1):
 Presentation and platform:
 
 [ ] Page layout: AI PII Compliance Group Layout
-[ ] Records: none are in the package yet (no customMetadata folder); decide which ship
+[ ] Records: confirm which are in the package (customMetadata folder)
+[ ] Access in each permission set (object, field, tab) is correct
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIPiiComplianceGroup__mdt.md
-
-1.9.2 AIPiiDataMaskingRule__mdt (AI PII Data Masking Rule)
+1.7.2 AIPiiDataMaskingRule__mdt (AI PII Data Masking Rule)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Custom metadata type, visibility Public.
@@ -1193,27 +989,24 @@ List views (1):
 Presentation and platform:
 
 [ ] Page layout: AI PII Data Masking Rule Layout
-[ ] Records: none are in the package yet (no customMetadata folder); decide which ship
+[ ] Records: confirm which are in the package (customMetadata folder)
+[ ] Access in each permission set (object, field, tab) is correct
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIPiiDataMaskingRule__mdt.md
-
-1.9.3 AIPiiFieldType__mdt (AI PII Field Type)
+1.7.3 AIPiiFieldType__mdt (AI PII Field Type)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Custom metadata type, visibility Public. Depends on: AIPiiComplianceGroup__mdt, AIPiiDataMaskingRule__mdt.
+Custom metadata type, visibility Public.
 
 [ ] Object definition: label, plural label, description, visibility
 
 Fields (8):
 
-[ ] ComplianceGroup__c (MetadataRelationship to AIPiiComplianceGroup__mdt)
+[ ] ComplianceGroup__c (MetadataRelationship)
 [ ] DisplayOrder__c (Number, required)
 [ ] IsActive__c (Checkbox)
 [ ] IsComplianceGroupFallback__c (Checkbox)
 [ ] Keyword__c (Text, required)
-[ ] MaskingRule__c (MetadataRelationship to AIPiiDataMaskingRule__mdt, required)
+[ ] MaskingRule__c (MetadataRelationship, required)
 [ ] MatchField__c (Picklist, required)
 [ ] PIIFieldType__c (Text, required)
 
@@ -1224,13 +1017,10 @@ List views (1):
 Presentation and platform:
 
 [ ] Page layout: AI PII Field Type Layout
-[ ] Records: none are in the package yet (no customMetadata folder); decide which ship
+[ ] Records: confirm which are in the package (customMetadata folder)
+[ ] Access in each permission set (object, field, tab) is correct
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIPiiFieldType__mdt.md
-
-1.9.4 AIChatCommand__mdt (AI Chat Command)
+1.7.4 AIChatCommand__mdt (AI Chat Command)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Custom metadata type, visibility Protected.
@@ -1254,83 +1044,48 @@ List views (1):
 
 Presentation and platform:
 
-[ ] No page layout in the package: confirm that is intended
-[ ] Records: none are in the package yet (no customMetadata folder); decide which ship
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIChatCommand__mdt.md
+[ ] Records: confirm which are in the package (customMetadata folder)
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-1.10 CUSTOM SETTINGS
---------------------
+1.8 CUSTOM SETTINGS
+-------------------
 
-1.10.1 AIAssistSettings__c (AI Assist Settings)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.8.1 AIAssistSettings__c (AI Assist Settings)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Hierarchy custom setting, visibility Public.
 
 [ ] Object definition: label, description, type, visibility
 
-Fields (45):
+Fields (18):
 
 [ ] AIProviderSuccessStatusCodes__c (Text)
 [ ] AIUsagePolicyUrl__c (Url)
-[ ] ActivatedOrgId__c (Text)
-[ ] AppUsageStateJson__c (Text)
 [ ] CalloutTimeoutMilliseconds__c (Number)
-[ ] ChatAppSharePercent__c (Number)
-[ ] ChatDegradedPercent__c (Number)
-[ ] ChatPausedPercent__c (Number)
 [ ] CurrentTermsVersion__c (Text)
-[ ] DailyMessageBudget__c (Number)
 [ ] DefaultMaxToolCallingIterations__c (Number)
-[ ] EventsAppSharePercent__c (Number)
-[ ] EventsDegradedPercent__c (Number)
-[ ] EventsPausedPercent__c (Number)
-[ ] GlobalTokenBudgetPerDay__c (Number)
 [ ] IsEnabled__c (Checkbox)
-[ ] IsEventNotificationEnabled__c (Checkbox)
 [ ] IsExceptionLoggingEnabled__c (Checkbox)
 [ ] IsPlatformLoggingEnabled__c (Checkbox)
-[ ] LoggingAppSharePercent__c (Number)
-[ ] LoggingDegradedPercent__c (Number)
-[ ] LoggingPausedPercent__c (Number)
 [ ] MaxMessageLength__c (Number)
 [ ] MaxMessagesInFlight__c (Number)
 [ ] MaxMessagesPerUserPerMinute__c (Number)
 [ ] MaxPIIRegistryObjects__c (Number)
 [ ] MaxToolCallingIterationsCap__c (Number)
 [ ] MaxToolCallsPerIteration__c (Number)
-[ ] MessageRetentionDays__c (Number)
-[ ] OrgLimitAlertSentAt__c (DateTime)
-[ ] OrgLimitCheckMinutes__c (Number)
-[ ] OrgLimitDegradedPercent__c (Number)
-[ ] OrgLimitMaxSharePercent__c (Number)
-[ ] OrgLimitPausedPercent__c (Number)
-[ ] OrgLimitResumeMarginPercent__c (Number)
-[ ] OrgLimitStateJson__c (Text)
-[ ] OrgUsageStateJson__c (Text)
-[ ] PlatformLogRetentionDays__c (Number)
 [ ] ProcessingLockMinutes__c (Number)
-[ ] RetryAttempts__c (Number, default 2, clamped 0 to 5 in AIAssistSettingsService)
+[ ] RetryAttempts__c (Number)
 [ ] RetryableStatusCodes__c (Text)
 [ ] StepCaptureMode__c (Text)
-[ ] StepRetentionDays__c (Number)
-[ ] StorageBudgetPercent__c (Number)
-[ ] ViolationRetentionDays__c (Number)
 
 Presentation and platform:
 
 [ ] Defaults: confirm every field default and who sets the org default (install handler or admin)
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
+[ ] Access in each permission set (object, field, tab) is correct
 
-Sign-off:
-
-[ ] Documented in docs/objects/AIAssistSettings__c.md
-
-1.10.2 AIAssistUISettings__c (AI Assist UI Settings)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.8.2 AIAssistUISettings__c (AI Assist UI Settings)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Hierarchy custom setting, visibility Public.
 
@@ -1352,17 +1107,12 @@ Fields (10):
 Presentation and platform:
 
 [ ] Defaults: confirm every field default and who sets the org default (install handler or admin)
-[ ] Access in each permission set (object, field, tab) matches docs/SECURITY_MODEL.md
-
-Sign-off:
-
-[ ] Documented in docs/objects/AIAssistUISettings__c.md
+[ ] Access in each permission set (object, field, tab) is correct
 
 
-1.11 ACROSS THE OBJECT MODEL
-----------------------------
+1.9 ACROSS THE OBJECT MODEL
+---------------------------
 
-[ ] Every relationship in docs/objects/ERD.md matches the fields signed off above
 [ ] Every master-detail child inherits the sharing its parent is meant to give it
 [ ] Every picklist that repeats across objects uses a global value set or is deliberately local
 [ ] Naming is consistent: PII and Pii, API and Api are both in use across object and field names

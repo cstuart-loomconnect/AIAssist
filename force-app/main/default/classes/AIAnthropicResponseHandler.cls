@@ -79,7 +79,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
 
       // Status not in AIAssistSettings__c.AIProviderSuccessStatusCodes__c - expose Anthropic's error, e.g. { "type": "error", "error": { "type": "invalid_request_error", "message": "..." } }, falling back to the raw body.
       if (
-        !AIAssistGlobalUtility.toIntegerSet(
+        !toIntegerSet(
             AIAssistSettingsService.getSettings()
               .AIProviderSuccessStatusCodes__c
           )
@@ -211,5 +211,20 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
         caughtException
       );
     }
+  }
+
+  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
+  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+    Set<Integer> numbers = new Set<Integer>();
+
+    if (String.isBlank(commaSeparatedNumbers))
+      return numbers;
+
+    for (String entry : commaSeparatedNumbers.split(',')) {
+      if (entry.trim().isNumeric())
+        numbers.add(Integer.valueOf(entry.trim()));
+    }
+
+    return numbers;
   }
 }

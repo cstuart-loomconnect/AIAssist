@@ -202,14 +202,9 @@ private class AIChatControllerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.CHAT_SEND_STATUS_LIMIT,
+      AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       limited.status,
-      'A limit.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-      limited.code,
-      'With its code.'
+      'A limit is an error status.'
     );
     Assert.areEqual(
       Label.AI_Error_Concurrent_Limit,
@@ -217,9 +212,9 @@ private class AIChatControllerTest {
       'The text is the Custom Label.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.CHAT_SEND_STATUS_BLOCKED,
+      AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       blocked.status,
-      'Blocked.'
+      'Blocked is an error status.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,

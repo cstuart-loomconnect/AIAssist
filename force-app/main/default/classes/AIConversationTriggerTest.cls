@@ -20,7 +20,7 @@
 //
 // @IsTest private class AIConversationTriggerTest {
 //
-//     // testScenario1: Bulk inserting AIConversation__c records for an Agent with a Conversation Created Date retention trigger generates each record's PublicId__c and RetentionExpiryDate__c from today.
+//     // testScenario1: Bulk inserting AIConversation__c records for an Agent with a Conversation Created Date retention trigger generates each record's RetentionExpiryDate__c from today.
 //     // testScenario2: Bulk closing AIConversation__c records for an Agent with a Conversation Closed Date retention trigger stamps ConversationClosedTimestamp__c and calculates RetentionExpiryDate__c from the close date.
 //
 //     @TestSetup static void setup() {
@@ -43,12 +43,11 @@
 //             AIAssistTestDataFactory.createAIConversations(agent.Id, 2, true);
 //         Test.stopTest();
 //
-//         List<AIConversation__c> inserted = [SELECT PublicId__c, RetentionExpiryDate__c FROM AIConversation__c WHERE AIAgent__c = :agent.Id];
+//         List<AIConversation__c> inserted = [SELECT RetentionExpiryDate__c FROM AIConversation__c WHERE AIAgent__c = :agent.Id];
 //
 //         Assert.areEqual(2, inserted.size(), 'Both bulk-inserted conversations should be created.');
 //
 //         for (AIConversation__c conversation : inserted) {
-//             Assert.isNotNull(conversation.PublicId__c, 'PublicId__c should be generated on insert.');
 //             Assert.areEqual(Date.today().addDays(30), conversation.RetentionExpiryDate__c, 'RetentionExpiryDate__c should be calculated from today using the Agent\'s retention days.');
 //         }
 //     }

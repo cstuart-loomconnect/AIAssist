@@ -245,6 +245,7 @@ public class SampleDataLoader {
     List<AIAgent__c> agents = new List<AIAgent__c>{
       new AIAgent__c(
         Name = PREFIX + 'Sales Assistant',
+        DeveloperName__c = 'Sample_Sales_Assistant',
         Description__c = 'Answers questions about accounts, contacts and open opportunities.',
         AIAgentPersona__c = 'A concise, commercially minded sales assistant.',
         GreetingMessage__c = 'Hi, I can summarise this account, list open deals or draft a follow-up.',
@@ -259,6 +260,7 @@ public class SampleDataLoader {
       ),
       new AIAgent__c(
         Name = PREFIX + 'Service Assistant',
+        DeveloperName__c = 'Sample_Service_Assistant',
         Description__c = 'Helps the service team with cases and customer history.',
         AIAgentPersona__c = 'A calm, precise support specialist.',
         GreetingMessage__c = 'Hello. Ask me about this customer or their open cases.',
@@ -275,6 +277,7 @@ public class SampleDataLoader {
       ),
       new AIAgent__c(
         Name = PREFIX + 'Policy Helper',
+        DeveloperName__c = 'Sample_Policy_Helper',
         Description__c = 'General questions, not tied to a record.',
         AIAgentPersona__c = 'A friendly guide to company policy.',
         GreetingMessage__c = 'Hi, what would you like to know?',
@@ -290,6 +293,7 @@ public class SampleDataLoader {
       ),
       new AIAgent__c(
         Name = PREFIX + 'Draft Agent',
+        DeveloperName__c = 'Sample_Draft_Agent',
         Description__c = 'Not finished: no model configuration, switched off.',
         AccessMode__c = 'Assigned Users Only',
         ConversationVisibility__c = 'Private',

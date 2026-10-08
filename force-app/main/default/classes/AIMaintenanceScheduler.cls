@@ -62,7 +62,6 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
   }
 
   public void execute(SchedulableContext context) {
-    AIAssistSettingsService.recordActivatedOrg();
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
     AIConversationMessageService.failExpiredHeldMessages(false); // Messages held at the cap that no finalizer or chat window has failed since. Never throws.

@@ -14,7 +14,7 @@ Flow:
     killed by an uncatchable governor limit.
 [1] Load everything for the turn. The user's own data (the message, the conversation, the history)
     is read in user mode. Configuration the user cannot read (agent, model connection, prompt,
-    tools) is read by AIMessagingSelector.
+    tools) is read in this class.
 [2] Run the turn through IAIResponseExecutor (AIAgentManager). It only makes the callouts and returns
     a result. PII mappings its tool calls create are held in memory and saved here once every
     callout is done.
@@ -41,10 +41,13 @@ every request.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Runs with sharing. User data read in user mode, configuration through AIMessagingSelector. Turn executor seam for tests. History bounded by characters and cut off at the triggering message by Id as well as time. Lock checked before the callout. Outcome handling in AIMessageOutcomeService. Input and output tokens carried across retries. Loaders inlined.
+2.0          Chandler Stuart          Runs with sharing. User data read in user mode, configuration read in this class. Turn executor seam for tests. History bounded by characters and cut off at the triggering message by Id as well as time. Lock checked before the callout. Outcome handling in AIMessageOutcomeService. Input and output tokens carried across retries. Loaders inlined.
 */
 
 public with sharing class AIMessageProcessingQueueable implements Queueable, Database.AllowsCallouts {
+  public class AIMessageProcessingQueueableException extends Exception {
+  }
+
   // Everything AIAgentManager needs for one attempt of one turn.
   public class AIResponseRequest {
     public AIAgent__c agent;
@@ -172,33 +175,46 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         WITH USER_MODE
         LIMIT 1
       ];
-      if (conversationRows.isEmpty())
-        throw AIMessagingException.newFailure(
+      if (conversationRows.isEmpty()) {
+        AIPlatformLogManager.logCustomMessage(
           'AI Conversation not found for Id: ' +
           triggeringMessage.AIConversation__c,
+          null,
+          'AIMessageProcessingQueueable',
+          'execute',
           null
         );
+        throw new AIMessageProcessingQueueableException(Label.AI_Error_Generic);
+      }
 
       AIConversation__c conversation = conversationRows[0];
-      AIAgent__c agent = AIMessagingSelector.getAgent(conversation.AIAgent__c);
-      if (agent == null)
-        throw AIMessagingException.newFailure(
+      AIAgent__c agent = getAgent(conversation.AIAgent__c);
+      if (agent == null) {
+        AIPlatformLogManager.logCustomMessage(
           'AI Agent not found for Id: ' + conversation.AIAgent__c,
+          null,
+          'AIMessageProcessingQueueable',
+          'execute',
           null
         );
+        throw new AIMessageProcessingQueueableException(Label.AI_Error_Generic);
+      }
 
-      AIModelConfiguration__c modelConfiguration = AIMessagingSelector.getModelConfiguration(
+      AIModelConfiguration__c modelConfiguration = getModelConfiguration(
         agent.AIModelConfiguration__c
       );
-      if (modelConfiguration == null)
-        throw AIMessagingException.newFailure(
+      if (modelConfiguration == null) {
+        AIPlatformLogManager.logCustomMessage(
           'The AI Agent has no AI Model Configuration assigned.',
+          null,
+          'AIMessageProcessingQueueable',
+          'execute',
           null
         );
+        throw new AIMessageProcessingQueueableException(Label.AI_Error_Generic);
+      }
 
-      AIPromptTemplate__c promptTemplate = AIMessagingSelector.getActivePromptTemplate(
-        agent.Id
-      ); // None is valid: no system prompt is assembled.
+      AIPromptTemplate__c promptTemplate = getActivePromptTemplate(agent.Id); // None is valid: no system prompt is assembled.
 
       responseContext.agentId = agent.Id;
       responseContext.modelConfigurationId = modelConfiguration.Id;
@@ -259,12 +275,8 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
       responseRequest.promptTemplate = promptTemplate;
       responseRequest.conversation = conversation;
       responseRequest.messageHistory = orderedHistory;
-      responseRequest.dataSources = AIMessagingSelector.getAssignedDataSources(
-        agent.Id
-      );
-      responseRequest.workflowActions = AIMessagingSelector.getAssignedActions(
-        agent.Id
-      );
+      responseRequest.dataSources = getAssignedDataSources(agent.Id);
+      responseRequest.workflowActions = getAssignedActions(agent.Id);
       responseRequest.attemptNumber = attemptNumber;
 
       // Live progress follows the org-wide setting. Request and response payloads are captured only when the step capture mode is Full.
@@ -328,10 +340,173 @@ public with sharing class AIMessageProcessingQueueable implements Queueable, Dat
         responseContext,
         tokensSoFar,
         caughtException.getMessage(),
-        caughtException instanceof AIMessagingException
+        !caughtException.getTypeName().startsWith('System.')
           ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR
           : AIAssistApplicationConstants.FAILURE_REASON_OTHER
       );
+    }
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static AIPromptTemplate__c getActivePromptTemplate(Id agentId) {
+    return systemReader.getActivePromptTemplate(agentId);
+  }
+
+  @TestVisible
+  private static AIAgent__c getAgent(Id agentId) {
+    return systemReader.getAgent(agentId);
+  }
+
+  @TestVisible
+  private static List<AIWorkflowAction__c> getAssignedActions(Id agentId) {
+    return systemReader.getAssignedActions(agentId);
+  }
+
+  @TestVisible
+  private static List<AIDataSource__c> getAssignedDataSources(Id agentId) {
+    return systemReader.getAssignedDataSources(agentId);
+  }
+
+  @TestVisible
+  private static AIModelConfiguration__c getModelConfiguration(
+    Id modelConfigurationId
+  ) {
+    return systemReader.getModelConfiguration(modelConfigurationId);
+  }
+
+  private without sharing class SystemReader {
+    // No active template is a valid state: the agent simply runs without a system prompt. With more than one active, the most recently edited wins, so the answer is stable.
+    public AIPromptTemplate__c getActivePromptTemplate(Id agentId) {
+      if (agentId == null)
+        return null;
+
+      List<AIPromptTemplate__c> templates = [
+        SELECT
+          Id,
+          AISystemContext__c,
+          AIPrompt__c,
+          AITone__c,
+          AIExclusionRules__c,
+          MaxResponseLength__c,
+          Version__c
+        FROM AIPromptTemplate__c
+        WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
+        WITH SYSTEM_MODE
+        ORDER BY LastModifiedDate DESC
+        LIMIT 1
+      ];
+
+      return templates.isEmpty() ? null : templates[0];
+    }
+
+    public AIAgent__c getAgent(Id agentId) {
+      if (agentId == null)
+        return null;
+
+      List<AIAgent__c> agents = [
+        SELECT
+          Id,
+          Name,
+          DeveloperName__c,
+          AIAgentPersona__c,
+          IsActive__c,
+          AccessMode__c,
+          AIModelConfiguration__c,
+          MaxMessagesPerConversation__c,
+          MaxTokensPerConversation__c,
+          MaxToolCallingIterations__c,
+          SingleActiveConversationPerRecord__c,
+          TokenTrackingMethod__c
+        FROM AIAgent__c
+        WHERE Id = :agentId
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ];
+
+      return agents.isEmpty() ? null : agents[0];
+    }
+
+    public List<AIWorkflowAction__c> getAssignedActions(Id agentId) {
+      if (agentId == null)
+        return new List<AIWorkflowAction__c>();
+
+      return [
+        SELECT
+          Id,
+          DeveloperName__c,
+          Description__c,
+          OutputDescription__c,
+          InputSchema__c
+        FROM AIWorkflowAction__c
+        WHERE
+          IsActive__c = TRUE
+          AND Id IN (
+            SELECT AIWorkflowAction__c
+            FROM AIAgentWorkflowAction__c
+            WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
+          )
+        WITH SYSTEM_MODE
+        ORDER BY DeveloperName__c
+        LIMIT :AIAssistApplicationConstants.MAX_TOOLS_PER_KIND
+      ];
+    }
+
+    // One query through the junction, capped, so an agent with hundreds of links cannot bloat every request.
+    public List<AIDataSource__c> getAssignedDataSources(Id agentId) {
+      if (agentId == null)
+        return new List<AIDataSource__c>();
+
+      return [
+        SELECT
+          Id,
+          DeveloperName__c,
+          Description__c,
+          OutputDescription__c,
+          InputSchema__c,
+          MaxRows__c,
+          TargetObject__c
+        FROM AIDataSource__c
+        WHERE
+          IsActive__c = TRUE
+          AND Id IN (
+            SELECT AIDataSource__c
+            FROM AIAgentDataSource__c
+            WHERE AIAgent__c = :agentId AND IsActive__c = TRUE
+          )
+        WITH SYSTEM_MODE
+        ORDER BY DeveloperName__c
+        LIMIT :AIAssistApplicationConstants.MAX_TOOLS_PER_KIND
+      ];
+    }
+
+    public AIModelConfiguration__c getModelConfiguration(
+      Id modelConfigurationId
+    ) {
+      if (modelConfigurationId == null)
+        return null;
+
+      List<AIModelConfiguration__c> configurations = [
+        SELECT
+          Id,
+          Name,
+          AIProvider__c,
+          ModelIdentifier__c,
+          NamedCredential__c,
+          ApiPath__c,
+          ApiVersionHeaderName__c,
+          ApiVersionHeaderValue__c,
+          MaximumOutputTokens__c,
+          Temperature__c
+        FROM AIModelConfiguration__c
+        WHERE Id = :modelConfigurationId
+        WITH SYSTEM_MODE
+        LIMIT 1
+      ];
+
+      return configurations.isEmpty() ? null : configurations[0];
     }
   }
 }

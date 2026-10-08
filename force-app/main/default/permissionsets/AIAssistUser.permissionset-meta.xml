@@ -28,11 +28,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIAgent__c.DeveloperName__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>AIAgent__c.GreetingMessage__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -44,11 +39,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIAgent__c.IsActive__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIAgent__c.PublicId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -129,11 +119,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversation__c.ProcessingLockedUntil__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIConversation__c.PublicId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

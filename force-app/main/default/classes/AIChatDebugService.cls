@@ -28,7 +28,6 @@ public with sharing class AIChatDebugService {
     AIChatDataStructure.DebugTrace debugTrace = new AIChatDataStructure.DebugTrace();
     debugTrace.conversationId = reply.AIConversation__c;
     debugTrace.conversationName = reply.AIConversation__r.Name;
-    debugTrace.conversationPublicId = reply.AIConversation__r.PublicId__c;
     debugTrace.replyMessageId = reply.Id;
     debugTrace.replyTokens = reply.TokenCount__c;
 
@@ -53,7 +52,7 @@ public with sharing class AIChatDebugService {
 
     List<AIConversation__c> conversationAgentModels = [
       SELECT
-        AIAgent__r.AIModelConfiguration__r.DeveloperName__c,
+        AIAgent__r.AIModelConfiguration__r.Name,
         AIAgent__r.AIModelConfiguration__r.AIProvider__c,
         AIAgent__r.AIModelConfiguration__r.ModelIdentifier__c
       FROM AIConversation__c
@@ -69,7 +68,7 @@ public with sharing class AIChatDebugService {
     ) {
       AIModelConfiguration__c modelConfiguration = conversationAgentModels[0]
         .AIAgent__r.AIModelConfiguration__r;
-      debugTrace.modelConfiguration = modelConfiguration.DeveloperName__c;
+      debugTrace.modelConfiguration = modelConfiguration.Name;
       debugTrace.provider = modelConfiguration.AIProvider__c;
       debugTrace.model = modelConfiguration.ModelIdentifier__c;
     }

@@ -19,7 +19,7 @@ Version      Author                   Description
 @IsTest
 private class AIAssistTestDataFactoryTest {
   // testScenario1: createUsers builds standard users and assignPermissionSet gives each the permission set, so a test can run as a real end user.
-  // testScenario2: The configuration builders insert valid records: an active model, an agent open to all users, a template, data sources, workflow actions and their links, with unique Developer Names stamped by the triggers.
+  // testScenario2: The configuration builders insert valid records: an active model, an agent open to all users, a template, data sources, workflow actions and their links, with unique Developer Names set by the factory.
   // testScenario3: The conversation, message, settings, PII and step builders insert valid records, and an AI Agent message goes in through the package gateway.
 
   @TestSetup
@@ -108,7 +108,7 @@ private class AIAssistTestDataFactoryTest {
     Test.stopTest();
 
     List<AIAgent__c> savedAgents = [
-      SELECT DeveloperName__c, PublicId__c, IsActive__c, AccessMode__c
+      SELECT DeveloperName__c, IsActive__c, AccessMode__c
       FROM AIAgent__c
       WHERE Id IN :agents
     ];
@@ -122,7 +122,7 @@ private class AIAssistTestDataFactoryTest {
     );
     Assert.isNotNull(
       savedAgents[0].DeveloperName__c,
-      'The trigger stamped a Developer Name.'
+      'The factory set a Developer Name.'
     );
     Assert.areNotEqual(
       savedAgents[0].DeveloperName__c,

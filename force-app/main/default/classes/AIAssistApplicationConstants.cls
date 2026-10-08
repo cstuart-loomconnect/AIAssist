@@ -44,10 +44,6 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String LOG_SEVERITY_WARNING = 'Warning';
   public static final String LOG_SEVERITY_INFO = 'Info';
 
-  // AIAssistGlobalUtility - the identifier fields it stamps, found by name on any object that has them.
-  public static final String DEVELOPER_NAME_FIELD_API_NAME = 'DeveloperName__c';
-  public static final String PUBLIC_ID_FIELD_API_NAME = 'PublicId__c';
-
   // AIDataSource__c.SourceType__c
   public static final String DATA_SOURCE_TYPE_APEX = 'Apex';
   public static final String DATA_SOURCE_TYPE_SOQL = 'SOQL';
@@ -171,37 +167,9 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String APP_FEATURE_EXPORT = 'ConversationExport';
   public static final String PERMISSION_DEBUG_MODE = 'AIAssistDebugMode';
   public static final String PERMISSION_RUN_ACTIONS = 'AIAssistRunActions';
-  public static final String PERMISSION_MANAGE_CONFIGURATION = 'AIAssistManageConfiguration';
 
-  // AIMessagingException.code - stable values, so the UI never has to parse a translated message.
-  public static final String ERROR_GENERIC = 'GENERIC';
-  public static final String ERROR_APPLICATION_DISABLED = 'APPLICATION_DISABLED';
-  public static final String ERROR_MAINTENANCE_MODE = 'MAINTENANCE_MODE';
-  public static final String ERROR_NEW_CONVERSATIONS_PAUSED = 'NEW_CONVERSATIONS_PAUSED';
-  public static final String ERROR_MESSAGE_EMPTY = 'MESSAGE_EMPTY';
-  public static final String ERROR_MESSAGE_TOO_LONG = 'MESSAGE_TOO_LONG';
-  public static final String ERROR_AGENT_NOT_FOUND = 'AGENT_NOT_FOUND';
-  public static final String ERROR_AGENT_INACTIVE = 'AGENT_INACTIVE';
-  public static final String ERROR_AGENT_NOT_ASSIGNED = 'AGENT_NOT_ASSIGNED';
-  public static final String ERROR_AGENT_NOT_AVAILABLE = 'AGENT_NOT_AVAILABLE';
-  public static final String ERROR_TERMS_NOT_ACKNOWLEDGED = 'TERMS_NOT_ACKNOWLEDGED';
-  public static final String ERROR_TERMS_VERSION_CHANGED = 'TERMS_VERSION_CHANGED';
-  public static final String ERROR_CHANNEL_NOT_ALLOWED = 'CHANNEL_NOT_ALLOWED';
-  public static final String ERROR_RECORD_ACCESS_DENIED = 'RECORD_ACCESS_DENIED';
-  public static final String ERROR_CONVERSATION_NOT_FOUND = 'CONVERSATION_NOT_FOUND';
-  public static final String ERROR_CONVERSATION_CLOSED = 'CONVERSATION_CLOSED';
-  public static final String ERROR_CONVERSATION_BUSY = 'CONVERSATION_BUSY';
-  public static final String ERROR_CONCURRENT_LIMIT = 'CONCURRENT_LIMIT';
-  public static final String ERROR_CONVERSATION_LIMIT_DAILY = 'CONVERSATION_LIMIT_DAILY';
-  public static final String ERROR_DAILY_USAGE_LIMIT = 'DAILY_USAGE_LIMIT';
-  public static final String ERROR_SERVICE_BUSY = 'SERVICE_BUSY';
-  public static final String ERROR_RATE_LIMITED = 'RATE_LIMITED';
-  public static final String ERROR_NOT_AUTHORISED = 'NOT_AUTHORISED';
+  // Error codes.
   public static final String ERROR_COMMAND_UNKNOWN = 'COMMAND_UNKNOWN';
-  public static final String ERROR_FEEDBACK_INVALID = 'FEEDBACK_INVALID';
-  public static final String ERROR_ACTION_NOT_PERMITTED = 'ACTION_NOT_PERMITTED';
-  public static final String ERROR_ACTION_CONFIRMATION_REQUIRED = 'ACTION_CONFIRMATION_REQUIRED';
-  public static final String ERROR_ACTION_FAILED = 'ACTION_FAILED';
 
   // Messaging guard rails. None is a business setting: each keeps one chat from taking an unreasonable share of the heap, CPU, asynchronous queue or token budget of the org the package is installed in.
   public static final Integer MAX_USER_MESSAGE_CHARACTERS = 8000; // The full 131,072 character field is never needed for a chat message.
@@ -397,14 +365,11 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String CHAT_STATE_TERMS = 'TERMS';
   // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
   public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
-  public static final String CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED = 'SANDBOX_NOT_ACTIVATED';
   public static final String CHAT_BLOCKED_BUSY = 'BUSY';
   public static final String CHAT_BLOCKED_NO_LICENCE = 'NO_LICENCE';
   public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
   public static final String CHAT_BLOCKED_TERMS = 'TERMS';
   public static final String CHAT_SEND_STATUS_SENT = 'SENT';
-  public static final String CHAT_SEND_STATUS_BLOCKED = 'BLOCKED';
-  public static final String CHAT_SEND_STATUS_LIMIT = 'LIMIT';
   public static final String CHAT_SEND_STATUS_ERROR = 'ERROR';
   public static final Integer CHAT_HISTORY_MAX_CONVERSATIONS = 50;
   public static final Integer CHAT_DEFAULT_MESSAGE_PAGE_SIZE = 20;

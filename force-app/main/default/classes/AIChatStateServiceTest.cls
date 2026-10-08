@@ -202,14 +202,6 @@ private class AIChatStateServiceTest {
     );
 
     settings.IsEnabled__c = true;
-    settings.ActivatedOrgId__c = '00D000000000001AAA';
-    update settings;
-    AIAssistSettingsService.clearCache();
-    AIChatDataStructure.ChatContext sandbox = blocked(
-      AIAssistApplicationConstants.CHAT_STATE_INACTIVE
-    );
-
-    settings.ActivatedOrgId__c = null;
     update settings;
     AIAssistSettingsService.clearCache();
     AIChatStateService.isLicensedForTest = false;
@@ -242,16 +234,6 @@ private class AIChatStateServiceTest {
       'With its message.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.CHAT_BLOCKED_SANDBOX_NOT_ACTIVATED,
-      sandbox.blockedState,
-      'Activated in another org.'
-    );
-    Assert.areEqual(
-      Label.AI_Chat_Blocked_Sandbox,
-      sandbox.blockedMessage,
-      'With its message.'
-    );
-    Assert.areEqual(
       AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE,
       noLicence.blockedState,
       'No licence.'
@@ -280,7 +262,7 @@ private class AIChatStateServiceTest {
     Test.startTest();
     AIChatDataStructure.ChatContext busy = new AIChatDataStructure.ChatContext();
     busy.state = ready;
-    Integer queued = AIMessagingSelector.countQueuedMessageJobs();
+    Integer queued = AIChatStateService.countQueuedMessageJobs();
     AIChatStateService.setBlockedState(busy);
     Test.stopTest();
 

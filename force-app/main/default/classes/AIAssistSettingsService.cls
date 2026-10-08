@@ -76,61 +76,8 @@ public inherited sharing class AIAssistSettingsService {
         );
   }
 
-  // The application switch every trigger and entry point respects. Blank counts as on. Off as well when the settings were activated in another org (isActivatedElsewhere): a sandbox copied from production stays off until it is activated there.
+  // The application switch every trigger and entry point respects. Blank counts as on.
   public static Boolean isEnabled() {
-    return getSettings().IsEnabled__c != false && !isActivatedElsewhere();
-  }
-
-  // True when ActivatedOrgId__c names an org other than this one. Blank is not "elsewhere": it has not been recorded yet.
-  public static Boolean isActivatedElsewhere() {
-    String activatedOrgId = getSettings().ActivatedOrgId__c;
-
-    return String.isNotBlank(activatedOrgId) &&
-      !UserInfo.getOrganizationId().startsWith(activatedOrgId.left(15));
-  }
-
-  // Switches the application on in this org and records the org, which is what makes a copy of the settings in another org inactive. Creates the settings row when there is none.
-  public static void activate() {
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    if (settings == null || settings.Id == null) {
-      settings = (AIAssistSettings__c) AIAssistSettings__c.SObjectType.newSObject(
-        null,
-        true
-      );
-      settings.SetupOwnerId = UserInfo.getOrganizationId();
-    }
-    settings.IsEnabled__c = true;
-    settings.ActivatedOrgId__c = UserInfo.getOrganizationId();
-    Database.upsert(settings, true, AccessLevel.SYSTEM_MODE);
-    clearCache();
-  }
-
-  // Records this org on settings that are switched on and have no org recorded yet (switched on in Setup, or from before the field existed). Called where DML is safe: the maintenance job and after a turn. A failure is logged, never thrown.
-  public static void recordActivatedOrg() {
-    try {
-      AIAssistSettings__c settings = getSettings();
-      if (
-        settings.Id == null ||
-        settings.IsEnabled__c == false ||
-        String.isNotBlank(settings.ActivatedOrgId__c)
-      )
-        return;
-
-      Database.update(
-        new AIAssistSettings__c(
-          Id = settings.Id,
-          ActivatedOrgId__c = UserInfo.getOrganizationId()
-        ),
-        true,
-        AccessLevel.SYSTEM_MODE
-      );
-      clearCache();
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIAssistSettingsService',
-        'recordActivatedOrg'
-      );
-    }
+    return getSettings().IsEnabled__c != false;
   }
 }

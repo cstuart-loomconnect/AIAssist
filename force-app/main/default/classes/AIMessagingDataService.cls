@@ -6,7 +6,7 @@ Class Name: AIMessagingDataService
 
 Description: Every write the messaging layer makes to data the end user is not allowed to write,
 and the one place a write is marked as the package's own. The write half of what was
-AIMessagingRepository; AIMessagingSelector is the read half.
+AIMessagingRepository; each class now reads what it needs itself.
 
 `without sharing` and explicit system mode on every statement, because the fields written are
 system-managed: a message's processing status and token counts, a conversation's totals, usage
@@ -27,6 +27,9 @@ Version      Author                   Description
 */
 
 public without sharing class AIMessagingDataService {
+  public class AIMessagingDataServiceException extends Exception {
+  }
+
   @TestVisible
   private static Integer writeDepth = 0;
 
@@ -121,16 +124,21 @@ public without sharing class AIMessagingDataService {
       }
 
       for (Database.SaveResult saveResult : saveResults) {
-        if (!saveResult.isSuccess())
-          throw AIMessagingException.newFailure(
+        if (!saveResult.isSuccess()) {
+          AIPlatformLogManager.logCustomMessage(
             'Failed to ' +
               (isInsert ? 'insert' : 'update') +
               ' record: ' +
               saveResult.getErrors()[0].getStatusCode() +
               ' ' +
               saveResult.getErrors()[0].getMessage(),
+            null,
+            'AIMessagingDataService',
+            'write',
             null
           );
+          throw new AIMessagingDataServiceException(Label.AI_Error_Generic);
+        }
       }
     } finally {
       writeDepth--; // Cleared even when a write throws, or a user insert later in the transaction would be allowed to forge a sender.

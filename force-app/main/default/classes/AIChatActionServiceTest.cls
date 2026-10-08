@@ -170,20 +170,20 @@ private class AIChatActionServiceTest {
     AIConversationMessage__c loaded = AIChatConversationService.assertOwnsAgentMessage(
       reply.Id
     );
-    String code;
+    String shown;
 
     Test.startTest();
     try {
       AIChatActionService.runSuggestedAction(loaded, null, true);
       Assert.fail('Nothing to run.');
-    } catch (AIMessagingException ex) {
-      code = ex.code;
+    } catch (AIChatActionService.AIChatActionServiceException ex) {
+      shown = ex.getMessage();
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
-      code,
+      Label.AI_Error_Action_Not_Permitted,
+      shown,
       'Not permitted.'
     );
   }

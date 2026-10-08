@@ -84,11 +84,11 @@ private class AIThroughputLimitsTest {
     );
   }
 
-  private static String refusalCode(World world, String body) {
+  private static String refusalMessage(World world, String body) {
     try {
       send(world, body);
-    } catch (AIMessagingException refusal) {
-      return refusal.code;
+    } catch (Exception refusal) {
+      return refusal.getMessage();
     }
     return null;
   }
@@ -105,7 +105,7 @@ private class AIThroughputLimitsTest {
       Test.startTest();
       started = send(world, 'First');
       held = send(world, 'Second, in another conversation');
-      jobs = AIMessagingSelector.countQueuedMessageJobs();
+      jobs = AIUsageLimitService.countQueuedMessageJobs();
       started = [
         SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c
         FROM AIConversationMessage__c
@@ -185,7 +185,7 @@ private class AIThroughputLimitsTest {
       FROM AIConversationMessage__c
       WHERE Id = :waiting.Id
     ];
-    Integer jobs = AIMessagingSelector.countQueuedMessageJobs();
+    Integer jobs = AIUsageLimitService.countQueuedMessageJobs();
     Test.stopTest();
 
     Assert.isFalse(startedByAnother, 'Only its sender can start it.');
@@ -211,15 +211,15 @@ private class AIThroughputLimitsTest {
     System.runAs(world.users[0]) {
       send(world, 'One');
       send(world, 'Two');
-      third = refusalCode(world, 'Three');
+      third = refusalMessage(world, 'Three');
     }
     System.runAs(world.users[1]) {
-      othersFirst = refusalCode(world, 'One');
+      othersFirst = refusalMessage(world, 'One');
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_RATE_LIMITED,
+      Label.AI_Error_Rate_Limited,
       third,
       'The third message inside a minute is refused.'
     );
@@ -235,13 +235,13 @@ private class AIThroughputLimitsTest {
 
     Test.startTest();
     System.runAs(world.users[0]) {
-      tooLong = refusalCode(world, 'x'.repeat(21));
-      atTheMaximum = refusalCode(world, 'x'.repeat(20));
+      tooLong = refusalMessage(world, 'x'.repeat(21));
+      atTheMaximum = refusalMessage(world, 'x'.repeat(20));
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,
+      Label.AI_Error_Message_Too_Long,
       tooLong,
       'One character over the configured maximum.'
     );

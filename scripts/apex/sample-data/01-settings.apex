@@ -66,9 +66,6 @@ public class SampleDataLoader {
       settings.SetupOwnerId = UserInfo.getOrganizationId();
     }
     settings.IsEnabled__c = shouldEnableApplication;
-    settings.ActivatedOrgId__c = shouldEnableApplication
-      ? UserInfo.getOrganizationId()
-      : null;
     settings.AIUsagePolicyUrl__c = 'https://example.com/ai-usage-policy';
     settings.CurrentTermsVersion__c = '1.0';
     settings.StepCaptureMode__c = 'Full';

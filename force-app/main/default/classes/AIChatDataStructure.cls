@@ -11,13 +11,13 @@ place so the services can pass the same wrapper types to each other without depe
 AIChatController.
 
 The shapes are the ones the chat window already reads, so it needs no change. A refusal the window
-should show is an AIMessagingException (a Custom Label and a stable code), not a type of its own.
+should show is an exception whose message is a Custom Label, not a type of its own.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old data structure. The controller exception is replaced by AIMessagingException.
+1.0          Chandler Stuart          Initial development, from the old data structure.
 */
 
 public class AIChatDataStructure {
@@ -288,7 +288,7 @@ public class AIChatDataStructure {
     public String objectApiName;
   }
 
-  // status is SENT, BLOCKED, LIMIT or ERROR; code is the AIMessagingException code behind a refusal, so the window can react to it without reading the text.
+  // status is SENT, BLOCKED, LIMIT or ERROR; code is set for an unknown slash command.
   public class SendResult {
     @AuraEnabled
     public String status;
@@ -323,8 +323,6 @@ public class AIChatDataStructure {
     public Id conversationId;
     @AuraEnabled
     public String conversationName;
-    @AuraEnabled
-    public String conversationPublicId;
     @AuraEnabled
     public Id userMessageId;
     @AuraEnabled

@@ -133,8 +133,8 @@ private class AIWorkflowActionDispatcherAccessTest {
         inputs,
         true
       );
-    } catch (AIMessagingException refusal) {
-      code = refusal.code;
+    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException refusal) {
+      code = refusal.getMessage();
     }
     return code;
   }
@@ -177,12 +177,12 @@ private class AIWorkflowActionDispatcherAccessTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       withoutAccess,
       'A record the user cannot read is not handed to a Flow.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
+      Label.AI_Error_Action_Failed,
       withAccess,
       'The user\'s own record passes the check; only the missing Flow fails.'
     );
@@ -214,12 +214,12 @@ private class AIWorkflowActionDispatcherAccessTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       asWrite,
       'A Write action needs edit access to the record.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
+      Label.AI_Error_Action_Failed,
       asReadOnly,
       'Read access is enough for a Read Only action.'
     );
@@ -241,7 +241,7 @@ private class AIWorkflowActionDispatcherAccessTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       code,
       'The conversation\'s record is checked like any other.'
     );
@@ -300,7 +300,7 @@ private class AIWorkflowActionDispatcherAccessTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
+      Label.AI_Error_Action_Failed,
       code,
       'Plain text is passed on; only the missing Flow fails.'
     );

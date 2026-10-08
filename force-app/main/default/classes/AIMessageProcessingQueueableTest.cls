@@ -18,6 +18,9 @@ Version      Author                   Description
 
 @IsTest
 private class AIMessageProcessingQueueableTest {
+  public class AIMessageProcessingQueueableTestException extends Exception {
+  }
+
   // testScenario1: A turn loads the conversation and agent, calls the executor with the question as the history, and records the reply.
   // testScenario2: The history is bounded by message count, ends with the question being answered even when newer messages exist, and leaves out System messages.
   // testScenario3: The history is also bounded by characters, keeping the newest message whatever its size.
@@ -50,8 +53,18 @@ private class AIMessageProcessingQueueableTest {
     ) {
       if (kind == 'generic')
         throw new CalloutException('Boom');
-      if (kind == 'config')
-        throw AIMessagingException.newFailure('No model', null);
+      if (kind == 'config') {
+        AIPlatformLogManager.logCustomMessage(
+          'No model',
+          null,
+          'AIMessageProcessingQueueableTest',
+          'unknown',
+          null
+        );
+        throw new AIMessageProcessingQueueableTestException(
+          Label.AI_Error_Generic
+        );
+      }
 
       AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
       result.inputTokens = 10;

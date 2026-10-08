@@ -4,7 +4,7 @@ Class Name: AIAgentTriggerHandlerTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIAgentTrigger and AIAgentTriggerHandler: the Public Id and Developer Name stamped on a new agent, bulk-safe and quiet when the application is switched off.
+Description: Testing utility for AIAgentTrigger and AIAgentTriggerHandler: the retention recalculation batch started when an agent's retention days or retention trigger change.
 
 =================================================================
 =================================================================
@@ -14,18 +14,18 @@ AIAgentTriggerHandler
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
+2.0          Chandler Stuart          Developer Name scenarios removed: names are typed by the user, never stamped. Tests the retention recalculation instead.
 */
 
 @IsTest
 private class AIAgentTriggerHandlerTest {
-  // testScenario1: A new agent gets a Public Id and a Developer Name derived from its name.
-  // testScenario2: Two agents with the same name in one insert, or the name of an existing agent, still get different Developer Names.
-  // testScenario3: A Public Id and a Developer Name supplied by the caller are kept.
-  // testScenario4: An update leaves both identifiers alone.
-  // testScenario5: Bulk: 201 agents all get both identifiers, distinct, within a few queries.
-  // testScenario6: Switched off, nothing is stamped and the agent still saves.
-  // testScenario7: The handler does nothing, and does not throw, for no records.
-  // testScenario8: An unexpected failure inside the handler is logged and never stops the save.
+  // testScenario1: Changing an agent's retention days starts the retention recalculation batch.
+  // testScenario2: Changing an agent's retention trigger starts the retention recalculation batch.
+  // testScenario3: An unrelated change to an agent does not start the batch.
+  // testScenario4: The handler does nothing, and does not throw, for no records.
+  // testScenario5: An unexpected failure inside the handler is logged and never stops the save.
+
+  private static final String BATCH_NAME = 'AIConversationRetentionRecalcBatch';
 
   @TestSetup
   static void setup() {
@@ -36,202 +36,78 @@ private class AIAgentTriggerHandlerTest {
     upsert settings;
   }
 
-  @IsTest
-  static void testScenario1() {
+  private static AIAgent__c createAgentWithRetention() {
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       false
     )[0];
-    agent.Name = 'Support Assistant (EMEA)';
+    agent.ConversationRetentionDays__c = 30;
+    agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CREATED_DATE;
+    insert agent;
+    return agent;
+  }
+
+  private static Integer countBatchJobs() {
+    return [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+  }
+
+  @IsTest
+  static void testScenario1() {
+    AIAgent__c agent = createAgentWithRetention();
+    Assert.areEqual(0, countBatchJobs(), 'No batch before the change.');
 
     Test.startTest();
-    insert agent;
+    agent.ConversationRetentionDays__c = 60;
+    update agent;
     Test.stopTest();
 
-    AIAgent__c saved = [
-      SELECT PublicId__c, DeveloperName__c
-      FROM AIAgent__c
-      WHERE Id = :agent.Id
-    ];
-    Assert.areEqual(36, saved.PublicId__c.length(), 'A UUID.');
-    Assert.areEqual(
-      'Support_Assistant_EMEA',
-      saved.DeveloperName__c,
-      'Letters and numbers with single underscores.'
-    );
+    Assert.areEqual(1, countBatchJobs(), 'The recalculation batch ran once.');
   }
 
   @IsTest
   static void testScenario2() {
-    AIAgent__c existing = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      false
-    )[0];
-    existing.Name = 'Duplicate Name';
-    insert existing;
-    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
-      2,
-      existing.AIModelConfiguration__c,
-      false
-    );
-    agents[0].Name = 'Duplicate Name';
-    agents[1].Name = 'Duplicate Name';
+    AIAgent__c agent = createAgentWithRetention();
 
     Test.startTest();
-    insert agents;
+    agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_LAST_MESSAGE_DATE;
+    update agent;
     Test.stopTest();
 
-    Assert.areEqual(
-      3,
-      [
-        SELECT COUNT()
-        FROM AIAgent__c
-        WHERE DeveloperName__c LIKE 'Duplicate_Name%'
-      ],
-      'All three saved.'
-    );
-    Assert.areEqual(
-      3,
-      [
-          SELECT COUNT_DISTINCT(DeveloperName__c)
-          FROM AIAgent__c
-          WHERE DeveloperName__c LIKE 'Duplicate_Name%'
-        ][0]
-        .get('expr0'),
-      'Each is different.'
-    );
+    Assert.areEqual(1, countBatchJobs(), 'The recalculation batch ran once.');
   }
 
   @IsTest
   static void testScenario3() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      false
-    )[0];
-    agent.PublicId__c = 'fixed-public-id';
-    agent.DeveloperName__c = 'Fixed_Name';
-
-    Test.startTest();
-    insert agent;
-    Test.stopTest();
-
-    AIAgent__c saved = [
-      SELECT PublicId__c, DeveloperName__c
-      FROM AIAgent__c
-      WHERE Id = :agent.Id
-    ];
-    Assert.areEqual('fixed-public-id', saved.PublicId__c, 'Kept.');
-    Assert.areEqual('Fixed_Name', saved.DeveloperName__c, 'Kept.');
-  }
-
-  @IsTest
-  static void testScenario4() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-    AIAgent__c before = [
-      SELECT PublicId__c, DeveloperName__c
-      FROM AIAgent__c
-      WHERE Id = :agent.Id
-    ];
+    AIAgent__c agent = createAgentWithRetention();
 
     Test.startTest();
     agent.Name = 'A completely new name';
     update agent;
     Test.stopTest();
 
-    AIAgent__c after = [
-      SELECT PublicId__c, DeveloperName__c
-      FROM AIAgent__c
-      WHERE Id = :agent.Id
-    ];
-    Assert.areEqual(
-      before.PublicId__c,
-      after.PublicId__c,
-      'The Public Id never changes.'
-    );
-    Assert.areEqual(
-      before.DeveloperName__c,
-      after.DeveloperName__c,
-      'Neither does the Developer Name.'
-    );
+    Assert.areEqual(0, countBatchJobs(), 'Retention did not change.');
   }
 
   @IsTest
-  static void testScenario5() {
-    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(
-      201,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      false
-    );
-    Integer queries;
-
-    Test.startTest();
-    insert agents;
-    queries = Limits.getQueries();
-    Test.stopTest();
-
-    Assert.areEqual(
-      201,
-      [
-        SELECT COUNT()
-        FROM AIAgent__c
-        WHERE PublicId__c != NULL AND DeveloperName__c != NULL
-      ],
-      'All stamped.'
-    );
-    Assert.areEqual(
-      201,
-      [SELECT COUNT_DISTINCT(PublicId__c) FROM AIAgent__c][0].get('expr0'),
-      'All Public Ids differ.'
-    );
-    Assert.isTrue(
-      queries <= 5,
-      'Queries do not grow with the number of agents: ' + queries
-    );
-  }
-
-  @IsTest
-  static void testScenario6() {
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.IsEnabled__c = false;
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      false
-    )[0];
-
-    Test.startTest();
-    insert agent;
-    Test.stopTest();
-
-    AIAgent__c saved = [
-      SELECT PublicId__c, DeveloperName__c
-      FROM AIAgent__c
-      WHERE Id = :agent.Id
-    ];
-    Assert.isNull(saved.PublicId__c, 'No Public Id.');
-    Assert.isNull(saved.DeveloperName__c, 'No Developer Name.');
-  }
-
-  @IsTest
-  static void testScenario7() {
+  static void testScenario4() {
     Test.startTest();
     try {
-      AIAgentTriggerHandler.handleBeforeInsert(null);
-      AIAgentTriggerHandler.handleBeforeInsert(new List<AIAgent__c>());
+      AIAgentTriggerHandler.handleAfterUpdate(null, null);
+      AIAgentTriggerHandler.handleAfterUpdate(
+        new Map<Id, AIAgent__c>(),
+        new List<AIAgent__c>()
+      );
     } catch (Exception ex) {
       Assert.fail('The handler must never throw: ' + ex.getMessage());
     }
     Test.stopTest();
 
+    Assert.areEqual(0, countBatchJobs(), 'No batch.');
     Assert.areEqual(
       0,
       [SELECT COUNT() FROM AIPlatformLog__c],
@@ -240,12 +116,13 @@ private class AIAgentTriggerHandlerTest {
   }
 
   @IsTest
-  static void testScenario8() {
+  static void testScenario5() {
     AIAgentTriggerHandler.isTestCustomExceptionThrown = true;
 
     Test.startTest();
     try {
-      AIAgentTriggerHandler.handleBeforeInsert(
+      AIAgentTriggerHandler.handleAfterUpdate(
+        new Map<Id, AIAgent__c>(),
         new List<AIAgent__c>{ new AIAgent__c() }
       );
     } catch (Exception ex) {

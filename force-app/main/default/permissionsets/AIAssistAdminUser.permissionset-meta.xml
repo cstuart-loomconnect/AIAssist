@@ -32,10 +32,6 @@
     </customPermissions>
     <customPermissions>
         <enabled>true</enabled>
-        <name>AIAssistManageConfiguration</name>
-    </customPermissions>
-    <customPermissions>
-        <enabled>true</enabled>
         <name>AIAssistRunActions</name>
     </customPermissions>
     <customPermissions>
@@ -113,11 +109,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIAgent__c.DeveloperName__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable>
         <field>AIAgent__c.GreetingMessage__c</field>
         <readable>true</readable>
@@ -145,11 +136,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIAgent__c.MaxToolCallingIterations__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIAgent__c.PublicId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -258,11 +244,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIConversation__c.PublicId__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable>
         <field>AIConversation__c.RelatedObjectAPIName__c</field>
         <readable>true</readable>
@@ -295,11 +276,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIDataSource__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIDataSource__c.DeveloperName__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -485,11 +461,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIModelConfiguration__c.ApiVersionHeaderValue__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIModelConfiguration__c.DeveloperName__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -708,11 +679,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIPromptTemplate__c.DeveloperName__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable>
         <field>AIPromptTemplate__c.IsActive__c</field>
         <readable>true</readable>
@@ -720,11 +686,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIPromptTemplate__c.MaxResponseLength__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIPromptTemplate__c.ActiveAgentKey__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -793,11 +754,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIUsagePolicy__c.DeveloperName__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable>
         <field>AIUsagePolicy__c.IsActive__c</field>
         <readable>true</readable>
@@ -820,11 +776,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIUsagePolicy__c.MaxTokensPer24Hours__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIUsagePolicy__c.PublicId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -883,11 +834,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIUserSettings__c.UserKey__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>true</editable>
         <field>AIUserSettings__c.User__c</field>
         <readable>true</readable>
@@ -910,11 +856,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIWorkflowAction__c.Description__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIWorkflowAction__c.DeveloperName__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

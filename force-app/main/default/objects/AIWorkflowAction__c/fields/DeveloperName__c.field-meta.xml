@@ -9,7 +9,7 @@
   >Use a short, unique, no-spaces identifier so this action can be referenced reliably in code even if the display name changes.</inlineHelpText>
     <label>Developer Name</label>
     <length>75</length>
-    <required>false</required>
+    <required>true</required>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Text</type>

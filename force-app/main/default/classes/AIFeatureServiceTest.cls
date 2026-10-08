@@ -10,7 +10,7 @@ Description: Testing utility for AIFeatureService: one check for whether a featu
 =================================================================
 Applicable Classes:
 
-AIFeatureService, AIAssistGlobalUtility
+AIFeatureService
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -22,7 +22,6 @@ private class AIFeatureServiceTest {
   // testScenario2: The org layer: with the application off, or activated in another org, a feature a user uses is refused as Org.
   // testScenario3: The user layer: the custom permission grants it, so does the user's settings, and with neither it is refused as User. Running actions needs the settings to be active; debug does not.
   // testScenario4: A feature with no permission is granted by the user's settings alone, and the user state the chat window gets comes from the same check.
-  // testScenario5: Day boundaries follow the org's time zone, not UTC: in Auckland a moment late on the 31st UTC falls on the 1st, and the next midnight is Auckland's.
 
   @TestSetup
   static void setup() {
@@ -68,14 +67,6 @@ private class AIFeatureServiceTest {
       null
     );
     settings.IsEnabled__c = true;
-    settings.ActivatedOrgId__c = '00D000000000001AAA';
-    update settings;
-    AIAssistSettingsService.clearCache();
-    String debugInACopiedSandbox = AIFeatureService.getBlockingLayer(
-      AIAssistApplicationConstants.APP_FEATURE_DEBUG_MODE,
-      null
-    );
-    settings.ActivatedOrgId__c = null;
     update settings;
     AIAssistSettingsService.clearCache();
     Boolean debugWhileOn = AIFeatureService.isFeatureEnabled(
@@ -84,11 +75,6 @@ private class AIFeatureServiceTest {
     Test.stopTest();
 
     Assert.areEqual(AIFeatureService.LAYER_ORG, debugWhileOff, 'Switched off.');
-    Assert.areEqual(
-      AIFeatureService.LAYER_ORG,
-      debugInACopiedSandbox,
-      'Activated in another org.'
-    );
     Assert.isTrue(debugWhileOn, 'On, and the permission is held.');
   }
 
@@ -189,43 +175,5 @@ private class AIFeatureServiceTest {
     Assert.isFalse(noSettings.exportEnabled, 'Export has no permission.');
     Assert.isTrue(withSettings.workflowActionsEnabled, 'By the settings.');
     Assert.isTrue(withSettings.exportEnabled, 'By the settings.');
-  }
-
-  @IsTest
-  static void testScenario5() {
-    // Half past noon UTC on 31 March is half past one in the morning of 1 April in Auckland (UTC+13 in summer time).
-    Datetime lateOnThe31stUtc = Datetime.newInstanceGmt(2026, 3, 31, 12, 30, 0);
-    Datetime earlyOnThe31stUtc = Datetime.newInstanceGmt(2026, 3, 31, 9, 0, 0);
-
-    Test.startTest();
-    AIAssistGlobalUtility.orgTimeZoneSidKey = 'Pacific/Auckland';
-    Date beforeMidnight = AIAssistGlobalUtility.getOrgDate(earlyOnThe31stUtc);
-    Date afterMidnight = AIAssistGlobalUtility.getOrgDate(lateOnThe31stUtc);
-    AIAssistGlobalUtility.nowForTest = earlyOnThe31stUtc;
-    Datetime nextMidnight = AIAssistGlobalUtility.getNextOrgMidnight();
-    AIAssistGlobalUtility.orgTimeZoneSidKey = 'America/Los_Angeles';
-    Date inLosAngeles = AIAssistGlobalUtility.getOrgDate(lateOnThe31stUtc);
-    Test.stopTest();
-
-    Assert.areEqual(
-      Date.newInstance(2026, 3, 31),
-      beforeMidnight,
-      'Still the 31st in Auckland at 22:00 there.'
-    );
-    Assert.areEqual(
-      Date.newInstance(2026, 4, 1),
-      afterMidnight,
-      'Already the 1st in Auckland.'
-    );
-    Assert.areEqual(
-      Date.newInstance(2026, 3, 31),
-      inLosAngeles,
-      'And still the 31st in Los Angeles.'
-    );
-    Assert.areEqual(
-      Datetime.newInstanceGmt(2026, 3, 31, 11, 0, 0),
-      nextMidnight,
-      'Auckland\'s midnight is 11:00 UTC: that is when the org\'s day rolls over.'
-    );
   }
 }

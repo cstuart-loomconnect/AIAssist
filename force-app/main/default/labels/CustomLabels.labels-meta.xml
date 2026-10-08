@@ -699,16 +699,6 @@
         <value>AI Assist is busy, try again shortly.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Template_Already_Active</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Prompt Template: the agent already has an active one.</shortDescription>
-        <value
-    >This agent already has an active prompt template: {0}. Deactivate it first, or leave this one inactive. An agent uses one prompt template at a time.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Terms_Not_Acknowledged</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -1153,16 +1143,6 @@
     >Agent object: the object API name does not exist in this org.</shortDescription>
         <value
     >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Chat_Blocked_Sandbox</fullName>
-        <categories>AI Assist,Chat</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: settings were activated in another org.</shortDescription>
-        <value
-    >AI Assist has not been activated in this org yet. Ask your administrator to activate it.</value>
     </labels>
     <labels>
         <fullName>AI_Chat_Blocked_No_Licence</fullName>

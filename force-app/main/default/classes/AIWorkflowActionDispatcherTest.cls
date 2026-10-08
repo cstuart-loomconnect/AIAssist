@@ -230,8 +230,8 @@ private class AIWorkflowActionDispatcherTest {
           null,
           false
         );
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        codes.add(ex.getMessage());
         Assert.areEqual(
           Label.AI_Error_Action_Not_Permitted,
           ex.getMessage(),
@@ -252,15 +252,15 @@ private class AIWorkflowActionDispatcherTest {
           null,
           false
         );
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        codes.add(ex.getMessage());
       }
     }
 
     Assert.areEqual(
       new List<String>{
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED
+        Label.AI_Error_Action_Not_Permitted,
+        Label.AI_Error_Action_Not_Permitted
       },
       codes,
       'Refused both times.'
@@ -345,8 +345,8 @@ private class AIWorkflowActionDispatcherTest {
             false
           );
           Assert.fail('This action should have been refused.');
-        } catch (AIMessagingException ex) {
-          codes.add(ex.code);
+        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+          codes.add(ex.getMessage());
         }
       }
       Test.stopTest();
@@ -354,7 +354,7 @@ private class AIWorkflowActionDispatcherTest {
 
     for (String code : codes)
       Assert.areEqual(
-        AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+        Label.AI_Error_Action_Not_Permitted,
         code,
         'Not permitted, whatever the reason.'
       );
@@ -423,8 +423,8 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('An unconfirmed write should have been refused.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
         Assert.areEqual(
           Label.AI_Error_Action_Confirmation_Required,
           ex.getMessage(),
@@ -453,9 +453,9 @@ private class AIWorkflowActionDispatcherTest {
       ORDER BY StepOrder__c
     ];
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_CONFIRMATION_REQUIRED,
+      Label.AI_Error_Action_Confirmation_Required,
       code,
-      'The code.'
+      'The text is the Custom Label.'
     );
     Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
     Assert.areEqual(
@@ -548,11 +548,11 @@ private class AIWorkflowActionDispatcherTest {
             false
           );
           Assert.fail('This action should have failed.');
-        } catch (AIMessagingException ex) {
+        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
           Assert.areEqual(
-            AIAssistApplicationConstants.ERROR_ACTION_FAILED,
-            ex.code,
-            'The code.'
+            Label.AI_Error_Action_Failed,
+            ex.getMessage(),
+            'The text is the Custom Label.'
           );
           shown.add(ex.getMessage());
         }
@@ -646,17 +646,13 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('A flow that does not exist cannot run.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
       }
       Test.stopTest();
     }
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_FAILED,
-      code,
-      'Action Failed.'
-    );
+    Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
     Assert.areEqual(
       1,
       [
@@ -809,14 +805,14 @@ private class AIWorkflowActionDispatcherTest {
           false
         );
         Assert.fail('The application is off.');
-      } catch (AIMessagingException ex) {
-        code = ex.code;
+      } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+        code = ex.getMessage();
       }
       Test.stopTest();
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
+      Label.AI_Error_Application_Inactive,
       code,
       'Application inactive.'
     );
@@ -897,8 +893,8 @@ private class AIWorkflowActionDispatcherTest {
         inputs,
         true
       );
-    } catch (AIMessagingException refusal) {
-      code = refusal.code;
+    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException refusal) {
+      code = refusal.getMessage();
     }
     return code;
   }
@@ -997,13 +993,13 @@ private class AIWorkflowActionDispatcherTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       removed,
       'A user the agent does not admit cannot run its action.'
     );
     Assert.areEqual('echo:a', output, 'Once assigned again it runs.');
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+      Label.AI_Error_Action_Not_Permitted,
       inactive,
       'An inactive agent runs nothing.'
     );

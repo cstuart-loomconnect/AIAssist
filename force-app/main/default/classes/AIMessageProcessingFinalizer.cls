@@ -42,6 +42,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIMessageProcessingFinalizer implements Finalizer {
+  public class AIMessageProcessingFinalizerException extends Exception {
+  }
+
   private Id triggeringMessageId;
   private Id conversationId;
   private Integer attemptNumber;
@@ -95,8 +98,6 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
   }
 
   public void execute(FinalizerContext finalizerContext) {
-    AIAssistSettingsService.recordActivatedOrg();
-
     try {
       // finalizerContext is null only when a test calls execute() directly.
       Boolean isJobFailed =
@@ -141,18 +142,32 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
           } catch (AsyncException retryNotInAChain) {
             isRetryAtMaximumDepth = false;
           }
-          if (isRetryAtMaximumDepth)
-            throw AIMessagingException.newFailure(
+          if (isRetryAtMaximumDepth) {
+            AIPlatformLogManager.logCustomMessage(
               'The maximum chained queueable depth has been reached.',
+              null,
+              'AIMessageProcessingFinalizer',
+              'execute',
               null
             );
+            throw new AIMessageProcessingFinalizerException(
+              Label.AI_Error_Generic
+            );
+          }
 
           // The limit is an uncatchable LimitException when passed, so it is checked first.
-          if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs())
-            throw AIMessagingException.newFailure(
+          if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs()) {
+            AIPlatformLogManager.logCustomMessage(
               'The asynchronous queueable limit for this transaction has been reached.',
+              null,
+              'AIMessageProcessingFinalizer',
+              'execute',
               null
             );
+            throw new AIMessageProcessingFinalizerException(
+              Label.AI_Error_Generic
+            );
+          }
 
           System.enqueueJob(
             new AIMessageProcessingQueueable(
@@ -199,18 +214,32 @@ public with sharing class AIMessageProcessingFinalizer implements Finalizer {
           } catch (AsyncException nextNotInAChain) {
             isNextAtMaximumDepth = false;
           }
-          if (isNextAtMaximumDepth)
-            throw AIMessagingException.newFailure(
+          if (isNextAtMaximumDepth) {
+            AIPlatformLogManager.logCustomMessage(
               'The maximum chained queueable depth has been reached.',
+              null,
+              'AIMessageProcessingFinalizer',
+              'execute',
               null
             );
+            throw new AIMessageProcessingFinalizerException(
+              Label.AI_Error_Generic
+            );
+          }
 
           // The limit is an uncatchable LimitException when passed, so it is checked first.
-          if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs())
-            throw AIMessagingException.newFailure(
+          if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs()) {
+            AIPlatformLogManager.logCustomMessage(
               'The asynchronous queueable limit for this transaction has been reached.',
+              null,
+              'AIMessageProcessingFinalizer',
+              'execute',
               null
             );
+            throw new AIMessageProcessingFinalizerException(
+              Label.AI_Error_Generic
+            );
+          }
 
           System.enqueueJob(
             new AIMessageProcessingQueueable(nextMessageId, conversationId),

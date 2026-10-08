@@ -9,7 +9,7 @@ checked in order, and the first that says no decides:
 [1] Org: the application is switched on in this org (AIAssistSettingsService.isEnabled, which includes
     the sandbox guard).
 [2] User: the user holds the feature's custom permission, or their usage policy or user settings row
-    switches it on (AIUsagePolicyResolver, through AIMessagingSelector.getUserSettings).
+    switches it on (AIUsagePolicyResolver.getUserSettings).
 
 Feature                Org   User
 RunActions             on    AIAssistRunActions or Workflow Actions Enabled
@@ -92,7 +92,7 @@ public inherited sharing class AIFeatureService {
       return null;
 
     AIUserSettings__c settings = userSettings == null
-      ? AIMessagingSelector.getUserSettings(UserInfo.getUserId())
+      ? AIUsagePolicyResolver.getUserSettings(UserInfo.getUserId())
       : userSettings;
     // Running an action also needs the settings to be active, as before; debug and export never did.
     Boolean isSwitchedOn =

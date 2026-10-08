@@ -100,6 +100,7 @@ public class SampleDataLoader {
     List<AIDataSource__c> dataSources = new List<AIDataSource__c>{
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Account Overview',
+        DeveloperName__c = 'Sample_Account_Overview',
         Description__c = 'The account the user is looking at.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Bound',
@@ -111,6 +112,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Account Contacts',
+        DeveloperName__c = 'Sample_Account_Contacts',
         Description__c = 'The contacts of the account the user is looking at.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Bound',
@@ -122,6 +124,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Open Opportunities',
+        DeveloperName__c = 'Sample_Open_Opportunities',
         Description__c = 'Open opportunities of the account the user is looking at.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Bound',
@@ -133,6 +136,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Open Cases',
+        DeveloperName__c = 'Sample_Open_Cases',
         Description__c = 'Open cases of the account the user is looking at.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Bound',
@@ -144,6 +148,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Find Accounts By Name',
+        DeveloperName__c = 'Sample_Find_Accounts_By_Name',
         Description__c = 'Searches accounts by name. Not tied to a record.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Unbound',
@@ -155,6 +160,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Open Tasks',
+        DeveloperName__c = 'Sample_Open_Tasks',
         Description__c = 'Open tasks the user can see.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Unbound',
@@ -165,6 +171,7 @@ public class SampleDataLoader {
       ),
       new AIDataSource__c(
         SourceName__c = PREFIX + 'Closed Won History',
+        DeveloperName__c = 'Sample_Closed_Won_History',
         Description__c = 'Not released yet: switched off.',
         SourceType__c = 'SOQL',
         BindingType__c = 'Bound',
@@ -177,6 +184,7 @@ public class SampleDataLoader {
       dataSources.add(
         new AIDataSource__c(
           SourceName__c = PREFIX + 'Apex Source',
+          DeveloperName__c = 'Sample_Apex_Source',
           Description__c = 'Rows built by an Apex class.',
           SourceType__c = 'Apex',
           BindingType__c = 'Bound',
@@ -232,6 +240,7 @@ public class SampleDataLoader {
       actions.add(
         new AIWorkflowAction__c(
           ActionName__c = PREFIX + 'Create Follow-up Task',
+          DeveloperName__c = 'Sample_Create_Follow_up_Task',
           Description__c = 'Creates a follow-up task on the record.',
           ActionType__c = 'Apex',
           ApexClassName__c = workflowActionApexClass,
@@ -247,6 +256,7 @@ public class SampleDataLoader {
       actions.add(
         new AIWorkflowAction__c(
           ActionName__c = PREFIX + 'Check Record Health',
+          DeveloperName__c = 'Sample_Check_Record_Health',
           Description__c = 'Reads the record and reports what is missing.',
           ActionType__c = 'Apex',
           ApexClassName__c = workflowActionApexClass,
@@ -261,6 +271,7 @@ public class SampleDataLoader {
       actions.add(
         new AIWorkflowAction__c(
           ActionName__c = PREFIX + 'Escalate To Manager',
+          DeveloperName__c = 'Sample_Escalate_To_Manager',
           Description__c = 'Runs a Flow that escalates the record.',
           ActionType__c = 'Flow',
           FlowAPIName__c = workflowActionFlowName,

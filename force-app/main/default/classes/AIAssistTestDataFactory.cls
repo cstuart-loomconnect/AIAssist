@@ -13,7 +13,7 @@ it built and inserts them only when asked, so a test can adjust them first:
 
 Records are valid against the object model's validation rules (an active model configuration has
 its connection details, an active prompt template has a prompt, and so on). Names are made unique
-with a counter, because the unique Developer Name stamped by the triggers is derived from them.
+with a counter. Developer Names are typed by the user, never stamped, so the factory sets a unique valid one on agents, data sources and workflow actions.
 
 Custom metadata cannot be inserted, so the PII masking rule is built in memory and handed to
 AIPiiPseudonymizationService through its test seam.
@@ -29,6 +29,7 @@ Version      Author                   Description
 2.0          Chandler Stuart          Rebuilt for the object model: users without AIAssistUserType__c, usage, assignment, terms and execution step builders, active agents and models that satisfy the validation rules.
 3.0          Chandler Stuart          Builders for agent objects, usage policies and their assignments.
 4.0          Chandler Stuart          Cut down to a basic chat bot: builders for violation rules, violations, usage rows removed.
+5.0          Chandler Stuart          Developer Names are no longer stamped: agents, data sources and workflow actions get a unique one from the factory.
 */
 
 @IsTest
@@ -36,13 +37,23 @@ public class AIAssistTestDataFactory {
   private static Integer sequence = 0;
   private static Id standardProfileId;
 
-  // A name unique within the test run, for fields whose value is derived into a unique Developer Name.
+  // A name unique within the test run.
   private static String uniqueName(String prefix) {
     sequence++;
     return prefix +
       ' ' +
       sequence +
       ' ' +
+      System.Uuid.randomUUID().toString().left(8);
+  }
+
+  // A unique Developer Name (letters, numbers and underscores only), under 64 characters.
+  private static String uniqueDeveloperName(String prefix) {
+    sequence++;
+    return prefix +
+      '_' +
+      sequence +
+      '_' +
       System.Uuid.randomUUID().toString().left(8);
   }
 
@@ -123,44 +134,6 @@ public class AIAssistTestDataFactory {
     }
   }
 
-  // Gives each user a permission set group (created here, containing the named permission set), so they hold that permission set only through the group and have no assignment row for it. The users must already be inserted.
-  public static void assignPermissionSetGroup(
-    List<User> users,
-    String groupDeveloperName,
-    String memberPermissionSetName
-  ) {
-    Id memberId = [
-      SELECT Id
-      FROM PermissionSet
-      WHERE Name = :memberPermissionSetName
-      LIMIT 1
-    ]
-    .Id;
-
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      PermissionSetGroup permissionSetGroup = new PermissionSetGroup(
-        DeveloperName = groupDeveloperName,
-        MasterLabel = groupDeveloperName
-      );
-      insert permissionSetGroup;
-      insert new PermissionSetGroupComponent(
-        PermissionSetGroupId = permissionSetGroup.Id,
-        PermissionSetId = memberId
-      );
-      Test.calculatePermissionSetGroup(permissionSetGroup.Id);
-
-      List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
-      for (User assignedUser : users)
-        assignments.add(
-          new PermissionSetAssignment(
-            AssigneeId = assignedUser.Id,
-            PermissionSetGroupId = permissionSetGroup.Id
-          )
-        );
-      insert assignments;
-    }
-  }
-
   public static List<Account> createAccounts(
     Integer numberOfAccounts,
     Boolean shouldDoInsert
@@ -214,7 +187,12 @@ public class AIAssistTestDataFactory {
   ) {
     List<AIAgent__c> agents = new List<AIAgent__c>();
     for (Integer itemIndex = 0; itemIndex < numberOfAgents; itemIndex++)
-      agents.add(new AIAgent__c(Name = uniqueName('AI Assist Test Agent')));
+      agents.add(
+        new AIAgent__c(
+          Name = uniqueName('AI Assist Test Agent'),
+          DeveloperName__c = uniqueDeveloperName('Agent')
+        )
+      );
 
     if (shouldDoInsert && !agents.isEmpty())
       insert agents;
@@ -280,6 +258,7 @@ public class AIAssistTestDataFactory {
     for (Integer itemIndex = 0; itemIndex < numberOfDataSources; itemIndex++) {
       AIDataSource__c dataSource = new AIDataSource__c(
         SourceName__c = uniqueName('AI Assist Test Source'),
+        DeveloperName__c = uniqueDeveloperName('Source'),
         SourceType__c = sourceType,
         IsActive__c = true
       );
@@ -310,6 +289,7 @@ public class AIAssistTestDataFactory {
     for (Integer itemIndex = 0; itemIndex < numberOfActions; itemIndex++) {
       AIWorkflowAction__c workflowAction = new AIWorkflowAction__c(
         ActionName__c = uniqueName('Action').left(50),
+        DeveloperName__c = uniqueDeveloperName('Action'),
         ActionType__c = actionType,
         ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY,
         RequiresConfirmation__c = false,
@@ -691,60 +671,6 @@ public class AIAssistTestDataFactory {
       insert agentObjects;
 
     return agentObjects;
-  }
-
-  public static List<AIUsagePolicy__c> createAIUsagePolicies(
-    Integer numberOfPolicies,
-    Boolean shouldDoInsert
-  ) {
-    List<AIUsagePolicy__c> policies = new List<AIUsagePolicy__c>();
-    for (Integer itemIndex = 0; itemIndex < numberOfPolicies; itemIndex++)
-      policies.add(
-        new AIUsagePolicy__c(
-          Name = uniqueName('AI Assist Test Usage Policy').left(80),
-          IsActive__c = true
-        )
-      );
-
-    if (shouldDoInsert && !policies.isEmpty())
-      insert policies;
-
-    return policies;
-  }
-
-  // Assigns a policy to users (one record each), or to a permission set by name when the user list is null.
-  public static List<AIUsagePolicyAssignment__c> createAIUsagePolicyAssignments(
-    Id policyId,
-    List<User> users,
-    String permissionSetName,
-    Boolean shouldDoInsert
-  ) {
-    List<AIUsagePolicyAssignment__c> assignments = new List<AIUsagePolicyAssignment__c>();
-    if (users != null) {
-      for (User assignedUser : users)
-        assignments.add(
-          new AIUsagePolicyAssignment__c(
-            AIUsagePolicy__c = policyId,
-            AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER,
-            User__c = assignedUser.Id,
-            IsActive__c = true
-          )
-        );
-    } else {
-      assignments.add(
-        new AIUsagePolicyAssignment__c(
-          AIUsagePolicy__c = policyId,
-          AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET,
-          PermissionSetName__c = permissionSetName,
-          IsActive__c = true
-        )
-      );
-    }
-
-    if (shouldDoInsert && !assignments.isEmpty())
-      insert assignments;
-
-    return assignments;
   }
 
   public static List<AIFeedback__c> createAIFeedback(
