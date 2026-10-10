@@ -3,9 +3,9 @@
     <fullName>AIPromptTemplate__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description
-  >The Prompt Template used to produce this reply. A conversation can switch templates, so this is recorded per message.</description>
+  >The Prompt Template used to produce this reply, or on a user message the template its slash command asked for. A conversation can switch templates, so this is recorded per message.</description>
     <inlineHelpText
-  >Set by the platform when the reply is generated.</inlineHelpText>
+  >Set by the platform: on a reply when it is generated, on a user message when a slash command selects a template.</inlineHelpText>
     <label>AI Prompt Template</label>
     <referenceTo>AIPromptTemplate__c</referenceTo>
     <relationshipLabel>AI Conversation Messages</relationshipLabel>

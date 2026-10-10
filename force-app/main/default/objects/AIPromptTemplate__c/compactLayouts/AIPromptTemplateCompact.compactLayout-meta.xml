@@ -4,6 +4,7 @@
     <fields>Name</fields>
     <fields>AIAgent__c</fields>
     <fields>IsActive__c</fields>
+    <fields>IsDefault__c</fields>
     <fields>MaxResponseLength__c</fields>
     <label>AIPrompt Template Compact</label>
 </CompactLayout>

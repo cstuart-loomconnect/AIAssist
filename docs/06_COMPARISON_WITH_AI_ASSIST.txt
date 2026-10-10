@@ -1,0 +1,96 @@
+What AIAssist is missing compared with AI-Assist (old repo)
+Date: 2026-10-10
+Compared: the working tree of AIAssist (branch integration-testing) against the working tree of AI-Assist, by file name (case-insensitive). Same-named files were not diffed line by line, so a field or class that exists in both but behaves differently is not listed.
+
+Only things the old repo has and this one does not are listed. Things that are only in this repo are not covered.
+
+Legend
+  [OUT OF SCOPE] Chat window and UI shell. Parked by decision.
+  [DECIDE]       Not ported. Decide whether it is needed.
+
+Not counted as missing (renamed or replaced in AIAssist)
+  AiMessageProcessingQueueable/Finalizer, AiDataSourceDispatcher/ResultProcessor, AiSoqlTemplateRunner, AiWorkflowActionDispatcher - same classes, renamed to AI... casing.
+  AIAnthropicRequestBuilder / AIAnthropicResponseHandler - split into AIAnthropicMessage* and AIAnthropicAgent* classes.
+  AIConversationIdleTimeoutBatch - now AIConversationIdleBatch.
+  AIPiiRegistryDispatcher / AIPiiRegistryWorker - now AIPiiRegistrySyncDispatcher / AIPiiRegistrySyncWorker.
+  AIAssistSettings__c.IsApplicationActive__c - now IsEnabled__c.
+  AIAgent__c.ObjectType__c - now ObjectApiNames__c. AIAgent__c.SingleActiveConversationPer_Record__c - now SingleActiveConversationPerRecord__c.
+  AIModelConfiguration__c.RetryAttempts__c - now AIAssistSettings__c.RetryAttempts__c.
+  Active__c on AIPiiRegistry__c and the PII __mdt types - now IsActive__c.
+  AIAssistUserTriggerTest, AIConversationTriggerTest, AIConversationMessageTriggerTest, AIAgentTriggerTest, AIPromptTemplateTriggerTest - the triggers still exist; the tests now sit in the *TriggerHandlerTest classes.
+
+==========================================================================
+SECTION 1: Chat window and UI [OUT OF SCOPE]
+==========================================================================
+
+  20 LWC bundles: aiAssistChat, aiChatComposer, aiChatContextBar, aiChatDebugTrace, aiChatEmptyState, aiChatErrorCard, aiChatFeedbackPanel, aiChatHeader, aiChatHistory, aiChatMessage, aiChatMessageList, aiChatNewChatsPaused, aiChatPiiMappingsModal, aiChatStatePanel, aiChatStyles, aiChatSuggestedAction, aiChatTerms, aiChatUsageBanner, aiChatUtils, aiChatWorkingIndicator (+ jsconfig.json).
+  AIChatUsageService - usage meter and "limit reached" display for the chat window (the limit checks themselves are in AIUsageLimitService).
+  AIAgentProgressPublisher + AIAgentProgressEvent__e - live "Working on it" progress card.
+  AIMessageReadyEvent__e - tells the window a reply is ready. Without it the window has to poll.
+  AIAssist application, AppSwitcher app menu, AI_Assist_UtilityBar flexipage - the Lightning app shell.
+
+==========================================================================
+SECTION 2: Not ported [DECIDE]
+==========================================================================
+
+Violations (content and policy monitoring)
+  AIViolation__c, AIViolationRule__c, AIViolationEvent__e (+ tabs, layouts, list views, 2 validation rules, en_US translations).
+  AIViolationTrigger, AIViolationRuleTrigger + handlers.
+  Lets an admin define rules (keyword or AI detection) that record a violation and optionally block a message.
+
+Save-time validation triggers
+  AIDataSourceTrigger / AIDataSourceTriggerHandler - InputSchema__c must be a JSON object, DeveloperName__c must be a valid provider tool name.
+  AIWorkflowActionTrigger / AIWorkflowActionTriggerHandler - same checks for workflow actions.
+  AIModelConfigurationTrigger / AIModelConfigurationTriggerHandler.
+  Effect: a bad schema or tool name is accepted on save and fails every turn for the agent.
+
+Terms of use enforcement
+  AITermsAcknowledgmentTrigger / Handler.
+  AIUserSettings__c.TermsAcknowledged__c, TermsAcknowledgedDate__c, TermsVersionAcknowledged__c.
+  AITermsAcknowledgment__c.LoginHistoryId__c.
+  AIAssistSettings__c.AIAcknowledgeEmailTemplateId__c (email sent on acknowledgement).
+  AIChatTermsService still inserts the acknowledgement; nothing validates or follows it up.
+
+Callout setup
+  Anthropic Named Credential and Anthropic External Credential. No credential ships, so each org has to create one.
+
+User provisioning
+  User.AIAssistUserType__c (+ User layout) - picks a user's AI Assist role and drives automatic permission set assignment. Here the permission sets are assigned by hand.
+
+Public ids and developer names
+  AIAssistGlobalUtility (generates PublicId__c and DeveloperName__c values).
+  PublicId__c on AIAgent, AIAgentDataSource, AIAgentWorkflowAction, AIConversation, AIDataSource, AIModelConfiguration, AIPIIRegistry, AIPromptTemplate, AIUserSettings, AIWorkflowAction (+ custom indexes on 5 of them).
+  DeveloperName__c on AIAgentDataSource, AIAgentWorkflowAction, AIModelConfiguration, AIPIIRegistry, AIUserSettings.
+  Index on AIConversation__c.ExternalReference__c.
+
+Settings fields
+  AIAssistSettings__c: DefaultModelConfiguration__c, GlobalTokenBudgetPerDay__c, AuditLoggingRecordId__c, ToolingAPIVersion__c.
+
+Agent behaviour fields
+  AIAgent__c: AIFallbackMessage__c, NoMatchBehavior__c, IsTestModeEnabled__c.
+  AIAgent__c setup wizard: SetupStatus__c, SetupCurrentStep__c, SetupLastEdited__c.
+  AIPromptTemplate__c: ActivationCriteria__c, TriggerKeywords__c.
+  AIConversationMessage__c: SuggestedWorkflowActionId__c.
+
+PII metadata
+  AIPiiComplianceGroupMapping__mdt and AIPiiFieldTypeRule__mdt (compliance group to field type mapping, and field type rules).
+
+Shared helper classes
+  AIGovernorLimits - one place for governor limit checks (CPU, heap, SOQL, callouts) before doing work. Here the checks are written separately in each class.
+  AITokenUsageService - read-only token totals per user, agent and date range.
+
+Translations
+  en_US object translations for AIAgent__c and AIViolationRule__c.
+
+Demo and testing tools
+  AIConversationSimulator, AIConversationScenarioStep - drive real conversations through the pipeline without a chat window.
+  AIDemoOrgSetup - one-call scratch org setup.
+  AiDataSourceDemoExecutor, AIMojoCodeReader, AIMojoRecordReader, AIMojoDemoActions, AIMojoCodeSnapshot static resource - demo data source and actions.
+
+==========================================================================
+Notes
+==========================================================================
+- The old version of this file listed an admin console (AIConsole* classes, AINavTab, ~35 LWCs). None of that exists in the current AI-Assist working tree, so it is no longer listed.
+- Not missing: custom metadata records. Neither repo ships any.
+- Open items from the 2026-10-02 readiness review are covered above: chat window (Section 1), PII metadata (Section 2), unused agent settings (Section 2).
+- Worth deciding before the chat window: AIMessageReadyEvent__e (otherwise the window polls), the save-time validation triggers, and the Named Credential.

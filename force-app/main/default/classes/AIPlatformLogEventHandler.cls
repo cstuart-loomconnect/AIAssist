@@ -19,75 +19,55 @@ Version      Author                   Description
 */
 
 public without sharing class AIPlatformLogEventHandler {
-  public class AIPlatformLogEventHandlerException extends Exception {
-  }
 
-  private static Boolean isAfterInsertHandlerRunning = false;
+    public class AIPlatformLogEventHandlerException extends Exception {}
 
-  @TestVisible
-  private static Boolean isTestCustomExceptionThrown = false;
+    private static Boolean isAfterInsertHandlerRunning = false;
 
-  // Saves the events as log records. A failure here is not logged through the log manager, which would publish another event into this same trigger.
-  public static void handleAfterInsert(List<AIPlatformLogEvent__e> logEvents) {
-    try {
-      // [1] Do nothing if this handler is already running
-      if (isAfterInsertHandlerRunning)
-        return;
+    @TestVisible
+    private static Boolean isTestCustomExceptionThrown = false;
 
-      isAfterInsertHandlerRunning = true;
+    // Saves the events as log records. A failure here is not logged through the log manager, which would publish another event into this same trigger.
+    public static void handleAfterInsert(List<AIPlatformLogEvent__e> logEvents) {
 
-      // [2] Throw on purpose when a test asks for it
-      if (isTestCustomExceptionThrown)
-        throw new AIPlatformLogEventHandlerException(
-          'Test exception for AIPlatformLogEventHandler.handleAfterInsert'
-        );
+        try {
 
-      // [3] Save the events as log records
-      if (logEvents != null && !logEvents.isEmpty())
-        saveEventsAsPlatformLogs(logEvents);
+            // [1] Do nothing if this handler is already running
+            if (isAfterInsertHandlerRunning) return;
 
-      // [4] Let the handler run again next time
-      isAfterInsertHandlerRunning = false;
-    } catch (Exception ex) {
-      // [5] Only a debug line, because there is nowhere safe left to log to
-      System.debug(
-        LoggingLevel.ERROR,
-        'AI Assist: platform log events could not be saved.'
-      );
-    }
-  }
+            isAfterInsertHandlerRunning = true;
 
-  // Saves each event as a log record, unless platform logging has been switched off.
-  private static void saveEventsAsPlatformLogs(
-    List<AIPlatformLogEvent__e> logEvents
-  ) {
-    // [1] Do nothing if platform logging is switched off
-    if (
-      AIAssistSettingsService.getSettings().IsPlatformLoggingEnabled__c == false
-    )
-      return;
+            // [2] Throw on purpose when a test asks for it
+            if (isTestCustomExceptionThrown) throw new AIPlatformLogEventHandlerException('Test exception for AIPlatformLogEventHandler.handleAfterInsert');
 
-    List<AIPlatformLog__c> platformLogs = new List<AIPlatformLog__c>();
+            // [3] Save the events as log records
+            if (logEvents != null && !logEvents.isEmpty()) saveEventsAsPlatformLogs(logEvents);
 
-    // [2] Make one log record for each event
-    for (AIPlatformLogEvent__e logEvent : logEvents) {
-      platformLogs.add(
-        new AIPlatformLog__c(
-          ClassName__c = logEvent.ClassName__c,
-          MethodName__c = logEvent.MethodName__c,
-          OccurredAt__c = logEvent.OccurredAt__c,
-          User__c = logEvent.UserId__c,
-          ExceptionType__c = logEvent.ExceptionType__c,
-          ExceptionMessage__c = logEvent.ExceptionMessage__c,
-          StackTrace__c = logEvent.StackTrace__c,
-          ExceptionLogDetail__c = logEvent.ExceptionLogDetail__c,
-          RelatedRecordId__c = logEvent.RelatedRecordId__c,
-          Severity__c = logEvent.Severity__c
-        )
-      );
+            // [4] Let the handler run again next time
+            isAfterInsertHandlerRunning = false;
+
+        } catch (Exception ex) {
+
+            // [5] Write only a debug line, because there is nowhere safe left to log to
+            System.debug(LoggingLevel.ERROR, 'AI Assist: platform log events could not be saved.');
+        }
     }
 
-    // [3] Save them all, letting each succeed or fail on its own
-    Database.insert(platformLogs, false, AccessLevel.SYSTEM_MODE);
-  }
+    // Saves each event as a log record, unless platform logging has been switched off.
+    private static void saveEventsAsPlatformLogs(List<AIPlatformLogEvent__e> logEvents) {
+
+        // [1] Do nothing if platform logging is switched off
+        if (AIAssistSettingsService.getSettings().IsPlatformLoggingEnabled__c == false) return;
+
+        List<AIPlatformLog__c> platformLogs = new List<AIPlatformLog__c>();
+
+        // [2] Make one log record for each event
+        for (AIPlatformLogEvent__e logEvent : logEvents) {
+
+            platformLogs.add(new AIPlatformLog__c(ClassName__c = logEvent.ClassName__c, MethodName__c = logEvent.MethodName__c, OccurredAt__c = logEvent.OccurredAt__c, User__c = logEvent.UserId__c, ExceptionType__c = logEvent.ExceptionType__c, ExceptionMessage__c = logEvent.ExceptionMessage__c, StackTrace__c = logEvent.StackTrace__c, ExceptionLogDetail__c = logEvent.ExceptionLogDetail__c, RelatedRecordId__c = logEvent.RelatedRecordId__c, Severity__c = logEvent.Severity__c));
+        }
+
+        // [3] Save them all, letting each succeed or fail on its own
+        Database.insert(platformLogs, false, AccessLevel.SYSTEM_MODE);
+    }
 }

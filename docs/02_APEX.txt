@@ -52,7 +52,7 @@ Sections are in call order, lowest layer first, so a class is checked after the 
   [ ] Test: AIAnthropicMessageRequestBuilderTest
 [ ] AIAnthropicMessageResponseHandler (inherited sharing, implements IAIProviderResponseHandler, 230 lines): IAIProviderResponseHandler for Anthropic's Messages API - parses a response and shapes providerMessages.
   [ ] Test: AIAnthropicMessageResponseHandlerTest
-[ ] AIAnthropicAgentRequestBuilder (without sharing, implements IAIProviderRequestBuilder, 175 lines): IAIProviderRequestBuilder for Anthropic's Agent API - starts a session and builds the events sent to it.
+[ ] AIAnthropicAgentRequestBuilder (without sharing, implements IAIProviderRequestBuilder, 238 lines): IAIProviderRequestBuilder for Anthropic's Agent API - continues the conversation's saved session or starts a new one, and builds the events sent to it.
   [ ] Test: AIAnthropicAgentRequestBuilderTest
 [ ] AIAnthropicAgentResponseHandler (without sharing, implements IAIProviderResponseHandler, 262 lines): IAIProviderResponseHandler for Anthropic's Agent API - fetches a session's events until it settles and shapes providerMessages.
   [ ] Test: AIAnthropicAgentResponseHandlerTest
@@ -121,6 +121,8 @@ Sections are in call order, lowest layer first, so a class is checked after the 
   [ ] Test: AIConversationLockServiceTest
 [ ] AIConversationVisibilityService (with sharing, 292 lines): Decides who may read a conversation they did not start.
   [ ] Test: AIConversationVisibilityServiceTest
+[ ] AIPromptTemplateService (without sharing): Works out which Prompt Template answers a message: the one a slash command asked for, else the Agent's default, plus the others the model may switch to with the select_prompt_template tool.
+  [ ] Test: AIPromptTemplateServiceTest
 [ ] AIConversationMessageService (without sharing, 408 lines): The entry point for a user sending a message: what the chat UI calls.
   [ ] Test: AIConversationMessageServiceTest
 [ ] AIMessageProcessingQueueable (with sharing, implements Queueable, Database.AllowsCallouts, 512 lines): The asynchronous worker that does the heavy lifting for one message, run outside the user's original transaction so the chat UI is not blocked on a live callout.

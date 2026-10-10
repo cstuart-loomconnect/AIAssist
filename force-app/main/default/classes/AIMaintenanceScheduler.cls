@@ -19,84 +19,60 @@ Version      Author                   Description
 */
 
 public without sharing class AIMaintenanceScheduler implements Schedulable {
-  public class AIMaintenanceSchedulerException extends Exception {
-  }
 
-  public static final String JOB_NAME = 'AI Assist Maintenance';
-  private static final String DAILY_AT_2AM = '0 0 2 * * ?'; // In the time zone of the user the job runs as.
+    public class AIMaintenanceSchedulerException extends Exception {}
 
-  @TestVisible
-  private static Boolean isTestCustomExceptionThrown = false;
+    public static final String JOB_NAME = 'AI Assist Maintenance';
+    private static final String DAILY_AT_2AM = '0 0 2 * * ?'; // In the time zone of the user the job runs as.
 
-  // Schedules the daily run unless a job of this name already exists. Returns the job's Id, or null when it was already scheduled.
-  public static Id scheduleDaily() {
-    // [1] Throw on purpose when a test asks for it
-    if (isTestCustomExceptionThrown)
-      throw new AIMaintenanceSchedulerException(
-        'Test exception for AIMaintenanceScheduler.scheduleDaily'
-      );
+    @TestVisible
+    private static Boolean isTestCustomExceptionThrown = false;
 
-    // [2] Do nothing when the job is already scheduled
-    if (
-      [
-        SELECT COUNT()
-        FROM CronTrigger
-        WHERE CronJobDetail.Name = :JOB_NAME
-        WITH SYSTEM_MODE
-      ] > 0
-    )
-      return null;
+    // Schedules the daily run unless a job of this name already exists. Returns the job's Id, or null when it was already scheduled.
+    public static Id scheduleDaily() {
 
-    // [3] Schedule the daily run and return the job's Id
-    return System.schedule(
-      JOB_NAME,
-      DAILY_AT_2AM,
-      new AIMaintenanceScheduler()
-    );
-  }
+        // [1] Throw on purpose when a test asks for it
+        if (isTestCustomExceptionThrown) throw new AIMaintenanceSchedulerException('Test exception for AIMaintenanceScheduler.scheduleDaily');
 
-  // Runs the housekeeping. A task that cannot start is logged, so one failure does not stop the others.
-  public void execute(SchedulableContext context) {
-    // [1] Check whether the application is switched on
-    Boolean isEnabled = AIAssistSettingsService.isEnabled();
+        // [2] Do nothing when the job is already scheduled
+        if ([SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name = :JOB_NAME WITH SYSTEM_MODE] > 0) return null;
 
-    // [2] Fail messages held at the cap that no finalizer or chat window has failed since (never throws)
-    AIConversationMessageService.failExpiredHeldMessages(false);
-
-    // [3] Retention always runs, so switching AI Assist off never stops the data it already holds from expiring
-    List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
-      new AIConversationRetentionBatch()
-    };
-
-    // [4] Closing idle conversations is part of the chat, so it waits for the application to be on
-    if (isEnabled)
-      housekeepingBatches.add(new AIConversationIdleBatch());
-
-    // [5] Start each batch on its own
-    for (Database.Batchable<SObject> housekeepingBatch : housekeepingBatches) {
-      try {
-        // [6] Throw on purpose when a test asks for it
-        if (isTestCustomExceptionThrown)
-          throw new AIMaintenanceSchedulerException(
-            'Test exception for AIMaintenanceScheduler.execute'
-          );
-
-        // [7] Start the batch
-        Database.executeBatch(
-          housekeepingBatch,
-          AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
-        );
-      } catch (Exception ex) {
-        AIPlatformLogManager.logException(
-          ex,
-          'AIMaintenanceScheduler',
-          'execute'
-        );
-      }
+        // [3] Schedule the daily run and return the job's Id
+        return System.schedule(JOB_NAME, DAILY_AT_2AM, new AIMaintenanceScheduler());
     }
 
-    // [8] Sync the PII registries that are due, only while the application is on
-    if (isEnabled)
-      AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
-  }
+    // Runs the housekeeping. A task that cannot start is logged, so one failure does not stop the others.
+    public void execute(SchedulableContext context) {
+
+        // [1] Check whether the application is switched on
+        Boolean isEnabled = AIAssistSettingsService.isEnabled();
+
+        // [2] Fail messages held at the cap that no finalizer or chat window has failed since (never throws)
+        AIConversationMessageService.failExpiredHeldMessages(false);
+
+        // [3] Always run retention, so switching AI Assist off never stops the data it already holds from expiring
+        List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{ new AIConversationRetentionBatch() };
+
+        // [4] Closing idle conversations is part of the chat, so it waits for the application to be on
+        if (isEnabled) housekeepingBatches.add(new AIConversationIdleBatch());
+
+        // [5] Start each batch on its own
+        for (Database.Batchable<SObject> housekeepingBatch : housekeepingBatches) {
+
+            try {
+
+                // [6] Throw on purpose when a test asks for it
+                if (isTestCustomExceptionThrown) throw new AIMaintenanceSchedulerException('Test exception for AIMaintenanceScheduler.execute');
+
+                // [7] Start the batch
+                Database.executeBatch(housekeepingBatch, AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE);
+
+            } catch (Exception ex) {
+                AIPlatformLogManager.logException(ex, 'AIMaintenanceScheduler', 'execute');
+            }
+        }
+
+        // [8] Sync the PII registries that are due, only while the application is on
+        if (isEnabled) AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
+    }
 }

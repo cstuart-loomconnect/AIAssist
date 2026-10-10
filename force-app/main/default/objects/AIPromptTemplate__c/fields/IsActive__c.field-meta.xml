@@ -5,7 +5,7 @@
     <description
   >Indicates whether this template is currently eligible for selection at runtime.</description>
     <inlineHelpText
-  >Turn this off to retire or pause a template without deleting it. Inactive templates are never selected, regardless of Activation Criteria.</inlineHelpText>
+  >Turn this off to retire or pause a template without deleting it. Inactive templates are never selected, whether by a slash command, as the default or by the model.</inlineHelpText>
     <label>Is Active</label>
     <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>

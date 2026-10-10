@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DefaultRequiresActive</fullName>
+    <active>true</active>
+    <description
+  >A Prompt Template can only be the default while it is active.</description>
+    <errorConditionFormula
+  >AND(IsDefault__c, NOT(IsActive__c))</errorConditionFormula>
+    <errorDisplayField>IsDefault__c</errorDisplayField>
+    <errorMessage
+  >A Prompt Template must be active to be the default. Activate it or untick Is Default.</errorMessage>
+</ValidationRule>

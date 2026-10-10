@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DeveloperNameFormat</fullName>
+    <active>true</active>
+    <description
+  >The Developer Name is a code-friendly identifier: lowercase letters, numbers and underscores, starting with a letter.</description>
+    <errorConditionFormula
+  >AND(NOT(ISBLANK(DeveloperName__c)), NOT(REGEX(DeveloperName__c, &quot;[a-z][a-z0-9_]*&quot;)))</errorConditionFormula>
+    <errorDisplayField>DeveloperName__c</errorDisplayField>
+    <errorMessage
+  >Use lowercase letters, numbers and underscores only, starting with a letter (e.g. draft_client_email).</errorMessage>
+</ValidationRule>

@@ -18,24 +18,25 @@ Version      Author                   Description
 */
 
 global without sharing class AIDataSourceRequest {
-  // The record the conversation is about. Null for an unbound data source.
-  global Id recordId;
 
-  // Values the model supplied for the parameters the data source declares.
-  global Map<String, Object> inputParameters = new Map<String, Object>();
+    // The record the conversation is about. Null for an unbound data source.
+    global Id recordId;
 
-  // The conversation this request is part of, and the agent and user it is for.
-  global Id conversationId;
-  global Id agentId;
-  global Id userId;
+    // Values the model supplied for the parameters the data source declares.
+    global Map<String, Object> inputParameters = new Map<String, Object>();
 
-  // The Developer Name of the data source being run.
-  global String dataSourceName;
+    // The conversation this request is part of, and the agent and user it is for.
+    global Id conversationId;
+    global Id agentId;
+    global Id userId;
 
-  // The most rows the data source is set to return, or null when there is no cap. The package applies the cap again to what comes back.
-  global Integer maxRows;
+    // The Developer Name of the data source being run.
+    global String dataSourceName;
 
-  // Explicit and global so a subscriber's test can build a request. The implicit constructor of a global class cannot be seen outside the package.
-  global AIDataSourceRequest() {
-  }
+    // The most rows the data source is set to return, or null when there is no cap. The package applies the cap again to what comes back.
+    global Integer maxRows;
+
+    // Explicit and global so a subscriber's test can build a request. The implicit constructor of a global class cannot be seen outside the package.
+    global AIDataSourceRequest() {
+    }
 }

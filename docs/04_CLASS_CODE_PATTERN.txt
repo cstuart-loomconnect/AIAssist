@@ -42,8 +42,20 @@ RULES
    - Blank line after "try {" and before "} catch".
    - Catch variable is named ex.
    - Single-statement guards stay on one line: if (x == null) return null;
-   - Do not wrap long conditions, expressions or method signatures over several lines;
-     keep them on one line.
+   - NEVER split a statement over several lines, however long it gets. This covers:
+       method and constructor calls (every argument on the same line as the call),
+       method signatures, conditions, string concatenations, ternaries and assignments.
+     Wrong:
+         AIConversationMessageService.sendMessage(
+             agent.Id,
+             body,
+             null
+         );
+     Right:
+         AIConversationMessageService.sendMessage(agent.Id, body, null);
+   - Nested calls and chained calls also stay on one line.
+   - Never leave a closing bracket or ");" on a line of its own, except for the
+     Map / List literal case below.
    - Exception: Map / List literals with several entries go one entry per line,
      closing with "});" at the opening statement's indent.
 

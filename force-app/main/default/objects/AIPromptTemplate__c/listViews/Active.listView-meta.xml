@@ -3,6 +3,8 @@
     <fullName>Active</fullName>
     <columns>NAME</columns>
     <columns>AIAgent__c</columns>
+    <columns>DeveloperName__c</columns>
+    <columns>IsDefault__c</columns>
     <columns>MaxResponseLength__c</columns>
     <columns>Description__c</columns>
     <columns>LAST_UPDATE</columns>
