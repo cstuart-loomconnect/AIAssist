@@ -4,8 +4,11 @@ Class Name: AIAgentTriggerHandler
 =================================================================
 =================================================================
 
-Description: Handler for managing AI Agent events related to AI Assist,
-performing the business logic that runs on the AI Agent trigger.
+Description: Runs the business logic for the AI Agent trigger.
+
+Step 1: After an agent update, skip if this handler is already running
+Step 2: Find the agents whose retention days or retention trigger changed
+Step 3: Start the retention recalculation batch for those agents
 
 =================================================================
 =================================================================
@@ -23,25 +26,28 @@ public without sharing class AIAgentTriggerHandler {
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
+  // Starts the retention recalculation for agents whose retention settings changed.
   public static void handleAfterUpdate(
     Map<Id, AIAgent__c> oldAgentsById,
     List<AIAgent__c> newAgents
   ) {
     try {
+      // [1] Do nothing if this handler is already running, so the update cannot loop
       if (!isAfterUpdateHandlerRunning) {
         isAfterUpdateHandlerRunning = true;
 
-        if (isTestCustomExceptionThrown) {
+        if (isTestCustomExceptionThrown)
           throw new AIAgentTriggerHandlerException(
             'Test exception for AIAgentTriggerHandler.handleAfterUpdate'
           );
-        }
 
+        // [2] Find the agents whose retention settings changed
         Map<Id, AIAgent__c> agentsWithChangedRetentionById = getAgentsWithChangedRetention(
           oldAgentsById,
           newAgents
         );
 
+        // [3] Start the recalculation batch for those agents
         if (!agentsWithChangedRetentionById.isEmpty()) {
           Database.executeBatch(
             new AIConversationRetentionRecalcBatch(
@@ -53,9 +59,9 @@ public without sharing class AIAgentTriggerHandler {
 
         isAfterUpdateHandlerRunning = false;
       }
-    } catch (Exception e) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        e,
+        ex,
         'AIAgentTriggerHandler',
         'handleAfterUpdate'
       );
@@ -67,25 +73,41 @@ public without sharing class AIAgentTriggerHandler {
     Map<Id, AIAgent__c> oldAgentsById,
     List<AIAgent__c> newAgents
   ) {
+    // [1] Start with an empty result so a failure still returns something safe
     Map<Id, AIAgent__c> agentsWithChangedRetentionById = new Map<Id, AIAgent__c>();
 
-    if (oldAgentsById == null || newAgents == null)
-      return agentsWithChangedRetentionById;
+    try {
+      // [2] Stop if either list is missing
+      if (oldAgentsById == null || newAgents == null)
+        throw new AIAgentTriggerHandlerException(
+          'Invalid input: oldAgentsById and newAgents cannot be null.'
+        );
 
-    for (AIAgent__c newAgent : newAgents) {
-      AIAgent__c oldAgent = oldAgentsById.get(newAgent.Id);
-      if (oldAgent == null)
-        continue;
+      // [3] Compare each agent with its old version and keep the ones whose retention changed
+      for (AIAgent__c newAgent : newAgents) {
+        AIAgent__c oldAgent = oldAgentsById.get(newAgent.Id);
 
-      Boolean hasRetentionChanged =
-        newAgent.ConversationRetentionDays__c !=
-        oldAgent.ConversationRetentionDays__c ||
-        newAgent.RetentionTrigger__c != oldAgent.RetentionTrigger__c;
-      if (hasRetentionChanged) {
-        agentsWithChangedRetentionById.put(newAgent.Id, newAgent);
+        if (oldAgent == null)
+          continue;
+
+        Boolean hasRetentionChanged =
+          newAgent.ConversationRetentionDays__c !=
+          oldAgent.ConversationRetentionDays__c ||
+          newAgent.RetentionTrigger__c != oldAgent.RetentionTrigger__c;
+
+        if (hasRetentionChanged)
+          agentsWithChangedRetentionById.put(newAgent.Id, newAgent);
       }
+    } catch (Exception ex) {
+      AIPlatformLogManager.logException(
+        ex,
+        'AIAgentTriggerHandler',
+        'getAgentsWithChangedRetention'
+      );
+      return agentsWithChangedRetentionById;
     }
 
+    // [4] Return the agents that changed
     return agentsWithChangedRetentionById;
   }
 }

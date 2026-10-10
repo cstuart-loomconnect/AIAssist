@@ -4,28 +4,32 @@ Class Name: AIPiiFieldTypeClassifier
 =================================================================
 =================================================================
 
-Description: Classifies a field's PII type (Name, Email, National Insurance Number and so on) from its API name,
-label, data type and Compliance Group. Called once per field by AIPiiRegistrySyncWorker; the answer
-is stored on AIPIIFieldMetadata__c.PIIFieldType__c.
+Description: Classifies a field's PII type (Name, Email, National Insurance Number and so on) from its API name, label, data type and Compliance Group.
 
-The matching rules are AIPiiFieldType__mdt records, editable in Setup without a deployment. When no
-keyword rule matches, the field type flagged IsComplianceGroupFallback__c for the field's Compliance
-Group is used, and when there is none the type is Other: Data Classification flagged the field, so
-it is treated as PII. A field with no name, label, type or Compliance Group is not classified.
+Step 1: Return nothing when the name, label, data type or Compliance Group is missing
+Step 2: Read the AIPiiFieldType__mdt rules and Compliance Groups once per transaction
+Step 3: Return the type of the first keyword rule that matches
+Step 4: Otherwise return the Compliance Group fallback type, or Other when there is none
+
+Called once per field by AIPiiRegistrySyncWorker; the answer is stored on AIPIIFieldMetadata__c.PIIFieldType__c.
+The rules are editable in Setup without a deployment. Other is returned because Data Classification
+already flagged the field, so it is treated as PII.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old classifier. System mode read of the metadata, rules read once per transaction, logging only on a real failure.
+1.0          Chandler Stuart          Initial development
 */
 
-public inherited sharing class AIPiiFieldTypeClassifier {
+public without sharing class AIPiiFieldTypeClassifier {
+  // Tests set these two instead of reading custom metadata, which cannot be inserted.
   @TestVisible
-  private static List<AIPiiFieldType__mdt> fieldTypes; // Tests set these two instead of reading custom metadata, which cannot be inserted.
+  private static List<AIPiiFieldType__mdt> fieldTypes;
   @TestVisible
   private static Map<Id, AIPiiComplianceGroup__mdt> complianceGroupsById;
 
+  // The PII type of a field, Other when it is flagged but matches no rule, or null when it cannot be classified.
   public static String classify(
     String fieldApiName,
     String fieldLabel,
@@ -33,6 +37,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
     String complianceGroup
   ) {
     try {
+      // [1] Nothing to classify with - a name, label, type or group is missing
       if (
         String.isBlank(fieldApiName) ||
         String.isBlank(fieldLabel) ||
@@ -41,7 +46,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
       )
         return null;
 
-      // Letters and digits only, so Social_Security_Number, "SSN Number" and ssn-number all take the same shape.
+      // [2] Reduce the name and label to letters and digits, so Social_Security_Number, "SSN Number" and ssn-number all take the same shape
       String nameAndLabel =
         fieldApiName.toLowerCase().replaceAll('[^a-z0-9]', '') +
         ' ' +
@@ -49,6 +54,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
       String apiName = fieldApiName.toLowerCase();
       String lowerDataType = dataType.toLowerCase();
 
+      // [3] Read the keyword rules once per transaction
       if (fieldTypes == null) {
         fieldTypes = [
           SELECT
@@ -64,6 +70,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
         ];
       }
 
+      // [4] Read the Compliance Groups once per transaction
       if (complianceGroupsById == null) {
         complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>(
           [
@@ -81,6 +88,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
           ? ''
           : fieldType.MatchField__c.trim();
 
+        // [5] Return the rule's type when one of its keywords matches the way the rule says to match
         for (
           String keyword : String.isBlank(fieldType.Keyword__c)
             ? new List<String>()
@@ -106,6 +114,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
             return fieldType.PIIFieldType__c;
         }
 
+        // [6] Remember the first fallback rule that belongs to this field's Compliance Group
         if (
           fallback == null &&
           fieldType.IsComplianceGroupFallback__c == true &&
@@ -114,6 +123,7 @@ public inherited sharing class AIPiiFieldTypeClassifier {
           AIPiiComplianceGroup__mdt fieldGroup = complianceGroupsById.get(
             fieldType.ComplianceGroup__c
           );
+
           if (
             fieldGroup != null &&
             fieldGroup.IsActive__c == true &&
@@ -123,12 +133,13 @@ public inherited sharing class AIPiiFieldTypeClassifier {
         }
       }
 
+      // [7] No keyword matched - use the Compliance Group fallback, or Other when there is none
       return fallback == null
         ? AIAssistApplicationConstants.PII_FIELD_TYPE_OTHER
         : fallback.PIIFieldType__c;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIPiiFieldTypeClassifier',
         'classify'
       );

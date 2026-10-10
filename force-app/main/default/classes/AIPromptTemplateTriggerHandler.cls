@@ -4,8 +4,10 @@ Class Name: AIPromptTemplateTriggerHandler
 =================================================================
 =================================================================
 
-Description: Handler for managing AI Prompt Template events related to AI Assist,
-performing the business logic that runs on the AI Prompt Template trigger.
+Description: Raises the version of an AI Prompt Template when the wording the model is given changes.
+
+Step 1: Find the templates whose prompt, system context, tone or exclusion rules changed
+Step 2: Raise the version of each changed template by one
 
 =================================================================
 =================================================================
@@ -23,53 +25,61 @@ public without sharing class AIPromptTemplateTriggerHandler {
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
+  // Runs before a template is updated and raises the version of any template whose wording changed.
   public static void handleBeforeUpdate(
     Map<Id, AIPromptTemplate__c> oldTemplatesById,
     Map<Id, AIPromptTemplate__c> newTemplatesById
   ) {
     try {
-      if (!isBeforeUpdateHandlerRunning) {
-        isBeforeUpdateHandlerRunning = true;
+      // [1] Stop if this handler is already running for the same save
+      if (isBeforeUpdateHandlerRunning)
+        return;
+      isBeforeUpdateHandlerRunning = true;
 
-        if (isTestCustomExceptionThrown) {
-          throw new AIPromptTemplateTriggerHandlerException(
-            'Test exception for AIPromptTemplateTriggerHandler.handleBeforeUpdate'
-          );
-        }
-
-        Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById = getTemplatesWithChangedWording(
-          oldTemplatesById,
-          newTemplatesById
+      // [2] Throw the test exception when a test asks for it
+      if (isTestCustomExceptionThrown)
+        throw new AIPromptTemplateTriggerHandlerException(
+          'Test exception for AIPromptTemplateTriggerHandler.handleBeforeUpdate'
         );
 
-        if (!templatesWithChangedWordingById.isEmpty()) {
-          raiseVersionOfChangedTemplates(
-            oldTemplatesById,
-            templatesWithChangedWordingById
-          );
-        }
+      // [3] Find the templates whose wording changed
+      Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById = getTemplatesWithChangedWording(
+        oldTemplatesById,
+        newTemplatesById
+      );
 
-        isBeforeUpdateHandlerRunning = false;
+      // [4] Raise the version of each changed template
+      if (!templatesWithChangedWordingById.isEmpty()) {
+        raiseVersionOfChangedTemplates(
+          oldTemplatesById,
+          templatesWithChangedWordingById
+        );
       }
-    } catch (Exception e) {
+
+      // [5] Allow the handler to run again on the next save
+      isBeforeUpdateHandlerRunning = false;
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        e,
+        ex,
         'AIPromptTemplateTriggerHandler',
         'handleBeforeUpdate'
       );
     }
   }
 
-  // The templates whose prompt, system context, tone or exclusion rules just changed.
+  // Gets the templates whose prompt, system context, tone or exclusion rules just changed.
   private static Map<Id, AIPromptTemplate__c> getTemplatesWithChangedWording(
     Map<Id, AIPromptTemplate__c> oldTemplatesById,
     Map<Id, AIPromptTemplate__c> newTemplatesById
   ) {
+    // [1] Start with an empty result
     Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById = new Map<Id, AIPromptTemplate__c>();
 
+    // [2] Nothing to compare - no old or new templates
     if (oldTemplatesById == null || newTemplatesById == null)
       return templatesWithChangedWordingById;
 
+    // [3] Keep each template whose wording differs from the old copy
     for (AIPromptTemplate__c newTemplate : newTemplatesById.values()) {
       AIPromptTemplate__c oldTemplate = oldTemplatesById.get(newTemplate.Id);
       if (oldTemplate == null)
@@ -89,12 +99,13 @@ public without sharing class AIPromptTemplateTriggerHandler {
     return templatesWithChangedWordingById;
   }
 
-  // Version__c goes up by one whenever the wording the model is given changes, so every reply can say which version produced it. A change to anything else leaves it alone.
+  // Raises Version__c by one whenever the wording the model is given changes, so every reply can say which version produced it. A change to anything else leaves it alone.
   private static void raiseVersionOfChangedTemplates(
     Map<Id, AIPromptTemplate__c> oldTemplatesById,
     Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById
   ) {
     try {
+      // [1] Add one to the old version of each changed template, starting from 1 when it had none
       for (
         AIPromptTemplate__c changedTemplate : templatesWithChangedWordingById.values()
       ) {
@@ -105,9 +116,9 @@ public without sharing class AIPromptTemplateTriggerHandler {
         changedTemplate.Version__c =
           (oldTemplate.Version__c == null ? 1 : oldTemplate.Version__c) + 1;
       }
-    } catch (Exception e) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        e,
+        ex,
         'AIPromptTemplateTriggerHandler',
         'raiseVersionOfChangedTemplates'
       );

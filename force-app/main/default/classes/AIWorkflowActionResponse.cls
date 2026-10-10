@@ -4,11 +4,11 @@ Class Name: AIWorkflowActionResponse
 =================================================================
 =================================================================
 
-Description: What an Apex Workflow Action (IAIWorkflowActionExecutor.execute) returns. message is shown to
-the user as text; it must not contain anything the user may not see.
+Description: What an Apex Workflow Action (IAIWorkflowActionExecutor.execute) returns.
 
-Global: part of the package's permanent API. After release a field can be added, never changed or
-removed.
+Step 1: The Apex class does its work and builds a response
+Step 2: The response message is the text shown to the user
+Step 3: The dispatcher returns that message to the chat
 
 =================================================================
 =================================================================
@@ -17,7 +17,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-global class AIWorkflowActionResponse {
+global without sharing class AIWorkflowActionResponse {
   global String message;
 
   global AIWorkflowActionResponse() {

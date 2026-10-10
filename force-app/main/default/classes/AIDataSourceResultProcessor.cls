@@ -4,51 +4,44 @@ Class Name: AIDataSourceResultProcessor
 =================================================================
 =================================================================
 
-Description: Turns the records a data source returned into plain maps and lists that are safe to
-hand to the model:
-[1] Fields the running user cannot read are left out.
-[2] A value in a field registered as personal data is replaced with a stand-in
-    (AIPiiPseudonymizationService), consistently within the conversation. Text, dates and numbers
-    alike: the stand-in replaces the value's text form.
-[3] Parent lookups (up to 4 deep) and child subqueries (up to 3 deep) are followed.
+Description: Turns the records a data source returned into plain maps and lists that are safe to hand to the model. It fails closed: a field or record it cannot process is left out or redacted, and a failure of the whole batch throws so it is never mistaken for "no records found".
 
-It fails closed: a field or record it cannot process is omitted or redacted, never passed on
-as it was. A failure of the whole batch throws, so it is never mistaken for "no records found".
-
-The batch is described once, by object type, with a single describe call; the result is reused
-for every record and every level of recursion.
+Step 1: Describe every object type in the batch once
+Step 2: Leave out fields the running user cannot read
+Step 3: Replace values in personal data fields with a stand-in, the same one each time within the conversation
+Step 4: Follow parent lookups (up to 4 deep) and child subqueries (up to 3 deep)
+Step 5: Return one map per record
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          The conversation is a parameter, not a static the caller must remember to set. User-mode field check always applies. Single-use helpers inlined.
-3.0          Chandler Stuart          Personal data that is not text (dates, numbers) is masked too, instead of being passed on as it was.
 */
 
-public inherited sharing class AIDataSourceResultProcessor {
+public without sharing class AIDataSourceResultProcessor {
   public class AIDataSourceResultProcessorException extends Exception {
   }
 
-  // conversationId is the conversation the masked pairings are remembered against.
+  // Turns the records into maps safe for the model. conversationId is the conversation the masked pairings are remembered against.
   public static List<Object> processResults(
     List<SObject> records,
     Id conversationId
   ) {
     try {
+      // [1] Nothing to do - no records
       List<Object> processed = new List<Object>();
-
       if (records == null || records.isEmpty())
         return processed;
 
-      // One describe call for every distinct type in the batch, not one per record.
+      // [2] Collect each distinct object type in the batch, so it is described once and not once per record
       Set<String> objectApiNames = new Set<String>();
       for (SObject record : records) {
         if (record != null)
           objectApiNames.add(record.getSObjectType().getDescribe().getName());
       }
 
+      // [3] Describe those types with a single call
       Map<Schema.SObjectType, Schema.DescribeSObjectResult> describeByType = new Map<Schema.SObjectType, Schema.DescribeSObjectResult>();
       for (
         Schema.DescribeSObjectResult describeResult : Schema.describeSObjects(
@@ -58,20 +51,21 @@ public inherited sharing class AIDataSourceResultProcessor {
       )
         describeByType.put(describeResult.getSObjectType(), describeResult);
 
+      // [4] Flatten each record
       for (SObject record : records)
         processed.add(flatten(record, conversationId, 0, 0, describeByType));
 
       return processed;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [5] Throw rather than return an empty list, because the model would read that as "no records found". No data is returned, so it still fails closed
       throw new AIDataSourceResultProcessorException(
-        'Failed to process AI Data Source results: ' +
-        caughtException.getMessage(),
-        caughtException
-      ); // Not swallowed to an empty list: the model would read that as "no records found". Still fails closed, as no data is returned.
+        'Failed to process AI Data Source results: ' + ex.getMessage(),
+        ex
+      );
     }
   }
 
-  // One record's readable fields, masking PII, plus its populated parents and children, recursively up to the depth caps.
+  // Builds one record's readable fields, masking personal data, plus its populated parents and children, up to the depth caps.
   private static Map<String, Object> flatten(
     SObject record,
     Id conversationId,
@@ -80,12 +74,12 @@ public inherited sharing class AIDataSourceResultProcessor {
     Map<Schema.SObjectType, Schema.DescribeSObjectResult> describeByType
   ) {
     try {
+      // [1] Nothing to do - no record
       Map<String, Object> flattened = new Map<String, Object>();
-
       if (record == null)
         return flattened;
 
-      // A type found only while recursing (a parent or child) is described on demand.
+      // [2] Describe a type that was only found while following a parent or child
       if (!describeByType.containsKey(record.getSObjectType()))
         describeByType.put(
           record.getSObjectType(),
@@ -102,7 +96,7 @@ public inherited sharing class AIDataSourceResultProcessor {
       for (String fieldApiName : populatedFields.keySet()) {
         Object rawValue = populatedFields.get(fieldApiName);
 
-        // A traversed parent shows up under its relationship name ("Account"), not its lookup field's ("AccountId"), so the lookup's own access is the one checked. Unresolvable means hidden.
+        // [3] Find the field. A parent shows up under its relationship name (Account), not its lookup field's name (AccountId), so the lookup's own access is the one checked
         Schema.SObjectField fieldToken = fieldsByName.get(fieldApiName);
         if (fieldToken == null) {
           for (Schema.SObjectField candidateField : fieldsByName.values()) {
@@ -117,15 +111,19 @@ public inherited sharing class AIDataSourceResultProcessor {
           }
         }
 
+        // [4] Leave out a field the user cannot read, or one that cannot be found, rather than expose it
         if (fieldToken == null || !fieldToken.getDescribe().isAccessible())
-          continue; // Not visible to the running user: omit rather than expose.
+          continue;
 
         if (rawValue instanceof SObject) {
+          // [5] Stop climbing when the parent depth cap is reached
           if (
             parentDepth >=
             AIAssistApplicationConstants.DATA_SOURCE_RESULT_MAX_PARENT_DEPTH
           )
-            continue; // Depth cap reached: omit rather than keep climbing.
+            continue;
+
+          // [6] Flatten the parent one level deeper
           flattened.put(
             fieldApiName,
             flatten(
@@ -141,7 +139,7 @@ public inherited sharing class AIDataSourceResultProcessor {
           String.isNotBlank(String.valueOf(rawValue)) &&
           AIPiiFieldRegistry.isPii(objectApiName, fieldApiName)
         ) {
-          // Whatever its type: a date of birth or an account number is personal data too, and is masked by its text form.
+          // [7] Replace personal data with a stand-in, whatever its type. A date of birth or an account number is personal data too, so it is masked by its text form
           flattened.put(
             fieldApiName,
             AIPiiPseudonymizationService.pseudonymize(
@@ -152,6 +150,7 @@ public inherited sharing class AIDataSourceResultProcessor {
             )
           );
         } else {
+          // [8] Keep any other value as it is
           flattened.put(fieldApiName, rawValue);
         }
       }
@@ -160,7 +159,7 @@ public inherited sharing class AIDataSourceResultProcessor {
         childDepth <
         AIAssistApplicationConstants.DATA_SOURCE_RESULT_MAX_CHILD_DEPTH
       ) {
-        // getSObjects() throws for any child relationship that was not part of the query's subqueries, and an object has dozens. Serializing once and checking which keys are present says which were queried, without the trial and error.
+        // [9] Work out which child relationships were queried. getSObjects() throws for any relationship that was not part of the query and an object has dozens, so checking the serialized keys avoids trial and error
         Set<String> queriedRelationships = ((Map<String, Object>) JSON.deserializeUntyped(
             JSON.serialize(record)
           ))
@@ -169,6 +168,7 @@ public inherited sharing class AIDataSourceResultProcessor {
         for (
           Schema.ChildRelationship childRelationship : describeResult.getChildRelationships()
         ) {
+          // [10] Skip a relationship that has no name or was not queried
           String relationshipName = childRelationship.getRelationshipName();
           if (
             String.isBlank(relationshipName) ||
@@ -180,6 +180,7 @@ public inherited sharing class AIDataSourceResultProcessor {
           if (children == null)
             continue;
 
+          // [11] Flatten each child one level deeper
           List<Object> flattenedChildren = new List<Object>();
           for (SObject child : children)
             flattenedChildren.add(
@@ -196,10 +197,12 @@ public inherited sharing class AIDataSourceResultProcessor {
         }
       }
 
+      // [12] Return the flattened record
       return flattened;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [13] Log the failure and return a redacted record, never the original
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIDataSourceResultProcessor',
         'flatten'
       );

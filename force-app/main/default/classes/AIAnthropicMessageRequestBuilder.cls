@@ -1,55 +1,52 @@
 /*
-Class Name: AIAnthropicRequestBuilder
+Class Name: AIAnthropicMessageRequestBuilder
 
 =================================================================
 =================================================================
 
-Description: IAIProviderRequestBuilder for Anthropic's Messages API - builds the request body.
-Deliberately a separate class from AIAnthropicResponseHandler; building a request and handling
-a response are different jobs. The endpoint path and version header live on
-AIModelConfiguration__c instead of here, since they vary per deployment, not per provider brand.
-Every JSON field name this shape depends on is a AIAssistApplicationConstants.ANTHROPIC_* constant -
-adding or changing a provider is a new pair of classes registered in AIProvider, never a change to AIAgentManager.
+Description: Builds the request body for Anthropic's Messages API.
+
+Step 1: Add the required fields (model, max tokens, messages)
+Step 2: Add the optional fields only when they are set (temperature, system prompt)
+Step 3: Add the tool definitions, and stop the model calling tools on the last iteration
+Step 4: Return the request body
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-1.1          Chandler Stuart          Removed apiPath/apiVersionHeader* - moved to AIModelConfiguration__c fields.
-1.2          Chandler Stuart          Moved field names to AIAssistApplicationConstants, wrapped in try/catch.
-1.3          Chandler Stuart          Sends tool_choice {"type": "none"} when Request.allowToolCalls is false.
-1.4          Chandler Stuart          Canonical types moved from AIAgentManager to AIProvider.
 */
 
-public inherited sharing class AIAnthropicRequestBuilder implements IAIProviderRequestBuilder {
-  public class AIAnthropicRequestBuilderException extends Exception {
+public without sharing class AIAnthropicMessageRequestBuilder implements IAIProviderRequestBuilder {
+  public class AIAnthropicMessageRequestBuilderException extends Exception {
   }
 
-  // Builds { model, max_tokens, messages, [temperature], [system], [tools] } - optional keys are omitted entirely when unset, never sent as null.
+  // Builds { model, max_tokens, messages, [temperature], [system], [tools] } - optional keys are left out entirely when unset, never sent as null.
   public Map<String, Object> buildRequestBody(AIProvider.Request request) {
     try {
-      // Required fields - Anthropic rejects a request missing any of these
+      // [1] Add the required fields - Anthropic rejects a request missing any of these
       Map<String, Object> requestBody = new Map<String, Object>{
         AIAssistApplicationConstants.ANTHROPIC_FIELD_MODEL => request.modelIdentifier,
         AIAssistApplicationConstants.ANTHROPIC_FIELD_MAX_TOKENS => request.maxOutputTokens,
         AIAssistApplicationConstants.ANTHROPIC_FIELD_MESSAGES => request.messages
       };
 
+      // [2] Add the temperature only when it is set, so Anthropic's own default applies otherwise
       if (request.temperature != null)
         requestBody.put(
           AIAssistApplicationConstants.ANTHROPIC_FIELD_TEMPERATURE,
           request.temperature
         );
 
-      // System prompt is a top-level field on Anthropic (unlike OpenAI, where it is a system-role message)
+      // [3] Add the system prompt as a top-level field (unlike OpenAI, where it is a system-role message)
       if (String.isNotBlank(request.systemPromptText))
         requestBody.put(
           AIAssistApplicationConstants.ANTHROPIC_FIELD_SYSTEM,
           request.systemPromptText
         );
 
-      // One { name, description, input_schema } entry per tool - Anthropic's flat tool shape, with no OpenAI-style "function" wrapper.
+      // [4] Add one { name, description, input_schema } entry per tool, in Anthropic's flat tool shape with no OpenAI-style "function" wrapper
       if (request.tools != null && !request.tools.isEmpty()) {
         List<Object> toolDefinitions = new List<Object>();
 
@@ -68,7 +65,7 @@ public inherited sharing class AIAnthropicRequestBuilder implements IAIProviderR
           toolDefinitions
         );
 
-        // Last tool-calling iteration - tools stay listed (Anthropic rejects a conversation with tool_use blocks but no tools) but the model may not call one.
+        // [5] On the last tool-calling iteration keep the tools listed (Anthropic rejects tool_use blocks without tools) but tell the model not to call one
         if (request.allowToolCalls == false)
           requestBody.put(
             AIAssistApplicationConstants.ANTHROPIC_FIELD_TOOL_CHOICE,
@@ -78,13 +75,12 @@ public inherited sharing class AIAnthropicRequestBuilder implements IAIProviderR
           );
       }
 
+      // [6] Return the request body
       return requestBody;
-    } catch (Exception caughtException) {
-      // Not logged here - AIAgentManager.executeAiMessage handles and logs it, so it's logged exactly once. Rethrown rather than swallowed, since a null body must never reach Anthropic.
-      throw new AIAnthropicRequestBuilderException(
-        'Failed to build the Anthropic request body: ' +
-        caughtException.getMessage(),
-        caughtException
+    } catch (Exception ex) {
+      throw new AIAnthropicMessageRequestBuilderException(
+        'Failed to build the Anthropic request body: ' + ex.getMessage(),
+        ex
       );
     }
   }

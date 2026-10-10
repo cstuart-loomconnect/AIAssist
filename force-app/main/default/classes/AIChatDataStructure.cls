@@ -4,23 +4,20 @@ Class Name: AIChatDataStructure
 =================================================================
 =================================================================
 
-Description: The response shapes returned to the aiAssistChat component family, and the small pieces shared by
-the chat services (AIChatStateService, AIChatContextService, AIChatCommandService,
-AIChatConversationService, AIChatActionService, AIChatFeedbackService, AIChatDebugService). Kept in one
-place so the services can pass the same wrapper types to each other without depending on
-AIChatController.
+Description: The response shapes and small shared helpers the chat services pass to the aiAssistChat component family.
 
-The shapes are the ones the chat window already reads, so it needs no change. A refusal the window
-should show is an exception whose message is a Custom Label, not a type of its own.
+Step 1: The chat services fill in these wrapper types, so none depends on AIChatController
+Step 2: The controller returns them to the chat window, which already reads these shapes
+Step 3: The helpers turn text into an Id and a developer name into a readable label
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old data structure.
+1.0          Chandler Stuart          Initial development
 */
 
-public class AIChatDataStructure {
+public without sharing class AIChatDataStructure {
   public class ChatContext {
     @AuraEnabled
     public String state;
@@ -44,7 +41,7 @@ public class AIChatDataStructure {
     public ConversationView conversation;
     @AuraEnabled
     public ConversationSummary openConversation;
-    // Why the user cannot send a message right now (AIAssistApplicationConstants.CHAT_BLOCKED_*), and what to tell them. Null when they can.
+    // Why the user cannot send a message right now (AIAssistApplicationConstants.CHAT_BLOCKED_*), and what to tell them. Both are empty when they can.
     @AuraEnabled
     public String blockedState;
     @AuraEnabled
@@ -73,8 +70,6 @@ public class AIChatDataStructure {
   public class UserState {
     @AuraEnabled
     public Id userId;
-    @AuraEnabled
-    public String firstName;
     @AuraEnabled
     public Boolean debugMode = false;
     @AuraEnabled
@@ -159,10 +154,6 @@ public class AIChatDataStructure {
     @AuraEnabled
     public Boolean isProcessing = false;
     @AuraEnabled
-    public String relatedRecordId;
-    @AuraEnabled
-    public String relatedObjectApiName;
-    @AuraEnabled
     public List<ChatMessage> messages = new List<ChatMessage>();
     @AuraEnabled
     public Boolean hasMoreMessages = false;
@@ -183,10 +174,6 @@ public class AIChatDataStructure {
     public Integer messageCount = 0;
     @AuraEnabled
     public Datetime lastActivity;
-    @AuraEnabled
-    public String relatedRecordId;
-    @AuraEnabled
-    public String relatedObjectApiName;
     @AuraEnabled
     public String ownerName; // Only set on a conversation someone else started.
   }
@@ -210,8 +197,6 @@ public class AIChatDataStructure {
     public Decimal tokenCount;
     @AuraEnabled
     public String feedbackRating;
-    @AuraEnabled
-    public String processingStatus;
     @AuraEnabled
     public SuggestedAction suggestedAction;
     @AuraEnabled
@@ -288,12 +273,10 @@ public class AIChatDataStructure {
     public String objectApiName;
   }
 
-  // status is SENT, BLOCKED, LIMIT or ERROR; code is set for an unknown slash command.
+  // The status is SENT, BLOCKED, LIMIT or ERROR.
   public class SendResult {
     @AuraEnabled
     public String status;
-    @AuraEnabled
-    public String code;
     @AuraEnabled
     public String message;
     @AuraEnabled
@@ -361,22 +344,32 @@ public class AIChatDataStructure {
     public List<ExecutionStep> steps = new List<ExecutionStep>();
   }
 
-  public static Id toIdOrNull(String value) {
+  // Turns text into an Id, or null when it is blank or not a valid Id.
+  public static Id getIdOrNull(String value) {
     try {
-      return String.isBlank(value) ? null : Id.valueOf(value);
-    } catch (Exception invalidId) {
+      // [1] Blank text has no Id
+      if (String.isBlank(value))
+        return null;
+
+      // [2] Convert the text to an Id
+      return Id.valueOf(value);
+    } catch (Exception ex) {
       return null;
     }
   }
 
   // "ContactRoles" / "Contact_Roles" become "Contact Roles".
   public static String humanise(String developerName) {
+    // [1] Nothing to tidy when the name is blank
     if (String.isBlank(developerName))
       return '';
 
+    // [2] Put a space at each underscore and each lower-to-upper change
     String spaced = developerName.replace('_', ' ')
       .replaceAll('([a-z0-9])([A-Z])', '$1 $2')
       .normalizeSpace();
+
+    // [3] Capitalise the first letter
     return spaced.left(1).toUpperCase() + spaced.substring(1);
   }
 }

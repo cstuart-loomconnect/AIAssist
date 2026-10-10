@@ -10,7 +10,7 @@ Description: Testing utility for AIMessageOutcomeService: what is recorded when 
 =================================================================
 Applicable Classes:
 
-AIMessageOutcomeService
+AIMessageOutcomeService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -23,11 +23,14 @@ private class AIMessageOutcomeServiceTest {
   // testScenario3: A suggested workflow action is stored when it is a real action Id, and ignored when it is the wrong type or not an Id.
   // testScenario4: A failed result records the reason on the question, a System message holding the tokens spent, and the cause in the log.
   // testScenario5: A null result and a blank reason both fail the turn as Other.
-  // testScenario6: recordFailure fails the turn with the given reason and tokens, and treats null tokens as none.
-  // testScenario7: notifyFailure returns the Custom Label that matches each reason, and the generic one for any other.
+  // testScenario6: recordAiResponseFailure fails the turn with the given reason and tokens, and treats null tokens as none.
+  // testScenario7: publishMessageFailure returns the Custom Label that matches each reason, and the generic one for any other.
   // testScenario8: When the reply cannot be saved the turn becomes a failed turn, and a null turn never throws.
   // testScenario9: Two messages sent while a third is being answered all end up Complete: the first by its own reply, the skipped one and the newest by the newest's reply. A failed turn fails the messages waiting behind it the same way.
   // testScenario10: A regenerated reply supersedes the earlier reply to the same message once it is saved, and a regenerate that fails leaves the earlier reply standing.
+
+  private static final String REPLY_TEXT = 'The answer';
+  private static final String CLASS_NAME = 'AIMessageOutcomeService';
 
   @TestSetup
   static void setup() {
@@ -40,24 +43,30 @@ private class AIMessageOutcomeServiceTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create a tracked agent, a user, a conversation, a question and a successful result
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
@@ -65,14 +74,16 @@ private class AIMessageOutcomeServiceTest {
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
     AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
     result.isSuccessful = true;
-    result.replyText = 'The answer';
+    result.replyText = REPLY_TEXT;
     result.inputTokens = 40;
     result.outputTokens = 10;
     result.totalTokensUsed = 50;
     result.latencyMilliseconds = 1200;
 
+    // [2] Record the outcome of the turn
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
@@ -81,6 +92,7 @@ private class AIMessageOutcomeServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the results back
     AIConversationMessage__c reply = [
       SELECT
         MessageBody__c,
@@ -95,75 +107,94 @@ private class AIMessageOutcomeServiceTest {
         AIConversation__c = :conversation.Id
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
     ];
+    AIConversationMessage__c completedQuestion = [
+      SELECT ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE Id = :question.Id
+    ];
 
-    Assert.areEqual('The answer', reply.MessageBody__c, 'The reply.');
+    // [4] Check the outcome
+    Assert.areEqual(
+      REPLY_TEXT,
+      reply.MessageBody__c,
+      'The reply body should be the agent reply text.'
+    );
     Assert.areEqual(
       50,
       reply.TokenCount__c,
-      'A tracked agent uses the provider\'s total.'
+      'A tracked agent should use the provider\'s total.'
     );
-    Assert.areEqual(40, reply.InputTokenCount__c, 'Input tokens.');
-    Assert.areEqual(10, reply.OutputTokenCount__c, 'Output tokens.');
-    Assert.areEqual(1200, reply.LatencyMilliseconds__c, 'Latency.');
+    Assert.areEqual(
+      40,
+      reply.InputTokenCount__c,
+      'The reply should hold the input tokens.'
+    );
+    Assert.areEqual(
+      10,
+      reply.OutputTokenCount__c,
+      'The reply should hold the output tokens.'
+    );
+    Assert.areEqual(
+      1200,
+      reply.LatencyMilliseconds__c,
+      'The reply should hold the latency.'
+    );
     Assert.areEqual(
       agent.AIModelConfiguration__c,
       reply.AIModelConfiguration__c,
-      'The model.'
+      'The reply should hold the model configuration.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
-      [
-        SELECT ProcessingStatus__c
-        FROM AIConversationMessage__c
-        WHERE Id = :question.Id
-      ]
-      .ProcessingStatus__c,
-      'The question is Complete.'
+      completedQuestion.ProcessingStatus__c,
+      'The question should be Complete.'
     );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create an Estimate agent, a conversation, a question and a result that reports only a total
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
     responseContext.userId = chatUser.Id;
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
-    responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+    responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE;
+
     AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
     result.isSuccessful = true;
-    result.replyText = 'The answer';
-    result.inputTokens = 40;
-    result.outputTokens = 10;
-    result.totalTokensUsed = 50;
-    result.latencyMilliseconds = 1200;
-
-    responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE;
     result.replyText = 'x'
       .repeat(AIAssistApplicationConstants.CHARACTERS_PER_TOKEN_ESTIMATE * 8);
     result.inputTokens = 0;
     result.outputTokens = 0;
     result.totalTokensUsed = 77;
+    result.latencyMilliseconds = 1200;
 
+    // [2] Record the outcome with no step tracker
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
@@ -172,52 +203,54 @@ private class AIMessageOutcomeServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the results back
+    AIConversationMessage__c reply = [
+      SELECT TokenCount__c, InputTokenCount__c
+      FROM AIConversationMessage__c
+      WHERE
+        AIConversation__c = :conversation.Id
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
+    ];
+
+    // [4] Check the outcome
     Assert.areEqual(
       8,
-      [
-        SELECT TokenCount__c
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversation.Id
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ]
-      .TokenCount__c,
-      'Estimated from the length.'
+      reply.TokenCount__c,
+      'An Estimate agent should count the reply by its length.'
     );
     Assert.areEqual(
       77,
-      [
-        SELECT InputTokenCount__c
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversation.Id
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ]
-      .InputTokenCount__c,
-      'The only figure there is counts as input.'
+      reply.InputTokenCount__c,
+      'The only figure there is should count as input.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create a conversation, a question, a successful result and a real workflow action
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
@@ -225,9 +258,10 @@ private class AIMessageOutcomeServiceTest {
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
     AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
     result.isSuccessful = true;
-    result.replyText = 'The answer';
+    result.replyText = REPLY_TEXT;
     result.inputTokens = 40;
     result.outputTokens = 10;
     result.totalTokensUsed = 50;
@@ -239,12 +273,14 @@ private class AIMessageOutcomeServiceTest {
       'Some_Flow',
       true
     )[0];
+
     List<String> suggestions = new List<String>{
       action.Id,
       agent.Id,
       'not an id'
     };
 
+    // [2] Record the outcome once for each suggestion: a real action Id, the wrong type and not an Id
     Test.startTest();
     for (String suggestion : suggestions) {
       result.suggestedWorkflowActionId = suggestion;
@@ -256,50 +292,59 @@ private class AIMessageOutcomeServiceTest {
     }
     Test.stopTest();
 
+    // [3] Read the results back
     List<AIConversationMessage__c> replies = [
       SELECT SuggestedWorkflowAction__c
       FROM AIConversationMessage__c
       WHERE
         AIConversation__c = :conversation.Id
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ORDER BY CreatedDate, Id
     ];
+    Integer storedActionCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE SuggestedWorkflowAction__c = :action.Id
+    ];
+
+    // [4] Check the outcome
     Assert.areEqual(
       3,
       replies.size(),
-      'A bad suggestion never fails the reply.'
+      'A bad suggestion should never fail the reply.'
     );
     Assert.areEqual(
       1,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE SuggestedWorkflowAction__c = :action.Id
-      ],
-      'Only the real action is stored.'
+      storedActionCount,
+      'Only the real action should be stored.'
     );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create a conversation, a question and a timed-out failed result
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
@@ -307,18 +352,17 @@ private class AIMessageOutcomeServiceTest {
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
     AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-    result.isSuccessful = true;
-    result.replyText = 'The answer';
+    result.isSuccessful = false;
+    result.failureReason = AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
+    result.errorMessage = 'Read timed out';
     result.inputTokens = 40;
     result.outputTokens = 10;
     result.totalTokensUsed = 50;
     result.latencyMilliseconds = 1200;
 
-    result.isSuccessful = false;
-    result.failureReason = AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
-    result.errorMessage = 'Read timed out';
-
+    // [2] Record the failed outcome
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
@@ -327,11 +371,13 @@ private class AIMessageOutcomeServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the results back
     AIConversationMessage__c failedQuestion = [
       SELECT ProcessingStatus__c, FailureReason__c
       FROM AIConversationMessage__c
       WHERE Id = :question.Id
     ];
+
     AIConversationMessage__c systemMessage = [
       SELECT TokenCount__c, FailureReason__c
       FROM AIConversationMessage__c
@@ -340,63 +386,70 @@ private class AIMessageOutcomeServiceTest {
         AND Sender__c = :AIAssistApplicationConstants.SENDER_SYSTEM
     ];
 
+    Integer replyCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        AIConversation__c = :conversation.Id
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
+    ];
+
+    Integer logCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE ClassName__c = :CLASS_NAME
+    ];
+
+    // [4] Check the outcome
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
       failedQuestion.ProcessingStatus__c,
-      'The question failed.'
+      'The question should be Failed.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT,
       failedQuestion.FailureReason__c,
-      'With the reason.'
+      'The question should hold the failure reason.'
     );
     Assert.areEqual(
       50,
       systemMessage.TokenCount__c,
-      'The tokens a failed turn spent still count.'
+      'The tokens a failed turn spent should still count.'
     );
-    Assert.areEqual(
-      0,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversation.Id
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ],
-      'No reply.'
-    );
+    Assert.areEqual(0, replyCount, 'A failed turn should have no reply.');
     Assert.areEqual(
       1,
-      [
-        SELECT COUNT()
-        FROM AIPlatformLog__c
-        WHERE ClassName__c = 'AIMessageOutcomeService'
-      ],
-      'The detail went to the log, not to a record the user can read.'
+      logCount,
+      'The detail should go to the log, not to a record the user can read.'
     );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Create a conversation, a question and a failed result with no reason
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
@@ -404,17 +457,12 @@ private class AIMessageOutcomeServiceTest {
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
-    AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-    result.isSuccessful = true;
-    result.replyText = 'The answer';
-    result.inputTokens = 40;
-    result.outputTokens = 10;
-    result.totalTokensUsed = 50;
-    result.latencyMilliseconds = 1200;
 
+    AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
     result.isSuccessful = false;
     result.failureReason = null;
 
+    // [2] Record a failed result with a blank reason and then a null result
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
@@ -428,38 +476,47 @@ private class AIMessageOutcomeServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the results back
+    AIConversationMessage__c failedQuestion = [
+      SELECT FailureReason__c
+      FROM AIConversationMessage__c
+      WHERE Id = :question.Id
+    ];
+
+    // [4] Check the outcome
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_OTHER,
-      [
-        SELECT FailureReason__c
-        FROM AIConversationMessage__c
-        WHERE Id = :question.Id
-      ]
-      .FailureReason__c,
-      'Other.'
+      failedQuestion.FailureReason__c,
+      'A blank reason and a null result should both fail the turn as Other.'
     );
   }
 
   @IsTest
   static void testScenario6() {
+    // [1] Create a conversation and a question with no result
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
     responseContext.conversationId = conversation.Id;
     responseContext.triggeringMessageId = question.Id;
@@ -467,14 +524,8 @@ private class AIMessageOutcomeServiceTest {
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
-    AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-    result.isSuccessful = true;
-    result.replyText = 'The answer';
-    result.inputTokens = 40;
-    result.outputTokens = 10;
-    result.totalTokensUsed = 50;
-    result.latencyMilliseconds = 1200;
 
+    // [2] Record a failure with the given reason and null tokens
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseFailure(
       responseContext,
@@ -484,31 +535,36 @@ private class AIMessageOutcomeServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the results back
+    AIConversationMessage__c failedQuestion = [
+      SELECT FailureReason__c
+      FROM AIConversationMessage__c
+      WHERE Id = :question.Id
+    ];
+    Integer systemMessageCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        AIConversation__c = :conversation.Id
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_SYSTEM
+    ];
+
+    // [4] Check the outcome
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR,
-      [
-        SELECT FailureReason__c
-        FROM AIConversationMessage__c
-        WHERE Id = :question.Id
-      ]
-      .FailureReason__c,
-      'The reason.'
+      failedQuestion.FailureReason__c,
+      'The question should hold the given reason.'
     );
     Assert.areEqual(
       0,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversation.Id
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_SYSTEM
-      ],
-      'No tokens, so no System message.'
+      systemMessageCount,
+      'Null tokens should mean no System message.'
     );
   }
 
   @IsTest
   static void testScenario7() {
+    // [1] List the Custom Label expected for each failure reason
     Map<String, String> labelByReason = new Map<String, String>{
       AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT => Label.AI_Error_Provider_Timeout,
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR => Label.AI_Error_Provider_Unavailable,
@@ -524,167 +580,114 @@ private class AIMessageOutcomeServiceTest {
       AIAssistApplicationConstants.FAILURE_REASON_OTHER => Label.AI_Error_Generic
     };
     Map<String, String> actual = new Map<String, String>();
+    String unknown;
 
+    // [2] Publish the failure for each reason and for an unknown one
     Test.startTest();
     for (String reason : labelByReason.keySet())
       actual.put(
         reason,
         AIMessageOutcomeService.publishMessageFailure(null, reason)
       );
-    String unknown = AIMessageOutcomeService.publishMessageFailure(
+    unknown = AIMessageOutcomeService.publishMessageFailure(
       null,
       'Something new'
     );
     Test.stopTest();
 
+    // [3] Check each label matches
     for (String reason : labelByReason.keySet())
       Assert.areEqual(
         labelByReason.get(reason),
         actual.get(reason),
-        'The label for ' + reason + '.'
+        'The label for ' + reason + ' should match.'
       );
     Assert.areEqual(
       Label.AI_Error_Generic,
       unknown,
-      'An unknown reason is generic.'
+      'An unknown reason should return the generic label.'
     );
   }
 
   @IsTest
   static void testScenario8() {
+    // [1] Create a conversation and a question, with a context that points at the wrong conversation
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
+
     AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       0,
       1,
       true
     )[0];
+
     AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
-    responseContext.conversationId = conversation.Id;
+    responseContext.conversationId = agent.Id;
     responseContext.triggeringMessageId = question.Id;
     responseContext.userId = chatUser.Id;
     responseContext.agentId = agent.Id;
     responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
     responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
     AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
     result.isSuccessful = true;
-    result.replyText = 'The answer';
+    result.replyText = REPLY_TEXT;
     result.inputTokens = 40;
     result.outputTokens = 10;
     result.totalTokensUsed = 50;
     result.latencyMilliseconds = 1200;
 
-    responseContext.conversationId = agent.Id;
-
+    // [2] Record outcomes with the bad context, a null context and a null failure
     Test.startTest();
-    try {
-      AIMessageOutcomeService.recordAiResponseOutcome(
-        responseContext,
-        result,
-        null
-      );
-      AIMessageOutcomeService.recordAiResponseOutcome(null, result, null);
-      AIMessageOutcomeService.recordAiResponseFailure(null, 0, null, null);
-    } catch (Exception ex) {
-      Assert.fail('Outcome recording must never throw: ' + ex.getMessage());
-    }
+    AIMessageOutcomeService.recordAiResponseOutcome(
+      responseContext,
+      result,
+      null
+    );
+    AIMessageOutcomeService.recordAiResponseOutcome(null, result, null);
+    AIMessageOutcomeService.recordAiResponseFailure(null, 0, null, null);
     Test.stopTest();
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      [
-        SELECT ProcessingStatus__c
-        FROM AIConversationMessage__c
-        WHERE Id = :question.Id
-      ]
-      .ProcessingStatus__c,
-      'No reply could be saved, so the turn failed.'
-    );
-  }
-
-  // A conversation with user messages a second apart, all Queued, and the context of a turn on the message at the given index.
-  private static List<AIConversationMessage__c> createQueuedMessages(
-    AIConversation__c conversation,
-    Integer numberOfMessages
-  ) {
-    List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(
-      conversation.Id,
-      0,
-      numberOfMessages,
-      false
-    );
-    for (AIConversationMessage__c message : messages)
-      message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
-    insert messages;
-    for (Integer index = 0; index < messages.size(); index++)
-      Test.setCreatedDate(
-        messages[index].Id,
-        System.now().addMinutes(-10).addSeconds(index)
-      );
-
-    return messages;
-  }
-
-  private static AIMessageOutcomeService.AIResponseContext contextFor(
-    AIConversation__c conversation,
-    AIAgent__c agent,
-    Id messageId
-  ) {
-    AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
-    responseContext.conversationId = conversation.Id;
-    responseContext.triggeringMessageId = messageId;
-    responseContext.userId = conversation.OwnerId;
-    responseContext.agentId = agent.Id;
-    responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
-    responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
-
-    return responseContext;
-  }
-
-  private static AIAgentManager.AgentResult reply(String text) {
-    AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-    result.isSuccessful = true;
-    result.replyText = text;
-    result.inputTokens = 4;
-    result.outputTokens = 1;
-    result.totalTokensUsed = 5;
-
-    return result;
-  }
-
-  private static Map<Id, String> statusById(
-    List<AIConversationMessage__c> messages
-  ) {
-    Map<Id, String> statuses = new Map<Id, String>();
-    for (AIConversationMessage__c message : [
+    // [3] Read the results back
+    AIConversationMessage__c failedQuestion = [
       SELECT ProcessingStatus__c
       FROM AIConversationMessage__c
-      WHERE Id IN :messages
-    ])
-      statuses.put(message.Id, message.ProcessingStatus__c);
+      WHERE Id = :question.Id
+    ];
 
-    return statuses;
+    // [4] Check the outcome
+    Assert.areEqual(
+      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
+      failedQuestion.ProcessingStatus__c,
+      'No reply could be saved, so the turn should have failed.'
+    );
   }
 
   @IsTest
   static void testScenario9() {
+    // [1] Create an agent, a user and two conversations owned by that user
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
@@ -693,80 +696,165 @@ private class AIMessageOutcomeServiceTest {
     );
     for (AIConversation__c conversation : conversations)
       conversation.OwnerId = chatUser.Id;
-    // The first is being answered when the second and third are sent.
-    List<AIConversationMessage__c> answered = createQueuedMessages(
-      conversations[0],
-      3
-    );
-    List<AIConversationMessage__c> failed = createQueuedMessages(
-      conversations[1],
-      2
-    );
 
+    // [2] Queue three messages on the first conversation, the first being answered when the second and third are sent
+    List<AIConversationMessage__c> answered = AIAssistTestDataFactory.createAIConversationMessages(
+      conversations[0].Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      0,
+      3,
+      false
+    );
+    for (AIConversationMessage__c message : answered)
+      message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+    insert answered;
+    for (Integer index = 0; index < answered.size(); index++)
+      Test.setCreatedDate(
+        answered[index].Id,
+        System.now().addMinutes(-10).addSeconds(index)
+      );
+
+    // [3] Queue two messages on the second conversation
+    List<AIConversationMessage__c> failed = AIAssistTestDataFactory.createAIConversationMessages(
+      conversations[1].Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      0,
+      2,
+      false
+    );
+    for (AIConversationMessage__c message : failed)
+      message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+    insert failed;
+    for (Integer index = 0; index < failed.size(); index++)
+      Test.setCreatedDate(
+        failed[index].Id,
+        System.now().addMinutes(-10).addSeconds(index)
+      );
+
+    // [4] Build a context for the first, the newest and the failed turn, and the two replies
+    AIMessageOutcomeService.AIResponseContext firstContext = new AIMessageOutcomeService.AIResponseContext();
+    firstContext.conversationId = conversations[0].Id;
+    firstContext.triggeringMessageId = answered[0].Id;
+    firstContext.userId = conversations[0].OwnerId;
+    firstContext.agentId = agent.Id;
+    firstContext.modelConfigurationId = agent.AIModelConfiguration__c;
+    firstContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
+    AIMessageOutcomeService.AIResponseContext newestContext = new AIMessageOutcomeService.AIResponseContext();
+    newestContext.conversationId = conversations[0].Id;
+    newestContext.triggeringMessageId = answered[2].Id;
+    newestContext.userId = conversations[0].OwnerId;
+    newestContext.agentId = agent.Id;
+    newestContext.modelConfigurationId = agent.AIModelConfiguration__c;
+    newestContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
+    AIMessageOutcomeService.AIResponseContext failedContext = new AIMessageOutcomeService.AIResponseContext();
+    failedContext.conversationId = conversations[1].Id;
+    failedContext.triggeringMessageId = failed[1].Id;
+    failedContext.userId = conversations[1].OwnerId;
+    failedContext.agentId = agent.Id;
+    failedContext.modelConfigurationId = agent.AIModelConfiguration__c;
+    failedContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
+    AIAgentManager.AgentResult firstReply = new AIAgentManager.AgentResult();
+    firstReply.isSuccessful = true;
+    firstReply.replyText = 'First answer';
+    firstReply.inputTokens = 4;
+    firstReply.outputTokens = 1;
+    firstReply.totalTokensUsed = 5;
+
+    AIAgentManager.AgentResult newestReply = new AIAgentManager.AgentResult();
+    newestReply.isSuccessful = true;
+    newestReply.replyText = 'Newest answer';
+    newestReply.inputTokens = 4;
+    newestReply.outputTokens = 1;
+    newestReply.totalTokensUsed = 5;
+
+    Map<Id, String> afterFirst = new Map<Id, String>();
+
+    // [5] Record the first reply, then the newest reply, then a failure on the second conversation
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
-      contextFor(conversations[0], agent, answered[0].Id),
-      reply('First answer'),
+      firstContext,
+      firstReply,
       null
     );
-    Map<Id, String> afterFirst = statusById(answered);
+    for (AIConversationMessage__c message : [
+      SELECT ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE Id IN :answered
+    ])
+      afterFirst.put(message.Id, message.ProcessingStatus__c);
     // The finalizer hands the lock to the newest, so the second is never answered itself.
     AIMessageOutcomeService.recordAiResponseOutcome(
-      contextFor(conversations[0], agent, answered[2].Id),
-      reply('Newest answer'),
+      newestContext,
+      newestReply,
       null
     );
     AIMessageOutcomeService.recordAiResponseFailure(
-      contextFor(conversations[1], agent, failed[1].Id),
+      failedContext,
       0,
       'The provider is down.',
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR
     );
     Test.stopTest();
 
-    Map<Id, String> afterNewest = statusById(answered);
+    // [6] Read the statuses back
+    Map<Id, String> afterNewest = new Map<Id, String>();
+    for (AIConversationMessage__c message : [
+      SELECT ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE Id IN :answered
+    ])
+      afterNewest.put(message.Id, message.ProcessingStatus__c);
+    List<AIConversationMessage__c> failedMessages = [
+      SELECT ProcessingStatus__c, FailureReason__c
+      FROM AIConversationMessage__c
+      WHERE Id IN :failed
+    ];
+
+    // [7] Check the answered messages all end up Complete and the failed turn fails the one behind it
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
       afterFirst.get(answered[0].Id),
-      'The first is Complete by its own reply.'
+      'The first should be Complete by its own reply.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
       afterFirst.get(answered[1].Id),
-      'A message sent after the one answered is still waiting.'
+      'A message sent after the one answered should still be waiting.'
     );
     for (AIConversationMessage__c message : answered)
       Assert.areEqual(
         AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
         afterNewest.get(message.Id),
-        'All three end up Complete, including the one the hand-off skipped.'
+        'All three should end up Complete, including the one the hand-off skipped.'
       );
-    for (AIConversationMessage__c message : [
-      SELECT ProcessingStatus__c, FailureReason__c
-      FROM AIConversationMessage__c
-      WHERE Id IN :failed
-    ]) {
+    for (AIConversationMessage__c message : failedMessages) {
       Assert.areEqual(
         AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
         message.ProcessingStatus__c,
-        'A failed turn fails the message waiting behind it too.'
+        'A failed turn should fail the message waiting behind it too.'
       );
       Assert.areEqual(
         AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR,
         message.FailureReason__c,
-        'With the same reason.'
+        'The waiting message should hold the same reason.'
       );
     }
   }
 
   @IsTest
   static void testScenario10() {
+    // [1] Create an agent, a user and a conversation owned by that user
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
@@ -774,20 +862,56 @@ private class AIMessageOutcomeServiceTest {
       true
     )[0];
     conversation.OwnerId = chatUser.Id;
-    AIConversationMessage__c question = createQueuedMessages(
-      conversation,
-      1
-    )[0];
-    AIMessageOutcomeService.AIResponseContext responseContext = contextFor(
-      conversation,
-      agent,
-      question.Id
-    );
 
+    // [2] Queue one question on the conversation
+    List<AIConversationMessage__c> queued = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      0,
+      1,
+      false
+    );
+    for (AIConversationMessage__c message : queued)
+      message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+    insert queued;
+    for (Integer index = 0; index < queued.size(); index++)
+      Test.setCreatedDate(
+        queued[index].Id,
+        System.now().addMinutes(-10).addSeconds(index)
+      );
+
+    AIConversationMessage__c question = queued[0];
+
+    // [3] Build the turn's context and two replies
+    AIMessageOutcomeService.AIResponseContext responseContext = new AIMessageOutcomeService.AIResponseContext();
+    responseContext.conversationId = conversation.Id;
+    responseContext.triggeringMessageId = question.Id;
+    responseContext.userId = conversation.OwnerId;
+    responseContext.agentId = agent.Id;
+    responseContext.modelConfigurationId = agent.AIModelConfiguration__c;
+    responseContext.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+
+    AIAgentManager.AgentResult firstReply = new AIAgentManager.AgentResult();
+    firstReply.isSuccessful = true;
+    firstReply.replyText = 'First answer';
+    firstReply.inputTokens = 4;
+    firstReply.outputTokens = 1;
+    firstReply.totalTokensUsed = 5;
+
+    AIAgentManager.AgentResult secondReply = new AIAgentManager.AgentResult();
+    secondReply.isSuccessful = true;
+    secondReply.replyText = 'Second answer';
+    secondReply.inputTokens = 4;
+    secondReply.outputTokens = 1;
+    secondReply.totalTokensUsed = 5;
+
+    Map<String, Boolean> afterFailure = new Map<String, Boolean>();
+
+    // [4] Record a reply, fail a regenerate, read the replies, then record a second reply
     Test.startTest();
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
-      reply('First answer'),
+      firstReply,
       null
     );
     AIMessageOutcomeService.recordAiResponseFailure(
@@ -796,7 +920,6 @@ private class AIMessageOutcomeServiceTest {
       'The regenerate failed.',
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR
     );
-    Map<String, Boolean> afterFailure = new Map<String, Boolean>();
     for (AIConversationMessage__c answer : [
       SELECT MessageBody__c, IsSuperseded__c
       FROM AIConversationMessage__c
@@ -805,11 +928,12 @@ private class AIMessageOutcomeServiceTest {
       afterFailure.put(answer.MessageBody__c, answer.IsSuperseded__c);
     AIMessageOutcomeService.recordAiResponseOutcome(
       responseContext,
-      reply('Second answer'),
+      secondReply,
       null
     );
     Test.stopTest();
 
+    // [5] Read the replies back
     Map<String, Boolean> afterRegenerate = new Map<String, Boolean>();
     for (AIConversationMessage__c answer : [
       SELECT MessageBody__c, IsSuperseded__c
@@ -818,10 +942,11 @@ private class AIMessageOutcomeServiceTest {
     ])
       afterRegenerate.put(answer.MessageBody__c, answer.IsSuperseded__c);
 
+    // [6] Check the failed regenerate left the earlier reply standing and the new reply replaced it
     Assert.areEqual(
       new Map<String, Boolean>{ 'First answer' => false },
       afterFailure,
-      'A failed regenerate leaves the earlier reply standing.'
+      'A failed regenerate should leave the earlier reply standing.'
     );
     Assert.areEqual(
       new Map<String, Boolean>{
@@ -829,7 +954,7 @@ private class AIMessageOutcomeServiceTest {
         'Second answer' => false
       },
       afterRegenerate,
-      'The new reply replaces the old one, and both answer the same message.'
+      'The new reply should replace the old one, and both should answer the same message.'
     );
   }
 }

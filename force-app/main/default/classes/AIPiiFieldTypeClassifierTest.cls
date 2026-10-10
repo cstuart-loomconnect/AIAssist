@@ -10,7 +10,7 @@ Description: Testing utility for AIPiiFieldTypeClassifier: a field's PII type fr
 =================================================================
 Applicable Classes:
 
-AIPiiFieldTypeClassifier
+AIPiiFieldTypeClassifier: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,11 +18,14 @@ Version      Author                   Description
 
 @IsTest
 private class AIPiiFieldTypeClassifierTest {
-  // testScenario1: A keyword in the name or label matches, whatever the case or punctuation.
-  // testScenario2: An exact API name and a data type keyword match their own rules.
-  // testScenario3: A flagged field that matches no rule is Other, because Data Classification already marked it.
-  // testScenario4: A missing name, label, type or compliance group is not classified.
-  // testScenario5: The compliance group fallback is used when its group matches and ignored when it does not.
+  // testScenario1: A keyword in the name or label is classified, whatever the case or punctuation -> it matches the keyword rule.
+  // testScenario2: An exact API name, a similar name and a data type are classified -> each matches its own rule.
+  // testScenario3: A flagged field that matches no rule is classified -> it is Other, because Data Classification already marked it.
+  // testScenario4: A missing name, label, type or compliance group is classified -> it is not classified.
+  // testScenario5: The compliance group fallback is classified for its own group and another group -> it is used when its group matches and ignored when it does not.
+
+  private static final String GDPR = 'GDPR';
+  private static final String TEXT = 'Text';
 
   @TestSetup
   static void setup() {
@@ -35,24 +38,29 @@ private class AIPiiFieldTypeClassifierTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Define the email, exact name and data type keyword rules
     AIPiiFieldType__mdt emailType = new AIPiiFieldType__mdt(
       Keyword__c = 'email, e-mail',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_NAME_OR_LABEL_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt exactType = new AIPiiFieldType__mdt(
       Keyword__c = 'ssn__c',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_API_NAME_EXACT,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_SSN,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt typeType = new AIPiiFieldType__mdt(
       Keyword__c = 'phone',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_DATA_TYPE_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       IsComplianceGroupFallback__c = false
     );
+
+    // [2] Load the rules into the classifier
     AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>{
       emailType,
       exactType,
@@ -60,21 +68,26 @@ private class AIPiiFieldTypeClassifierTest {
     };
     AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
 
+    String byName;
+    String byLabel;
+
+    // [3] Classify a field by its name and another by its label
     Test.startTest();
-    String byName = AIPiiFieldTypeClassifier.classify(
+    byName = AIPiiFieldTypeClassifier.classify(
       'Contact_E_Mail__c',
       'Work',
-      'Text',
-      'GDPR'
+      TEXT,
+      GDPR
     );
-    String byLabel = AIPiiFieldTypeClassifier.classify(
+    byLabel = AIPiiFieldTypeClassifier.classify(
       'Field__c',
       'Primary EMAIL Address',
-      'Text',
-      'GDPR'
+      TEXT,
+      GDPR
     );
     Test.stopTest();
 
+    // [4] Check both match the email rule, whatever the case or punctuation
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       byLabel,
@@ -89,24 +102,29 @@ private class AIPiiFieldTypeClassifierTest {
 
   @IsTest
   static void testScenario2() {
+    // [1] Define the email, exact name and data type keyword rules
     AIPiiFieldType__mdt emailType = new AIPiiFieldType__mdt(
       Keyword__c = 'email, e-mail',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_NAME_OR_LABEL_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt exactType = new AIPiiFieldType__mdt(
       Keyword__c = 'ssn__c',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_API_NAME_EXACT,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_SSN,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt typeType = new AIPiiFieldType__mdt(
       Keyword__c = 'phone',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_DATA_TYPE_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       IsComplianceGroupFallback__c = false
     );
+
+    // [2] Load the rules into the classifier
     AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>{
       emailType,
       exactType,
@@ -114,27 +132,28 @@ private class AIPiiFieldTypeClassifierTest {
     };
     AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
 
+    String exact;
+    String notExact;
+    String byType;
+
+    // [3] Classify an exact name, a similar name and a data type
     Test.startTest();
-    String exact = AIPiiFieldTypeClassifier.classify(
-      'SSN__c',
-      'Tax Id',
-      'Text',
-      'GDPR'
-    );
-    String notExact = AIPiiFieldTypeClassifier.classify(
+    exact = AIPiiFieldTypeClassifier.classify('SSN__c', 'Tax Id', TEXT, GDPR);
+    notExact = AIPiiFieldTypeClassifier.classify(
       'SSN_Copy__c',
       'Tax Id',
-      'Text',
-      'GDPR'
+      TEXT,
+      GDPR
     );
-    String byType = AIPiiFieldTypeClassifier.classify(
+    byType = AIPiiFieldTypeClassifier.classify(
       'Mobile__c',
       'Mobile',
       'Phone',
-      'GDPR'
+      GDPR
     );
     Test.stopTest();
 
+    // [4] Check each matches its own rule
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_SSN,
       exact,
@@ -154,24 +173,29 @@ private class AIPiiFieldTypeClassifierTest {
 
   @IsTest
   static void testScenario3() {
+    // [1] Define the email, exact name and data type keyword rules
     AIPiiFieldType__mdt emailType = new AIPiiFieldType__mdt(
       Keyword__c = 'email, e-mail',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_NAME_OR_LABEL_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt exactType = new AIPiiFieldType__mdt(
       Keyword__c = 'ssn__c',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_API_NAME_EXACT,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_SSN,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt typeType = new AIPiiFieldType__mdt(
       Keyword__c = 'phone',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_DATA_TYPE_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       IsComplianceGroupFallback__c = false
     );
+
+    // [2] Load the rules into the classifier
     AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>{
       emailType,
       exactType,
@@ -179,15 +203,19 @@ private class AIPiiFieldTypeClassifierTest {
     };
     AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
 
+    String result;
+
+    // [3] Classify a field that matches no rule
     Test.startTest();
-    String result = AIPiiFieldTypeClassifier.classify(
+    result = AIPiiFieldTypeClassifier.classify(
       'Favourite_Colour__c',
       'Favourite Colour',
-      'Text',
-      'GDPR'
+      TEXT,
+      GDPR
     );
     Test.stopTest();
 
+    // [4] Check it is Other
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_OTHER,
       result,
@@ -197,24 +225,29 @@ private class AIPiiFieldTypeClassifierTest {
 
   @IsTest
   static void testScenario4() {
+    // [1] Define the email, exact name and data type keyword rules
     AIPiiFieldType__mdt emailType = new AIPiiFieldType__mdt(
       Keyword__c = 'email, e-mail',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_NAME_OR_LABEL_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt exactType = new AIPiiFieldType__mdt(
       Keyword__c = 'ssn__c',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_API_NAME_EXACT,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_SSN,
       IsComplianceGroupFallback__c = false
     );
+
     AIPiiFieldType__mdt typeType = new AIPiiFieldType__mdt(
       Keyword__c = 'phone',
       MatchField__c = AIAssistApplicationConstants.PII_MATCH_FIELD_DATA_TYPE_CONTAINS,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       IsComplianceGroupFallback__c = false
     );
+
+    // [2] Load the rules into the classifier
     AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>{
       emailType,
       exactType,
@@ -222,33 +255,20 @@ private class AIPiiFieldTypeClassifierTest {
     };
     AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
 
+    String noName;
+    String noLabel;
+    String noType;
+    String noGroup;
+
+    // [3] Classify with a missing name, label, type and compliance group
     Test.startTest();
-    String noName = AIPiiFieldTypeClassifier.classify(
-      null,
-      'L',
-      'Text',
-      'GDPR'
-    );
-    String noLabel = AIPiiFieldTypeClassifier.classify(
-      'F__c',
-      ' ',
-      'Text',
-      'GDPR'
-    );
-    String noType = AIPiiFieldTypeClassifier.classify(
-      'F__c',
-      'L',
-      null,
-      'GDPR'
-    );
-    String noGroup = AIPiiFieldTypeClassifier.classify(
-      'F__c',
-      'L',
-      'Text',
-      null
-    );
+    noName = AIPiiFieldTypeClassifier.classify(null, 'L', TEXT, GDPR);
+    noLabel = AIPiiFieldTypeClassifier.classify('F__c', ' ', TEXT, GDPR);
+    noType = AIPiiFieldTypeClassifier.classify('F__c', 'L', null, GDPR);
+    noGroup = AIPiiFieldTypeClassifier.classify('F__c', 'L', TEXT, null);
     Test.stopTest();
 
+    // [4] Check none is classified
     Assert.isTrue(
       noName == null && noLabel == null && noType == null && noGroup == null,
       'Nothing to classify with.'
@@ -257,6 +277,7 @@ private class AIPiiFieldTypeClassifierTest {
 
   @IsTest
   static void testScenario5() {
+    // [1] Define a HIPAA compliance group and a fallback rule for it
     AIPiiFieldType__mdt fallback = new AIPiiFieldType__mdt(
       Keyword__c = null,
       PIIFieldType__c = AIAssistApplicationConstants.PII_FIELD_TYPE_MEDICAL_RECORD,
@@ -272,6 +293,8 @@ private class AIPiiFieldTypeClassifierTest {
         '","LoomConnect__IsComplianceGroupFallback__c":true,"LoomConnect__ComplianceGroup__c":"m01000000000001AAA"}',
       AIPiiFieldType__mdt.class
     );
+
+    // [2] Load the rule and group into the classifier
     AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>{
       fallback
     };
@@ -279,21 +302,26 @@ private class AIPiiFieldTypeClassifierTest {
       hipaa.Id => hipaa
     };
 
+    String matched;
+    String unmatched;
+
+    // [3] Classify a field for the HIPAA group and for another group
     Test.startTest();
-    String matched = AIPiiFieldTypeClassifier.classify(
+    matched = AIPiiFieldTypeClassifier.classify(
       'Chart__c',
       'Chart',
-      'Text',
+      TEXT,
       'hipaa'
     );
-    String unmatched = AIPiiFieldTypeClassifier.classify(
+    unmatched = AIPiiFieldTypeClassifier.classify(
       'Chart__c',
       'Chart',
-      'Text',
-      'GDPR'
+      TEXT,
+      GDPR
     );
     Test.stopTest();
 
+    // [4] Check the fallback applies to its own group only
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_MEDICAL_RECORD,
       matched,

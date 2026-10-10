@@ -4,40 +4,35 @@ Class Name: AIPlatformLogManager
 =================================================================
 =================================================================
 
-Description: Records what went wrong, without ever being the thing that goes wrong.
+Description: Records what went wrong by publishing AIPlatformLogEvent__e, without ever being the thing that goes wrong.
 
-Every entry is published as AIPlatformLogEvent__e (PublishImmediately), so it survives the
-rollback of the transaction that raised it, and AIPlatformLogEventHandler saves it as an
-AIPlatformLog__c record. Publishing is skipped, silently, when exception logging is switched off
-or the transaction has used its Publish Immediately allowance; a log call never throws.
-
-Text fields are cut to the event's field sizes before publishing, because an over-length value
-makes the whole publish fail and the entry would be lost. The full text of a long message
-stays in ExceptionLogDetail__c.
-
-Nothing is written to the debug log: exception messages can contain what the user typed or a
-provider echoed back, and a debug log is readable by far more people than the platform log.
+Step 1: Check there is something to log and build the event
+Step 2: Skip quietly if exception logging is off or the publish allowance is used up
+Step 3: Cut the text fields to the event's field sizes and publish the event
+Step 4: Swallow any failure so a log call never throws
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Severity stamped. Debug statements removed (they carried exception text). Allowance check uses Publish Immediately, not DML statements. Delete and Upsert overloads dropped (nothing calls them).
-3.0          Chandler Stuart          Under org limit pressure only errors are published; logCustomMessage takes a severity.
 */
 
-public inherited sharing class AIPlatformLogManager {
+public without sharing class AIPlatformLogManager {
   // AIPlatformLogEvent__e field sizes: Text(255) and Long Text Area(32768).
   private static final Integer SHORT_TEXT_LENGTH = 255;
   private static final Integer LONG_TEXT_LENGTH = 32768;
 
+  private static Boolean isAuditEntry = false;
+
+  // Logs a caught exception as an error. Nothing is written to the debug log except the class name, because exception text can contain what the user typed.
   public static void logException(
     Exception caughtException,
     String className,
     String methodName
   ) {
     try {
+      // [1] Nothing to log without an exception, a class name and a method name
       if (
         caughtException == null ||
         String.isBlank(className) ||
@@ -45,6 +40,7 @@ public inherited sharing class AIPlatformLogManager {
       )
         return;
 
+      // [2] Build the event from the exception, including the cause when there is one
       AIPlatformLogEvent__e exceptionLogEvent = new AIPlatformLogEvent__e(
         ClassName__c = className,
         MethodName__c = methodName,
@@ -64,6 +60,7 @@ public inherited sharing class AIPlatformLogManager {
         Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_ERROR
       );
 
+      // [3] If a record failed to save, point the event at that record
       if (
         caughtException instanceof DmlException &&
         ((DmlException) caughtException).getNumDml() > 0
@@ -71,11 +68,13 @@ public inherited sharing class AIPlatformLogManager {
         exceptionLogEvent.RelatedRecordId__c = ((DmlException) caughtException)
           .getDmlId(0);
 
+      // [4] Publish only if exception logging is on and the publish allowance is not used up
       if (
         AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
         false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
+        // [5] Stamp the time and user, and cut each text field to fit the event, because an over-length value would make the whole publish fail
         exceptionLogEvent.OccurredAt__c = System.now();
         exceptionLogEvent.UserId__c = UserInfo.getUserId();
         exceptionLogEvent.ClassName__c = exceptionLogEvent.ClassName__c == null
@@ -102,11 +101,12 @@ public inherited sharing class AIPlatformLogManager {
           ? null
           : exceptionLogEvent.ExceptionLogDetail__c.left(LONG_TEXT_LENGTH);
 
+        // [6] Publish the event
         Database.SaveResult exceptionPublishResult = EventBus.publish(
           exceptionLogEvent
         );
 
-        // Nowhere left to log a failed publish. The debug line names the class only, never the text.
+        // [7] There is nowhere left to log a failed publish, so write a debug line that names the class only, never the text
         if (!exceptionPublishResult.isSuccess())
           System.debug(
             LoggingLevel.ERROR,
@@ -115,11 +115,12 @@ public inherited sharing class AIPlatformLogManager {
               '.'
           );
       }
-    } catch (Exception loggingFailure) {
+    } catch (Exception ex) {
+      // [8] Logging must never be the cause of a failure, and the text is never repeated here
       System.debug(
         LoggingLevel.ERROR,
         'AI Assist: a log entry could not be built.'
-      ); // Logging must never be the cause of a failure, and the text is never repeated here.
+      );
     }
   }
 
@@ -130,6 +131,7 @@ public inherited sharing class AIPlatformLogManager {
     String methodName
   ) {
     try {
+      // [1] Nothing to log without save results, a class name and a method name
       if (
         saveResults == null ||
         saveResults.isEmpty() ||
@@ -142,14 +144,17 @@ public inherited sharing class AIPlatformLogManager {
       List<Id> failedRecordIds = new List<Id>();
       List<String> errorLines = new List<String>();
 
+      // [2] Go through the results, counting each failure and writing a line for each of its errors
       for (
         Integer resultIndex = 0; resultIndex < saveResults.size(); resultIndex++
       ) {
         Database.SaveResult saveResult = saveResults[resultIndex];
+
         if (saveResult == null || saveResult.isSuccess())
           continue;
 
         failedCount++;
+
         if (saveResult.getId() != null)
           failedRecordIds.add(saveResult.getId());
 
@@ -170,9 +175,11 @@ public inherited sharing class AIPlatformLogManager {
         }
       }
 
+      // [3] Nothing failed, so there is nothing to log
       if (failedCount == 0)
-        return; // Nothing failed, nothing to log.
+        return;
 
+      // [4] Build one event for the whole batch
       AIPlatformLogEvent__e dmlFailureLogEvent = new AIPlatformLogEvent__e(
         ClassName__c = className,
         MethodName__c = methodName,
@@ -188,11 +195,13 @@ public inherited sharing class AIPlatformLogManager {
         Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_ERROR
       );
 
+      // [5] Publish only if exception logging is on and the publish allowance is not used up
       if (
         AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
         false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
+        // [6] Stamp the time and user, and cut each text field to fit the event
         dmlFailureLogEvent.OccurredAt__c = System.now();
         dmlFailureLogEvent.UserId__c = UserInfo.getUserId();
         dmlFailureLogEvent.ClassName__c = dmlFailureLogEvent.ClassName__c ==
@@ -220,11 +229,12 @@ public inherited sharing class AIPlatformLogManager {
           ? null
           : dmlFailureLogEvent.ExceptionLogDetail__c.left(LONG_TEXT_LENGTH);
 
+        // [7] Publish the event
         Database.SaveResult dmlPublishResult = EventBus.publish(
           dmlFailureLogEvent
         );
 
-        // Nowhere left to log a failed publish. The debug line names the class only, never the text.
+        // [8] There is nowhere left to log a failed publish, so write a debug line that names the class only, never the text
         if (!dmlPublishResult.isSuccess())
           System.debug(
             LoggingLevel.ERROR,
@@ -233,11 +243,12 @@ public inherited sharing class AIPlatformLogManager {
               '.'
           );
       }
-    } catch (Exception loggingFailure) {
+    } catch (Exception ex) {
+      // [9] Logging must never be the cause of a failure, and the text is never repeated here
       System.debug(
         LoggingLevel.ERROR,
         'AI Assist: a log entry could not be built.'
-      ); // Logging must never be the cause of a failure, and the text is never repeated here.
+      );
     }
   }
 
@@ -249,6 +260,7 @@ public inherited sharing class AIPlatformLogManager {
     String methodName,
     Id recordId
   ) {
+    // [1] Log it with the Warning severity
     logCustomMessage(
       message,
       logDetail,
@@ -259,8 +271,6 @@ public inherited sharing class AIPlatformLogManager {
     );
   }
 
-  private static Boolean isAuditEntry = false;
-
   // An audit entry: a change to a credential or to who may use one. Info, not an error, and published even under org limit pressure, because a gap in the audit trail is worse than one more event.
   public static void logAudit(
     String message,
@@ -268,8 +278,11 @@ public inherited sharing class AIPlatformLogManager {
     String className,
     String methodName
   ) {
+    // [1] Mark the entry as an audit entry while it is logged
     isAuditEntry = true;
+
     try {
+      // [2] Log it with the Info severity
       logCustomMessage(
         message,
         logDetail,
@@ -279,6 +292,7 @@ public inherited sharing class AIPlatformLogManager {
         AIAssistApplicationConstants.LOG_SEVERITY_INFO
       );
     } finally {
+      // [3] Clear the mark whatever happened
       isAuditEntry = false;
     }
   }
@@ -293,8 +307,11 @@ public inherited sharing class AIPlatformLogManager {
     String severity
   ) {
     try {
+      // [1] Nothing to log when both the message and the detail are blank
       if (String.isBlank(message) && String.isBlank(logDetail))
         return;
+
+      // [2] Build the event from the message
       AIPlatformLogEvent__e customMessageLogEvent = new AIPlatformLogEvent__e(
         ClassName__c = className,
         MethodName__c = methodName,
@@ -305,11 +322,13 @@ public inherited sharing class AIPlatformLogManager {
         Severity__c = severity
       );
 
+      // [3] Publish only if exception logging is on and the publish allowance is not used up
       if (
         AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
         false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
+        // [4] Stamp the time and user, and cut each text field to fit the event
         customMessageLogEvent.OccurredAt__c = System.now();
         customMessageLogEvent.UserId__c = UserInfo.getUserId();
         customMessageLogEvent.ClassName__c = customMessageLogEvent.ClassName__c ==
@@ -337,11 +356,12 @@ public inherited sharing class AIPlatformLogManager {
           ? null
           : customMessageLogEvent.ExceptionLogDetail__c.left(LONG_TEXT_LENGTH);
 
+        // [5] Publish the event
         Database.SaveResult customPublishResult = EventBus.publish(
           customMessageLogEvent
         );
 
-        // Nowhere left to log a failed publish. The debug line names the class only, never the text.
+        // [6] There is nowhere left to log a failed publish, so write a debug line that names the class only, never the text
         if (!customPublishResult.isSuccess())
           System.debug(
             LoggingLevel.ERROR,
@@ -350,11 +370,12 @@ public inherited sharing class AIPlatformLogManager {
               '.'
           );
       }
-    } catch (Exception loggingFailure) {
+    } catch (Exception ex) {
+      // [7] Logging must never be the cause of a failure, and the text is never repeated here
       System.debug(
         LoggingLevel.ERROR,
         'AI Assist: a log entry could not be built.'
-      ); // Logging must never be the cause of a failure, and the text is never repeated here.
+      );
     }
   }
 }

@@ -27,6 +27,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>ObjectApiNames__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>AIModelConfiguration__c</field>
             </layoutItems>
             <layoutItems>
@@ -189,12 +193,6 @@
         <fields>AIWorkflowAction__c</fields>
         <fields>IsActive__c</fields>
         <relatedList>AIAgentWorkflowAction__c.AIAgent__c</relatedList>
-    </relatedLists>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>ObjectApiName__c</fields>
-        <fields>IsActive__c</fields>
-        <relatedList>AIAgentObject__c.AIAgent__c</relatedList>
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>

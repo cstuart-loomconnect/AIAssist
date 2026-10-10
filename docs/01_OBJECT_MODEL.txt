@@ -68,7 +68,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (18):
+Fields (19):
 
 [ ] AIAgentPersona__c (TextArea)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
@@ -85,6 +85,7 @@ Fields (18):
 [ ] MaxMessagesPerConversation__c (Number)
 [ ] MaxTokensPerConversation__c (Number)
 [ ] MaxToolCallingIterations__c (Number)
+[ ] ObjectApiNames__c (Text, comma separated object API names; blank is a general agent)
 [ ] RetentionTrigger__c (Picklist)
 [ ] SingleActiveConversationPerRecord__c (Checkbox)
 [ ] TokenTrackingMethod__c (Picklist)
@@ -112,7 +113,7 @@ Presentation and platform:
 Trigger and handler:
 
 [ ] Trigger AIAgentTrigger (after update)
-[ ] AIAgentTriggerHandler (without sharing, 66 lines): Handler for managing AI Agent events related to AI Assist, performing the business logic that runs on the AI Agent trigger.
+[ ] AIAgentTriggerHandler (without sharing, 91 lines): Handler for managing AI Agent events related to AI Assist, performing the business logic that runs on the AI Agent trigger.
   [ ] Test: AIAgentTriggerHandlerTest
 
 1.2.3 AIPromptTemplate__c (AI Prompt Template)
@@ -157,7 +158,7 @@ Presentation and platform:
 Trigger and handler:
 
 [ ] Trigger AIPromptTemplateTrigger (before update)
-[ ] AIPromptTemplateTriggerHandler (without sharing, 84 lines): Handler for managing AI Prompt Template events related to AI Assist, performing the business logic that runs on the AI Prompt Template trigger.
+[ ] AIPromptTemplateTriggerHandler (without sharing, 116 lines): Handler for managing AI Prompt Template events related to AI Assist, performing the business logic that runs on the AI Prompt Template trigger.
   [ ] Test: AIPromptTemplateTriggerHandlerTest
 
 1.2.4 AIDataSource__c (AI Data Source)
@@ -252,32 +253,6 @@ Presentation and platform:
 
 [ ] Page layout: AI Workflow Action Layout
 [ ] Tab
-[ ] Access in each permission set (object, field, tab) is correct
-
-1.2.6 AIAgentObject__c (AI Agent Object)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c.
-
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (3):
-
-[ ] AIAgent__c (MasterDetail to AIAgent__c)
-[ ] IsActive__c (Checkbox)
-[ ] ObjectApiName__c (Text, required)
-
-List views (1):
-
-[ ] All
-
-Compact layouts (1):
-
-[ ] AIAgentObjectCompact
-
-Presentation and platform:
-
-[ ] No tab in the package: confirm that is intended
 [ ] Access in each permission set (object, field, tab) is correct
 
 1.2.7 AIAgentDataSource__c (AI Agent Data Source)
@@ -570,7 +545,7 @@ Presentation and platform:
 Trigger and handler:
 
 [ ] Trigger AIConversationTrigger (before insert, before update)
-[ ] AIConversationTriggerHandler (without sharing, 178 lines): Handler for managing AI Conversation events related to AI Assist, performing the business logic that runs on the AI Conversation trigger.
+[ ] AIConversationTriggerHandler (without sharing, 253 lines): Handler for managing AI Conversation events related to AI Assist, performing the business logic that runs on the AI Conversation trigger.
   [ ] Test: AIConversationTriggerHandlerTest
 
 1.4.2 AIConversationMessage__c (AI Conversation Message)
@@ -617,7 +592,7 @@ Presentation and platform:
 Trigger and handler:
 
 [ ] Trigger AIConversationMessageTrigger (after insert)
-[ ] AIConversationMessageTriggerHandler (without sharing, 176 lines): Handler for managing AI Conversation Message events related to AI Assist, performing the business logic that runs on the AI Conversation Message trigger.
+[ ] AIConversationMessageTriggerHandler (without sharing, 233 lines): Handler for managing AI Conversation Message events related to AI Assist, performing the business logic that runs on the AI Conversation Message trigger.
   [ ] Test: AIConversationMessageTriggerHandlerTest
 
 1.4.3 AIExecutionStep__c (AI Execution Step)
@@ -916,29 +891,8 @@ Presentation and platform:
 Trigger and handler:
 
 [ ] Trigger AIPlatformLogEventTrigger (after insert)
-[ ] AIPlatformLogEventHandler (without sharing, 69 lines): Handler for managing AI Platform Log Event events related to AI Assist, performing the business logic that runs on the AI Platform Log Event trigger.
+[ ] AIPlatformLogEventHandler (without sharing, 81 lines): Handler for managing AI Platform Log Event events related to AI Assist, performing the business logic that runs on the AI Platform Log Event trigger.
   [ ] Test: AIPlatformLogEventHandlerTest
-
-1.6.2 AIMessageReadyEvent__e (AI Message Ready Event)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Platform event, publish behaviour: PublishAfterCommit.
-
-[ ] Object definition: label, description, event type, publish behaviour
-
-Fields (4):
-
-[ ] AIConversationId__c (Text, required)
-[ ] AIConversationMessageId__c (Text)
-[ ] ErrorMessage__c (Text)
-[ ] IsSuccess__c (Checkbox)
-
-Presentation and platform:
-
-
-Trigger and handler:
-
-[ ] No Apex subscriber in the package: confirm who listens to this event
 
 
 1.7 CUSTOM METADATA TYPES
@@ -1091,9 +1045,11 @@ Hierarchy custom setting, visibility Public.
 
 [ ] Object definition: label, description, type, visibility
 
-Fields (10):
+Fields (12):
 
 [ ] AllowInlineWorkflowActions__c (Checkbox)
+[ ] AreWorkflowActionsEnabled__c (Checkbox)
+[ ] IsDebugModeEnabled__c (Checkbox)
 [ ] IsEnabled__c (Checkbox)
 [ ] IsFeedbackEnabled__c (Checkbox)
 [ ] IsMaintenanceMode__c (Checkbox)

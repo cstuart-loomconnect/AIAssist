@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsDebugModeEnabled__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Lets users see the debug trace and failure detail for a reply: request and response content. Set at user, profile or organisation level.</description>
+    <inlineHelpText
+  >Tick to give users debug mode in the chat window.</inlineHelpText>
+    <label>Debug Mode Enabled</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

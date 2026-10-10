@@ -4,54 +4,22 @@ Class Name: AIAgentManager
 =================================================================
 =================================================================
 
-Description: Owns the conversation with the AI provider for one turn. It only makes the
-callouts and returns an AgentResult describing what happened. It never inserts, updates or
-publishes a record; the caller (AIMessageProcessingQueueable) hands the result to
-AIMessageOutcomeService, which does.
+Description: Runs one conversation turn with the AI provider. It only makes the callouts and returns an AgentResult; it never inserts, updates or publishes a record.
 
-Flow (the numbered comments in executeAiMessage):
-[1] Check the model configuration and get the provider's request builder and response handler
-    (AIProvider): the only classes that know a provider's JSON shape.
-[2] Turn the agent's data sources into tools, the conversation into the provider's messages and
-    the prompt template into the system prompt.
-[3] Resolve the run limits: tool-calling iterations, tool calls per reply, retry attempts, callout
-    timeout.
-[4] Tool-calling loop: send the request; either return the final reply, or run the tools the
-    model asked for and send their results back on the next pass. A callout that fails or comes
-    back with a retryable status, with attempts left, returns isRetryable = true. This class
-    never schedules a retry (AIMessageProcessingFinalizer does).
-
-On the last allowed iteration the model is sent the request with tool calls disabled, so it
-must answer with what it has.
-
-What the model is sent, and what it is not:
-- The callout is pinned to the Named Credential on the agent's model configuration. Nothing the
-  user or the model says can change the endpoint, and the credential name and path are checked
-  for shape again here.
-- A request is never sent if masking failed for any value in it.
-- A failed tool reaches the model only as a generic message; the real error, which can hold
-  SOQL, record Ids or field values, stays in the log.
-- Workflow actions are described as suggestions only. They are never run here.
-
-Evidence: every data source read and provider call is a step on the tracker. A provider call
-step records the provider and model, how many records and fields went (names only), and which
-fields were masked, by what strategy.
-
-PII mappings are deferred while the loop runs; the caller must call AIPiiMappingService.saveCached()
-after this returns, or they are lost.
+Step 1: Check the model configuration and get the provider's request builder and response handler
+Step 2: Turn the data sources into tools, the conversation into provider messages and the prompt template into the system prompt
+Step 3: Work out the run limits (tool-calling iterations, tool calls per reply, retry attempts, callout timeout)
+Step 4: Send the request in a loop, running any tools the model asks for, until it gives a final reply
+Step 5: Return an AgentResult saying whether the turn worked, failed, or can be retried
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt for the object model: failure reasons, input and output tokens, latency, provider and masking evidence on the steps, masking failure stops the request, data sources checked against the agent, user-facing step text from Custom Labels, single-use helpers inlined.
-3.0          Chandler Stuart          The system prompt tells the model to reply in the user's Salesforce language.
 */
 
-public inherited sharing class AIAgentManager {
-  private static final Integer DEFAULT_MAX_OUTPUT_TOKENS = 1024;
-
+public without sharing class AIAgentManager {
   public class AIAgentManagerException extends Exception {
   }
 
@@ -69,8 +37,9 @@ public inherited sharing class AIAgentManager {
     public String suggestedWorkflowActionId;
   }
 
-  // Runs one turn, starting at attemptNumber (1 for the first; the caller adds one for each retry). Every argument is loaded by the caller: this class issues no SOQL.
-  // messageHistory must end with the message being answered. trace is filled in as the turn runs; the caller already holds it.
+  private static final Integer DEFAULT_MAX_OUTPUT_TOKENS = 1024;
+
+  // Runs one turn, starting at attemptNumber (1 for the first; the caller adds one for each retry). Every argument is loaded by the caller, so this class issues no SOQL. messageHistory must end with the message being answered. trace is filled in as the turn runs.
   public static AgentResult executeAiMessage(
     AIAgent__c agent,
     AIModelConfiguration__c modelConfiguration,
@@ -88,9 +57,10 @@ public inherited sharing class AIAgentManager {
     Decimal outputTokensUsed = 0;
 
     try {
-      // PII masked by tool calls must not be written mid-loop: uncommitted DML blocks the next callout. The caller saves them afterwards.
+      // [1] Hold back PII mapping saves while the loop runs, because unsaved changes would block the next callout. The caller saves them afterwards.
       AIPiiMappingService.isDeferringWrites = true;
 
+      // [2] Make a tracker if the caller did not pass one
       if (trace == null)
         trace = new AIExecutionStepTracker(
           conversation == null ? null : conversation.Id,
@@ -99,7 +69,7 @@ public inherited sharing class AIAgentManager {
           false
         );
 
-      // [1] Configuration.
+      // [3] Check the agent and model configuration are usable, and that the Named Credential and API path look right
       if (agent == null || modelConfiguration == null)
         throw new AIAgentManagerException(
           'The agent or its model configuration is missing.'
@@ -146,6 +116,7 @@ public inherited sharing class AIAgentManager {
             '".'
         );
 
+      // [4] Get the request builder and response handler for this provider
       IAIProviderRequestBuilder providerRequestBuilder = AIProvider.getRequestBuilder(
         modelConfiguration.AIProvider__c
       );
@@ -153,7 +124,7 @@ public inherited sharing class AIAgentManager {
         modelConfiguration.AIProvider__c
       );
 
-      // [2] Tools: each data source, advertised by name. InputSchema__c is only advertised here; the dispatcher refuses bad input.
+      // [5] Turn each data source into a tool the model can ask for by name. The input schema is only passed on here; the dispatcher refuses bad input later.
       Map<String, AIDataSource__c> dataSourceByToolName = new Map<String, AIDataSource__c>();
       List<AIProvider.ToolDefinition> toolDefinitions = new List<AIProvider.ToolDefinition>();
 
@@ -167,6 +138,7 @@ public inherited sharing class AIAgentManager {
           dataSourceByToolName.containsKey(dataSource.DeveloperName__c)
         )
           continue;
+
         dataSourceByToolName.put(dataSource.DeveloperName__c, dataSource);
 
         AIProvider.ToolDefinition toolDefinition = new AIProvider.ToolDefinition();
@@ -188,11 +160,11 @@ public inherited sharing class AIAgentManager {
               'type' => 'object',
               'properties' => new Map<String, Object>()
             };
+
         toolDefinitions.add(toolDefinition);
       }
 
-      // The conversation the model sees. System messages are internal records, not something the user or model said, and a provider rejects a blank message, so one blank message would fail every later turn.
-      // The response handler appends the model's replies and tool results to this same list as the loop runs.
+      // [6] Build the conversation the model sees. System messages are internal records and blank messages are rejected by providers, so both are left out. The response handler adds the model's replies and tool results to this same list as the loop runs.
       List<Map<String, Object>> providerMessages = new List<Map<String, Object>>();
 
       for (
@@ -218,7 +190,7 @@ public inherited sharing class AIAgentManager {
         );
       }
 
-      // The system prompt: who the agent is, the template, then a compact list of workflow actions the model may suggest, never run.
+      // [7] Build the system prompt from the agent persona and the prompt template
       List<String> systemPromptParts = new List<String>();
 
       if (String.isNotBlank(agent.AIAgentPersona__c))
@@ -237,7 +209,7 @@ public inherited sharing class AIAgentManager {
           );
       }
 
-      // Replies match the user. Labels are translated by the platform; agent text is not, so the model is told. A turn runs as the user who sent the message, so this is their language.
+      // [8] Tell the model to reply in the user's language. Labels are translated by the platform but agent text is not. A turn runs as the user who sent the message, so this is their language.
       systemPromptParts.add(
         String.format(
           AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
@@ -245,13 +217,15 @@ public inherited sharing class AIAgentManager {
         )
       );
 
+      // [9] List the workflow actions the model may suggest (never run) and how to name one
       if (
         availableWorkflowActions != null && !availableWorkflowActions.isEmpty()
       ) {
         systemPromptParts.add(
           AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_INSTRUCTION
         );
-        for (AIWorkflowAction__c workflowAction : availableWorkflowActions)
+
+        for (AIWorkflowAction__c workflowAction : availableWorkflowActions) {
           systemPromptParts.add(
             workflowAction.DeveloperName__c +
               ': ' +
@@ -259,12 +233,14 @@ public inherited sharing class AIAgentManager {
                 ? workflowAction.Description__c
                 : workflowAction.OutputDescription__c)
           );
+        }
+
         systemPromptParts.add(
           AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_JSON_INSTRUCTION
         );
       }
 
-      // Blank lines and repeated spaces collapsed to keep token usage down on every pass; single line breaks stay so authored lists remain readable.
+      // [10] Join the prompt and remove blank lines and repeated spaces to save tokens on every pass. Single line breaks stay so authored lists remain readable.
       String systemPromptText = systemPromptParts.isEmpty()
         ? null
         : String.join(systemPromptParts, '\n')
@@ -272,7 +248,7 @@ public inherited sharing class AIAgentManager {
             .replaceAll('[ \\t]+', ' ')
             .trim();
 
-      // [3] Run limits. Iterations: the agent's own, else the org default, clamped to 1..cap (0 would skip the callout; unbounded risks the 100 callout limit).
+      // [11] Work out the run limits. The iteration limit is the agent's own, else the org default, kept between 1 and the cap (0 would skip the callout and no limit risks the 100 callout limit).
       AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
       Integer maxToolCallingIterations = Math.max(
         1,
@@ -294,44 +270,48 @@ public inherited sharing class AIAgentManager {
         'callout:' +
         modelConfiguration.NamedCredential__c +
         modelConfiguration.ApiPath__c;
+      AIProvider.Session providerSession = new AIProvider.Session(); // Stays empty for a provider answered by one callout.
 
       trace.toolCallingIterationsMax = maxToolCallingIterations;
       trace.attemptNumber = attemptNumber;
 
-      // Tool calls from the pass just finished, handed to the response handler at the top of the next pass because they join providerMessages before that pass's request is built.
+      // [12] Set up what is carried between passes: the tool calls just finished (handed to the response handler at the top of the next pass), and what was sent and masked since the last provider call (the evidence for the next provider call step)
       List<AIProvider.ToolCall> previousToolCalls = null;
       List<Object> previousToolResults = null;
 
-      // What the tools returned and what was masked since the last provider call: the evidence on the next provider call step.
       Integer recordsSent = 0;
       Set<String> objectsSent = new Set<String>();
       Set<String> fieldsSent = new Set<String>();
       List<AIPiiPseudonymizationService.MaskingTally> pendingMasking = new List<AIPiiPseudonymizationService.MaskingTally>();
 
-      // Set when a callout cannot complete; the loop breaks and one retryable-or-failed result is returned after it.
+      // [13] Set up the callout error details. They are filled in when a callout cannot complete; the loop then stops and one failed or retryable result is returned after it.
       String calloutErrorMessage = null;
       String calloutFailureReason = AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
       Boolean isCalloutErrorRetryable = true;
 
-      // [4] Tool-calling loop.
+      // [14] Send requests until the model gives a final reply or a limit is hit
       for (
         Integer iteration = 0; iteration < maxToolCallingIterations; iteration++
       ) {
         Boolean isLastIteration = iteration == maxToolCallingIterations - 1;
 
+        // [15] Add the previous pass's tool calls and results to the conversation before building this request
         if (previousToolCalls != null) {
           providerResponseHandler.handleResponse(
             providerMessages,
             null,
             previousToolCalls,
-            previousToolResults
+            previousToolResults,
+            null
           );
+
           previousToolCalls = null;
           previousToolResults = null;
         }
 
-        // A request is never sent if masking failed for any value in it.
+        // [16] Never send a request if masking failed for any value in it
         pendingMasking.addAll(AIPiiPseudonymizationService.takeTallies());
+
         for (AIPiiPseudonymizationService.MaskingTally tally : pendingMasking) {
           if (
             tally.outcome == AIAssistApplicationConstants.MASKING_OUTCOME_FAILED
@@ -347,10 +327,12 @@ public inherited sharing class AIAgentManager {
             maskingFailure.totalTokensUsed = totalTokensUsed;
             maskingFailure.inputTokens = inputTokensUsed;
             maskingFailure.outputTokens = outputTokensUsed;
+
             return maskingFailure;
           }
         }
 
+        // [17] Build the request in the provider's own format. On the last pass tool calls are switched off, so the model must answer with what it has.
         AIProvider.Request canonicalRequest = new AIProvider.Request();
         canonicalRequest.modelIdentifier = modelConfiguration.ModelIdentifier__c;
         canonicalRequest.maxOutputTokens = maxOutputTokens;
@@ -358,13 +340,17 @@ public inherited sharing class AIAgentManager {
         canonicalRequest.systemPromptText = systemPromptText;
         canonicalRequest.messages = providerMessages;
         canonicalRequest.tools = toolDefinitions;
-        canonicalRequest.allowToolCalls = !isLastIteration; // The last chance: the model must answer with what it has.
+        canonicalRequest.allowToolCalls = !isLastIteration;
+        canonicalRequest.endpoint = endpoint;
+        canonicalRequest.environmentId = modelConfiguration.EnvironmentId__c;
+        canonicalRequest.maxWaitMilliseconds = configuredTimeoutMilliseconds;
+        canonicalRequest.session = providerSession;
 
         String requestBody = JSON.serialize(
           providerRequestBuilder.buildRequestBody(canonicalRequest)
         );
 
-        // Payloads are customer data, kept only for a user with debug mode on. They are already masked.
+        // [18] Keep the request and a preview of the last user message on the trace, only when debug mode is on, because they are customer data (already masked)
         if (trace.captureFullDetail) {
           trace.lastRequestJson = requestBody;
 
@@ -374,6 +360,7 @@ public inherited sharing class AIAgentManager {
             messageIndex--
           ) {
             Map<String, Object> message = providerMessages[messageIndex];
+
             if (
               String.valueOf(
                 message.get(AIAssistApplicationConstants.CANONICAL_ROLE_KEY)
@@ -393,51 +380,65 @@ public inherited sharing class AIAgentManager {
                       )
                     )
                     .abbreviate(200);
+
               break;
             }
           }
         }
 
+        // [19] Build the HTTP request for the Named Credential endpoint
         HttpRequest httpRequest = new HttpRequest();
-        httpRequest.setEndpoint(endpoint);
+        httpRequest.setEndpoint(
+          providerSession.endpoint == null ? endpoint : providerSession.endpoint
+        );
         httpRequest.setMethod(AIAssistApplicationConstants.HTTP_METHOD_POST);
         httpRequest.setHeader(
           AIAssistApplicationConstants.HTTP_HEADER_CONTENT_TYPE,
           AIAssistApplicationConstants.CONTENT_TYPE_JSON
         );
+
         if (String.isNotBlank(modelConfiguration.ApiVersionHeaderName__c))
           httpRequest.setHeader(
             modelConfiguration.ApiVersionHeaderName__c,
             modelConfiguration.ApiVersionHeaderValue__c
           );
+
+        for (String headerName : providerSession.headers.keySet())
+          httpRequest.setHeader(
+            headerName,
+            providerSession.headers.get(headerName)
+          );
+
         httpRequest.setTimeout(configuredTimeoutMilliseconds);
         httpRequest.setBody(requestBody);
 
+        // [20] Call the provider. If the callout fails, work out the error, whether it can be retried, and stop the loop.
         HttpResponse httpResponse;
         trace.startStep(Label.AI_Step_Calling_Model, null);
 
         try {
           httpResponse = new Http().send(httpRequest);
-        } catch (Exception calloutException) {
+        } catch (Exception ex) {
           AIExecutionStepTracker.StepEntry failedStep = trace.endStep(false);
+
           if (failedStep != null) {
             failedStep.provider = modelConfiguration.AIProvider__c;
             failedStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
           }
 
-          // Logged here because it becomes a result rather than being rethrown.
+          // [21] Log it here, because it becomes a result rather than being thrown again
           AIPlatformLogManager.logException(
-            calloutException,
+            ex,
             'AIAgentManager',
             'executeAiMessage'
           );
-          String calloutDetail = calloutException.getMessage() == null
-            ? ''
-            : calloutException.getMessage();
-          // An endpoint the org does not allow, or a Named Credential that is missing, fails the same way every time: a setup problem, not retried.
+
+          // [22] Tell a setup problem (an endpoint the org does not allow, or a missing Named Credential) from a temporary one. A setup problem fails the same way every time, so it is not retried.
+          String calloutDetail = ex.getMessage() == null ? '' : ex.getMessage();
           Boolean isSetupProblem =
             calloutDetail.containsIgnoreCase('unauthorized endpoint') ||
             calloutDetail.containsIgnoreCase('named credential');
+
           calloutErrorMessage = isSetupProblem
             ? 'The AI provider could not be called: ' +
               calloutDetail +
@@ -453,10 +454,11 @@ public inherited sharing class AIAgentManager {
                 ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
                 : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR);
           isCalloutErrorRetryable = !isSetupProblem;
+
           break;
         }
 
-        // The provider call step: what was sent (names and counts, never values), under which model, and what was masked.
+        // [23] Record the provider call step: what was sent (names and counts, never values), under which model, and what was masked
         AIExecutionStepTracker.StepEntry providerStep = trace.endStep(true);
         providerStep.provider = modelConfiguration.AIProvider__c;
         providerStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
@@ -470,20 +472,24 @@ public inherited sharing class AIAgentManager {
           new List<String>(fieldsSent),
           ', '
         );
+
         trace.addMaskingTallies(providerStep, pendingMasking);
+
         pendingMasking = new List<AIPiiPseudonymizationService.MaskingTally>();
         recordsSent = 0;
         objectsSent.clear();
         fieldsSent.clear();
 
         trace.toolCallingIterationsUsed = iteration + 1;
+
         if (trace.captureFullDetail)
           trace.lastResponseJson = httpResponse.getBody();
 
-        // Any status that is not a success ends this attempt with a reason the user can be told and a message that says which record to fix. It is retried only when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could succeed next time: a rejected credential, a retired model, an exhausted quota and a bad request never are.
+        // [24] If the status is not a success, end this attempt with a reason the user can be told and a message saying which record to fix. It is only retried when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could work next time; a rejected credential, a retired model, an exhausted quota and a bad request never are.
         Integer statusCode = httpResponse.getStatusCode();
+
         if (
-          !toIntegerSet(settings.AIProviderSuccessStatusCodes__c)
+          !buildIntegerSet(settings.AIProviderSuccessStatusCodes__c)
             .contains(statusCode)
         ) {
           providerStep.isSuccess = false;
@@ -491,14 +497,16 @@ public inherited sharing class AIAgentManager {
             statusCode,
             httpResponse.getBody()
           );
+
           Boolean isCredentialRejected =
             calloutFailureReason ==
             AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
           Boolean isModelRetired =
             calloutFailureReason ==
             AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
+
           isCalloutErrorRetryable =
-            toIntegerSet(settings.RetryableStatusCodes__c)
+            buildIntegerSet(settings.RetryableStatusCodes__c)
               .contains(statusCode) &&
             !AIAssistApplicationConstants.NEVER_RETRIED_STATUS_CODES.contains(
               statusCode
@@ -530,21 +538,23 @@ public inherited sharing class AIAgentManager {
             (String.isBlank(httpResponse.getBody())
               ? '(nothing)'
               : httpResponse.getBody().abbreviate(1000));
+
           break;
         }
 
-        // Parse the reply. A malformed body throws: a hard failure, caught and logged below.
+        // [25] Read the reply and add up the tokens used. A badly formed body throws, which is caught and logged below as a hard failure.
         AIProvider.Response modelResponse = providerResponseHandler.handleResponse(
           providerMessages,
           httpResponse,
           null,
-          null
+          null,
+          canonicalRequest
         );
         totalTokensUsed += modelResponse.totalTokens;
         inputTokensUsed += modelResponse.inputTokens;
         outputTokensUsed += modelResponse.outputTokens;
 
-        // No tool calls: this is the model's final reply.
+        // [26] If the model asked for no tools, this is its final reply
         if (modelResponse.toolCalls.isEmpty()) {
           AgentResult successResult = new AgentResult();
           successResult.totalTokensUsed = totalTokensUsed;
@@ -554,15 +564,17 @@ public inherited sharing class AIAgentManager {
             System.currentTimeMillis() - turnStartMilliseconds;
           successResult.replyText = modelResponse.textContent;
 
+          // [27] An empty reply counts as a failure
           if (String.isBlank(modelResponse.textContent)) {
             successResult.errorMessage = 'The provider returned an empty reply.';
             successResult.failureReason = AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+
             return successResult;
           }
 
           successResult.isSuccessful = true;
 
-          // A trailing {"suggested_workflow_action": "<DeveloperName>"} line names a workflow action. Only one that was offered is accepted; the line is stripped from the visible reply unless it was the whole reply (a blank reply would be rejected by the next request). Anything wrong leaves the reply untouched.
+          // [28] Look for a trailing {"suggested_workflow_action": "<DeveloperName>"} line. Only an action that was offered is accepted. The line is removed from the visible reply unless it was the whole reply (a blank reply would be rejected by the next request). Anything wrong leaves the reply as it is.
           Integer suggestionStart = modelResponse.textContent.lastIndexOf('{');
 
           if (
@@ -586,6 +598,7 @@ public inherited sharing class AIAgentManager {
               ) {
                 if (workflowAction.DeveloperName__c == suggestedDeveloperName) {
                   successResult.suggestedWorkflowActionId = workflowAction.Id;
+
                   String replyWithoutSuggestion = modelResponse.textContent.substring(
                       0,
                       suggestionStart
@@ -596,26 +609,28 @@ public inherited sharing class AIAgentManager {
                     )
                     ? replyWithoutSuggestion
                     : Label.AI_Chat_Suggested_Actions_Heading;
+
                   break;
                 }
               }
-            } catch (Exception suggestionException) {
+            } catch (Exception ex) {
               AIPlatformLogManager.logException(
-                suggestionException,
+                ex,
                 'AIAgentManager',
                 'executeAiMessage'
               );
             }
           }
 
+          // [29] Return the final reply
           return successResult;
         }
 
-        // Tool calls were disabled on the last iteration, so this only happens if the provider ignored that. Their results could never be sent back.
+        // [30] Stop if this was the last pass. Tool calls were switched off, so this only happens if the provider ignored that, and their results could never be sent back.
         if (isLastIteration)
           break;
 
-        // Run the requested tools. Every call gets a result, because providers reject a reply that leaves one unanswered; a skipped call gets an explanation instead of being dropped.
+        // [31] Run the tools the model asked for. Every call gets a result because providers reject a reply that leaves one unanswered; a skipped call gets an explanation instead.
         List<Object> toolResults = new List<Object>();
 
         for (
@@ -629,8 +644,10 @@ public inherited sharing class AIAgentManager {
             toolResults.add(
               AIAssistApplicationConstants.TOOL_RESULT_SKIPPED_TOO_MANY_CALLS
             );
+
             continue;
           }
+
           AIDataSource__c dataSource = dataSourceByToolName.get(toolCall.name);
           trace.startStep(
             Label.AI_Step_Reading_Data,
@@ -640,7 +657,7 @@ public inherited sharing class AIAgentManager {
           Object toolResult;
           Boolean toolSucceeded = true;
 
-          // A failing tool does not end the turn: it is logged and the model is told it failed, so it can react. The model gets only a generic message because it is a third party.
+          // [32] Run the data source. A failing tool does not end the turn: it is logged and the model is only told it failed, so it can react without seeing the real error.
           try {
             if (dataSource == null)
               throw new AIAgentManagerException(
@@ -657,54 +674,63 @@ public inherited sharing class AIAgentManager {
               conversation.Id
             );
 
+            // [33] Say so plainly when nothing was found, so the model stops retrying. Otherwise keep the records and note which objects and fields were sent.
             if (toolRecords == null || toolRecords.isEmpty()) {
-              toolResult = AIAssistApplicationConstants.TOOL_RESULT_NO_RECORDS_FOUND; // Explicit, so the model reads a genuine no-match and stops retrying.
+              toolResult = AIAssistApplicationConstants.TOOL_RESULT_NO_RECORDS_FOUND;
             } else {
               toolResult = toolRecords;
               recordsSent += toolRecords.size();
+
               if (String.isNotBlank(dataSource.TargetObject__c))
                 objectsSent.add(dataSource.TargetObject__c);
+
               for (Object toolRecord : toolRecords) {
                 if (toolRecord instanceof Map<String, Object>) {
                   for (
                     String fieldName : ((Map<String, Object>) toolRecord)
                       .keySet()
-                  )
+                  ) {
                     fieldsSent.add(
                       (String.isBlank(dataSource.TargetObject__c)
                         ? ''
                         : dataSource.TargetObject__c + '.') + fieldName
                     );
+                  }
                 }
               }
             }
-          } catch (Exception toolException) {
+          } catch (Exception ex) {
             AIPlatformLogManager.logException(
-              toolException,
+              ex,
               'AIAgentManager',
               'executeAiMessage'
             );
+
             toolResult = AIAssistApplicationConstants.TOOL_RESULT_FAILED;
             toolSucceeded = false;
           }
 
+          // [34] Close the tool step. A tool the model made up still counts as a data source step, not a provider call.
           AIExecutionStepTracker.StepEntry toolStep = trace.endStep(
             toolSucceeded
           );
+
           if (toolStep != null) {
-            toolStep.stepType = AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE; // A tool the model made up still ran as a data source phase, not as a provider call.
+            toolStep.stepType = AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE;
             toolStep.targetObject = dataSource == null
               ? null
               : dataSource.TargetObject__c;
           }
+
           toolResults.add(toolResult);
         }
 
+        // [35] Keep the tool calls and results to add to the conversation on the next pass
         previousToolCalls = modelResponse.toolCalls;
         previousToolResults = toolResults;
       }
 
-      // A callout could not complete: retryable while attempts remain. Carries the tokens already spent so the retry adds to them.
+      // [36] If a callout could not complete, return a failure that is retryable while attempts remain. It carries the tokens already spent so a retry adds to them.
       if (calloutErrorMessage != null) {
         AgentResult calloutFailure = new AgentResult();
         calloutFailure.errorMessage = calloutErrorMessage;
@@ -714,9 +740,11 @@ public inherited sharing class AIAgentManager {
         calloutFailure.outputTokens = outputTokensUsed;
         calloutFailure.isRetryable =
           isCalloutErrorRetryable && attemptNumber < maxAttempts;
+
         return calloutFailure;
       }
 
+      // [37] The loop ended without a final reply, so return a limit failure
       AgentResult limitFailure = new AgentResult();
       limitFailure.errorMessage =
         'Reached the maximum of ' +
@@ -726,47 +754,53 @@ public inherited sharing class AIAgentManager {
       limitFailure.totalTokensUsed = totalTokensUsed;
       limitFailure.inputTokens = inputTokensUsed;
       limitFailure.outputTokens = outputTokensUsed;
+
       return limitFailure;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [38] Anything unexpected is logged and returned as a failed result. Tokens already spent are still billed, so they are included.
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIAgentManager',
         'executeAiMessage'
       );
 
       AgentResult failure = new AgentResult();
       failure.errorMessage =
-        'Failed to get a response from the AI provider: ' +
-        caughtException.getMessage();
-      failure.totalTokensUsed = totalTokensUsed; // Tokens already spent are still billed.
+        'Failed to get a response from the AI provider: ' + ex.getMessage();
+      failure.totalTokensUsed = totalTokensUsed;
       failure.inputTokens = inputTokensUsed;
       failure.outputTokens = outputTokensUsed;
-      failure.failureReason = caughtException instanceof AIAgentManagerException ||
-        caughtException instanceof AIAssistSettingsService.AIAssistSettingsServiceException
+      failure.failureReason = ex instanceof AIAgentManagerException ||
+        ex instanceof AIAssistSettingsService.AIAssistSettingsServiceException
         ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR
-        : (caughtException.getTypeName().contains('ResponseHandlerException') ||
-            caughtException instanceof AIProvider.AIProviderException
+        : (ex.getTypeName().contains('ResponseHandlerException') ||
+            ex instanceof AIProvider.AIProviderException
             ? AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR
             : AIAssistApplicationConstants.FAILURE_REASON_OTHER);
+
       return failure;
     } finally {
-      // Deferral only applies while the loop runs. The mappings stay cached in memory; the caller must still save them.
+      // [39] Stop holding back PII mapping saves. The mappings stay cached in memory; the caller must still save them.
       AIPiiMappingService.isDeferringWrites = false;
     }
   }
 
-  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
-  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+  // Turns a setting like "200,201" into a set of numbers. Anything that is not a number is skipped.
+  private static Set<Integer> buildIntegerSet(String commaSeparatedNumbers) {
+    // [1] Start with an empty set
     Set<Integer> numbers = new Set<Integer>();
 
+    // [2] Nothing to read, so return the empty set
     if (String.isBlank(commaSeparatedNumbers))
       return numbers;
 
+    // [3] Add each entry that is a number
     for (String entry : commaSeparatedNumbers.split(',')) {
       if (entry.trim().isNumeric())
         numbers.add(Integer.valueOf(entry.trim()));
     }
 
+    // [4] Return the numbers
     return numbers;
   }
 }

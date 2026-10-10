@@ -4,8 +4,13 @@ Class Name: AIConversationMessageTriggerHandler
 =================================================================
 =================================================================
 
-Description: Handler for managing AI Conversation Message events related to AI Assist,
-performing the business logic that runs on the AI Conversation Message trigger.
+Description: Rolls new AI Conversation Messages up onto their AI Conversation.
+
+Step 1: Skip if the handler is already running in this transaction
+Step 2: Keep only the messages that belong to a conversation
+Step 3: Lock the conversations and work out the new token total and last message time
+Step 4: Move the retention expiry for agents that count from the last message
+Step 5: Update the conversations and log any failures
 
 =================================================================
 =================================================================
@@ -23,32 +28,38 @@ public without sharing class AIConversationMessageTriggerHandler {
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
+  // Runs after messages are inserted and rolls them up onto their conversations. Never blocks the save.
   public static void handleAfterInsert(
     List<AIConversationMessage__c> newMessages
   ) {
     try {
-      if (!isAfterInsertHandlerRunning) {
-        isAfterInsertHandlerRunning = true;
+      // [1] Do nothing if the handler is already running in this transaction
+      if (isAfterInsertHandlerRunning)
+        return;
 
-        if (isTestCustomExceptionThrown) {
-          throw new AIConversationMessageTriggerHandlerException(
-            'Test exception for AIConversationMessageTriggerHandler.handleAfterInsert'
-          );
-        }
+      isAfterInsertHandlerRunning = true;
 
-        List<AIConversationMessage__c> messagesToRollUp = getMessagesInAConversation(
-          newMessages
+      // [2] Throw on purpose when a test asks for it
+      if (isTestCustomExceptionThrown) {
+        throw new AIConversationMessageTriggerHandlerException(
+          'Test exception for AIConversationMessageTriggerHandler.handleAfterInsert'
         );
-
-        if (!messagesToRollUp.isEmpty()) {
-          rollUpMessagesOntoConversations(messagesToRollUp);
-        }
-
-        isAfterInsertHandlerRunning = false;
       }
-    } catch (Exception e) {
+
+      // [3] Roll up the messages that belong to a conversation
+      List<AIConversationMessage__c> messagesToRollUp = getMessagesInAConversation(
+        newMessages
+      );
+
+      if (!messagesToRollUp.isEmpty()) {
+        rollUpMessagesOntoConversations(messagesToRollUp);
+      }
+
+      // [4] Allow the handler to run again
+      isAfterInsertHandlerRunning = false;
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        e,
+        ex,
         'AIConversationMessageTriggerHandler',
         'handleAfterInsert'
       );
@@ -59,11 +70,13 @@ public without sharing class AIConversationMessageTriggerHandler {
   private static List<AIConversationMessage__c> getMessagesInAConversation(
     List<AIConversationMessage__c> newMessages
   ) {
+    // [1] Start with an empty list so a null input returns nothing
     List<AIConversationMessage__c> messagesToRollUp = new List<AIConversationMessage__c>();
 
     if (newMessages == null)
       return messagesToRollUp;
 
+    // [2] Keep each message that has a conversation
     for (AIConversationMessage__c message : newMessages) {
       if (message.AIConversation__c == null)
         continue;
@@ -79,8 +92,9 @@ public without sharing class AIConversationMessageTriggerHandler {
     List<AIConversationMessage__c> messagesToRollUp
   ) {
     try {
-      Map<Id, Decimal> tokensByConversationId = new Map<Id, Decimal>(); // Conversations that have tokens to add.
-      Map<Id, Datetime> lastMessageByConversationId = new Map<Id, Datetime>(); // Conversations whose last message time moves.
+      // [1] Work out the tokens to add and the newest message time for each conversation
+      Map<Id, Decimal> tokensByConversationId = new Map<Id, Decimal>();
+      Map<Id, Datetime> lastMessageByConversationId = new Map<Id, Datetime>();
 
       for (AIConversationMessage__c message : messagesToRollUp) {
         if (message.TokenCount__c != null && message.TokenCount__c > 0) {
@@ -95,7 +109,7 @@ public without sharing class AIConversationMessageTriggerHandler {
           );
         }
 
-        // The failed-turn System message records tokens; it is not a conversation event, so it does not move the last message time.
+        // [2] The failed-turn System message records tokens but is not a conversation event, so it does not move the last message time
         Boolean movesLastMessageTime =
           message.Sender__c != AIAssistApplicationConstants.SENDER_SYSTEM &&
           message.CreatedDate != null;
@@ -112,16 +126,19 @@ public without sharing class AIConversationMessageTriggerHandler {
         }
       }
 
+      // [3] Nothing to change if no conversation has tokens or a new message time
       Set<Id> conversationIds = new Set<Id>(tokensByConversationId.keySet());
       conversationIds.addAll(lastMessageByConversationId.keySet());
 
       if (conversationIds.isEmpty())
         return;
 
+      // [4] Lock the conversations so two transactions add to each other instead of overwriting
       List<AIConversation__c> conversations = lockConversationsForRollup(
         conversationIds
       );
 
+      // [5] Load the retention settings of the agents on those conversations
       Set<Id> agentIds = new Set<Id>();
 
       for (AIConversation__c conversation : conversations) {
@@ -133,6 +150,7 @@ public without sharing class AIConversationMessageTriggerHandler {
       Map<Id, AIAgent__c> agentsById = getAgentRetentionSettings(agentIds);
       List<AIConversation__c> conversationsToUpdate = new List<AIConversation__c>();
 
+      // [6] Build the update for each conversation that changes
       for (AIConversation__c conversation : conversations) {
         AIConversation__c rollup = new AIConversation__c(Id = conversation.Id);
         Decimal tokensAdded = tokensByConversationId.get(conversation.Id);
@@ -141,6 +159,7 @@ public without sharing class AIConversationMessageTriggerHandler {
         );
         Boolean hasChange = false;
 
+        // [7] Add the new tokens to the running total
         if (tokensAdded != null) {
           rollup.ConversationTokenUsage__c =
             (conversation.ConversationTokenUsage__c == null
@@ -149,6 +168,7 @@ public without sharing class AIConversationMessageTriggerHandler {
           hasChange = true;
         }
 
+        // [8] Move the last message time forward only when the new message is newer
         if (
           newestMessage != null &&
           (conversation.LastMessageTimestamp__c == null ||
@@ -157,6 +177,7 @@ public without sharing class AIConversationMessageTriggerHandler {
           rollup.LastMessageTimestamp__c = newestMessage;
           hasChange = true;
 
+          // [9] Move the retention expiry when the agent counts retention from the last message
           AIAgent__c agent = conversation.AIAgent__c == null
             ? null
             : agentsById.get(conversation.AIAgent__c);
@@ -178,27 +199,31 @@ public without sharing class AIConversationMessageTriggerHandler {
         }
       }
 
+      // [10] Save the changes and log any that fail
       AIMessagingDataService.updateAndLogFailures(
         conversationsToUpdate,
         'AIConversationMessageTriggerHandler',
         'rollUpMessagesOntoConversations'
       );
-    } catch (Exception e) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        e,
+        ex,
         'AIConversationMessageTriggerHandler',
         'rollUpMessagesOntoConversations'
       );
     }
   }
 
+  // The retention settings of the agents with these ids.
   @TestVisible
   private static Map<Id, AIAgent__c> getAgentRetentionSettings(
     Set<Id> agentIds
   ) {
+    // [1] Nothing to look up
     if (agentIds == null || agentIds.isEmpty())
       return new Map<Id, AIAgent__c>();
 
+    // [2] Query the agents
     return new Map<Id, AIAgent__c>(
       [
         SELECT Id, ConversationRetentionDays__c, RetentionTrigger__c
@@ -214,9 +239,11 @@ public without sharing class AIConversationMessageTriggerHandler {
   private static List<AIConversation__c> lockConversationsForRollup(
     Set<Id> conversationIds
   ) {
+    // [1] Nothing to lock
     if (conversationIds == null || conversationIds.isEmpty())
       return new List<AIConversation__c>();
 
+    // [2] Query and lock the conversations
     return [
       SELECT
         Id,

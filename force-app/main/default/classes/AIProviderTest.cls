@@ -10,9 +10,9 @@ Description: Testing utility for AIProvider: the provider lookup and the canonic
 =================================================================
 Applicable Classes:
 
-AIProvider
-IAIProviderRequestBuilder
-IAIProviderResponseHandler
+AIProvider: Coverage TBC
+IAIProviderRequestBuilder: Coverage TBC
+IAIProviderResponseHandler: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -20,11 +20,12 @@ Version      Author                   Description
 
 @IsTest
 private class AIProviderTest {
-  // testScenario1: Both supported providers are recognised in any case and each has a request builder and a response handler of its own.
-  // testScenario2: An unknown, blank or null provider is not supported, and asking for its adapters throws.
-  // testScenario3: stringifyToolResult passes a String through untouched and serialises anything else to JSON.
-  // testScenario4: The canonical types start in a safe state: tool calls allowed on a request, and no tool calls and no tokens on a response.
-  // testScenario5: getFailureReason maps a rejected credential, an exhausted quota, a retired model, rate limiting and a timeout to their own reasons, and anything else to a provider error.
+  // testScenario1: Both supported providers are recognised in any case -> each has a request builder and a response handler of its own.
+  // testScenario2: An unknown, blank or null provider is asked for -> it is not supported and asking for its adapters throws.
+  // testScenario3: stringifyToolResult is given a String, a map and a list -> the String passes through untouched and the others are serialised to JSON.
+  // testScenario4: The canonical types are created -> tool calls are allowed on a request, and a response has no tool calls and no tokens.
+  // testScenario5: getFailureReason is given rejected credentials, an exhausted quota, a retired model, rate limiting, a timeout and other errors -> each maps to its own reason, and anything else to a provider error.
+  // testScenario6: The Anthropic Agent provider is asked for -> it is supported and has its own request builder, response handler and preset.
 
   @TestSetup
   static void setup() {
@@ -37,6 +38,7 @@ private class AIProviderTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Ask whether each provider is supported and fetch its builder and handler
     Test.startTest();
     Boolean isAnthropic = AIProvider.isSupported(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
@@ -44,12 +46,14 @@ private class AIProviderTest {
     Boolean isOpenAiLowerCase = AIProvider.isSupported(
       AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase()
     );
+
     IAIProviderRequestBuilder anthropicBuilder = AIProvider.getRequestBuilder(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
     IAIProviderResponseHandler anthropicHandler = AIProvider.getResponseHandler(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
+
     IAIProviderRequestBuilder openAiBuilder = AIProvider.getRequestBuilder(
       AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI
     );
@@ -58,21 +62,28 @@ private class AIProviderTest {
     );
     Test.stopTest();
 
-    Assert.isTrue(isAnthropic, 'Anthropic is supported.');
-    Assert.isTrue(isOpenAiLowerCase, 'The match ignores case.');
-    Assert.isTrue(
-      anthropicBuilder instanceof AIAnthropicRequestBuilder,
+    // [2] Check both providers are recognised with their own adapters
+    Assert.areEqual(true, isAnthropic, 'Anthropic is supported.');
+    Assert.areEqual(true, isOpenAiLowerCase, 'The match ignores case.');
+
+    Assert.areEqual(
+      true,
+      anthropicBuilder instanceof AIAnthropicMessageRequestBuilder,
       'Anthropic has its own request builder.'
     );
-    Assert.isTrue(
-      anthropicHandler instanceof AIAnthropicResponseHandler,
+    Assert.areEqual(
+      true,
+      anthropicHandler instanceof AIAnthropicMessageResponseHandler,
       'Anthropic has its own response handler.'
     );
-    Assert.isTrue(
+
+    Assert.areEqual(
+      true,
       openAiBuilder instanceof AIOpenAiRequestBuilder,
       'OpenAI has its own request builder.'
     );
-    Assert.isTrue(
+    Assert.areEqual(
+      true,
       openAiHandler instanceof AIOpenAiResponseHandler,
       'OpenAI has its own response handler.'
     );
@@ -80,6 +91,11 @@ private class AIProviderTest {
 
   @IsTest
   static void testScenario2() {
+    // [1] Prepare to capture the errors
+    String requestBuilderMessage;
+    String responseHandlerMessage;
+
+    // [2] Ask about an unknown, blank and null provider and fetch adapters that throw
     Test.startTest();
     Boolean isUnknown = AIProvider.isSupported('Skynet');
     Boolean isBlank = AIProvider.isSupported('');
@@ -87,33 +103,46 @@ private class AIProviderTest {
 
     try {
       AIProvider.getRequestBuilder('Skynet');
-      Assert.fail('An unsupported provider should have thrown.');
     } catch (AIProvider.AIProviderException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('Unsupported AI Provider'),
-        'The error says the provider is unsupported.'
-      );
+      requestBuilderMessage = ex.getMessage();
     }
 
     try {
       AIProvider.getResponseHandler(null);
-      Assert.fail('A null provider should have thrown.');
     } catch (AIProvider.AIProviderException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('Unsupported AI Provider'),
-        'The error says the provider is unsupported.'
-      );
+      responseHandlerMessage = ex.getMessage();
     }
     Test.stopTest();
 
-    Assert.isFalse(
-      isUnknown || isBlank || isNull,
-      'None of these is a provider.'
+    // [3] Check none is supported and both errors say so
+    Assert.areEqual(false, isUnknown, 'An unknown provider is not supported.');
+    Assert.areEqual(false, isBlank, 'A blank provider is not supported.');
+    Assert.areEqual(false, isNull, 'A null provider is not supported.');
+
+    Assert.isNotNull(
+      requestBuilderMessage,
+      'An unsupported provider should have thrown for its request builder.'
+    );
+    Assert.areEqual(
+      true,
+      requestBuilderMessage.contains('Unsupported AI Provider'),
+      'The error says the provider is unsupported.'
+    );
+
+    Assert.isNotNull(
+      responseHandlerMessage,
+      'A null provider should have thrown for its response handler.'
+    );
+    Assert.areEqual(
+      true,
+      responseHandlerMessage.contains('Unsupported AI Provider'),
+      'The error says the provider is unsupported.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Stringify a String, a map and a list
     Test.startTest();
     String fromString = AIProvider.stringifyToolResult('No records found.');
     String fromMap = AIProvider.stringifyToolResult(
@@ -124,6 +153,7 @@ private class AIProviderTest {
     );
     Test.stopTest();
 
+    // [2] Check the String passes through and the others become JSON
     Assert.areEqual(
       'No records found.',
       fromString,
@@ -135,16 +165,20 @@ private class AIProviderTest {
 
   @IsTest
   static void testScenario4() {
+    // [1] Create a request and a response
     Test.startTest();
     AIProvider.Request request = new AIProvider.Request();
     AIProvider.Response response = new AIProvider.Response();
     Test.stopTest();
 
-    Assert.isTrue(
+    // [2] Check the request allows tool calls and the response is empty
+    Assert.areEqual(
+      true,
       request.allowToolCalls,
       'A request allows tool calls until the last iteration turns them off.'
     );
-    Assert.isTrue(
+    Assert.areEqual(
+      true,
       response.toolCalls.isEmpty(),
       'A response has no tool calls.'
     );
@@ -155,6 +189,7 @@ private class AIProviderTest {
 
   @IsTest
   static void testScenario5() {
+    // [1] Define each status, body and expected reason
     // Status and body, then the reason expected.
     List<List<Object>> cases = new List<List<Object>>{
       new List<Object>{
@@ -220,18 +255,69 @@ private class AIProviderTest {
     };
     List<String> reasons = new List<String>();
 
+    // [2] Get the failure reason for every case
     Test.startTest();
-    for (List<Object> oneCase : cases)
+    for (List<Object> oneCase : cases) {
       reasons.add(
         AIProvider.getFailureReason((Integer) oneCase[0], (String) oneCase[1])
       );
+    }
     Test.stopTest();
 
-    for (Integer index = 0; index < cases.size(); index++)
+    // [3] Check each case maps to its own reason
+    for (Integer index = 0; index < cases.size(); index++) {
       Assert.areEqual(
         cases[index][2],
         reasons[index],
         'HTTP ' + cases[index][0] + ' with ' + cases[index][1]
       );
+    }
+  }
+
+  @IsTest
+  static void testScenario6() {
+    // [1] Ask for the Anthropic Agent provider's adapters and preset
+    Test.startTest();
+    Boolean isSupported = AIProvider.isSupported(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT
+    );
+    IAIProviderRequestBuilder builder = AIProvider.getRequestBuilder(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT
+    );
+    IAIProviderResponseHandler handler = AIProvider.getResponseHandler(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT
+    );
+    AIProvider.Preset preset = AIProvider.getPreset(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT,
+      null
+    );
+    Test.stopTest();
+
+    // [2] Check each
+    Assert.areEqual(
+      true,
+      isSupported,
+      'The Anthropic Agent provider is supported.'
+    );
+    Assert.areEqual(
+      true,
+      builder instanceof AIAnthropicAgentRequestBuilder,
+      'It has its own request builder.'
+    );
+    Assert.areEqual(
+      true,
+      handler instanceof AIAnthropicAgentResponseHandler,
+      'It has its own response handler.'
+    );
+    Assert.areEqual(
+      '/v1/sessions',
+      preset.apiPath,
+      'Its preset starts sessions.'
+    );
+    Assert.areEqual(
+      'x-api-key',
+      preset.headerName,
+      'It authenticates with the API key.'
+    );
   }
 }

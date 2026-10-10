@@ -4,21 +4,12 @@ Class Name: AIConversationRetentionRecalcBatch
 =================================================================
 =================================================================
 
-Description: Recalculates RetentionExpiryDate__c on every conversation of the agents whose
-retention settings changed (ConversationRetentionDays__c or RetentionTrigger__c), started by
-AIAgentTriggerHandler. Without it a change applies only to conversations created afterwards, so
-shortening an agent's retention would leave its older conversations to live out the old period.
+Description: Recalculates RetentionExpiryDate__c on every conversation of the agents whose retention settings changed.
 
-The same rules the triggers apply as a conversation is created, messaged and closed:
-- Retention Days blank or under 1: no expiry date (kept indefinitely). A date already set is cleared.
-- Conversation Created Date: created date plus the days.
-- Last Message Date: the last message (or creation, with no message yet) plus the days.
-- Conversation Closed Date: the close time plus the days; no date while the conversation is open.
-Dates are in GMT, as in the triggers. A conversation on legal hold has its date recalculated too: the
-hold, not the date, is what stops the retention batch deleting it.
-
-Runs whether or not the application is switched on, in system mode: retention applies to every user's
-conversations. Only conversations whose date actually changes are written.
+Step 1: Query every conversation of the agents whose retention days or trigger changed
+Step 2: Work out the date each conversation's retention is counted from, using the agent's trigger (blank or under 1 day means no expiry date)
+Step 3: Add the retention days to that date (GMT) to get the new expiry date
+Step 4: Write only the conversations whose expiry date changed, logging any failures
 
 =================================================================
 =================================================================
@@ -27,14 +18,16 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-public inherited sharing class AIConversationRetentionRecalcBatch implements Database.Batchable<SObject> {
+public without sharing class AIConversationRetentionRecalcBatch implements Database.Batchable<SObject> {
   private Set<Id> agentIds;
 
   public AIConversationRetentionRecalcBatch(Set<Id> agentIds) {
     this.agentIds = agentIds == null ? new Set<Id>() : agentIds;
   }
 
+  // Finds every conversation belonging to the agents whose retention settings changed.
   public Database.QueryLocator start(Database.BatchableContext context) {
+    // [1] Query the conversations with the agent's retention settings
     return Database.getQueryLocator(
       [
         SELECT
@@ -53,17 +46,21 @@ public inherited sharing class AIConversationRetentionRecalcBatch implements Dat
     );
   }
 
+  // Recalculates the expiry date of each conversation and saves the ones that changed.
   public void execute(
     Database.BatchableContext context,
     List<AIConversation__c> scope
   ) {
+    // [1] Collect the conversations whose expiry date needs to change
     List<AIConversation__c> changed = new List<AIConversation__c>();
 
     for (AIConversation__c conversation : scope) {
+      // [2] Read the agent's retention settings
       Decimal retentionDays = conversation.AIAgent__r.ConversationRetentionDays__c;
       String retentionTrigger = conversation.AIAgent__r.RetentionTrigger__c;
       Datetime countedFrom = null;
 
+      // [3] Pick the date to count from, only when the agent keeps conversations for a set time
       if (retentionDays != null && retentionDays >= 1) {
         if (
           retentionTrigger ==
@@ -86,9 +83,12 @@ public inherited sharing class AIConversationRetentionRecalcBatch implements Dat
           countedFrom = conversation.ConversationClosedTimestamp__c;
       }
 
+      // [4] Add the retention days to get the new expiry date (none when there is nothing to count from)
       Date expiryDate = countedFrom == null
         ? null
         : countedFrom.dateGmt().addDays(Integer.valueOf(retentionDays));
+
+      // [5] Keep the conversation only if its expiry date is different
       if (expiryDate != conversation.RetentionExpiryDate__c)
         changed.add(
           new AIConversation__c(
@@ -98,6 +98,7 @@ public inherited sharing class AIConversationRetentionRecalcBatch implements Dat
         );
     }
 
+    // [6] Save the changes and log any failures
     AIMessagingDataService.updateAndLogFailures(
       changed,
       'AIConversationRetentionRecalcBatch',
@@ -105,6 +106,7 @@ public inherited sharing class AIConversationRetentionRecalcBatch implements Dat
     );
   }
 
+  // Nothing to do when the batch finishes.
   public void finish(Database.BatchableContext context) {
   }
 }

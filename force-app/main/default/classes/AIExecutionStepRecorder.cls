@@ -4,33 +4,23 @@ Class Name: AIExecutionStepRecorder
 =================================================================
 =================================================================
 
-Description: Turns one AIExecutionStepTracker into the AIExecutionStep__c rows (and the
-AIPIIMaskingRecord__c rows under them) for a turn that has just ended.
+Description: Saves the execution steps (and masking records) for a turn that has just ended, as audit evidence.
 
-This is audit evidence, so it is written for every turn, successful or failed, and whether or
-not debug mode is on:
-- A Provider Call step carries the provider and model, how many records and fields were sent, the
-  object and field NAMES (never values), and whether masking ran. One AIPIIMaskingRecord__c is
-  written per masked field.
-- Data Source and Workflow Action steps carry their target and outcome.
-- The request, response and sent preview are the only debug-only part: captured when the
-  tracker's captureFullDetail is on, and only on the last provider call, because the tracker
-  only ever holds the most recent call's.
-
-Steps are children of a message: the AI reply when there is one, the user's message when the
-turn failed. A step the object model would refuse (a provider call with no provider or model) is
-logged and skipped; it never turns a finished answer into a failure.
+Step 1: Skip the turn when there is no message, no steps, or step capture is Off
+Step 2: Find the last provider call, the only one that carries the debug payloads
+Step 3: Build one execution step per tracker entry
+Step 4: Save the steps, logging any that fail
+Step 5: Build one masking record per masked field under each saved step
+Step 6: Save the masking records, logging any that fail
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt for the object model: step types, provider evidence, masking records, every turn and failed turns, not only successful turns with debug on.
-3.0          Chandler Stuart          Honours AIAssistSettings__c.StepCaptureMode__c: Off stores no turn steps, and only Full carries payloads.
 */
 
-public inherited sharing class AIExecutionStepRecorder {
+public without sharing class AIExecutionStepRecorder {
   // providerName and modelIdentifier label a Provider Call step the tracker did not label itself; the object model refuses one without both.
   public static void recordExecutionSteps(
     Id messageId,
@@ -39,6 +29,7 @@ public inherited sharing class AIExecutionStepRecorder {
     String modelIdentifier
   ) {
     try {
+      // [1] Nothing to record when there is no message or no steps, or when capture is Off (a Workflow Action a user runs is still recorded by recordWorkflowActionStep)
       if (
         messageId == null ||
         executionTrace == null ||
@@ -46,15 +37,17 @@ public inherited sharing class AIExecutionStepRecorder {
         AIAssistSettingsService.getSettings().StepCaptureMode__c ==
         AIAssistApplicationConstants.STEP_CAPTURE_OFF
       )
-        return; // Off stores nothing for the turn. A Workflow Action a user runs is still recorded (recordWorkflowActionStep).
+        return;
 
+      // [2] Find the last provider call, because only that call keeps its payloads
       Integer lastProviderCallIndex = -1;
+
       for (
         Integer traceIndex = 0;
         traceIndex < executionTrace.steps.size();
         traceIndex++
       ) {
-        // A step the tracker did not label is a data source step when it names a data source, a provider call otherwise.
+        // [3] A step the tracker did not label is a data source step when it names a data source, and a provider call otherwise
         String traceStepType = String.isNotBlank(
             executionTrace.steps[traceIndex].stepType
           )
@@ -62,6 +55,7 @@ public inherited sharing class AIExecutionStepRecorder {
           : (executionTrace.steps[traceIndex].dataSourceId != null
               ? AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE
               : AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL);
+
         if (
           traceStepType == AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL
         )
@@ -75,6 +69,7 @@ public inherited sharing class AIExecutionStepRecorder {
         stepIndex < executionTrace.steps.size();
         stepIndex++
       ) {
+        // [4] Work out the step type the same way, then build the step with the fields every type shares
         AIExecutionStepTracker.StepEntry entry = executionTrace.steps[
           stepIndex
         ];
@@ -102,6 +97,7 @@ public inherited sharing class AIExecutionStepRecorder {
           TargetObject__c = entry.targetObject
         );
 
+        // [5] Add the provider evidence to a provider call: names, counts and whether masking ran, never values
         if (type == AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL) {
           executionStep.Provider__c = String.isNotBlank(entry.provider)
             ? entry.provider
@@ -123,7 +119,7 @@ public inherited sharing class AIExecutionStepRecorder {
           );
           executionStep.PIIMaskingApplied__c = entry.piiMaskingApplied;
 
-          // Payloads are customer data and large: kept only in Full capture mode (the tracker is told), and only for the last call.
+          // [6] Keep the payloads only in Full capture mode and only on the last call, because they are customer data and large
           if (
             executionTrace.captureFullDetail &&
             stepIndex == lastProviderCallIndex
@@ -143,6 +139,7 @@ public inherited sharing class AIExecutionStepRecorder {
           }
         }
 
+        // [7] Add the target and confirmation details to a workflow action
         if (type == AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION) {
           executionStep.TargetRecordId__c = entry.targetRecordId;
           executionStep.RequiredConfirmation__c = entry.requiredConfirmation;
@@ -153,13 +150,14 @@ public inherited sharing class AIExecutionStepRecorder {
         stepsToInsert.add(executionStep);
       }
 
+      // [8] Save the steps, logging any that fail
       AIMessagingDataService.insertAndLogFailures(
         stepsToInsert,
         'AIExecutionStepRecorder',
         'recordExecutionSteps'
       );
 
-      // One row per masked field, under the step that sent the data. Names and counts only; write-once evidence.
+      // [9] Build one row per masked field under the step that sent the data (names and counts only, written once)
       List<AIPIIMaskingRecord__c> maskingRecords = new List<AIPIIMaskingRecord__c>();
 
       for (
@@ -167,8 +165,9 @@ public inherited sharing class AIExecutionStepRecorder {
         maskingStepIndex < executionTrace.steps.size();
         maskingStepIndex++
       ) {
+        // [10] Skip a step that did not save, because there is nothing to attach evidence to
         if (stepsToInsert[maskingStepIndex].Id == null)
-          continue; // The step did not save, so there is nothing to attach evidence to.
+          continue;
 
         for (
           AIExecutionStepTracker.MaskingEntry maskingEntry : executionTrace.steps[
@@ -193,14 +192,15 @@ public inherited sharing class AIExecutionStepRecorder {
         }
       }
 
+      // [11] Save the masking records, logging any that fail
       AIMessagingDataService.insertAndLogFailures(
         maskingRecords,
         'AIExecutionStepRecorder',
         'recordExecutionSteps'
       );
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIExecutionStepRecorder',
         'recordExecutionSteps'
       );
@@ -217,9 +217,11 @@ public inherited sharing class AIExecutionStepRecorder {
     Long durationMilliseconds
   ) {
     try {
+      // [1] Nothing to record without a message and an action
       if (messageId == null || action == null)
         return;
 
+      // [2] Find the highest step order already on the message, so the new step goes last
       List<AggregateResult> highestOrderRows = [
         SELECT MAX(StepOrder__c) highestOrder
         FROM AIExecutionStep__c
@@ -231,10 +233,12 @@ public inherited sharing class AIExecutionStepRecorder {
         ? 0
         : (Decimal) highestOrderRows[0].get('highestOrder');
 
+      // [3] Count it as confirmed only when the user confirmed an action that asks for confirmation
       Boolean isConfirmed =
         wasConfirmed == true &&
         action.RequiresConfirmation__c == true;
 
+      // [4] Save the step, logging any failure
       AIMessagingDataService.insertAndLogFailures(
         new List<SObject>{
           new AIExecutionStep__c(
@@ -256,17 +260,18 @@ public inherited sharing class AIExecutionStepRecorder {
         'AIExecutionStepRecorder',
         'recordWorkflowActionStep'
       );
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIExecutionStepRecorder',
         'recordWorkflowActionStep'
       );
     }
   }
 
-  // Cut to the field's size: an over-length value fails the whole insert and would lose the evidence row with it.
+  // Cuts a value to the field's size, because an over-length value fails the whole insert and would lose the evidence row with it.
   private static String truncate(String value, Integer maxLength) {
+    // [1] Cut the value to the length, keeping null as null
     return value == null ? null : value.left(maxLength);
   }
 }

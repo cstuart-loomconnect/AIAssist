@@ -1145,16 +1145,6 @@
     >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
     </labels>
     <labels>
-        <fullName>AI_Chat_Blocked_No_Licence</fullName>
-        <categories>AI Assist,Chat</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: the user has no package licence.</shortDescription>
-        <value
-    >You don&apos;t have an AI Assist licence. Ask your administrator to assign one.</value>
-    </labels>
-    <labels>
         <fullName>AI_Chat_Blocked_Not_Assigned</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
