@@ -18,12 +18,12 @@ Version      Author                   Description
 */
 
 global without sharing class AIWorkflowActionResponse {
-  global String message;
 
-  global AIWorkflowActionResponse() {
-  }
+    global String message;
 
-  global AIWorkflowActionResponse(String message) {
-    this.message = message;
-  }
+    global AIWorkflowActionResponse() {}
+
+    global AIWorkflowActionResponse(String message) {
+        this.message = message;
+    }
 }

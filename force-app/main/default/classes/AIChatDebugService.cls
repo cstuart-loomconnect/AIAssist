@@ -19,223 +19,127 @@ Version      Author                   Description
 */
 
 public without sharing class AIChatDebugService {
-  private class LongestFirst implements Comparator<String> {
-    public Integer compare(String first, String second) {
-      // [1] Put the longer value first
-      return second.length() - first.length();
-    }
-  }
 
-  // The request trace for a reply: its tokens, model, execution steps and, when the user had debug mode on at the time, the payloads. The caller has already checked debug mode and that the user owns the conversation.
-  public static AIChatDataStructure.DebugTrace getDebugTrace(
-    AIConversationMessage__c reply
-  ) {
-    // [1] Copy the reply's details onto the trace
-    AIChatDataStructure.DebugTrace debugTrace = new AIChatDataStructure.DebugTrace();
-    debugTrace.conversationId = reply.AIConversation__c;
-    debugTrace.conversationName = reply.AIConversation__r.Name;
-    debugTrace.replyMessageId = reply.Id;
-    debugTrace.replyTokens = reply.TokenCount__c;
+    private class LongestFirst implements Comparator<String> {
 
-    // [2] Find the user message the reply answered, and add its tokens and how long the reply took
-    List<AIConversationMessage__c> promptMessages = [
-      SELECT Id, TokenCount__c, CreatedDate
-      FROM AIConversationMessage__c
-      WHERE
-        AIConversation__c = :reply.AIConversation__c
-        AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
-        AND CreatedDate <= :reply.CreatedDate
-      WITH SYSTEM_MODE
-      ORDER BY CreatedDate DESC, Id DESC
-      LIMIT 1
-    ];
+        public Integer compare(String first, String second) {
 
-    if (!promptMessages.isEmpty()) {
-      debugTrace.userMessageId = promptMessages[0].Id;
-      debugTrace.promptTokens = promptMessages[0].TokenCount__c;
-      debugTrace.durationMs =
-        reply.CreatedDate.getTime() - promptMessages[0].CreatedDate.getTime();
+            // [1] Put the longer value first
+            return second.length() - first.length();
+        }
     }
 
-    // [3] Add the model configuration the conversation's agent uses
-    List<AIConversation__c> conversationAgentModels = [
-      SELECT
-        AIAgent__r.AIModelConfiguration__r.Name,
-        AIAgent__r.AIModelConfiguration__r.AIProvider__c,
-        AIAgent__r.AIModelConfiguration__r.ModelIdentifier__c
-      FROM AIConversation__c
-      WHERE Id = :reply.AIConversation__c
-      WITH SYSTEM_MODE
-      LIMIT 1
-    ];
+    // The request trace for a reply: its tokens, model, execution steps and, when the user had debug mode on at the time, the payloads. The caller has already checked debug mode and that the user owns the conversation.
+    public static AIChatDataStructure.DebugTrace getDebugTrace(AIConversationMessage__c reply) {
 
-    if (
-      !conversationAgentModels.isEmpty() &&
-      conversationAgentModels[0].AIAgent__r != null &&
-      conversationAgentModels[0].AIAgent__r.AIModelConfiguration__r != null
-    ) {
-      AIModelConfiguration__c modelConfiguration = conversationAgentModels[0]
-        .AIAgent__r.AIModelConfiguration__r;
-      debugTrace.modelConfiguration = modelConfiguration.Name;
-      debugTrace.provider = modelConfiguration.AIProvider__c;
-      debugTrace.model = modelConfiguration.ModelIdentifier__c;
+        // [1] Copy the reply's details onto the trace
+        AIChatDataStructure.DebugTrace debugTrace = new AIChatDataStructure.DebugTrace();
+        debugTrace.conversationId = reply.AIConversation__c;
+        debugTrace.conversationName = reply.AIConversation__r.Name;
+        debugTrace.replyMessageId = reply.Id;
+        debugTrace.replyTokens = reply.TokenCount__c;
+
+        // [2] Find the user message the reply answered, and add its tokens and how long the reply took
+        List<AIConversationMessage__c> promptMessages = [SELECT Id, TokenCount__c, CreatedDate FROM AIConversationMessage__c WHERE AIConversation__c = :reply.AIConversation__c AND Sender__c = :AIAssistApplicationConstants.SENDER_USER AND CreatedDate <= :reply.CreatedDate WITH SYSTEM_MODE ORDER BY CreatedDate DESC, Id DESC LIMIT 1];
+
+        if (!promptMessages.isEmpty()) {
+
+            debugTrace.userMessageId = promptMessages[0].Id;
+            debugTrace.promptTokens = promptMessages[0].TokenCount__c;
+            debugTrace.durationMs = reply.CreatedDate.getTime() - promptMessages[0].CreatedDate.getTime();
+        }
+
+        // [3] Add the model configuration the conversation's agent uses
+        List<AIConversation__c> conversationAgentModels = [SELECT AIAgent__r.AIModelConfiguration__r.Name, AIAgent__r.AIModelConfiguration__r.AIProvider__c, AIAgent__r.AIModelConfiguration__r.ModelIdentifier__c FROM AIConversation__c WHERE Id = :reply.AIConversation__c WITH SYSTEM_MODE LIMIT 1];
+
+        if (!conversationAgentModels.isEmpty() && conversationAgentModels[0].AIAgent__r != null && conversationAgentModels[0].AIAgent__r.AIModelConfiguration__r != null) {
+
+            AIModelConfiguration__c modelConfiguration = conversationAgentModels[0].AIAgent__r.AIModelConfiguration__r;
+            debugTrace.modelConfiguration = modelConfiguration.Name;
+            debugTrace.provider = modelConfiguration.AIProvider__c;
+            debugTrace.model = modelConfiguration.ModelIdentifier__c;
+        }
+
+        // [4] Add each execution step of the reply, and the totals and payloads they carry
+        for (AIExecutionStep__c step : [SELECT StepOrder__c, Status__c, StepType__c, StepDetail__c, DurationMilliseconds__c, AIDataSource__c, AIDataSource__r.DeveloperName__c, AIWorkflowAction__c, AIWorkflowAction__r.ActionName__c, ToolCallingIterationsUsed__c, ToolCallingIterationsMax__c, AttemptNumber__c, SentPreviewText__c, RequestJson__c, ResponseJson__c, PIIValuesMasked__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id WITH SYSTEM_MODE ORDER BY StepOrder__c]) {
+
+            debugTrace.steps.add(AIChatConversationService.buildExecutionStep(step));
+            if (step.AIDataSource__c != null) debugTrace.toolCalls++;
+            if (step.Status__c == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED) debugTrace.isSuccess = false;
+            if (step.PIIValuesMasked__c != null) debugTrace.piiFieldsMasked += step.PIIValuesMasked__c.intValue();
+
+            // [5] Take the iteration and attempt figures, which every step of a reply carries, and the payloads, which only the last provider call carries
+            if (step.ToolCallingIterationsUsed__c != null) debugTrace.toolCallingIterationsUsed = step.ToolCallingIterationsUsed__c.intValue();
+            if (step.ToolCallingIterationsMax__c != null) debugTrace.toolCallingIterationsMax = step.ToolCallingIterationsMax__c.intValue();
+            if (step.AttemptNumber__c != null) debugTrace.attemptNumber = step.AttemptNumber__c.intValue();
+            if (String.isNotBlank(step.RequestJson__c)) debugTrace.requestJson = step.RequestJson__c;
+            if (String.isNotBlank(step.ResponseJson__c)) debugTrace.responseJson = step.ResponseJson__c;
+            if (String.isNotBlank(step.SentPreviewText__c)) debugTrace.sentPreviewText = step.SentPreviewText__c;
+        }
+
+        // [6] Return the trace
+        return debugTrace;
     }
 
-    // [4] Add each execution step of the reply, and the totals and payloads they carry
-    for (AIExecutionStep__c step : [
-      SELECT
-        StepOrder__c,
-        Status__c,
-        StepType__c,
-        StepDetail__c,
-        DurationMilliseconds__c,
-        AIDataSource__c,
-        AIDataSource__r.DeveloperName__c,
-        AIWorkflowAction__c,
-        AIWorkflowAction__r.ActionName__c,
-        ToolCallingIterationsUsed__c,
-        ToolCallingIterationsMax__c,
-        AttemptNumber__c,
-        SentPreviewText__c,
-        RequestJson__c,
-        ResponseJson__c,
-        PIIValuesMasked__c
-      FROM AIExecutionStep__c
-      WHERE AIConversationMessage__c = :reply.Id
-      WITH SYSTEM_MODE
-      ORDER BY StepOrder__c
-    ]) {
-      debugTrace.steps.add(AIChatConversationService.buildExecutionStep(step));
-      if (step.AIDataSource__c != null)
-        debugTrace.toolCalls++;
-      if (
-        step.Status__c ==
-        AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED
-      )
-        debugTrace.isSuccess = false;
-      if (step.PIIValuesMasked__c != null)
-        debugTrace.piiFieldsMasked += step.PIIValuesMasked__c.intValue();
+    // The log reference to quote to an administrator and, with debug mode, the detail recorded on the failed turn's System message.
+    public static AIChatDataStructure.FailureDetail getFailureDetail(Id conversationId, Boolean includeDebugDetail) {
 
-      // [5] Take the iteration and attempt figures, which every step of a reply carries, and the payloads, which only the last provider call carries
-      if (step.ToolCallingIterationsUsed__c != null)
-        debugTrace.toolCallingIterationsUsed = step.ToolCallingIterationsUsed__c.intValue();
-      if (step.ToolCallingIterationsMax__c != null)
-        debugTrace.toolCallingIterationsMax = step.ToolCallingIterationsMax__c.intValue();
-      if (step.AttemptNumber__c != null)
-        debugTrace.attemptNumber = step.AttemptNumber__c.intValue();
-      if (String.isNotBlank(step.RequestJson__c))
-        debugTrace.requestJson = step.RequestJson__c;
-      if (String.isNotBlank(step.ResponseJson__c))
-        debugTrace.responseJson = step.ResponseJson__c;
-      if (String.isNotBlank(step.SentPreviewText__c))
-        debugTrace.sentPreviewText = step.SentPreviewText__c;
+        // [1] Find the user's most recent log in the last 15 minutes, to quote as the reference
+        AIChatDataStructure.FailureDetail failureDetail = new AIChatDataStructure.FailureDetail();
+        Datetime windowStart = System.now().addMinutes(-15);
+
+        List<AIPlatformLog__c> recentLogs = [SELECT Name FROM AIPlatformLog__c WHERE User__c = :UserInfo.getUserId() AND CreatedDate >= :windowStart WITH SYSTEM_MODE ORDER BY CreatedDate DESC LIMIT 1];
+        failureDetail.reference = recentLogs.isEmpty() ? null : recentLogs[0].Name;
+
+        if (includeDebugDetail) {
+
+            // [2] Find when the latest turn started, because a System message from before the newest user message belongs to an earlier turn and would mislead
+            List<AIConversationMessage__c> latestUserMessages = [SELECT CreatedDate FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c = :AIAssistApplicationConstants.SENDER_USER WITH SYSTEM_MODE ORDER BY CreatedDate DESC, Id DESC LIMIT 1];
+            Datetime turnStartedAt = latestUserMessages.isEmpty() ? Datetime.newInstance(1970, 1, 1) : latestUserMessages[0].CreatedDate;
+
+            // [3] Add the detail recorded on that turn's System message, if there is one
+            List<AIConversationMessage__c> failedTurns = [SELECT MessageBody__c FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c = :AIAssistApplicationConstants.SENDER_SYSTEM AND CreatedDate >= :turnStartedAt WITH SYSTEM_MODE ORDER BY CreatedDate DESC, Id DESC LIMIT 1];
+
+            if (!failedTurns.isEmpty()) failureDetail.debugDetail = failedTurns[0].MessageBody__c;
+        }
+
+        // [4] Return the detail
+        return failureDetail;
     }
 
-    // [6] Return the trace
-    return debugTrace;
-  }
+    // Fake value to real value from the conversation's mapping. Empty when nothing was masked.
+    public static Map<String, String> getRealValueByFakeValue(Id conversationId) {
 
-  // The log reference to quote to an administrator and, with debug mode, the detail recorded on the failed turn's System message.
-  public static AIChatDataStructure.FailureDetail getFailureDetail(
-    Id conversationId,
-    Boolean includeDebugDetail
-  ) {
-    // [1] Find the user's most recent log in the last 15 minutes, to quote as the reference
-    AIChatDataStructure.FailureDetail failureDetail = new AIChatDataStructure.FailureDetail();
-    Datetime windowStart = System.now().addMinutes(-15);
+        // [1] Read the conversation's mapping of real values to fake ones
+        Map<String, String> realValueByFakeValue = new Map<String, String>();
+        Map<String, String> fakeValueByRealValue = AIPiiMappingService.getMapping(conversationId);
 
-    List<AIPlatformLog__c> recentLogs = [
-      SELECT Name
-      FROM AIPlatformLog__c
-      WHERE User__c = :UserInfo.getUserId() AND CreatedDate >= :windowStart
-      WITH SYSTEM_MODE
-      ORDER BY CreatedDate DESC
-      LIMIT 1
-    ];
-    failureDetail.reference = recentLogs.isEmpty() ? null : recentLogs[0].Name;
+        // [2] Turn it round, so each fake value points to its real value
+        for (String realValue : fakeValueByRealValue.keySet()) realValueByFakeValue.put(fakeValueByRealValue.get(realValue), realValue);
 
-    if (includeDebugDetail) {
-      // [2] Find when the latest turn started, because a System message from before the newest user message belongs to an earlier turn and would mislead
-      List<AIConversationMessage__c> latestUserMessages = [
-        SELECT CreatedDate
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversationId
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC, Id DESC
-        LIMIT 1
-      ];
-      Datetime turnStartedAt = latestUserMessages.isEmpty()
-        ? Datetime.newInstance(1970, 1, 1)
-        : latestUserMessages[0].CreatedDate;
-
-      // [3] Add the detail recorded on that turn's System message, if there is one
-      List<AIConversationMessage__c> failedTurns = [
-        SELECT MessageBody__c
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversationId
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_SYSTEM
-          AND CreatedDate >= :turnStartedAt
-        WITH SYSTEM_MODE
-        ORDER BY CreatedDate DESC, Id DESC
-        LIMIT 1
-      ];
-
-      if (!failedTurns.isEmpty())
-        failureDetail.debugDetail = failedTurns[0].MessageBody__c;
+        // [3] Return the turned round mapping
+        return realValueByFakeValue;
     }
 
-    // [4] Return the detail
-    return failureDetail;
-  }
+    // Swaps each fake value in a reply back to its real value, longest first so "Morgan Reyes" is replaced whole before "Morgan".
+    public static String restorePii(String text, Map<String, String> realValueByFakeValue) {
 
-  // Fake value to real value from the conversation's mapping. Empty when nothing was masked.
-  public static Map<String, String> getRealValueByFakeValue(Id conversationId) {
-    // [1] Read the conversation's mapping of real values to fake ones
-    Map<String, String> realValueByFakeValue = new Map<String, String>();
-    Map<String, String> fakeValueByRealValue = AIPiiMappingService.getMapping(
-      conversationId
-    );
+        // [1] Nothing to restore when there is no text or no mapping
+        if (String.isBlank(text) || realValueByFakeValue == null || realValueByFakeValue.isEmpty()) return text;
 
-    // [2] Turn it round, so each fake value points to its real value
-    for (String realValue : fakeValueByRealValue.keySet())
-      realValueByFakeValue.put(fakeValueByRealValue.get(realValue), realValue);
+        // [2] Put the fake values longest first
+        List<String> fakeValues = new List<String>(realValueByFakeValue.keySet());
+        fakeValues.sort(new LongestFirst());
 
-    // [3] Return the turned round mapping
-    return realValueByFakeValue;
-  }
+        // [3] Replace each fake value with its real value
+        String restored = text;
 
-  // Swaps each fake value in a reply back to its real value, longest first so "Morgan Reyes" is replaced whole before "Morgan".
-  public static String restorePii(
-    String text,
-    Map<String, String> realValueByFakeValue
-  ) {
-    // [1] Nothing to restore when there is no text or no mapping
-    if (
-      String.isBlank(text) ||
-      realValueByFakeValue == null ||
-      realValueByFakeValue.isEmpty()
-    )
-      return text;
+        for (String fakeValue : fakeValues) {
 
-    // [2] Put the fake values longest first
-    List<String> fakeValues = new List<String>(realValueByFakeValue.keySet());
-    fakeValues.sort(new LongestFirst());
+            if (String.isNotBlank(fakeValue)) restored = restored.replace(fakeValue, realValueByFakeValue.get(fakeValue));
+        }
 
-    // [3] Replace each fake value with its real value
-    String restored = text;
-
-    for (String fakeValue : fakeValues) {
-      if (String.isNotBlank(fakeValue))
-        restored = restored.replace(
-          fakeValue,
-          realValueByFakeValue.get(fakeValue)
-        );
+        // [4] Return the restored text
+        return restored;
     }
-
-    // [4] Return the restored text
-    return restored;
-  }
 }

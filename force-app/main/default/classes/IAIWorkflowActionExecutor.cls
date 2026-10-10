@@ -22,5 +22,6 @@ Version      Author                   Description
 */
 
 global interface IAIWorkflowActionExecutor {
-  AIWorkflowActionResponse execute(AIWorkflowActionRequest request);
+
+    AIWorkflowActionResponse execute(AIWorkflowActionRequest request);
 }

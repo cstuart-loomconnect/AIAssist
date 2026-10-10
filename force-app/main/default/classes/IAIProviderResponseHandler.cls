@@ -20,12 +20,7 @@ Version      Author                   Description
 */
 
 public interface IAIProviderResponseHandler {
-  // request is the one that produced response (null when only tool results are being added); most providers ignore it, but one that needs further callouts to finish its answer reads its session from it. Shapes providerMessages for one job: either appends prior tool results (previousToolCalls/previousToolResults set, response null) or parses response and appends the assistant turn (response set, previousToolCalls/previousToolResults null).
-  AIProvider.Response handleResponse(
-    List<Map<String, Object>> providerMessages,
-    HttpResponse response,
-    List<AIProvider.ToolCall> previousToolCalls,
-    List<Object> previousToolResults,
-    AIProvider.Request request
-  );
+
+    // request is the one that produced response (null when only tool results are being added); most providers ignore it, but one that needs further callouts to finish its answer reads its session from it. Shapes providerMessages for one job: either appends prior tool results (previousToolCalls/previousToolResults set, response null) or parses response and appends the assistant turn (response set, previousToolCalls/previousToolResults null).
+    AIProvider.Response handleResponse(List<Map<String, Object>> providerMessages, HttpResponse response, List<AIProvider.ToolCall> previousToolCalls, List<Object> previousToolResults, AIProvider.Request request);
 }

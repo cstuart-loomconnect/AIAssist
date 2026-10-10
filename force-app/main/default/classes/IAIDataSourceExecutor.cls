@@ -20,5 +20,6 @@ Version      Author                   Description
 */
 
 global interface IAIDataSourceExecutor {
-  AIDataSourceResponse execute(AIDataSourceRequest request);
+
+    AIDataSourceResponse execute(AIDataSourceRequest request);
 }

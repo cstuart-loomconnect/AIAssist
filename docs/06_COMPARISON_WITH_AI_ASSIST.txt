@@ -1,0 +1,113 @@
+AIAssist (master) vs AI-Assist (old repo) - comparison
+Date: 2026-10-10
+Compared: AIAssist branch integration-testing (f71251c, which includes feature/phase1-managed-package-permanence via PR #32; read straight from git) against AI-Assist, by file name, plus git history of AIAssist. Same-named files were not diffed line by line.
+
+Legend
+  [REMOVED]   Deliberately removed from AIAssist (named in commit 82bd30c, cdb6598 or 79e1b18). Not a gap.
+  [NOT PORTED] Never existed in AIAssist history. Decide whether it is needed.
+  [OUT OF SCOPE] Chat window / UI work, parked by decision.
+  [RENAMED]   Same job, new name - not a gap.
+
+==========================================================================
+SECTION 1: Missing from AIAssist (present in AI-Assist)
+==========================================================================
+
+--- 1A. Not ported - decide whether you need them -------------------------
+
+Apex
+  AIAssistUserDefaults / AIAssistUserTriggerHandler / AIAssistUserTrigger [PORTED, CHANGED] - Creates default AIUserSettings__c for new active Users, reactivates it when a User is reactivated and deactivates it when a User is deactivated. Driven by User.IsActive because AIAssistUserType__c is gone; the user-type permission set assignment, the before-insert PublicId/DeveloperName step and the TermsAcknowledged default were not carried over.
+  AITermsAcknowledgmentTriggerHandler / AITermsAcknowledgmentTrigger [NOT PORTED] - Validates and stamps terms acknowledgment rows on insert.
+  AIPiiRegistryDispatcher / AIPiiRegistryWorker [RENAMED] - Now AIPiiRegistrySyncDispatcher / AIPiiRegistrySyncWorker.
+  AIConversationSimulator / AIConversationScenarioStep [NOT PORTED] - Scripted conversation runner for demos and manual testing.
+  AIDemoOrgSetup [NOT PORTED] - Builds demo agents and data in an org.
+  AiDataSourceDemoExecutor [NOT PORTED] - Sample data source executor for demos.
+  AIMojoCodeReader / AIMojoRecordReader / AIMojoDemoActions [NOT PORTED] - Mojo Mortgages demo actions; need Mojo-only fields, deliberately demo-only.
+
+Triggers and handlers
+  AIDataSourceTrigger + handler	[REMOVED in cdb6598]	Only stamped DeveloperName__c (cut to 64 characters). It is now a required field, so the trigger is not needed.
+  AIWorkflowActionTrigger + handler	[REMOVED in cdb6598]	Only stamped DeveloperName__c. It is now a required field, so the trigger is not needed.
+  AIModelConfigurationTrigger + handler [REMOVED in cdb6598] - Stamped DeveloperName; AIModelConfiguration__c in AIAssist has no DeveloperName__c field, so nothing is lost. (Commit 82bd30c's note about restoring the handler no longer applies.)
+
+Metadata (objects and fields)
+  AIPiiComplianceGroupMapping__mdt [NOT PORTED] - Maps compliance groups to PII field types.
+  AIPiiFieldTypeRule__mdt [NOT PORTED] - Per-field-type masking rule.
+  AIAgent__c.AIFallbackMessage__c, NoMatchBehavior__c, IsTestModeEnabled__c [NOT PORTED, NOT NEEDED] - Never read at runtime in the old repo (only the demo setup class wrote the first two; the third was never referenced). Not needed: the AI returns its own unable-to-complete reply.
+  AIAgent__c.ObjectType__c [REPLACED] - Replaced by ObjectApiNames__c, which holds several objects; blank means a general agent.
+  AIAgent__c.SetupStatus__c, SetupCurrentStep__c, SetupLastEdited__c [NOT PORTED] - Agent wizard progress (console feature).
+  AIAssistSettings__c.DefaultModelConfiguration__c, GlobalTokenBudgetPerDay__c, AuditLoggingRecordId__c [NOT PORTED, NOT NEEDED] - Removed on purpose. There is no org-wide token budget: token limits are per user (AIUserSettings__c.MaxTokensPer24Hours__c, or the lowest AIUsagePolicy__c value that applies) and per conversation (AIAgent__c.MaxTokensPerConversation__c).
+  AIAssistSettings__c.ToolingAPIVersion__c [NOT NEEDED] - Only the old AIPiiRegistryWorker used it, to build the Tooling API callout URL. AIPiiRegistrySyncWorker reads FieldDefinition with ordinary SOQL and makes no callout, so there is no API version to set.
+  AIAssistSettings__c.AIAcknowledgeEmailTemplateId__c [NOT PORTED] - Terms email template; decision pending.
+  AIPromptTemplate__c.ActivationCriteria__c, TriggerKeywords__c [NOT PORTED] - Keyword-based template selection (never read at runtime).
+  AIUserSettings__c.TermsAcknowledged__c, TermsAcknowledgedDate__c, TermsVersionAcknowledged__c [NOT PORTED] - Terms state on the user row (AIAssist keeps it via AITermsAcknowledgment__c and AIChatTermsService).
+  AITermsAcknowledgment__c.LoginHistoryId__c [NOT PORTED] - Links an acknowledgment to the login that gave it.
+  AIConversation__c.ExternalReference__c [NOT PORTED] - Free-text external id on a conversation.
+  AIModelConfiguration__c.RetryAttempts__c [RENAMED] - Retry count moved to AIAssistSettings__c.RetryAttempts__c.
+
+Packaging and setup
+  User.AIAssistUserType__c, the User layout and the AIAssist-related objectTranslations (en_US) [REMOVED] - The user-type field is gone from AIAssist; translations and customindex files for removed fields/PublicId__c went with them.
+  AIViolationRule__c / AIViolation__c layouts [REMOVED] - Went with the violation feature.
+  Lightning app (AIAssist.app), flexipage, appMenus [OUT OF SCOPE] - App shell for the chat window and console.
+  externalCredentials / namedCredentials (Anthropic) [NOT PORTED] - AIAssist ships none; admins must create their own.
+  staticresources (2) [NOT PORTED] - Static assets used by the UI (the logo content asset exists in both repos).
+  customMetadata folder [EMPTY in old repo] - Neither repo ships PII or chat command records.
+  Mojo demo scripts (scripts/ and Mojo-demo*.txt) [NOT PORTED] - Demo only.
+
+--- 1B. Deliberately removed (not gaps) ----------------------------------
+
+  AIViolation__c, AIViolationRule__c, AIViolationEvent__e, handlers, triggers, tabs [REMOVED 82bd30c] - Violation feature.
+  AIAgentProgressEvent__e / AIAgentProgressPublisher [REMOVED 82bd30c] - Live progress events.
+  AIMessageReadyEvent__e [REMOVED 79e1b18] - Push notification that a reply is ready; the UI must poll getConversationUpdate instead of empApi.
+  AIGovernorLimits [REMOVED 82bd30c] - Governor limit helper and data source write detection.
+  AIChatUsageService / AITokenUsageService [REMOVED 82bd30c / 99f00f6] - Token and usage tracking (AIUsageLimitService only enforces send rate, concurrency and queue room now).
+  AIAssistGlobalUtility [REMOVED cdb6598] - Shared helpers and refuseSave.
+  AIConversationIdleTimeoutBatch [RENAMED] - Now AIConversationIdleBatch.
+  Plan/licence layer, data deletion, Azure OpenAI builder, console controllers, health check [REMOVED 82bd30c].
+  PublicId__c and DeveloperName__c key-stamping on most objects [REMOVED cdb6598] - Developer name is now a required field.
+  SuggestedWorkflowActionId__c on AIConversationMessage__c [RENAMED] - Now the SuggestedWorkflowAction__c lookup.
+
+--- 1C. Chat window and UI [OUT OF SCOPE] ---------------------------------
+
+  21 LWC bundles: aiAssistChat, aiChatComposer, aiChatContextBar, aiChatDebugTrace, aiChatEmptyState, aiChatErrorCard, aiChatFeedbackPanel, aiChatHeader, aiChatHistory, aiChatMessage, aiChatMessageList, aiChatNewChatsPaused, aiChatPiiMappingsModal, aiChatStatePanel, aiChatStyles, aiChatSuggestedAction, aiChatTerms, aiChatUsageBanner, aiChatUtils, aiChatWorkingIndicator - The whole chat window.
+  Admin console (AIConsole* classes, AINavTab metadata, ~35 console LWCs) - Documented earlier as not ported.
+
+==========================================================================
+SECTION 2: Missing from AI-Assist (present in AIAssist)
+==========================================================================
+
+Apex - new classes (verified against the old repo's classes folder)
+  AIMessageProcessingQueueable / Finalizer - Renamed from AiMessageProcessing* (same job).
+  AIMessageOutcomeService, AIMessageValidator - New: turn outcome handling and message validation split out of the old pipeline.
+  AIChatTermsService - New: terms state and acknowledgment for the chat.
+  AIConversationVisibilityService - New: enforces who may read which conversations.
+  AIUsageLimitService / AIUsagePolicyService - New: send-rate, concurrency and per-policy limits.
+  AIAnthropicAgentRequestBuilder / ResponseHandler - New: Anthropic agent API provider (docs/05). AIAnthropicMessage* replaces AIAnthropicRequestBuilder/ResponseHandler.
+  AIDataSourceRequest / Response, AIWorkflowActionRequest / Response - New: global request/response types for subscriber extensions.
+  AIDataSourceDispatcher / ResultProcessor, AIWorkflowActionDispatcher, AISoqlTemplateRunner - Renamed from AiDataSource* / AiWorkflowAction* / AiSoqlTemplateRunner.
+  AIMaintenanceScheduler - New: single scheduler for retention, idle close and PII sync (still not scheduled by anything).
+  AIConversationIdleBatch - Renamed from AIConversationIdleTimeoutBatch.
+  AIConversationRetentionRecalcBatch - New: recalculates retention dates.
+  AIMessagingDataService, AISchemaHelper - New: data access and schema helpers (replace the old selector/utility classes).
+  AIPiiRegistrySyncDispatcher / Worker - Renamed from AIPiiRegistryDispatcher / Worker.
+  AIAssistTestProviderMock - New: shared HTTP mock for tests.
+  Test classes: 54 test classes in total.
+  Already in both repos (not differences): AIOpenAi*, AIProvider, AIExecutionStepRecorder/Tracker, the other AIChat*Service classes, AIPiiMappingService, AIConversationLockService, AIConversationMessageService.
+
+Objects and fields
+  AIAgentAssignment__c, AIUsagePolicy__c, AIUsagePolicyAssignment__c, AIPIIMaskingRecord__c (+ tabs for AIUsagePolicy__c and AIPIIMaskingRecord__c) - Agent-to-user assignment, usage policies and masking records.
+  AIAgent__c.AccessMode__c, ObjectApiNames__c, SingleActiveConversationPerRecord__c - Agent access and record scoping.
+  AIAssistSettings__c.IsEnabled__c, MaxMessageLength__c, MaxMessagesInFlight__c, MaxMessagesPerUserPerMinute__c, RetryAttempts__c, StepCaptureMode__c - Master switch, throughput caps and step capture.
+  AIAssistUISettings__c.IsEnabled__c, AreWorkflowActionsEnabled__c, IsDebugModeEnabled__c - UI switches.
+  AIConversationMessage__c: AIModelConfiguration__c, AIPromptTemplate__c, FailureReason__c, InReplyTo__c, Input/OutputTokenCount__c, IsAwaitingCapacity__c, IsSuperseded__c, LatencyMilliseconds__c, ProcessingStatus__c, PromptTemplateVersion__c - Per-message tracing and status.
+  AIConversation__c.IsOnLegalHold__c, LastMessageTimestamp__c - Legal hold and precise last-message time.
+  AIExecutionStep__c (27 fields vs 13 in the old repo): ConfirmedBy/Date, FieldsSent(+Count), ObjectsSent, PIIMaskingApplied, PIIValuesMasked, Provider, ModelIdentifier, RecordsSentCount, RequiredConfirmation, StepType, TargetObject, TargetRecordId - Audit of data sent to the model.
+  AIDataSource__c.MaxRows__c, AIFeedback__c.Reason__c, AIModelConfiguration__c.EnvironmentId__c, AIPromptTemplate__c.Version__c, AIPlatformLog__c / AIPlatformLogEvent__e Severity__c - Smaller additions.
+  IsActive__c replaces Active__c on AIPiiRegistry__c and the three PII __mdt types.
+  AIAssistViewSharedConversations custom permission, globalValueSets, 132 custom labels (old: 6) - Visibility permission, shared picklists and translatable messages.
+  Docs 01-05 (object model, Apex, test pattern, code pattern, Anthropic provider), CONTRIBUTING, code-analyzer.yml - Project documentation and static analysis.
+
+==========================================================================
+Notes
+==========================================================================
+- Chat window, admin console, PII metadata records, global scheduling and the unused agent settings are the known open items from the 2026-10-02 readiness review; this comparison did not find new ones beyond 1A.
+- Items worth a decision before the chat window: (1) no AIMessageReadyEvent__e, so the UI must poll; (2) data source / workflow action save-time validation triggers were removed; (3) no Named Credential ships.
+- Per-field differences were compared by file name only; field definitions with the same name were not diffed.

@@ -14,3 +14,8 @@ coverage/
 scripts/ci
 code-analyzer.yml
 CONTRIBUTING.md
+
+# Apex is formatted by hand to docs/03_TEST_CLASS_PATTERN.txt and docs/04_CLASS_CODE_PATTERN.txt.
+# prettier-plugin-apex re-wraps calls and changes indentation, so never run it on Apex.
+**/*.cls
+**/*.trigger

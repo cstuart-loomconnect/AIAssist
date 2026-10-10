@@ -18,474 +18,311 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-@IsTest
-private class AIMessageSendLimitsTest {
-  // testScenario1: At the cap on messages in flight a new message is kept Queued and waiting, with no job and no lock; under the cap it is started -> only the first message has a job and holds its conversation, the second waits Queued with its conversation unlocked.
-  // testScenario2: A waiting message is started by its sender once a place is free, and not while the cap is still reached or by another user -> started once by its sender only, conversation locked and one job queued.
-  // testScenario3: A user at the messages-per-minute limit is refused, and another user is not -> the third message is refused with the rate limited label, the other user's first is accepted.
-  // testScenario4: A message longer than the configured maximum is refused, and one at the maximum is accepted -> too long label for 21 characters, no refusal for 20.
-  // testScenario5: A message that has waited at the cap for longer than the timeout is failed as Service Busy by any user's poll or by the maintenance job, is not started afterwards, and one still inside the timeout is left waiting -> failed as Service Busy, in-timeout message started and not failed.
+@IsTest private class AIMessageSendLimitsTest {
 
-  @TestSetup
-  static void setup() {
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.IsEnabled__c = true;
-    settings.IsExceptionLoggingEnabled__c = true;
-    settings.IsPlatformLoggingEnabled__c = true;
-    upsert settings;
-  }
+    // testScenario1: At the cap on messages in flight a new message is kept Queued and waiting, with no job and no lock; under the cap it is started -> only the first message has a job and holds its conversation, the second waits Queued with its conversation unlocked.
+    // testScenario2: A waiting message is started by its sender once a place is free, and not while the cap is still reached or by another user -> started once by its sender only, conversation locked and one job queued.
+    // testScenario3: A user at the messages-per-minute limit is refused, and another user is not -> the third message is refused with the rate limited label, the other user's first is accepted.
+    // testScenario4: A message longer than the configured maximum is refused, and one at the maximum is accepted -> too long label for 21 characters, no refusal for 20.
+    // testScenario5: A message that has waited at the cap for longer than the timeout is failed as Service Busy by any user's poll or by the maintenance job, is not started afterwards, and one still inside the timeout is left waiting -> failed as Service Busy, in-timeout message started and not failed.
 
-  @IsTest
-  static void testScenario1() {
-    // [1] Create two users with access, an agent and a mock provider
-    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(
-      users,
-      AIAssistApplicationConstants.PERMISSION_SET_USER
-    );
+    @TestSetup static void setup() {
 
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-
-    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
-
-    // [2] Set the limit on the settings record
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.put('MaxMessagesInFlight__c', 1);
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
-
-    AIConversationMessage__c started;
-    AIConversationMessage__c held;
-    Integer jobs;
-
-    // [3] Send two messages as the first user and read the state before the job runs
-    System.runAs(users[0]) {
-      Test.startTest();
-      started = AIConversationMessageService.sendMessage(
-        agent.Id,
-        'First',
-        AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-        null,
-        null
-      );
-      held = AIConversationMessageService.sendMessage(
-        agent.Id,
-        'Second, in another conversation',
-        AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-        null,
-        null
-      );
-
-      jobs = AIUsageLimitService.countQueuedMessageJobs();
-
-      // Read before stopTest: the queued job runs on stopTest and would release the lock being asserted.
-      started = [
-        SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c
-        FROM AIConversationMessage__c
-        WHERE Id = :started.Id
-        WITH SYSTEM_MODE
-      ];
-      held = [
-        SELECT
-          IsAwaitingCapacity__c,
-          ProcessingStatus__c,
-          AIConversation__r.ProcessingLockedUntil__c
-        FROM AIConversationMessage__c
-        WHERE Id = :held.Id
-        WITH SYSTEM_MODE
-      ];
-      Test.stopTest();
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.IsEnabled__c = true;
+        settings.IsExceptionLoggingEnabled__c = true;
+        settings.IsPlatformLoggingEnabled__c = true;
+        upsert settings;
     }
 
-    // [4] Check only the first message was started and the second waits
-    Assert.areEqual(1, jobs, 'Only the first message has a job.');
-    Assert.isFalse(started.IsAwaitingCapacity__c, 'The first was started.');
+    @IsTest static void testScenario1() {
 
-    Assert.isNotNull(
-      started.AIConversation__r.ProcessingLockedUntil__c,
-      'The first holds its conversation.'
-    );
+        // [1] Create two users with access, an agent and a mock provider
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-    Assert.isTrue(held.IsAwaitingCapacity__c, 'The second waits for a place.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
-      held.ProcessingStatus__c,
-      'The second is Queued, not refused.'
-    );
-    Assert.isNull(
-      held.AIConversation__r.ProcessingLockedUntil__c,
-      'Nothing is working on the second, so its conversation is not locked.'
-    );
-  }
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-  @IsTest
-  static void testScenario2() {
-    // [1] Create two users with access, an agent and a mock provider
-    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(
-      users,
-      AIAssistApplicationConstants.PERMISSION_SET_USER
-    );
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
 
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
+        // [2] Set the limit on the settings record
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.put('MaxMessagesInFlight__c', 1);
+        update settings;
+        AIAssistSettingsService.cachedSettings = null;
 
-    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+        AIConversationMessage__c started;
+        AIConversationMessage__c held;
+        Integer jobs;
 
-    // [2] Create a conversation with a message waiting for a place
-    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      users[0].Id,
-      1,
-      true
-    )[0];
+        // [3] Send two messages as the first user and read the state before the job runs
+        System.runAs(users[0]) {
 
-    AIConversationMessage__c waiting;
-    System.runAs(users[0]) {
-      waiting = AIAssistTestDataFactory.createAIConversationMessages(
-        conversation.Id,
-        AIAssistApplicationConstants.SENDER_USER,
-        0,
-        1,
-        false
-      )[0];
-      waiting.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
-      waiting.IsAwaitingCapacity__c = true;
-      AIMessagingDataService.insertOrThrow(new List<SObject>{ waiting });
+            Test.startTest();
+                started = AIConversationMessageService.sendMessage(agent.Id, 'First', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+                held = AIConversationMessageService.sendMessage(agent.Id, 'Second, in another conversation', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                jobs = AIUsageLimitService.countQueuedMessageJobs();
+
+                // Read before stopTest: the queued job runs on stopTest and would release the lock being asserted.
+                started = [SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c FROM AIConversationMessage__c WHERE Id = :started.Id WITH SYSTEM_MODE];
+                held = [SELECT IsAwaitingCapacity__c, ProcessingStatus__c, AIConversation__r.ProcessingLockedUntil__c FROM AIConversationMessage__c WHERE Id = :held.Id WITH SYSTEM_MODE];
+            Test.stopTest();
+        }
+
+        // [4] Check only the first message was started and the second waits
+        Assert.areEqual(1, jobs, 'Only the first message has a job.');
+        Assert.isFalse(started.IsAwaitingCapacity__c, 'The first was started.');
+
+        Assert.isNotNull(started.AIConversation__r.ProcessingLockedUntil__c, 'The first holds its conversation.');
+
+        Assert.isTrue(held.IsAwaitingCapacity__c, 'The second waits for a place.');
+        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED, held.ProcessingStatus__c, 'The second is Queued, not refused.');
+        Assert.isNull(held.AIConversation__r.ProcessingLockedUntil__c, 'Nothing is working on the second, so its conversation is not locked.');
     }
 
-    Boolean startedByAnother;
-    Boolean startedAtTheCap;
-    Boolean startedWithRoom;
-    Boolean startedTwice;
-    Integer jobs;
+    @IsTest static void testScenario2() {
 
-    // [3] Try to start the waiting message as another user, at the cap, with room, and again
-    Test.startTest();
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.put('MaxMessagesInFlight__c', 5);
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
+        // [1] Create two users with access, an agent and a mock provider
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-    System.runAs(users[1]) {
-      startedByAnother = AIConversationMessageService.startHeldMessage();
-    }
-    System.runAs(users[0]) {
-      AIUsageLimitService.inFlightForTest = 5;
-      startedAtTheCap = AIConversationMessageService.startHeldMessage();
-      AIUsageLimitService.inFlightForTest = null;
-      startedWithRoom = AIConversationMessageService.startHeldMessage();
-      startedTwice = AIConversationMessageService.startHeldMessage();
-    }
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-    jobs = AIUsageLimitService.countQueuedMessageJobs();
-    // Read before stopTest: the queued job runs on stopTest and would release the lock being asserted.
-    waiting = [
-      SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c
-      FROM AIConversationMessage__c
-      WHERE Id = :waiting.Id
-    ];
-    Test.stopTest();
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
 
-    // [4] Check it was started once, by its sender only, once a place was free
-    Assert.isFalse(startedByAnother, 'Only its sender can start it.');
-    Assert.isFalse(startedAtTheCap, 'Not while the cap is still reached.');
-    Assert.isTrue(startedWithRoom, 'Started once a place is free.');
-    Assert.isFalse(startedTwice, 'And only once.');
+        // [2] Create a conversation with a message waiting for a place
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[0].Id, 1, true)[0];
 
-    Assert.isFalse(waiting.IsAwaitingCapacity__c, 'No longer waiting.');
-    Assert.isNotNull(
-      waiting.AIConversation__r.ProcessingLockedUntil__c,
-      'Its conversation is locked for the turn.'
-    );
-    Assert.areEqual(1, jobs, 'One job was queued for it.');
-  }
+        AIConversationMessage__c waiting;
+        System.runAs(users[0]) {
 
-  @IsTest
-  static void testScenario3() {
-    // [1] Create two users with access, an agent and a mock provider
-    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(
-      users,
-      AIAssistApplicationConstants.PERMISSION_SET_USER
-    );
+            waiting = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, false)[0];
+            waiting.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+            waiting.IsAwaitingCapacity__c = true;
+            AIMessagingDataService.insertOrThrow(new List<SObject>{ waiting });
+        }
 
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
+        Boolean startedByAnother;
+        Boolean startedAtTheCap;
+        Boolean startedWithRoom;
+        Boolean startedTwice;
+        Integer jobs;
 
-    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+        // [3] Try to start the waiting message as another user, at the cap, with room, and again
+        Test.startTest();
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.put('MaxMessagesInFlight__c', 5);
+            update settings;
+            AIAssistSettingsService.cachedSettings = null;
 
-    // [2] Set the limit on the settings record
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.put('MaxMessagesPerUserPerMinute__c', 2);
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
+            System.runAs(users[1]) {
 
-    String third;
-    String othersFirst;
+                startedByAnother = AIConversationMessageService.startHeldMessage();
+            }
+            System.runAs(users[0]) {
 
-    // [3] Send three messages as the first user and one as the second user
-    Test.startTest();
-    System.runAs(users[0]) {
-      AIConversationMessageService.sendMessage(
-        agent.Id,
-        'One',
-        AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-        null,
-        null
-      );
-      AIConversationMessageService.sendMessage(
-        agent.Id,
-        'Two',
-        AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-        null,
-        null
-      );
-      try {
-        AIConversationMessageService.sendMessage(
-          agent.Id,
-          'Three',
-          AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-          null,
-          null
-        );
-      } catch (Exception refusal) {
-        third = refusal.getMessage();
-      }
-    }
-    System.runAs(users[1]) {
-      try {
-        AIConversationMessageService.sendMessage(
-          agent.Id,
-          'One',
-          AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-          null,
-          null
-        );
-      } catch (Exception refusal) {
-        othersFirst = refusal.getMessage();
-      }
-    }
-    Test.stopTest();
+                AIUsageLimitService.inFlightForTest = 5;
+                startedAtTheCap = AIConversationMessageService.startHeldMessage();
+                AIUsageLimitService.inFlightForTest = null;
+                startedWithRoom = AIConversationMessageService.startHeldMessage();
+                startedTwice = AIConversationMessageService.startHeldMessage();
+            }
 
-    // [4] Check the third message is refused and the other user is not
-    Assert.areEqual(
-      Label.AI_Error_Rate_Limited,
-      third,
-      'The third message inside a minute is refused.'
-    );
-    Assert.isNull(othersFirst, 'The limit is per user.');
-  }
+            jobs = AIUsageLimitService.countQueuedMessageJobs();
+            // Read before stopTest: the queued job runs on stopTest and would release the lock being asserted.
+            waiting = [SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c FROM AIConversationMessage__c WHERE Id = :waiting.Id];
+        Test.stopTest();
 
-  @IsTest
-  static void testScenario4() {
-    // [1] Create two users with access, an agent and a mock provider
-    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(
-      users,
-      AIAssistApplicationConstants.PERMISSION_SET_USER
-    );
+        // [4] Check it was started once, by its sender only, once a place was free
+        Assert.isFalse(startedByAnother, 'Only its sender can start it.');
+        Assert.isFalse(startedAtTheCap, 'Not while the cap is still reached.');
+        Assert.isTrue(startedWithRoom, 'Started once a place is free.');
+        Assert.isFalse(startedTwice, 'And only once.');
 
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-
-    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
-
-    // [2] Set the limit on the settings record
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.put('MaxMessageLength__c', 20);
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
-
-    String tooLong;
-    String atTheMaximum;
-
-    // [3] Send a message one character over the maximum and one at the maximum
-    Test.startTest();
-    System.runAs(users[0]) {
-      try {
-        AIConversationMessageService.sendMessage(
-          agent.Id,
-          'x'.repeat(21),
-          AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-          null,
-          null
-        );
-      } catch (Exception refusal) {
-        tooLong = refusal.getMessage();
-      }
-
-      try {
-        AIConversationMessageService.sendMessage(
-          agent.Id,
-          'x'.repeat(20),
-          AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-          null,
-          null
-        );
-      } catch (Exception refusal) {
-        atTheMaximum = refusal.getMessage();
-      }
-    }
-    Test.stopTest();
-
-    // [4] Check the long message is refused and the other is accepted
-    Assert.areEqual(
-      Label.AI_Error_Message_Too_Long,
-      tooLong,
-      'One character over the configured maximum.'
-    );
-    Assert.isNull(atTheMaximum, 'At the maximum is accepted.');
-  }
-
-  @IsTest
-  static void testScenario5() {
-    // [1] Create two users with access, an agent and a mock provider
-    List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(
-      users,
-      AIAssistApplicationConstants.PERMISSION_SET_USER
-    );
-
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
-      1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
-      true
-    )[0];
-
-    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
-
-    // [2] Create three conversations each with a waiting message, aging two of them
-    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
-      agent.Id,
-      users[0].Id,
-      3,
-      true
-    );
-
-    List<AIConversationMessage__c> waiting = new List<AIConversationMessage__c>();
-    System.runAs(users[0]) {
-      for (AIConversation__c conversation : conversations) {
-        AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
-          conversation.Id,
-          AIAssistApplicationConstants.SENDER_USER,
-          0,
-          1,
-          false
-        )[0];
-        message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
-        message.IsAwaitingCapacity__c = true;
-        waiting.add(message);
-      }
-      AIMessagingDataService.insertOrThrow(waiting);
+        Assert.isFalse(waiting.IsAwaitingCapacity__c, 'No longer waiting.');
+        Assert.isNotNull(waiting.AIConversation__r.ProcessingLockedUntil__c, 'Its conversation is locked for the turn.');
+        Assert.areEqual(1, jobs, 'One job was queued for it.');
     }
 
-    Datetime longAgo = System.now()
-      .addMinutes(
-        -AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES - 1
-      );
-    Test.setCreatedDate(waiting[0].Id, longAgo);
-    Test.setCreatedDate(waiting[1].Id, longAgo.addDays(-3));
+    @IsTest static void testScenario3() {
 
-    // [3] Set the limit on the settings record
-    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-    settings.put('MaxMessagesInFlight__c', 5);
-    update settings;
-    AIAssistSettingsService.cachedSettings = null;
+        // [1] Create two users with access, an agent and a mock provider
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-    Boolean startedByAnother;
-    Boolean startedBySender;
-    Integer failedByMaintenance;
-    Map<Id, AIConversationMessage__c> afterPoll;
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-    // [4] Poll as another user, run the maintenance job, then start as the sender
-    Test.startTest();
-    AIUsageLimitService.inFlightForTest = 5;
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
 
-    System.runAs(users[1]) {
-      startedByAnother = AIConversationMessageService.startHeldMessage();
+        // [2] Set the limit on the settings record
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.put('MaxMessagesPerUserPerMinute__c', 2);
+        update settings;
+        AIAssistSettingsService.cachedSettings = null;
+
+        String third;
+        String othersFirst;
+
+        // [3] Send three messages as the first user and one as the second user
+        Test.startTest();
+            System.runAs(users[0]) {
+
+                AIConversationMessageService.sendMessage(agent.Id, 'One', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+                AIConversationMessageService.sendMessage(agent.Id, 'Two', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+                try {
+
+                    AIConversationMessageService.sendMessage(agent.Id, 'Three', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                } catch (Exception refusal) {
+
+                    third = refusal.getMessage();
+                }
+            }
+            System.runAs(users[1]) {
+
+                try {
+
+                    AIConversationMessageService.sendMessage(agent.Id, 'One', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                } catch (Exception refusal) {
+
+                    othersFirst = refusal.getMessage();
+                }
+            }
+        Test.stopTest();
+
+        // [4] Check the third message is refused and the other user is not
+        Assert.areEqual(Label.AI_Error_Rate_Limited, third, 'The third message inside a minute is refused.');
+        Assert.isNull(othersFirst, 'The limit is per user.');
     }
 
-    // The state between the poll and the maintenance job is itself under test, so it is read here.
-    afterPoll = new Map<Id, AIConversationMessage__c>(
-      [
-        SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c
-        FROM AIConversationMessage__c
-        WHERE Id IN :waiting
-      ]
-    );
+    @IsTest static void testScenario4() {
 
-    failedByMaintenance = AIConversationMessageService.failExpiredHeldMessages(
-      false
-    );
-    AIUsageLimitService.inFlightForTest = null;
-    System.runAs(users[0]) {
-      startedBySender = AIConversationMessageService.startHeldMessage();
+        // [1] Create two users with access, an agent and a mock provider
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [2] Set the limit on the settings record
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.put('MaxMessageLength__c', 20);
+        update settings;
+        AIAssistSettingsService.cachedSettings = null;
+
+        String tooLong;
+        String atTheMaximum;
+
+        // [3] Send a message one character over the maximum and one at the maximum
+        Test.startTest();
+            System.runAs(users[0]) {
+
+                try {
+
+                    AIConversationMessageService.sendMessage(agent.Id, 'x'.repeat(21), AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                } catch (Exception refusal) {
+
+                    tooLong = refusal.getMessage();
+                }
+
+                try {
+
+                    AIConversationMessageService.sendMessage(agent.Id, 'x'.repeat(20), AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                } catch (Exception refusal) {
+
+                    atTheMaximum = refusal.getMessage();
+                }
+            }
+        Test.stopTest();
+
+        // [4] Check the long message is refused and the other is accepted
+        Assert.areEqual(Label.AI_Error_Message_Too_Long, tooLong, 'One character over the configured maximum.');
+        Assert.isNull(atTheMaximum, 'At the maximum is accepted.');
     }
-    Test.stopTest();
 
-    // [5] Read the final state of the messages
-    Map<Id, AIConversationMessage__c> afterAll = new Map<Id, AIConversationMessage__c>(
-      [
-        SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c
-        FROM AIConversationMessage__c
-        WHERE Id IN :waiting
-      ]
-    );
+    @IsTest static void testScenario5() {
 
-    // [6] Check the poll, the maintenance job and the sender each did their part
-    Assert.isFalse(startedByAnother, 'Another user starts nothing.');
+        // [1] Create two users with access, an agent and a mock provider
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      afterPoll.get(waiting[0].Id).ProcessingStatus__c,
-      'But their poll fails the message that waited too long.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY,
-      afterPoll.get(waiting[0].Id).FailureReason__c,
-      'As busy, which offers Try again.'
-    );
-    Assert.isFalse(
-      afterPoll.get(waiting[0].Id).IsAwaitingCapacity__c,
-      'No longer waiting.'
-    );
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
-      afterPoll.get(waiting[1].Id).ProcessingStatus__c,
-      'A poll looks at the last day only.'
-    );
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
 
-    Assert.areEqual(1, failedByMaintenance, 'The maintenance job at them all.');
-    Assert.areEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      afterAll.get(waiting[1].Id).ProcessingStatus__c,
-      'The one from three days ago.'
-    );
+        // [2] Create three conversations each with a waiting message, aging two of them
+        List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, users[0].Id, 3, true);
 
-    Assert.isTrue(startedBySender, 'The message inside the timeout started.');
-    Assert.isFalse(
-      afterAll.get(waiting[2].Id).IsAwaitingCapacity__c,
-      'It is the one that was started.'
-    );
-    Assert.areNotEqual(
-      AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      afterAll.get(waiting[2].Id).ProcessingStatus__c,
-      'And it was not failed.'
-    );
-  }
+        List<AIConversationMessage__c> waiting = new List<AIConversationMessage__c>();
+        System.runAs(users[0]) {
+
+            for (AIConversation__c conversation : conversations) {
+
+                AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, false)[0];
+                message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+                message.IsAwaitingCapacity__c = true;
+                waiting.add(message);
+            }
+            AIMessagingDataService.insertOrThrow(waiting);
+        }
+
+        Datetime longAgo = System.now().addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES - 1);
+        Test.setCreatedDate(waiting[0].Id, longAgo);
+        Test.setCreatedDate(waiting[1].Id, longAgo.addDays(-3));
+
+        // [3] Set the limit on the settings record
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.put('MaxMessagesInFlight__c', 5);
+        update settings;
+        AIAssistSettingsService.cachedSettings = null;
+
+        Boolean startedByAnother;
+        Boolean startedBySender;
+        Integer failedByMaintenance;
+        Map<Id, AIConversationMessage__c> afterPoll;
+
+        // [4] Poll as another user, run the maintenance job, then start as the sender
+        Test.startTest();
+            AIUsageLimitService.inFlightForTest = 5;
+
+            System.runAs(users[1]) {
+
+                startedByAnother = AIConversationMessageService.startHeldMessage();
+            }
+
+            // The state between the poll and the maintenance job is itself under test, so it is read here.
+            afterPoll = new Map<Id, AIConversationMessage__c>([SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c FROM AIConversationMessage__c WHERE Id IN :waiting]);
+
+            failedByMaintenance = AIConversationMessageService.failExpiredHeldMessages(false);
+            AIUsageLimitService.inFlightForTest = null;
+            System.runAs(users[0]) {
+
+                startedBySender = AIConversationMessageService.startHeldMessage();
+            }
+        Test.stopTest();
+
+        // [5] Read the final state of the messages
+        Map<Id, AIConversationMessage__c> afterAll = new Map<Id, AIConversationMessage__c>([SELECT ProcessingStatus__c, FailureReason__c, IsAwaitingCapacity__c FROM AIConversationMessage__c WHERE Id IN :waiting]);
+
+        // [6] Check the poll, the maintenance job and the sender each did their part
+        Assert.isFalse(startedByAnother, 'Another user starts nothing.');
+
+        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, afterPoll.get(waiting[0].Id).ProcessingStatus__c, 'But their poll fails the message that waited too long.');
+        Assert.areEqual(AIAssistApplicationConstants.FAILURE_REASON_SERVICE_BUSY, afterPoll.get(waiting[0].Id).FailureReason__c, 'As busy, which offers Try again.');
+        Assert.isFalse(afterPoll.get(waiting[0].Id).IsAwaitingCapacity__c, 'No longer waiting.');
+
+        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED, afterPoll.get(waiting[1].Id).ProcessingStatus__c, 'A poll looks at the last day only.');
+
+        Assert.areEqual(1, failedByMaintenance, 'The maintenance job at them all.');
+        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, afterAll.get(waiting[1].Id).ProcessingStatus__c, 'The one from three days ago.');
+
+        Assert.isTrue(startedBySender, 'The message inside the timeout started.');
+        Assert.isFalse(afterAll.get(waiting[2].Id).IsAwaitingCapacity__c, 'It is the one that was started.');
+        Assert.areNotEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, afterAll.get(waiting[2].Id).ProcessingStatus__c, 'And it was not failed.');
+    }
 }

@@ -494,6 +494,16 @@
     >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Daily_Conversation_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Max Conversations Per Day reached.</shortDescription>
+        <value
+    >You&apos;ve reached your daily limit of new AI Assist conversations. Try again tomorrow, or ask your administrator to review your limit.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Data_Unavailable</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>

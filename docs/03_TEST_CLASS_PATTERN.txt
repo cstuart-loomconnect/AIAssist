@@ -55,6 +55,16 @@ RULES
 
 6. Asserts
    - Use Assert.areEqual / isNull / isNotNull. Always include a message.
+   - Every assert is ONE line: the expected value, actual value and message all on the same
+     line as Assert.areEqual(...), however long the line gets.
+     Wrong:
+         Assert.areEqual(
+             Label.AI_Chat_New_Chats_Paused,
+             labels[0],
+             'A new chat should be refused while new chats are paused.'
+         );
+     Right:
+         Assert.areEqual(Label.AI_Chat_New_Chats_Paused, labels[0], 'A new chat should be refused while new chats are paused.');
    - No try/catch or Assert.fail wrappers; handlers catch their own exceptions.
 
 7. Exception scenario
@@ -76,6 +86,11 @@ RULES
      beyond the interface methods. Prefer AIAssistTestProviderMock when it already fits.
 
 9. Style
+   - Same line rules as docs/04_CLASS_CODE_PATTERN.txt rule 3: NEVER split a statement over
+     several lines. Every method or constructor call, in the arrange, act and assert steps,
+     has all its arguments on the same line as the call (no one-argument-per-line).
+     Only Map / List literals with several entries go one entry per line.
+   - 4-space indent, never 2.
    - Prefer going through the real trigger (insert/update) over calling handlers
      directly; call handlers directly only for null / empty input scenarios.
    - Shared strings live in private static final constants at the top of the class.

@@ -18,14 +18,16 @@ Version      Author                   Description
 */
 
 global without sharing class AIDataSourceResponse {
-  global List<SObject> records = new List<SObject>();
 
-  global AIDataSourceResponse() {
-  }
+    global List<SObject> records = new List<SObject>();
 
-  // A null list is treated as no records.
-  global AIDataSourceResponse(List<SObject> records) {
-    // [1] Keep the records, or an empty list when none were given
-    this.records = records == null ? new List<SObject>() : records;
-  }
+    global AIDataSourceResponse() {
+    }
+
+    // A null list is treated as no records.
+    global AIDataSourceResponse(List<SObject> records) {
+
+        // [1] Keep the records, or an empty list when none were given
+        this.records = records == null ? new List<SObject>() : records;
+    }
 }

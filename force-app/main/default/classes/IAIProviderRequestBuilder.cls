@@ -21,6 +21,7 @@ Version      Author                   Description
 */
 
 public interface IAIProviderRequestBuilder {
-  // Converts the canonical request into this provider's exact JSON-ready body.
-  Map<String, Object> buildRequestBody(AIProvider.Request request);
+
+    // Converts the canonical request into this provider's exact JSON-ready body.
+    Map<String, Object> buildRequestBody(AIProvider.Request request);
 }
