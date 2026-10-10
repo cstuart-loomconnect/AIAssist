@@ -389,7 +389,11 @@ Version      Author                   Description
             List<AIConversationMessage__c> replies = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 0, 3, true);
             AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, true)[0];
 
-            // [3] Record one success and one failure, leaving the third reply without an action
+            // [3] Record one success and one failure, leaving the third reply without an action. A reply that an action ran from is one that suggested it.
+            replies[0].SuggestedWorkflowAction__c = action.Id;
+            replies[1].SuggestedWorkflowAction__c = action.Id;
+            AIMessagingDataService.updateOrThrow(new List<SObject>{ replies[0], replies[1] });
+
             AIExecutionStepRecorder.recordWorkflowActionStep(replies[0].Id, action, null, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, false, 1);
             AIExecutionStepRecorder.recordWorkflowActionStep(replies[1].Id, action, null, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED, false, 1);
 

@@ -236,15 +236,22 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
         Map<Id, AIConversationMessage__c> messagesById = new Map<Id, AIConversationMessage__c>(historyMessages);
         if (messagesById.isEmpty()) return;
 
-        // [2] Find the action steps recorded on these replies, oldest first, so a later step is noted after an earlier one
-        for (AIExecutionStep__c actionStep : [SELECT AIConversationMessage__c, Status__c, AIWorkflowAction__r.ActionName__c FROM AIExecutionStep__c WHERE AIConversationMessage__c IN :messagesById.keySet() AND StepType__c = :AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION AND Status__c IN (:AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED, :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED) WITH SYSTEM_MODE ORDER BY CreatedDate, Id]) {
+        // [2] Find the action steps recorded on the traces of these replies. Only a reply that suggested an action can have one. They are read in system mode because only some users can read the trace field.
+        for (AIConversationMessage__c tracedMessage : [SELECT Id, ExecutionTraceJson__c FROM AIConversationMessage__c WHERE Id IN :messagesById.keySet() AND SuggestedWorkflowAction__c != NULL WITH SYSTEM_MODE ORDER BY CreatedDate, Id]) {
 
-            // [3] Name the action, then say whether it changed anything
-            AIConversationMessage__c historyMessage = messagesById.get(actionStep.AIConversationMessage__c);
-            String actionName = actionStep.AIWorkflowAction__r == null || String.isBlank(actionStep.AIWorkflowAction__r.ActionName__c) ? 'the suggested action' : actionStep.AIWorkflowAction__r.ActionName__c;
-            Boolean isSuccess = actionStep.Status__c == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
+            AIConversationMessage__c historyMessage = messagesById.get(tracedMessage.Id);
 
-            historyMessage.MessageBody__c = (historyMessage.MessageBody__c == null ? '' : historyMessage.MessageBody__c) + '\n\n[System note: the user ran "' + actionName + '" from this reply. ' + (isSuccess ? 'It completed successfully. Any change to the record since this reply is the result of that action, not an error in this reply.]' : 'It failed, so nothing was changed.]');
+            for (AIExecutionStepRecorder.TraceStep actionStep : AIExecutionStepRecorder.parseTrace(tracedMessage.ExecutionTraceJson__c)) {
+
+                // [3] Skip a step that is not a finished action
+                if (actionStep.stepType != AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION || (actionStep.status != AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS && actionStep.status != AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED && actionStep.status != AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED)) continue;
+
+                // [4] Name the action, then say whether it changed anything
+                String actionName = String.isBlank(actionStep.workflowActionName) ? 'the suggested action' : actionStep.workflowActionName;
+                Boolean isSuccess = actionStep.status == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
+
+                historyMessage.MessageBody__c = (historyMessage.MessageBody__c == null ? '' : historyMessage.MessageBody__c) + '\n\n[System note: the user ran "' + actionName + '" from this reply. ' + (isSuccess ? 'It completed successfully. Any change to the record since this reply is the result of that action, not an error in this reply.]' : 'It failed, so nothing was changed.]');
+            }
         }
     }
 

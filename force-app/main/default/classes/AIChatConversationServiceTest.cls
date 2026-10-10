@@ -364,10 +364,10 @@ Version      Author                   Description
             AIChatDataStructure.ExecutionStep detail;
 
             Test.startTest();
-                provider = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, Status__c = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, StepOrder__c = 2, DurationMilliseconds__c = 40));
-                masking = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PII_MASKING));
-                anyOther = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_OTHER));
-                detail = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepDetail__c = 'Custom'));
+                provider = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, 2, 40, null));
+                masking = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_PII_MASKING, null, null, null, null));
+                anyOther = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_OTHER, null, null, null, null));
+                detail = AIChatConversationService.buildExecutionStep(makeStep(null, null, null, null, 'Custom'));
             Test.stopTest();
 
             // [3] Check each step label
@@ -380,5 +380,17 @@ Version      Author                   Description
 
             Assert.areEqual('Custom', detail.label, 'The stored step detail should win over the label.');
         }
+    }
+
+    private static AIExecutionStepRecorder.TraceStep makeStep(String stepType, String status, Integer step, Long ms, String stepDetail) {
+
+        AIExecutionStepRecorder.TraceStep traceStep = new AIExecutionStepRecorder.TraceStep();
+        traceStep.stepType = stepType;
+        traceStep.status = status;
+        traceStep.step = step;
+        traceStep.ms = ms;
+        traceStep.stepDetail = stepDetail;
+
+        return traceStep;
     }
 }

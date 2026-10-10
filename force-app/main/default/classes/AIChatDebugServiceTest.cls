@@ -47,12 +47,12 @@ Version      Author                   Description
 
             AIDataSource__c source = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
 
-            List<AIExecutionStep__c> steps = AIAssistTestDataFactory.createAIExecutionSteps(reply.Id, 2, false);
-            steps[0].AIDataSource__c = source.Id;
-            steps[1].RequestJson__c = '{"req":1}';
-            steps[1].ResponseJson__c = '{"res":1}';
-            steps[1].AttemptNumber__c = 2;
-            insert steps;
+            List<AIExecutionStepRecorder.TraceStep> steps = AIAssistTestDataFactory.createAIExecutionTraceSteps(reply.Id, 2, false);
+            steps[0].stepType = AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE;
+            steps[0].dataSource = 'Account_Lookup';
+            steps[1].attempt = 2;
+            AIAssistTestDataFactory.saveExecutionTrace(reply.Id, steps);
+            AIMessagingDataService.updateOrThrow(new List<SObject>{ new AIConversationMessage__c(Id = reply.Id, DebugRequestJson__c = '{"req":1}', DebugResponseJson__c = '{"res":1}') });
 
             // [2] Get the debug trace for the reply
             AIChatDataStructure.DebugTrace trace;

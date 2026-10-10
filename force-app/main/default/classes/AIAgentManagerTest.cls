@@ -123,10 +123,13 @@ Version      Author                   Description
             Assert.isTrue(sentBody.contains('Test message 0'), 'The history is sent.');
             Assert.isTrue(sentBody.contains(actions[0].DeveloperName__c), 'The offered workflow action is described to the model.');
 
-            Assert.areEqual(1, trace.steps.size(), 'One provider call step.');
-            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, trace.steps[0].stepType, 'It is a provider call.');
-            Assert.areEqual(AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC, trace.steps[0].provider, 'It records the provider.');
-            Assert.areEqual('test-model', trace.steps[0].modelIdentifier, 'And the model.');
+            Assert.areEqual(2, trace.steps.size(), 'A prompt assembly step and one provider call step.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY, trace.steps[0].stepType, 'The prompt is assembled first.');
+            Assert.isTrue(trace.steps[0].stepDetail.contains('Built the prompt'), 'The detail says what was built.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, trace.steps[1].stepType, 'Then it is a provider call.');
+            Assert.areEqual(AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC, trace.steps[1].provider, 'It records the provider.');
+            Assert.areEqual('test-model', trace.steps[1].modelIdentifier, 'And the model.');
+            Assert.areEqual('Final reply.', trace.steps[1].stepDetail, 'The provider call says it was the final reply.');
         }
     }
 
@@ -201,14 +204,16 @@ Version      Author                   Description
             Assert.isTrue(firstBody.contains('"tools"'), 'The first request advertises the tool.');
             Assert.isTrue(secondBody.contains('tool_result') && secondBody.contains(accountName), 'The second request carries the data source\'s records back.');
 
-            Assert.areEqual(3, trace.steps.size(), 'Provider call, data source, provider call.');
-            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE, trace.steps[1].stepType, 'The middle step is the data source.');
-            Assert.areEqual(dataSource.Id, trace.steps[1].dataSourceId, 'It names the data source.');
+            Assert.areEqual(4, trace.steps.size(), 'Prompt assembly, provider call, data source, provider call.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE, trace.steps[2].stepType, 'The middle step is the data source.');
+            Assert.areEqual(dataSource.Id, trace.steps[2].dataSourceId, 'It names the data source.');
+            Assert.isTrue(trace.steps[2].stepDetail.contains('1 record returned'), 'The detail says how many records came back.');
+            Assert.isTrue(trace.steps[1].stepDetail.startsWith('The model asked for the data source'), 'The first call says what the model asked for.');
 
-            Assert.areEqual(1, trace.steps[2].recordsSentCount, 'The record count that went to the provider.');
-            Assert.areEqual('Account', trace.steps[2].objectsSent, 'The object that went.');
-            Assert.isTrue(trace.steps[2].fieldsSent.contains('Account.Name'), 'The field names that went, never the values.');
-            Assert.isFalse(trace.steps[2].fieldsSent.contains(accountName), 'The values never appear in the evidence.');
+            Assert.areEqual(1, trace.steps[3].recordsSentCount, 'The record count that went to the provider.');
+            Assert.areEqual('Account', trace.steps[3].objectsSent, 'The object that went.');
+            Assert.isTrue(trace.steps[3].fieldsSent.contains('Account.Name'), 'The field names that went, never the values.');
+            Assert.isFalse(trace.steps[3].fieldsSent.contains(accountName), 'The values never appear in the evidence.');
             Assert.areEqual(2, trace.toolCallingIterationsUsed, 'Two iterations were used.');
         }
     }
@@ -546,8 +551,8 @@ Version      Author                   Description
             Assert.isTrue(secondRequest.contains('too many tool calls'), 'The second call is skipped with an explanation, because providers reject an unanswered tool call.');
             Assert.isFalse(secondRequest.contains('made_up_tool\' was requested'), 'The real error stays out of what the model is told.');
 
-            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE, trace.steps[1].stepType, 'The failed tool is a data source step, not a provider call.');
-            Assert.isFalse(trace.steps[1].isSuccess, 'And it is recorded as failed.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE, trace.steps[2].stepType, 'The failed tool is a data source step, not a provider call.');
+            Assert.isFalse(trace.steps[2].isSuccess, 'And it is recorded as failed.');
         }
     }
 

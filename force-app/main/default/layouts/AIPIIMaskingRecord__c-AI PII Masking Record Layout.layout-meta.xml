@@ -29,11 +29,15 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>AIExecutionStep__c</field>
+                <field>AIConversationMessage__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>ValuesMasked__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>StepOrder__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>

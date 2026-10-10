@@ -121,15 +121,15 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            AIExecutionStep__c step = [SELECT StepType__c, Status__c, AIWorkflowAction__c, RequiredConfirmation__c, DurationMilliseconds__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+            AIExecutionStepRecorder.TraceStep step = readSteps(reply.Id)[0];
 
             // [4] Check the outcome
             Assert.areEqual('echo:hello', output, 'The action\'s output.');
 
-            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.StepType__c, 'A Workflow Action step.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.Status__c, 'Success.');
-            Assert.areEqual(action.Id, step.AIWorkflowAction__c, 'The action.');
-            Assert.isFalse(step.RequiredConfirmation__c, 'It did not need confirmation.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.stepType, 'A Workflow Action step.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.status, 'Success.');
+            Assert.areEqual(String.valueOf(action.Id), step.workflowActionId, 'The action.');
+            Assert.isFalse(step.requiredConfirmation, 'It did not need confirmation.');
         }
     }
 
@@ -282,18 +282,18 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            List<AIExecutionStep__c> steps = [SELECT Status__c, RequiredConfirmation__c, ConfirmedBy__c, ConfirmedDate__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id ORDER BY StepOrder__c];
+            List<AIExecutionStepRecorder.TraceStep> steps = readSteps(reply.Id);
 
             // [4] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Confirmation_Required, code, 'The text is the Custom Label.');
             Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
 
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].Status__c, 'The first attempt is evidence too.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].Status__c, 'The second succeeded.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].status, 'The first attempt is evidence too.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].status, 'The second succeeded.');
 
-            Assert.isTrue(steps[1].RequiredConfirmation__c, 'It required confirmation.');
-            Assert.areEqual(chatUser.Id, steps[1].ConfirmedBy__c, 'Who confirmed.');
-            Assert.isNotNull(steps[1].ConfirmedDate__c, 'And when.');
+            Assert.isTrue(steps[1].requiredConfirmation, 'It required confirmation.');
+            Assert.areEqual(String.valueOf(chatUser.Id), steps[1].confirmedBy, 'Who confirmed.');
+            Assert.isNotNull(steps[1].confirmedDate, 'And when.');
         }
     }
 
@@ -340,7 +340,7 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            Integer failedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED];
+            Integer failedSteps = countSteps(reply.Id, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED);
 
             // [4] Check the outcome
             Assert.areEqual(3, shown.size(), 'Every one of the three was refused.');
@@ -390,7 +390,12 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            Integer targetSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND TargetRecordId__c = :String.valueOf(conversation.Id)];
+            Integer targetSteps = 0;
+
+            for (AIExecutionStepRecorder.TraceStep traceStep : readSteps(reply.Id)) {
+
+                if (traceStep.targetRecordId == String.valueOf(conversation.Id)) targetSteps++;
+            }
 
             // [4] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
@@ -429,11 +434,11 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            List<AIExecutionStep__c> steps = [SELECT Status__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+            List<AIExecutionStepRecorder.TraceStep> steps = readSteps(reply.Id);
 
             // [4] Check the outcome
             Assert.areEqual(1, steps.size(), 'Only the real cancellation.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].Status__c, 'Cancelled.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].status, 'Cancelled.');
         }
     }
 
@@ -689,7 +694,7 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            blockedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED];
+            blockedSteps = countSteps(reply.Id, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED);
 
             // [4] Check the outcome
             Assert.areEqual(1, blockedSteps, 'The refusal is recorded as Blocked.');
@@ -899,5 +904,22 @@ Version      Author                   Description
             // [3] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Plain text is passed on; only the missing Flow fails.');
         }
+    }
+
+    private static List<AIExecutionStepRecorder.TraceStep> readSteps(Id messageId) {
+
+        return AIExecutionStepRecorder.parseTrace([SELECT ExecutionTraceJson__c FROM AIConversationMessage__c WHERE Id = :messageId].ExecutionTraceJson__c);
+    }
+
+    private static Integer countSteps(Id messageId, String status) {
+
+        Integer stepCount = 0;
+
+        for (AIExecutionStepRecorder.TraceStep traceStep : readSteps(messageId)) {
+
+            if (traceStep.status == status) stepCount++;
+        }
+
+        return stepCount;
     }
 }

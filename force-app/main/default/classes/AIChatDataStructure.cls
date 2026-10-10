@@ -252,6 +252,10 @@ public without sharing class AIChatDataStructure {
         public Long durationMs;
     }
 
+        @AuraEnabled
+        public String stepType;
+        @AuraEnabled
+        public String stepDetail;
     public class MessagePage {
         @AuraEnabled
         public List<ChatMessage> messages = new List<ChatMessage>();

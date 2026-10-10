@@ -79,6 +79,36 @@
         <customLabel>true</customLabel>
         <detailHeading>true</detailHeading>
         <editHeading>true</editHeading>
+        <label>Execution Trace</label>
+        <layoutColumns>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>ExecutionTraceJson__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>PIIValuesMasked__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>DebugSentPreviewText__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>DebugRequestJson__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>DebugResponseJson__c</field>
+            </layoutItems>
+        </layoutColumns>
+        <layoutColumns/>
+        <style>TwoColumnsLeftToRight</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
         <label>Usage</label>
         <layoutColumns>
             <layoutItems>
@@ -141,9 +171,11 @@
     <relatedLists>
         <fields>NAME</fields>
         <fields>StepOrder__c</fields>
-        <fields>Status__c</fields>
-        <fields>DurationMilliseconds__c</fields>
-        <relatedList>AIExecutionStep__c.AIConversationMessage__c</relatedList>
+        <fields>SourceField__c</fields>
+        <fields>ValuesMasked__c</fields>
+        <fields>Outcome__c</fields>
+        <relatedList
+    >AIPIIMaskingRecord__c.AIConversationMessage__c</relatedList>
         <sortField>StepOrder__c</sortField>
         <sortOrder>Asc</sortOrder>
     </relatedLists>

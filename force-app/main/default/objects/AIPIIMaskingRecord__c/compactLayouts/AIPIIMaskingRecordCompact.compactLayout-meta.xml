@@ -2,7 +2,7 @@
 <CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIPIIMaskingRecordCompact</fullName>
     <fields>Name</fields>
-    <fields>AIExecutionStep__c</fields>
+    <fields>AIConversationMessage__c</fields>
     <fields>SourceField__c</fields>
     <fields>PIIFieldType__c</fields>
     <fields>ValuesMasked__c</fields>

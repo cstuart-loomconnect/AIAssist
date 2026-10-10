@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>AIExecutionStep__c</fullName>
-    <description>The provider-call step whose request was masked.</description>
+    <fullName>AIConversationMessage__c</fullName>
+    <description>The message whose request was masked.</description>
     <inlineHelpText
-  >This record is deleted automatically with its step.</inlineHelpText>
-    <label>AI Execution Step</label>
-    <referenceTo>AIExecutionStep__c</referenceTo>
+  >This record is deleted automatically with its message.</inlineHelpText>
+    <label>AI Conversation Message</label>
+    <referenceTo>AIConversationMessage__c</referenceTo>
     <relationshipLabel>AI PII Masking Records</relationshipLabel>
     <relationshipName>AIPIIMaskingRecords</relationshipName>
     <relationshipOrder>0</relationshipOrder>

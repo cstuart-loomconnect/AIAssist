@@ -2,7 +2,7 @@
 <ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Failed</fullName>
     <columns>NAME</columns>
-    <columns>AIExecutionStep__c</columns>
+    <columns>AIConversationMessage__c</columns>
     <columns>SourceObject__c</columns>
     <columns>SourceField__c</columns>
     <columns>PIIFieldType__c</columns>

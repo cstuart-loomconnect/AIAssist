@@ -125,15 +125,16 @@ public without sharing class AIAssistApplicationConstants {
     public static final Set<Integer> NEVER_RETRIED_STATUS_CODES = new Set<Integer>{400, 401, 403, 404, 410, 413, 422};
     public static final String FAILURE_REASON_MESSAGE_MISSING = 'Message Missing'; // Never stored: only selects the label shown when the message being answered was deleted.
 
-    // AIExecutionStep__c.StepType__c
+    // The stepType of an entry in AIConversationMessage__c.ExecutionTraceJson__c
     public static final String STEP_TYPE_PROMPT_ASSEMBLY = 'Prompt Assembly';
     public static final String STEP_TYPE_DATA_SOURCE = 'Data Source';
+    public static final String STEP_TYPE_TEMPLATE_MATCH = 'Template Match';
     public static final String STEP_TYPE_PROVIDER_CALL = 'Provider Call';
     public static final String STEP_TYPE_WORKFLOW_ACTION = 'Workflow Action';
     public static final String STEP_TYPE_PII_MASKING = 'PII Masking';
     public static final String STEP_TYPE_OTHER = 'Other';
 
-    // AIExecutionStep__c.Status__c
+    // The status of an entry in AIConversationMessage__c.ExecutionTraceJson__c
     public static final String EXECUTION_STEP_STATUS_SUCCESS = 'Success';
     public static final String EXECUTION_STEP_STATUS_FAILED = 'Failed';
     public static final String EXECUTION_STEP_STATUS_BLOCKED = 'Blocked';
@@ -158,11 +159,12 @@ public without sharing class AIAssistApplicationConstants {
     public static final Integer MAX_PENDING_PROCESSING_JOBS = 200; // The asynchronous queue is shared with the subscriber's own work.
     public static final Integer RETRY_DELAY_MINUTES = 1; // Before the second and later retries, so a rate-limited provider is not hit again at once.
     public static final Integer CHARACTERS_PER_TOKEN_ESTIMATE = 4;
-    public static final Integer STEP_JSON_FIELD_LENGTH = 131072; // AIExecutionStep__c field sizes.
+    public static final Integer STEP_JSON_FIELD_LENGTH = 131072; // The long text fields on AIConversationMessage__c that hold the execution trace and the debug payloads.
     public static final Integer STEP_SENT_PREVIEW_LENGTH = 255;
-    public static final Integer STEP_FIELDS_SENT_LENGTH = 32768;
+    public static final Integer STEP_FIELDS_SENT_LENGTH = 4000; // Names of the fields sent, kept short because the whole trace shares one 131,072 character field.
     public static final Integer STEP_OBJECTS_SENT_LENGTH = 255;
 
+    public static final Integer STEP_DETAIL_LENGTH = 1000;
     // AIAgentManager - canonical (provider-agnostic) message shape built from AIConversationMessage__c history, before any provider handler reshapes it.
     public static final String CANONICAL_ROLE_KEY = 'role';
     public static final String CANONICAL_CONTENT_KEY = 'content';

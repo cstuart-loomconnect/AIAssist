@@ -23,7 +23,7 @@ public without sharing class AIChatConversationService {
 
     public class AIChatConversationServiceException extends Exception {}
 
-    private static final String MESSAGE_FIELDS = 'Id, AIConversation__c, Sender__c, MessageBody__c, TokenCount__c, ProcessingStatus__c, SuggestedWorkflowAction__c, CreatedDate, (SELECT StepOrder__c, Status__c, StepType__c, StepDetail__c, DurationMilliseconds__c, AIDataSource__c, AIDataSource__r.DeveloperName__c, AIWorkflowAction__c, AIWorkflowAction__r.ActionName__c FROM AIExecutionSteps__r ORDER BY StepOrder__c), (SELECT Rating__c FROM AIFeedbacks__r WHERE CreatedById = :userId ORDER BY CreatedDate DESC LIMIT 1)';
+    private static final String MESSAGE_FIELDS = 'Id, AIConversation__c, Sender__c, MessageBody__c, TokenCount__c, ProcessingStatus__c, SuggestedWorkflowAction__c, ExecutionTraceJson__c, CreatedDate, (SELECT Rating__c FROM AIFeedbacks__r WHERE CreatedById = :userId ORDER BY CreatedDate DESC LIMIT 1)';
 
     private static final String CONVERSATION_FIELDS = 'Id, Name, Status__c, ConversationCloseReason__c, AIAgent__c, AIAgent__r.Name, AIAgent__r.IsActive__c, AIAgent__r.AllowConversationResume__c, MessageCount__c, RelatedRecordId__c, RelatedObjectAPIName__c, ProcessingLockedUntil__c, LastModifiedDate, (SELECT MessageBody__c FROM AIConversationMessages__r WHERE Sender__c = :userSender ORDER BY CreatedDate ASC LIMIT 1)';
 
@@ -50,7 +50,7 @@ public without sharing class AIChatConversationService {
         if (messageId == null || messageId.getSobjectType() != AIConversationMessage__c.SObjectType) throw new AIChatConversationServiceException(Label.AI_Error_Conversation_Not_Found);
 
         // [2] Find the message, only if it is an AI Agent reply in a conversation the user owns
-        List<AIConversationMessage__c> messages = [SELECT Id, AIConversation__c, AIConversation__r.Name, AIConversation__r.RelatedRecordId__c, AIConversation__r.AIAgent__c, Sender__c, TokenCount__c, SuggestedWorkflowAction__c, CreatedDate FROM AIConversationMessage__c WHERE Id = :messageId AND AIConversation__r.OwnerId = :UserInfo.getUserId() AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT WITH SYSTEM_MODE LIMIT 1];
+        List<AIConversationMessage__c> messages = [SELECT Id, AIConversation__c, AIConversation__r.Name, AIConversation__r.RelatedRecordId__c, AIConversation__r.AIAgent__c, Sender__c, TokenCount__c, SuggestedWorkflowAction__c, ExecutionTraceJson__c, DebugRequestJson__c, DebugResponseJson__c, DebugSentPreviewText__c, PIIValuesMasked__c, CreatedDate FROM AIConversationMessage__c WHERE Id = :messageId AND AIConversation__r.OwnerId = :UserInfo.getUserId() AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT WITH SYSTEM_MODE LIMIT 1];
 
         // [3] Refuse when there is none
         if (messages.isEmpty()) throw new AIChatConversationServiceException(Label.AI_Error_Conversation_Not_Found);
@@ -280,7 +280,7 @@ public without sharing class AIChatConversationService {
 
         for (AIConversationMessage__c message : oldestFirst) {
 
-            AIChatDataStructure.ChatMessage chatMessage = buildChatMessage(message, actionsById, message.AIExecutionSteps__r, message.AIFeedbacks__r);
+            AIChatDataStructure.ChatMessage chatMessage = buildChatMessage(message, actionsById, AIExecutionStepRecorder.parseTrace(message.ExecutionTraceJson__c), message.AIFeedbacks__r);
 
             if (chatMessage.sender == 'agent') {
 
@@ -337,7 +337,7 @@ public without sharing class AIChatConversationService {
 
         for (AIConversationMessage__c message : newerMessages) {
 
-            AIChatDataStructure.ChatMessage chatMessage = buildChatMessage(message, actionsById, message.AIExecutionSteps__r, message.AIFeedbacks__r);
+            AIChatDataStructure.ChatMessage chatMessage = buildChatMessage(message, actionsById, AIExecutionStepRecorder.parseTrace(message.ExecutionTraceJson__c), message.AIFeedbacks__r);
 
             if (chatMessage.sender == 'agent') {
 
@@ -353,7 +353,7 @@ public without sharing class AIChatConversationService {
     }
 
     // Turns one message into what the window shows, with its steps, sources, feedback and suggested action.
-    public static AIChatDataStructure.ChatMessage buildChatMessage(AIConversationMessage__c message, Map<Id, AIWorkflowAction__c> actionsById, List<AIExecutionStep__c> steps, List<AIFeedback__c> feedback) {
+    public static AIChatDataStructure.ChatMessage buildChatMessage(AIConversationMessage__c message, Map<Id, AIWorkflowAction__c> actionsById, List<AIExecutionStepRecorder.TraceStep> steps, List<AIFeedback__c> feedback) {
 
         // [1] Copy the message's details, with the hidden command instructions left out of the text
         AIChatDataStructure.ChatMessage chatMessage = new AIChatDataStructure.ChatMessage();
@@ -378,11 +378,11 @@ public without sharing class AIChatConversationService {
         Set<Id> ranActionIds = new Set<Id>();
         Set<String> sourceNames = new Set<String>();
 
-        for (AIExecutionStep__c step : steps == null ? new List<AIExecutionStep__c>() : steps) {
+        for (AIExecutionStepRecorder.TraceStep step : steps == null ? new List<AIExecutionStepRecorder.TraceStep>() : steps) {
 
             chatMessage.steps.add(buildExecutionStep(step));
-            if (step.AIDataSource__c != null && step.AIDataSource__r != null) sourceNames.add(AIChatDataStructure.humanise(step.AIDataSource__r.DeveloperName__c));
-            if (step.AIWorkflowAction__c != null && step.Status__c == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS) ranActionIds.add(step.AIWorkflowAction__c);
+            if (String.isNotBlank(step.dataSource)) sourceNames.add(AIChatDataStructure.humanise(step.dataSource));
+            if (String.isNotBlank(step.workflowActionId) && step.status == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS) ranActionIds.add(Id.valueOf(step.workflowActionId));
         }
 
         chatMessage.sources.addAll(sourceNames);
@@ -398,23 +398,25 @@ public without sharing class AIChatConversationService {
         return chatMessage;
     }
 
-    // The label is a Custom Label chosen by what the step did, with the data source or action name added; the stored step detail is shown when there is one.
-    public static AIChatDataStructure.ExecutionStep buildExecutionStep(AIExecutionStep__c step) {
+    // The label is the step's stored detail, which names the template, data source or fields involved; a step with none is labelled by its type with a Custom Label.
+    public static AIChatDataStructure.ExecutionStep buildExecutionStep(AIExecutionStepRecorder.TraceStep step) {
 
-        // [1] Copy the step's details
+        // [1] Copy the four things a user may see, and the step number
         AIChatDataStructure.ExecutionStep executionStep = new AIChatDataStructure.ExecutionStep();
-        executionStep.stepOrder = step.StepOrder__c == null ? null : step.StepOrder__c.intValue();
-        executionStep.status = step.Status__c;
-        executionStep.isSuccess = step.Status__c == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
-        executionStep.durationMs = step.DurationMilliseconds__c == null ? null : step.DurationMilliseconds__c.longValue();
+        executionStep.stepOrder = step.step;
+        executionStep.stepType = step.stepType;
+        executionStep.status = step.status;
+        executionStep.isSuccess = step.status == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
+        executionStep.durationMs = step.ms;
+        executionStep.stepDetail = step.stepDetail;
 
         // [2] Label the step: its stored detail, else the data source or action it used, else by its type
-        if (String.isNotBlank(step.StepDetail__c)) executionStep.label = step.StepDetail__c;
-        else if (step.AIDataSource__r != null) executionStep.label = Label.AI_Step_Reading_Data + ': ' + AIChatDataStructure.humanise(step.AIDataSource__r.DeveloperName__c);
-        else if (step.AIWorkflowAction__r != null) executionStep.label = Label.AI_Step_Running_Action + ': ' + step.AIWorkflowAction__r.ActionName__c;
-        else if (step.StepType__c == AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL) executionStep.label = Label.AI_Step_Calling_Model;
-        else if (step.StepType__c == AIAssistApplicationConstants.STEP_TYPE_PII_MASKING) executionStep.label = Label.AI_Step_Protecting_Data;
-        else if (step.StepType__c == AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY) executionStep.label = Label.AI_Step_Preparing_Request;
+        if (String.isNotBlank(step.stepDetail)) executionStep.label = step.stepDetail;
+        else if (String.isNotBlank(step.dataSource)) executionStep.label = Label.AI_Step_Reading_Data + ': ' + AIChatDataStructure.humanise(step.dataSource);
+        else if (String.isNotBlank(step.workflowActionName)) executionStep.label = Label.AI_Step_Running_Action + ': ' + step.workflowActionName;
+        else if (step.stepType == AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL) executionStep.label = Label.AI_Step_Calling_Model;
+        else if (step.stepType == AIAssistApplicationConstants.STEP_TYPE_PII_MASKING) executionStep.label = Label.AI_Step_Protecting_Data;
+        else if (step.stepType == AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY) executionStep.label = Label.AI_Step_Preparing_Request;
         else executionStep.label = Label.AI_Step_Finalising;
 
         // [3] Return the step

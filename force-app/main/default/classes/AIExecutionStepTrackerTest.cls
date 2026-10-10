@@ -21,6 +21,7 @@ Version      Author                   Description
     // testScenario1: A data source phase and a provider phase are each ended -> each becomes a timed, typed step, in the order they ended.
     // testScenario2: Ending a phase that was never started -> nothing is recorded and null is returned.
     // testScenario3: addMaskingTallies is called with a step, a null step and null tallies -> the step is flagged and each tally is copied as a masking entry, and the null calls add nothing.
+    // testScenario4: A step that is not a timed phase is added with its type, time and wording -> it is kept on the tracker.
 
     @TestSetup static void setup() {
 
@@ -115,6 +116,29 @@ Version      Author                   Description
             Assert.areEqual('Email', step.maskingEntries[0].sourceField, 'The field.');
             Assert.areEqual(3, step.maskingEntries[0].valuesMasked, 'The count.');
             Assert.areEqual('GDPR', step.maskingEntries[0].complianceGroup, 'The compliance group.');
+        }
+    }
+
+    @IsTest static void testScenario4() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build a tracker
+            AIExecutionStepTracker tracker = new AIExecutionStepTracker(null, null, false, false);
+            AIExecutionStepTracker.StepEntry step;
+
+            // [2] Add a step that is not a timed phase
+            Test.startTest();
+                step = tracker.addStep(AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY, true, 4L, 'Built the prompt.');
+            Test.stopTest();
+
+            // [3] Check the step was kept, with its type, time and wording
+            Assert.areEqual(1, tracker.steps.size(), 'The step is on the tracker.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY, step.stepType, 'Its type.');
+            Assert.areEqual(4, step.durationMilliseconds, 'Its time.');
+            Assert.areEqual('Built the prompt.', step.stepDetail, 'Its wording.');
+            Assert.isTrue(step.isSuccess, 'It succeeded.');
         }
     }
 }

@@ -4,7 +4,7 @@ Script Name: 04-activity.apex
 =================================================================
 =================================================================
 
-Description: What using the agents leaves behind: conversations with messages, execution steps and masking
+Description: What using the agents leaves behind: conversations with messages, execution traces and masking
 evidence, PII mappings, feedback, a terms acknowledgment
 and platform logs. Run 02-agents.apex and 03-tools-and-rules.apex first.
 
@@ -245,7 +245,9 @@ public class SampleDataLoader {
     save('AIConversationMessage__c (user)', userMessages, true);
 
     List<AIConversationMessage__c> replies = new List<AIConversationMessage__c>();
-    List<AIExecutionStep__c> steps = new List<AIExecutionStep__c>();
+    List<AIConversationMessage__c> tracedMessages = new List<AIConversationMessage__c>();
+    List<AIPIIMaskingRecord__c> maskingRecords = new List<AIPIIMaskingRecord__c>();
+    Integer maskingIndex = 0;
     for (Integer turnIndex = 0; turnIndex < userMessages.size(); turnIndex++) {
       AIConversationMessage__c userMessage = userMessages[turnIndex];
       if (
@@ -291,106 +293,93 @@ public class SampleDataLoader {
       }
       replies.add(reply);
 
-      // The evidence of the turn, on the user message that started it.
+      // The execution trace of the turn, on the user message that started it.
       Id dataSourceId = dataSourceIdByAgentId.get(agent.Id);
-      Integer stepOrder = 1;
-      steps.add(
-        new AIExecutionStep__c(
-          AIConversationMessage__c = userMessage.Id,
-          StepType__c = 'Template Match',
-          Status__c = 'Success',
-          StepOrder__c = stepOrder++,
-          DurationMilliseconds__c = 12,
-          StepDetail__c = 'Matched the agent\'s active prompt template.'
+      List<AIExecutionStepRecorder.TraceStep> traceSteps = new List<AIExecutionStepRecorder.TraceStep>();
+      traceSteps.add(
+        sampleStep(
+          traceSteps,
+          'Prompt Assembly',
+          'Success',
+          30,
+          'Built the prompt for agent ' +
+          agent.Name +
+          ' using the agent\'s active prompt template.'
         )
       );
-      if (dataSourceId != null)
-        steps.add(
-          new AIExecutionStep__c(
-            AIConversationMessage__c = userMessage.Id,
-            AIDataSource__c = dataSourceId,
-            StepType__c = 'Data Source',
-            Status__c = 'Success',
-            StepOrder__c = stepOrder++,
-            DurationMilliseconds__c = 85 + Math.mod(turnIndex * 31, 200),
-            TargetObject__c = 'Account',
-            TargetRecordId__c = conversations[conversationIndex]
-              .RelatedRecordId__c,
-            ObjectsSent__c = 'Account, Contact',
-            FieldsSent__c = 'Account.Name, Account.Industry, Account.Phone, Contact.Name, Contact.Email, Contact.Phone',
-            FieldsSentCount__c = 6,
-            RecordsSentCount__c = 1 + Math.mod(turnIndex, 5),
-            PIIMaskingApplied__c = true,
-            SentPreviewText__c = 'Account: Harbour Logistics; Contact: Jamie Carter, jamie.carter@example.com'
-          )
+      Integer maskingStepOrder = traceSteps.size() + 1;
+      traceSteps.add(
+        sampleStep(
+          traceSteps,
+          'PII Masking',
+          'Success',
+          null,
+          'Masked 2 values in the request: Contact.Email (Email, 1), Contact.Phone (Phone, 1).'
+        )
+      );
+      if (dataSourceId != null) {
+        AIExecutionStepRecorder.TraceStep dataSourceStep = sampleStep(
+          traceSteps,
+          'Data Source',
+          'Success',
+          85 + Math.mod(turnIndex * 31, 200),
+          'Ran the data source on Account. ' +
+          (1 + Math.mod(turnIndex, 5)) +
+          ' records returned.'
         );
-      steps.add(
-        new AIExecutionStep__c(
-          AIConversationMessage__c = userMessage.Id,
-          StepType__c = 'Prompt Assembly',
-          Status__c = 'Success',
-          StepOrder__c = stepOrder++,
-          DurationMilliseconds__c = 30,
-          StepDetail__c = 'System context, tone, exclusion rules and conversation history.'
-        )
+        dataSourceStep.targetObject = 'Account';
+        traceSteps.add(dataSourceStep);
+      }
+      AIExecutionStepRecorder.TraceStep providerStep = sampleStep(
+        traceSteps,
+        'Provider Call',
+        isFailed ? 'Failed' : 'Success',
+        800 + Math.mod(turnIndex * 211, 4000),
+        isFailed
+          ? 'The provider did not answer: ' + userMessage.FailureReason__c
+          : 'Final reply.'
       );
-      steps.add(
-        new AIExecutionStep__c(
-          AIConversationMessage__c = userMessage.Id,
-          StepType__c = 'Provider Call',
-          Status__c = isFailed ? 'Failed' : 'Success',
-          StepOrder__c = stepOrder++,
-          AttemptNumber__c = isFailed ? 3 : 1,
-          DurationMilliseconds__c = 800 + Math.mod(turnIndex * 211, 4000),
-          Provider__c = model == null ? 'Anthropic' : model.AIProvider__c,
-          ModelIdentifier__c = model == null
-            ? 'claude-sonnet-5-5'
-            : model.ModelIdentifier__c,
-          ToolCallingIterationsUsed__c = 1 + Math.mod(turnIndex, 3),
-          ToolCallingIterationsMax__c = 5,
-          RequestJson__c = '{"model":"sample","max_tokens":2048,"messages":[{"role":"user","content":"(masked)"}]}',
-          ResponseJson__c = isFailed
-            ? '{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}'
-            : '{"stop_reason":"end_turn","usage":{"input_tokens":' +
-              inputTokens +
-              ',"output_tokens":' +
-              outputTokens +
-              '}}',
-          StepDetail__c = isFailed
-            ? 'The provider did not answer: ' + userMessage.FailureReason__c
-            : null
-        )
-      );
-      if (firstActionId != null && Math.mod(turnIndex, 7) == 2 && !isFailed)
-        steps.add(
-          new AIExecutionStep__c(
-            AIConversationMessage__c = userMessage.Id,
-            AIWorkflowAction__c = firstActionId,
-            StepType__c = 'Workflow Action',
-            Status__c = 'Success',
-            StepOrder__c = stepOrder++,
-            DurationMilliseconds__c = 140,
-            RequiredConfirmation__c = true,
-            ConfirmedBy__c = conversations[conversationIndex].OwnerId,
-            ConfirmedDate__c = Datetime.now(),
-            TargetObject__c = 'Task',
-            StepDetail__c = 'The user confirmed and the action ran.'
-          )
+      providerStep.provider = model == null
+        ? 'Anthropic'
+        : model.AIProvider__c;
+      providerStep.model = model == null
+        ? 'claude-sonnet-5-5'
+        : model.ModelIdentifier__c;
+      providerStep.recordsSent = 1 + Math.mod(turnIndex, 5);
+      providerStep.objectsSent = 'Account, Contact';
+      providerStep.fieldsSent = 'Account.Name, Account.Industry, Account.Phone, Contact.Name, Contact.Email, Contact.Phone';
+      providerStep.fieldsSentCount = 6;
+      providerStep.iterationsUsed = 1 + Math.mod(turnIndex, 3);
+      providerStep.iterationsMax = 5;
+      providerStep.attempt = isFailed ? 3 : 1;
+      traceSteps.add(providerStep);
+      if (firstActionId != null && Math.mod(turnIndex, 7) == 2 && !isFailed) {
+        AIExecutionStepRecorder.TraceStep actionStep = sampleStep(
+          traceSteps,
+          'Workflow Action',
+          'Success',
+          140,
+          'Ran the suggested action. The user confirmed first.'
         );
-    }
-    save('AIConversationMessage__c (replies)', replies, true);
-    save('AIExecutionStep__c', steps, true);
+        actionStep.workflowActionId = String.valueOf(firstActionId);
+        actionStep.requiredConfirmation = true;
+        actionStep.confirmedBy = String.valueOf(
+          conversations[conversationIndex].OwnerId
+        );
+        actionStep.confirmedDate = Datetime.now();
+        actionStep.targetObject = 'Task';
+        traceSteps.add(actionStep);
+      }
 
-    // ---------- Masking evidence under each data source step.
-    List<AIPIIMaskingRecord__c> maskingRecords = new List<AIPIIMaskingRecord__c>();
-    Integer maskingIndex = 0;
-    for (AIExecutionStep__c step : steps) {
-      if (step.Id == null || step.PIIMaskingApplied__c != true)
-        continue;
+      userMessage.ExecutionTraceJson__c = JSON.serialize(traceSteps, true);
+      tracedMessages.add(userMessage);
+
+      // The masking evidence, against the message and the masking step.
       maskingIndex++;
       maskingRecords.add(
         new AIPIIMaskingRecord__c(
-          AIExecutionStep__c = step.Id,
+          AIConversationMessage__c = userMessage.Id,
+          StepOrder__c = maskingStepOrder,
           SourceObject__c = 'Contact',
           SourceField__c = 'Email',
           PIIFieldType__c = 'Email',
@@ -402,7 +391,8 @@ public class SampleDataLoader {
       );
       maskingRecords.add(
         new AIPIIMaskingRecord__c(
-          AIExecutionStep__c = step.Id,
+          AIConversationMessage__c = userMessage.Id,
+          StepOrder__c = maskingStepOrder,
           SourceObject__c = 'Contact',
           SourceField__c = 'Phone',
           PIIFieldType__c = 'Phone',
@@ -413,6 +403,15 @@ public class SampleDataLoader {
             ? 'Failed'
             : Math.mod(maskingIndex, 5) == 0 ? 'Skipped' : 'Masked'
         )
+      );
+    }
+    save('AIConversationMessage__c (replies)', replies, true);
+    try {
+      AIMessagingDataService.updateOrThrow(tracedMessages);
+    } catch (Exception caughtException) {
+      problems.add(
+        'AIConversationMessage__c (execution traces): ' +
+          caughtException.getMessage()
       );
     }
     save('AIPIIMaskingRecord__c', maskingRecords, true);
@@ -567,6 +566,23 @@ public class SampleDataLoader {
   }
 
   // Inserts what it can and records the rest. asPackage writes in system mode, as the package does, for the objects and fields a user may not write (the assistant's messages, evidence).
+  // One entry of an execution trace, numbered after the entries already in it.
+  AIExecutionStepRecorder.TraceStep sampleStep(
+    List<AIExecutionStepRecorder.TraceStep> existingSteps,
+    String stepType,
+    String status,
+    Integer ms,
+    String stepDetail
+  ) {
+    AIExecutionStepRecorder.TraceStep traceStep = new AIExecutionStepRecorder.TraceStep();
+    traceStep.step = existingSteps.size() + 1;
+    traceStep.stepType = stepType;
+    traceStep.status = status;
+    traceStep.ms = ms;
+    traceStep.stepDetail = stepDetail;
+    return traceStep;
+  }
+
   void save(String label, List<SObject> records, Boolean asPackage) {
     if (records.isEmpty())
       return;
