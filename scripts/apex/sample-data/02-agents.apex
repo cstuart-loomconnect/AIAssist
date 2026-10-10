@@ -151,7 +151,7 @@ public class SampleDataLoader {
         MaxConversationsPer24Hours__c = 100,
         MaxTokensPer24Hours__c = 2000000,
         UsageLimitReachedBehavior__c = 'Notify Only',
-        WorkflowActionsEnabled__c = true,
+        IsUserInitiatedChatEnabled__c = true,
         ConversationExportEnabled__c = true
       ),
       new AIUsagePolicy__c(
@@ -160,7 +160,7 @@ public class SampleDataLoader {
         AllowedChannels__c = 'Utility Bar;Record Page Chat;Mobile',
         ConversationVisibilityScope__c = 'All Conversations',
         UsageLimitReachedBehavior__c = 'Notify Only',
-        WorkflowActionsEnabled__c = true,
+        IsUserInitiatedChatEnabled__c = true,
         ConversationExportEnabled__c = true,
         DebugModeEnabled__c = true
       ),
@@ -228,7 +228,7 @@ public class SampleDataLoader {
             : 'My Conversations Only',
           DebugModeEnabled__c = isRunningUser,
           ConversationExportEnabled__c = isRunningUser,
-          WorkflowActionsEnabled__c = true,
+          IsUserInitiatedChatEnabled__c = true,
           MaxConcurrentConversations__c = isRunningUser ? null : 5,
           MaxConversationsPer24Hours__c = isRunningUser ? null : 30,
           MaxTokensPer24Hours__c = isRunningUser ? null : 300000,

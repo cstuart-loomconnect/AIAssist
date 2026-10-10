@@ -5,7 +5,7 @@
     <description
   >Only set on a &quot;Provider callout&quot; step - the raw HTTP response body the AI provider returned for that callout.</description>
     <inlineHelpText
-  >Left blank for a data source step. Only captured when AIAssistSettings__c.StepCaptureMode__c is Full, to avoid the storage cost otherwise.</inlineHelpText>
+  >Left blank for a data source step. Only captured for a user with AIUserSettings__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c both on, to avoid the storage cost otherwise.</inlineHelpText>
     <label>Response JSON</label>
     <length>131072</length>
     <securityClassification>Confidential</securityClassification>

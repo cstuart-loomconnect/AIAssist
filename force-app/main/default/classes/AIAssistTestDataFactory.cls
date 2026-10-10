@@ -58,6 +58,18 @@ public without sharing class AIAssistTestDataFactory {
         insertAsSetupUser(assignments);
     }
 
+    // A standard user holding the AIAssistSuperUser permission set, which grants read, create, edit and delete on everything AI Assist. Every test runs as this user with System.runAs.
+    public static User createSuperUser() {
+
+        // [1] Create the user
+        List<User> users = createUsers(1, true);
+
+        // [2] Give it the Super User permission set, and return it
+        assignPermissionSet(users, 'AIAssistSuperUser');
+
+        return users[0];
+    }
+
     // Plain accounts with unique names.
     public static List<Account> createAccounts(Integer numberOfAccounts, Boolean shouldDoInsert) {
 
@@ -260,7 +272,19 @@ public without sharing class AIAssistTestDataFactory {
         }
 
         // [3] Insert them when asked, and return them
-        if (shouldDoInsert && !conversations.isEmpty()) insert conversations;
+        if (shouldDoInsert && !conversations.isEmpty()) {
+
+            // A conversation owned by someone else is inserted as the setup user, because the new owner must have read access to it
+            Boolean hasOtherOwner = false;
+
+            for (AIConversation__c conversation : conversations) {
+
+                if (conversation.OwnerId != null && conversation.OwnerId != UserInfo.getUserId()) hasOtherOwner = true;
+            }
+
+            if (hasOtherOwner) insertAsSetupUser(conversations);
+            else insert conversations;
+        }
 
         return conversations;
     }
@@ -320,14 +344,13 @@ public without sharing class AIAssistTestDataFactory {
         return userSettingsRows;
     }
 
-    // The org-level UI settings that switch debug mode and Workflow Actions on or off for every user.
-    public static AIAssistUISettings__c upsertUiSettings(Boolean isDebugModeEnabled, Boolean areWorkflowActionsEnabled) {
+    // The org-level UI settings that switch Workflow Actions on or off for every user.
+    public static AIAssistUISettings__c upsertUiSettings(Boolean isWorkflowActionsEnabled) {
 
-        // [1] Set the two switches on the org defaults and save them
+        // [1] Set the switch on the org defaults and save them
         AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
-        uiSettings.IsDebugModeEnabled__c = isDebugModeEnabled;
-        uiSettings.AreWorkflowActionsEnabled__c = areWorkflowActionsEnabled;
-        upsert uiSettings;
+        uiSettings.IsWorkflowActionsEnabled__c = isWorkflowActionsEnabled;
+        System.runAs(getSetupUser()) { upsert uiSettings; }
 
         return uiSettings;
     }
@@ -421,11 +444,18 @@ public without sharing class AIAssistTestDataFactory {
         return System.Uuid.randomUUID().toString().left(8);
     }
 
-    // User is a setup object, so it is inserted in its own context apart from the test's other records.
+    // An active System Administrator, for the setup work a Super User cannot do: inserting Users, roles and records owned by someone else. Use it as System.runAs(AIAssistTestDataFactory.getSetupUser()).
+    public static User getSetupUser() {
+
+        // [1] Find an active administrator
+        return new User(Id = [SELECT Id FROM User WHERE Profile.Name = 'System Administrator' AND IsActive = TRUE LIMIT 1].Id);
+    }
+
+    // User is a setup object, so it is inserted in its own context apart from the test's other records, as the setup user so it works even when the test is running as a Super User.
     private static void insertAsSetupUser(List<SObject> records) {
 
-        // [1] Insert as the running user, in a separate context
-        System.runAs(new User(Id = UserInfo.getUserId())) {
+        // [1] Insert as the setup user, in a separate context
+        System.runAs(getSetupUser()) {
 
             insert records;
         }

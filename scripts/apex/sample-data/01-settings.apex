@@ -68,7 +68,6 @@ public class SampleDataLoader {
     settings.IsEnabled__c = shouldEnableApplication;
     settings.AIUsagePolicyUrl__c = 'https://example.com/ai-usage-policy';
     settings.CurrentTermsVersion__c = '1.0';
-    settings.StepCaptureMode__c = 'Full';
     settings.MaxMessageLength__c = 4000;
     settings.MaxMessagesPerUserPerMinute__c = 10;
     settings.MaxMessagesInFlight__c = 20;
@@ -81,21 +80,22 @@ public class SampleDataLoader {
     organisationUi.MaxVisibleMessageHistory__c = 50;
     organisationUi.SuggestedActionsDisplay__c = 'Cards';
     organisationUi.ShowTimestampOnMessages__c = true;
-    organisationUi.AllowInlineWorkflowActions__c = true;
+    organisationUi.IsInlineWorkflowActionsEnabled__c = true;
+    organisationUi.IsWorkflowActionsEnabled__c = true;
 
     AIAssistUISettings__c profileUi = uiSettingsFor(UserInfo.getProfileId());
     profileUi.MaxVisibleMessageHistory__c = 75;
     profileUi.SuggestedActionsDisplay__c = 'Cards';
     profileUi.ShowTimestampOnMessages__c = true;
-    profileUi.AllowInlineWorkflowActions__c = true;
-    profileUi.ShowExecutionTraceToUser__c = true;
+    profileUi.IsInlineWorkflowActionsEnabled__c = true;
+    profileUi.ShouldShowExecutionTrace__c = true;
 
     AIAssistUISettings__c userUi = uiSettingsFor(runningUserId);
     userUi.MaxVisibleMessageHistory__c = 100;
     userUi.SuggestedActionsDisplay__c = 'Inline Buttons';
     userUi.ShowTimestampOnMessages__c = true;
-    userUi.AllowInlineWorkflowActions__c = true;
-    userUi.ShowExecutionTraceToUser__c = true;
+    userUi.IsInlineWorkflowActionsEnabled__c = true;
+    userUi.ShouldShowExecutionTrace__c = true;
 
     try {
       upsert settings;

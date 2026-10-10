@@ -19,7 +19,7 @@ PRs are labelled automatically (`apex`, `lwc`, `aura`, `objects`, `flows`, `secu
 
 ## Naming conventions
 
-API names are checked on every PR by `scripts/ci/check-naming.js`. The `__c`, `__mdt`, `__e` suffix and the `LoomConnect__` namespace prefix are added by Salesforce and are not checked; the name in front of them is.
+API names are checked on every PR by `scripts/ci/check-naming.js`. The `__c`, `__mdt`, `__e` suffix is added by Salesforce and is not checked; the name in front of it is.
 
 | Metadata                                                                                        | Rule                          | Example                                     |
 | ----------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------- |

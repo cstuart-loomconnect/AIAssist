@@ -372,9 +372,6 @@ public without sharing class AIAssistApplicationConstants {
     public static final String PERMISSION_SET_SUPER_USER = 'AIAssistSuperUser';
     public static final String PERMISSION_SET_ADMIN_USER = 'AIAssistAdminUser';
 
-    // AIAssistSettings__c.StepCaptureMode__c
-    public static final String STEP_CAPTURE_OFF = 'Off';
-    public static final String STEP_CAPTURE_FULL = 'Full';
     public static final String USER_LEVEL_USER = 'User';
     public static final String USER_LEVEL_SUPER_USER = 'Super User';
     public static final String USER_LEVEL_ADMIN = 'Admin';

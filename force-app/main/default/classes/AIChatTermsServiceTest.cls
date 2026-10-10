@@ -24,30 +24,32 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
     @IsTest static void testScenario1() {
 
-        // [1] Set the current terms version and clear the settings cache
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.CurrentTermsVersion__c = 'v9';
-        update settings;
-        AIAssistSettingsService.cachedSettings = null;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Acknowledge the terms
-        Test.startTest();
-            AIChatTermsService.acknowledgeTerms();
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Set the current terms version and clear the settings cache
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.CurrentTermsVersion__c = 'v9';
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+            AIAssistSettingsService.cachedSettings = null;
 
-        // [3] Read the saved acknowledgment
-        AITermsAcknowledgment__c saved = [SELECT TermsVersion__c, SignatureText__c, User__c FROM AITermsAcknowledgment__c];
+            // [2] Acknowledge the terms
+            Test.startTest();
+                AIChatTermsService.acknowledgeTerms();
+            Test.stopTest();
 
-        // [4] Check the version, signature and user
-        Assert.areEqual('v9', saved.TermsVersion__c, 'The acknowledgment should be for the current terms version.');
-        Assert.areEqual(UserInfo.getName().left(120), saved.SignatureText__c, 'The acknowledgment should be signed with the user\'s name.');
-        Assert.areEqual(UserInfo.getUserId(), saved.User__c, 'The acknowledgment should be for this user.');
+            // [3] Read the saved acknowledgment
+            AITermsAcknowledgment__c saved = [SELECT TermsVersion__c, SignatureText__c, User__c FROM AITermsAcknowledgment__c];
+
+            // [4] Check the version, signature and user
+            Assert.areEqual('v9', saved.TermsVersion__c, 'The acknowledgment should be for the current terms version.');
+            Assert.areEqual(UserInfo.getName().left(120), saved.SignatureText__c, 'The acknowledgment should be signed with the user\'s name.');
+            Assert.areEqual(UserInfo.getUserId(), saved.User__c, 'The acknowledgment should be for this user.');
+        }
     }
 }

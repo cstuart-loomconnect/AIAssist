@@ -98,7 +98,7 @@ public without sharing class AIConversationMessageService {
             // [5] Refuse a new conversation while new chats are paused
             Boolean isNewConversation = conversation == null;
 
-            if (isNewConversation && AIAssistSettingsService.getUiSettings().IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
+            if (isNewConversation && chatContext.userSettings != null && chatContext.userSettings.IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
 
             // [6] Check the usage limits
             AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);
@@ -181,6 +181,12 @@ public without sharing class AIConversationMessageService {
 
             return 0;
         }
+    }
+
+    // True when the signed-in user has a message in this conversation waiting for a place under the cap on messages in flight. The chat window asks this on every update, so it is one indexed read and nothing else: startHeldMessage and its sweep of every user's expired messages run only for a window that has something to start.
+    public static Boolean hasHeldMessage(Id conversationId) {
+
+        return ![SELECT Id FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND IsAwaitingCapacity__c = TRUE AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED AND CreatedById = :UserInfo.getUserId() WITH SYSTEM_MODE LIMIT 1].isEmpty();
     }
 
     // Starts the signed-in user's oldest message that is waiting for a place under the cap on messages in flight, if a place is free. True when one was started. A job runs as whoever queues it and reads the conversation in user mode, so a waiting message can only be started by its own sender: from the finalizer of that user's earlier turn, or from their chat window asking for an update. Any user's finalizer or window first fails the messages that have waited too long (failExpiredHeldMessages), which are then no longer started. Never throws.

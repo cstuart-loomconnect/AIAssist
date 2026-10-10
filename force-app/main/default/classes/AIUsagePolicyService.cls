@@ -41,7 +41,7 @@ public without sharing class AIUsagePolicyService {
         if (userId == null) return null;
 
         // [2] Read the user's own settings row
-        List<AIUserSettings__c> userSettingsRows = [SELECT Id, User__c, IsActive__c, AllowedChannels__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, DebugModeEnabled__c, WorkflowActionsEnabled__c, ConversationExportEnabled__c, ConversationVisibilityScope__c FROM AIUserSettings__c WHERE User__c = :userId WITH SYSTEM_MODE LIMIT 1];
+        List<AIUserSettings__c> userSettingsRows = [SELECT Id, User__c, IsActive__c, AllowedChannels__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, DebugModeEnabled__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c, ConversationExportEnabled__c, ConversationVisibilityScope__c FROM AIUserSettings__c WHERE User__c = :userId WITH SYSTEM_MODE LIMIT 1];
 
         // [3] Combine the row with the policies that apply to the user
         return resolve(userSettingsRows.isEmpty() ? null : userSettingsRows[0], getUsagePoliciesForUser(userId));
@@ -71,11 +71,14 @@ public without sharing class AIUsagePolicyService {
         resolved.AllowedChannels__c = String.isNotBlank(personalRow?.AllowedChannels__c) ? personalRow.AllowedChannels__c : channelsAllowedByAny(applicable);
 
         // [6] Capabilities: on if the user's row or any policy switches them on
-        resolved.WorkflowActionsEnabled__c = personalRow?.WorkflowActionsEnabled__c == true || anyChecked(applicable, AIUsagePolicy__c.WorkflowActionsEnabled__c);
+        resolved.ShouldCaptureExecutionSteps__c = personalRow?.ShouldCaptureExecutionSteps__c == true || anyChecked(applicable, AIUsagePolicy__c.ShouldCaptureExecutionSteps__c);
         resolved.ConversationExportEnabled__c = personalRow?.ConversationExportEnabled__c == true || anyChecked(applicable, AIUsagePolicy__c.ConversationExportEnabled__c);
         resolved.DebugModeEnabled__c = personalRow?.DebugModeEnabled__c == true || anyChecked(applicable, AIUsagePolicy__c.DebugModeEnabled__c);
 
-        // [7] Return the answer
+        // [7] New chats: the user's own row decides when they have one, otherwise they are allowed if any policy allows them
+        resolved.IsUserInitiatedChatEnabled__c = personalRow != null ? personalRow.IsUserInitiatedChatEnabled__c == true : anyChecked(applicable, AIUsagePolicy__c.IsUserInitiatedChatEnabled__c);
+
+        // [8] Return the answer
         return resolved;
     }
 
@@ -222,10 +225,10 @@ public without sharing class AIUsagePolicyService {
         // [4] Nothing assigned, so the default policies cover the user instead
         if (policyIds.isEmpty()) {
 
-            return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, WorkflowActionsEnabled__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND IsDefault__c = TRUE WITH SYSTEM_MODE LIMIT 200];
+            return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND IsDefault__c = TRUE WITH SYSTEM_MODE LIMIT 200];
         }
 
         // [5] Return the active policies assigned to the user
-        return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, WorkflowActionsEnabled__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND Id IN :policyIds WITH SYSTEM_MODE LIMIT 200];
+        return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND Id IN :policyIds WITH SYSTEM_MODE LIMIT 200];
     }
 }

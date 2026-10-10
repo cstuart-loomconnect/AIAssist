@@ -7,9 +7,8 @@ Class Name: AIPlatformLogEventHandler
 Description: Saves published AIPlatformLogEvent__e events as AIPlatformLog__c records.
 
 Step 1: Receive the events from the trigger, once per transaction
-Step 2: Skip saving if platform logging is switched off
-Step 3: Turn each event into a log record and save them all
-Step 4: Swallow any failure, because logging it would publish another event into this same trigger
+Step 2: Turn each event into a log record and save them all
+Step 3: Swallow any failure, because logging it would publish another event into this same trigger
 
 =================================================================
 =================================================================
@@ -53,21 +52,18 @@ public without sharing class AIPlatformLogEventHandler {
         }
     }
 
-    // Saves each event as a log record, unless platform logging has been switched off.
+    // Saves each event as a log record.
     private static void saveEventsAsPlatformLogs(List<AIPlatformLogEvent__e> logEvents) {
-
-        // [1] Do nothing if platform logging is switched off
-        if (AIAssistSettingsService.getSettings().IsPlatformLoggingEnabled__c == false) return;
 
         List<AIPlatformLog__c> platformLogs = new List<AIPlatformLog__c>();
 
-        // [2] Make one log record for each event
+        // [1] Make one log record for each event
         for (AIPlatformLogEvent__e logEvent : logEvents) {
 
             platformLogs.add(new AIPlatformLog__c(ClassName__c = logEvent.ClassName__c, MethodName__c = logEvent.MethodName__c, OccurredAt__c = logEvent.OccurredAt__c, User__c = logEvent.UserId__c, ExceptionType__c = logEvent.ExceptionType__c, ExceptionMessage__c = logEvent.ExceptionMessage__c, StackTrace__c = logEvent.StackTrace__c, ExceptionLogDetail__c = logEvent.ExceptionLogDetail__c, RelatedRecordId__c = logEvent.RelatedRecordId__c, Severity__c = logEvent.Severity__c));
         }
 
-        // [3] Save them all, letting each succeed or fail on its own
+        // [2] Save them all, letting each succeed or fail on its own
         Database.insert(platformLogs, false, AccessLevel.SYSTEM_MODE);
     }
 }

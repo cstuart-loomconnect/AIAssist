@@ -79,400 +79,438 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
     @IsTest static void testScenario1() {
 
-        // [1] Build a request with one user message and a system prompt
-        AIProvider.Request request = new AIProvider.Request();
-        request.systemPromptText = SYSTEM_PROMPT;
-        request.session = new AIProvider.Session();
-        request.session.id = 'sesn_1';
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
-        };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        Map<String, Object> body;
+        System.runAs(superUser) {
+            // [1] Build a request with one user message and a system prompt
+            AIProvider.Request request = new AIProvider.Request();
+            request.systemPromptText = SYSTEM_PROMPT;
+            request.session = new AIProvider.Session();
+            request.session.id = 'sesn_1';
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
+            };
 
-        // [2] Build the body
-        Test.startTest();
-            body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Read the events back
-        List<Object> events = (List<Object>) body.get('events');
-        Map<String, Object> systemEvent = (Map<String, Object>) events[0];
-        Map<String, Object> userEvent = (Map<String, Object>) events[1];
-        Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) userEvent.get('content'))[0];
+            // [2] Build the body
+            Test.startTest();
+                body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check the events
-        Assert.areEqual(2, events.size(), 'There should be a system event and a user event.');
-        Assert.areEqual('system.message', systemEvent.get('type'), 'The system prompt should go first as a system message.');
-        Assert.areEqual('user.message', userEvent.get('type'), 'The user text should be a user message.');
-        Assert.areEqual(USER_TEXT, userBlock.get('text'), 'A single message should be sent as it is.');
+            // [3] Read the events back
+            List<Object> events = (List<Object>) body.get('events');
+            Map<String, Object> systemEvent = (Map<String, Object>) events[0];
+            Map<String, Object> userEvent = (Map<String, Object>) events[1];
+            Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) userEvent.get('content'))[0];
+
+            // [4] Check the events
+            Assert.areEqual(2, events.size(), 'There should be a system event and a user event.');
+            Assert.areEqual('system.message', systemEvent.get('type'), 'The system prompt should go first as a system message.');
+            Assert.areEqual('user.message', userEvent.get('type'), 'The user text should be a user message.');
+            Assert.areEqual(USER_TEXT, userBlock.get('text'), 'A single message should be sent as it is.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Build a request with an earlier exchange and a new user message
-        AIProvider.Request request = new AIProvider.Request();
-        request.session = new AIProvider.Session();
-        request.session.id = 'sesn_1';
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{
-                'role' => 'assistant',
-                'content' => ASSISTANT_TEXT
-            },
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
-        };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        Map<String, Object> body;
+        System.runAs(superUser) {
+            // [1] Build a request with an earlier exchange and a new user message
+            AIProvider.Request request = new AIProvider.Request();
+            request.session = new AIProvider.Session();
+            request.session.id = 'sesn_1';
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{
+                    'role' => 'assistant',
+                    'content' => ASSISTANT_TEXT
+                },
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
+            };
 
-        // [2] Build the body
-        Test.startTest();
-            body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Read the text of the only event
-        List<Object> events = (List<Object>) body.get('events');
-        Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+            // [2] Build the body
+            Test.startTest();
+                body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check the earlier turns are written out above the latest message
-        Assert.areEqual(1, events.size(), 'With no system prompt there should be one event.');
-        Assert.areEqual('Conversation so far:\nUser: ' + USER_TEXT + '\nAssistant: ' + ASSISTANT_TEXT + '\n\nLatest user message:\nAnd now?', userBlock.get('text'), 'The earlier turns should be labelled and the latest message last.');
+            // [3] Read the text of the only event
+            List<Object> events = (List<Object>) body.get('events');
+            Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+
+            // [4] Check the earlier turns are written out above the latest message
+            Assert.areEqual(1, events.size(), 'With no system prompt there should be one event.');
+            Assert.areEqual('Conversation so far:\nUser: ' + USER_TEXT + '\nAssistant: ' + ASSISTANT_TEXT + '\n\nLatest user message:\nAnd now?', userBlock.get('text'), 'The earlier turns should be labelled and the latest message last.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Build a request whose last message is two tool results, with a system prompt that must not be sent again
-        AIProvider.Request request = new AIProvider.Request();
-        request.systemPromptText = SYSTEM_PROMPT;
-        request.session = new AIProvider.Session();
-        request.session.id = 'sesn_1';
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{
-                'role' => 'assistant',
-                'content' => new List<Object>()
-            },
-            new Map<String, Object>{
-                'role' => 'user',
-                'content' => new List<Object>{
-                    new Map<String, Object>{
-                        'type' => 'tool_result',
-                        'tool_use_id' => 'sevt_1',
-                        'content' => 'first'
-                    },
-                    new Map<String, Object>{
-                        'type' => 'tool_result',
-                        'tool_use_id' => 'sevt_2',
-                        'content' => 'second'
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build a request whose last message is two tool results, with a system prompt that must not be sent again
+            AIProvider.Request request = new AIProvider.Request();
+            request.systemPromptText = SYSTEM_PROMPT;
+            request.session = new AIProvider.Session();
+            request.session.id = 'sesn_1';
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{
+                    'role' => 'assistant',
+                    'content' => new List<Object>()
+                },
+                new Map<String, Object>{
+                    'role' => 'user',
+                    'content' => new List<Object>{
+                        new Map<String, Object>{
+                            'type' => 'tool_result',
+                            'tool_use_id' => 'sevt_1',
+                            'content' => 'first'
+                        },
+                        new Map<String, Object>{
+                            'type' => 'tool_result',
+                            'tool_use_id' => 'sevt_2',
+                            'content' => 'second'
+                        }
                     }
                 }
-            }
-        };
+            };
 
-        Map<String, Object> body;
+            Map<String, Object> body;
 
-        // [2] Build the body
-        Test.startTest();
-            body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            // [2] Build the body
+            Test.startTest();
+                body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [3] Read the events back
-        List<Object> events = (List<Object>) body.get('events');
-        Map<String, Object> secondEvent = (Map<String, Object>) events[1];
-        Map<String, Object> secondBlock = (Map<String, Object>) ((List<Object>) secondEvent.get('content'))[0];
+            // [3] Read the events back
+            List<Object> events = (List<Object>) body.get('events');
+            Map<String, Object> secondEvent = (Map<String, Object>) events[1];
+            Map<String, Object> secondBlock = (Map<String, Object>) ((List<Object>) secondEvent.get('content'))[0];
 
-        // [4] Check one result event per call
-        Assert.areEqual(2, events.size(), 'There should be one event per tool result and no system message.');
-        Assert.areEqual('user.custom_tool_result', secondEvent.get('type'), 'Each result should be a custom tool result.');
-        Assert.areEqual('sevt_2', secondEvent.get('custom_tool_use_id'), 'Each result should name the call it answers.');
-        Assert.areEqual('second', secondBlock.get('text'), 'The result should be sent as text.');
+            // [4] Check one result event per call
+            Assert.areEqual(2, events.size(), 'There should be one event per tool result and no system message.');
+            Assert.areEqual('user.custom_tool_result', secondEvent.get('type'), 'Each result should be a custom tool result.');
+            Assert.areEqual('sevt_2', secondEvent.get('custom_tool_use_id'), 'Each result should name the call it answers.');
+            Assert.areEqual('second', secondBlock.get('text'), 'The result should be sent as text.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Prepare a request with no messages, one with no session, and one whose last message holds no tool results
-        AIProvider.Request emptyRequest = new AIProvider.Request();
-        emptyRequest.messages = new List<Map<String, Object>>();
-        AIProvider.Request noSessionRequest = new AIProvider.Request();
-        noSessionRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
-        };
-        AIProvider.Request noResultsRequest = new AIProvider.Request();
-        noResultsRequest.session = new AIProvider.Session();
-        noResultsRequest.session.id = 'sesn_1';
-        noResultsRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{
-                'role' => 'user',
-                'content' => new List<Object>()
-            }
-        };
-        List<String> errorMessages = new List<String>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Build each body
-        Test.startTest();
-            for (AIProvider.Request request : new List<AIProvider.Request>{ emptyRequest, noSessionRequest, noResultsRequest }) {
-                try {
-                    new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-                } catch (AIAnthropicAgentRequestBuilder.AIAnthropicAgentRequestBuilderException ex) {
-                    errorMessages.add(ex.getMessage());
+        System.runAs(superUser) {
+            // [1] Prepare a request with no messages, one with no session, and one whose last message holds no tool results
+            AIProvider.Request emptyRequest = new AIProvider.Request();
+            emptyRequest.messages = new List<Map<String, Object>>();
+            AIProvider.Request noSessionRequest = new AIProvider.Request();
+            noSessionRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
+            };
+            AIProvider.Request noResultsRequest = new AIProvider.Request();
+            noResultsRequest.session = new AIProvider.Session();
+            noResultsRequest.session.id = 'sesn_1';
+            noResultsRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{
+                    'role' => 'user',
+                    'content' => new List<Object>()
                 }
-            }
-        Test.stopTest();
+            };
+            List<String> errorMessages = new List<String>();
 
-        // [3] Check each was refused with its own message
-        Assert.areEqual(3, errorMessages.size(), 'All three requests should be refused.');
-        Assert.areEqual('There is no message to send to the agent.', errorMessages[0], 'An empty request should say there is nothing to send.');
-        Assert.isTrue(errorMessages[1].contains('no session'), 'A request with no session should say so.');
-        Assert.areEqual('The last message holds no tool results to send to the agent.', errorMessages[2], 'A request with no tool results should say so.');
+            // [2] Build each body
+            Test.startTest();
+                for (AIProvider.Request request : new List<AIProvider.Request>{ emptyRequest, noSessionRequest, noResultsRequest }) {
+                    try {
+                        new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+                    } catch (AIAnthropicAgentRequestBuilder.AIAnthropicAgentRequestBuilderException ex) {
+                        errorMessages.add(ex.getMessage());
+                    }
+                }
+            Test.stopTest();
+
+            // [3] Check each was refused with its own message
+            Assert.areEqual(3, errorMessages.size(), 'All three requests should be refused.');
+            Assert.areEqual('There is no message to send to the agent.', errorMessages[0], 'An empty request should say there is nothing to send.');
+            Assert.isTrue(errorMessages[1].contains('no session'), 'A request with no session should say so.');
+            Assert.areEqual('The last message holds no tool results to send to the agent.', errorMessages[2], 'A request with no tool results should say so.');
+        }
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Register the mock and build a request with an empty session
-        SessionStartMock mock = new SessionStartMock();
-        Test.setMock(HttpCalloutMock.class, mock);
-        AIProvider.Request request = new AIProvider.Request();
-        request.modelIdentifier = 'agent_1';
-        request.environmentId = 'env_1';
-        request.endpoint = SESSIONS_ENDPOINT;
-        request.session = new AIProvider.Session();
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
-        };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Build the body twice, as two passes of a turn would
-        Test.startTest();
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Register the mock and build a request with an empty session
+            SessionStartMock mock = new SessionStartMock();
+            Test.setMock(HttpCalloutMock.class, mock);
+            AIProvider.Request request = new AIProvider.Request();
+            request.modelIdentifier = 'agent_1';
+            request.environmentId = 'env_1';
+            request.endpoint = SESSIONS_ENDPOINT;
+            request.session = new AIProvider.Session();
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
+            };
 
-        // [3] Read what was sent to start the session
-        Map<String, Object> startBody = (Map<String, Object>) JSON.deserializeUntyped(mock.requestBody);
-        Map<String, Object> agent = (Map<String, Object>) startBody.get('agent');
+            // [2] Build the body twice, as two passes of a turn would
+            Test.startTest();
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check the session was started once, for the agent and environment, and remembered
-        Assert.areEqual(1, mock.callCount, 'The second pass should reuse the session.');
-        Assert.areEqual('agent_1', agent.get('id'), 'The session should be for the agent.');
-        Assert.areEqual('env_1', startBody.get('environment_id'), 'The session should be in the environment.');
-        Assert.areEqual('sesn_1', request.session.id, 'The session id should be kept on the request.');
-        Assert.areEqual(SESSIONS_ENDPOINT + '/sesn_1/events', request.session.endpoint, 'Events should go to the session.');
-        Assert.areEqual('managed-agents-2026-04-01', request.session.headers.get('anthropic-beta'), 'Events need the beta header.');
+            // [3] Read what was sent to start the session
+            Map<String, Object> startBody = (Map<String, Object>) JSON.deserializeUntyped(mock.requestBody);
+            Map<String, Object> agent = (Map<String, Object>) startBody.get('agent');
+
+            // [4] Check the session was started once, for the agent and environment, and remembered
+            Assert.areEqual(1, mock.callCount, 'The second pass should reuse the session.');
+            Assert.areEqual('agent_1', agent.get('id'), 'The session should be for the agent.');
+            Assert.areEqual('env_1', startBody.get('environment_id'), 'The session should be in the environment.');
+            Assert.areEqual('sesn_1', request.session.id, 'The session id should be kept on the request.');
+            Assert.areEqual(SESSIONS_ENDPOINT + '/sesn_1/events', request.session.endpoint, 'Events should go to the session.');
+            Assert.areEqual('managed-agents-2026-04-01', request.session.headers.get('anthropic-beta'), 'Events need the beta header.');
+        }
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Prepare a request with no environment, and one that Anthropic will refuse
-        SessionStartMock mock = new SessionStartMock();
-        mock.statusCode = 401;
-        Test.setMock(HttpCalloutMock.class, mock);
-        AIProvider.Request noEnvironmentRequest = new AIProvider.Request();
-        noEnvironmentRequest.modelIdentifier = 'agent_1';
-        noEnvironmentRequest.endpoint = SESSIONS_ENDPOINT;
-        noEnvironmentRequest.session = new AIProvider.Session();
-        noEnvironmentRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
-        };
-        AIProvider.Request refusedRequest = new AIProvider.Request();
-        refusedRequest.modelIdentifier = 'agent_1';
-        refusedRequest.environmentId = 'env_1';
-        refusedRequest.endpoint = SESSIONS_ENDPOINT;
-        refusedRequest.session = new AIProvider.Session();
-        refusedRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
-        };
-        List<String> errorMessages = new List<String>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Build each body
-        Test.startTest();
-            for (AIProvider.Request request : new List<AIProvider.Request>{ noEnvironmentRequest, refusedRequest }) {
-                try {
-                    new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-                } catch (AIAnthropicAgentRequestBuilder.AIAnthropicAgentRequestBuilderException ex) {
-                    errorMessages.add(ex.getMessage());
+        System.runAs(superUser) {
+            // [1] Prepare a request with no environment, and one that Anthropic will refuse
+            SessionStartMock mock = new SessionStartMock();
+            mock.statusCode = 401;
+            Test.setMock(HttpCalloutMock.class, mock);
+            AIProvider.Request noEnvironmentRequest = new AIProvider.Request();
+            noEnvironmentRequest.modelIdentifier = 'agent_1';
+            noEnvironmentRequest.endpoint = SESSIONS_ENDPOINT;
+            noEnvironmentRequest.session = new AIProvider.Session();
+            noEnvironmentRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
+            };
+            AIProvider.Request refusedRequest = new AIProvider.Request();
+            refusedRequest.modelIdentifier = 'agent_1';
+            refusedRequest.environmentId = 'env_1';
+            refusedRequest.endpoint = SESSIONS_ENDPOINT;
+            refusedRequest.session = new AIProvider.Session();
+            refusedRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT }
+            };
+            List<String> errorMessages = new List<String>();
+
+            // [2] Build each body
+            Test.startTest();
+                for (AIProvider.Request request : new List<AIProvider.Request>{ noEnvironmentRequest, refusedRequest }) {
+                    try {
+                        new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+                    } catch (AIAnthropicAgentRequestBuilder.AIAnthropicAgentRequestBuilderException ex) {
+                        errorMessages.add(ex.getMessage());
+                    }
                 }
-            }
-        Test.stopTest();
+            Test.stopTest();
 
-        // [3] Check both were refused, and only the second reached Anthropic
-        Assert.areEqual(2, errorMessages.size(), 'Both requests should be refused.');
-        Assert.isTrue(errorMessages[0].contains('both needed'), 'A missing id should say both are needed.');
-        Assert.isTrue(errorMessages[1].contains('HTTP 401') && errorMessages[1].contains('authentication_error'), 'A refusal should carry the status and Anthropic\'s own error.');
-        Assert.areEqual(1, mock.callCount, 'Only the request with both ids should call Anthropic.');
-        Assert.isNull(refusedRequest.session.id, 'A refused session should leave the session empty.');
+            // [3] Check both were refused, and only the second reached Anthropic
+            Assert.areEqual(2, errorMessages.size(), 'Both requests should be refused.');
+            Assert.isTrue(errorMessages[0].contains('both needed'), 'A missing id should say both are needed.');
+            Assert.isTrue(errorMessages[1].contains('HTTP 401') && errorMessages[1].contains('authentication_error'), 'A refusal should carry the status and Anthropic\'s own error.');
+            Assert.areEqual(1, mock.callCount, 'Only the request with both ids should call Anthropic.');
+            Assert.isNull(refusedRequest.session.id, 'A refused session should leave the session empty.');
+        }
     }
 
     @IsTest static void testScenario7() {
 
-        // [1] Register a mock where the saved session is idle and belongs to the same agent and environment
-        SavedSessionMock mock = new SavedSessionMock();
-        mock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
-        Test.setMock(HttpCalloutMock.class, mock);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.Request request = new AIProvider.Request();
-        request.modelIdentifier = 'agent_1';
-        request.environmentId = 'env_1';
-        request.endpoint = SESSIONS_ENDPOINT;
-        request.session = new AIProvider.Session();
-        request.session.resumeId = 'sesn_saved';
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
-        };
+        System.runAs(superUser) {
+            // [1] Register a mock where the saved session is idle and belongs to the same agent and environment
+            SavedSessionMock mock = new SavedSessionMock();
+            mock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
+            Test.setMock(HttpCalloutMock.class, mock);
 
-        Map<String, Object> body;
+            AIProvider.Request request = new AIProvider.Request();
+            request.modelIdentifier = 'agent_1';
+            request.environmentId = 'env_1';
+            request.endpoint = SESSIONS_ENDPOINT;
+            request.session = new AIProvider.Session();
+            request.session.resumeId = 'sesn_saved';
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
+            };
 
-        // [2] Build the body
-        Test.startTest();
-            body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Read the text of the only event
-        List<Object> events = (List<Object>) body.get('events');
-        Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+            // [2] Build the body
+            Test.startTest();
+                body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check the saved session was continued and the history was not sent again
-        Assert.areEqual(1, mock.requestLines.size(), 'Only the lookup of the saved session should reach Anthropic.');
-        Assert.areEqual('GET ' + SESSIONS_ENDPOINT + '/sesn_saved', mock.requestLines[0], 'The saved session should be looked up by its id.');
-        Assert.areEqual('sesn_saved', request.session.id, 'The saved session should be the one in use.');
-        Assert.isTrue(request.session.isResumed, 'The session should be marked as continued.');
-        Assert.areEqual(SESSIONS_ENDPOINT + '/sesn_saved/events', request.session.endpoint, 'Events should go to the saved session.');
-        Assert.areEqual('managed-agents-2026-04-01', request.session.headers.get('anthropic-beta'), 'Events need the beta header.');
-        Assert.areEqual('And now?', userBlock.get('text'), 'Only the latest message should be sent, because the session already holds the rest.');
+            // [3] Read the text of the only event
+            List<Object> events = (List<Object>) body.get('events');
+            Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+
+            // [4] Check the saved session was continued and the history was not sent again
+            Assert.areEqual(1, mock.requestLines.size(), 'Only the lookup of the saved session should reach Anthropic.');
+            Assert.areEqual('GET ' + SESSIONS_ENDPOINT + '/sesn_saved', mock.requestLines[0], 'The saved session should be looked up by its id.');
+            Assert.areEqual('sesn_saved', request.session.id, 'The saved session should be the one in use.');
+            Assert.isTrue(request.session.isResumed, 'The session should be marked as continued.');
+            Assert.areEqual(SESSIONS_ENDPOINT + '/sesn_saved/events', request.session.endpoint, 'Events should go to the saved session.');
+            Assert.areEqual('managed-agents-2026-04-01', request.session.headers.get('anthropic-beta'), 'Events need the beta header.');
+            Assert.areEqual('And now?', userBlock.get('text'), 'Only the latest message should be sent, because the session already holds the rest.');
+        }
     }
 
     @IsTest static void testScenario8() {
 
-        // [1] Register a mock where Anthropic cannot find the saved session
-        SavedSessionMock mock = new SavedSessionMock();
-        mock.lookupStatusCode = 404;
-        mock.lookupBody = '{"error":{"type":"not_found_error","message":"session not found"}}';
-        Test.setMock(HttpCalloutMock.class, mock);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.Request request = new AIProvider.Request();
-        request.modelIdentifier = 'agent_1';
-        request.environmentId = 'env_1';
-        request.endpoint = SESSIONS_ENDPOINT;
-        request.session = new AIProvider.Session();
-        request.session.resumeId = 'sesn_saved';
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
-        };
+        System.runAs(superUser) {
+            // [1] Register a mock where Anthropic cannot find the saved session
+            SavedSessionMock mock = new SavedSessionMock();
+            mock.lookupStatusCode = 404;
+            mock.lookupBody = '{"error":{"type":"not_found_error","message":"session not found"}}';
+            Test.setMock(HttpCalloutMock.class, mock);
 
-        Map<String, Object> body;
+            AIProvider.Request request = new AIProvider.Request();
+            request.modelIdentifier = 'agent_1';
+            request.environmentId = 'env_1';
+            request.endpoint = SESSIONS_ENDPOINT;
+            request.session = new AIProvider.Session();
+            request.session.resumeId = 'sesn_saved';
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
+            };
 
-        // [2] Build the body
-        Test.startTest();
-            body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Read the text of the only event
-        List<Object> events = (List<Object>) body.get('events');
-        Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+            // [2] Build the body
+            Test.startTest();
+                body = new AIAnthropicAgentRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check a new session replaced it and the conversation was written into the message
-        Assert.areEqual('POST ' + SESSIONS_ENDPOINT, mock.requestLines[1], 'A new session should be started after the lookup fails.');
-        Assert.areEqual('sesn_new', request.session.id, 'The new session should be the one in use.');
-        Assert.isFalse(request.session.isResumed, 'A new session is not a continued one.');
-        Assert.areEqual('Conversation so far:\nUser: ' + USER_TEXT + '\nAssistant: ' + ASSISTANT_TEXT + '\n\nLatest user message:\nAnd now?', userBlock.get('text'), 'A new session should be given the earlier turns.');
+            // [3] Read the text of the only event
+            List<Object> events = (List<Object>) body.get('events');
+            Map<String, Object> userBlock = (Map<String, Object>) ((List<Object>) ((Map<String, Object>) events[0]).get('content'))[0];
+
+            // [4] Check a new session replaced it and the conversation was written into the message
+            Assert.areEqual('POST ' + SESSIONS_ENDPOINT, mock.requestLines[1], 'A new session should be started after the lookup fails.');
+            Assert.areEqual('sesn_new', request.session.id, 'The new session should be the one in use.');
+            Assert.isFalse(request.session.isResumed, 'A new session is not a continued one.');
+            Assert.areEqual('Conversation so far:\nUser: ' + USER_TEXT + '\nAssistant: ' + ASSISTANT_TEXT + '\n\nLatest user message:\nAnd now?', userBlock.get('text'), 'A new session should be given the earlier turns.');
+        }
     }
 
     @IsTest static void testScenario9() {
 
-        // [1] Register a mock where the saved session has ended, and build a request that has earlier messages
-        SavedSessionMock mock = new SavedSessionMock();
-        mock.lookupBody = '{"id":"sesn_saved","status":"terminated","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
-        Test.setMock(HttpCalloutMock.class, mock);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.Request endedRequest = new AIProvider.Request();
-        endedRequest.modelIdentifier = 'agent_1';
-        endedRequest.environmentId = 'env_1';
-        endedRequest.endpoint = SESSIONS_ENDPOINT;
-        endedRequest.session = new AIProvider.Session();
-        endedRequest.session.resumeId = 'sesn_saved';
-        endedRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
-        };
+        System.runAs(superUser) {
+            // [1] Register a mock where the saved session has ended, and build a request that has earlier messages
+            SavedSessionMock mock = new SavedSessionMock();
+            mock.lookupBody = '{"id":"sesn_saved","status":"terminated","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
+            Test.setMock(HttpCalloutMock.class, mock);
 
-        // [2] Prepare a second request, for a saved session that is archived
-        SavedSessionMock archivedMock = new SavedSessionMock();
-        archivedMock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":"2026-10-01T10:00:00Z","agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
+            AIProvider.Request endedRequest = new AIProvider.Request();
+            endedRequest.modelIdentifier = 'agent_1';
+            endedRequest.environmentId = 'env_1';
+            endedRequest.endpoint = SESSIONS_ENDPOINT;
+            endedRequest.session = new AIProvider.Session();
+            endedRequest.session.resumeId = 'sesn_saved';
+            endedRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
+            };
 
-        AIProvider.Request archivedRequest = new AIProvider.Request();
-        archivedRequest.modelIdentifier = 'agent_1';
-        archivedRequest.environmentId = 'env_1';
-        archivedRequest.endpoint = SESSIONS_ENDPOINT;
-        archivedRequest.session = new AIProvider.Session();
-        archivedRequest.session.resumeId = 'sesn_saved';
-        archivedRequest.messages = endedRequest.messages;
+            // [2] Prepare a second request, for a saved session that is archived
+            SavedSessionMock archivedMock = new SavedSessionMock();
+            archivedMock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":"2026-10-01T10:00:00Z","agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}';
 
-        // [3] Build the body for each, switching the mock between them
-        Test.startTest();
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(endedRequest);
-            Test.setMock(HttpCalloutMock.class, archivedMock);
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(archivedRequest);
-        Test.stopTest();
+            AIProvider.Request archivedRequest = new AIProvider.Request();
+            archivedRequest.modelIdentifier = 'agent_1';
+            archivedRequest.environmentId = 'env_1';
+            archivedRequest.endpoint = SESSIONS_ENDPOINT;
+            archivedRequest.session = new AIProvider.Session();
+            archivedRequest.session.resumeId = 'sesn_saved';
+            archivedRequest.messages = endedRequest.messages;
 
-        // [4] Check a new session replaced each of them
-        Assert.areEqual('sesn_new', endedRequest.session.id, 'An ended session should be replaced.');
-        Assert.isFalse(endedRequest.session.isResumed, 'An ended session should not be continued.');
-        Assert.areEqual('sesn_new', archivedRequest.session.id, 'An archived session should be replaced.');
-        Assert.isFalse(archivedRequest.session.isResumed, 'An archived session should not be continued.');
+            // [3] Build the body for each, switching the mock between them
+            Test.startTest();
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(endedRequest);
+                Test.setMock(HttpCalloutMock.class, archivedMock);
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(archivedRequest);
+            Test.stopTest();
+
+            // [4] Check a new session replaced each of them
+            Assert.areEqual('sesn_new', endedRequest.session.id, 'An ended session should be replaced.');
+            Assert.isFalse(endedRequest.session.isResumed, 'An ended session should not be continued.');
+            Assert.areEqual('sesn_new', archivedRequest.session.id, 'An archived session should be replaced.');
+            Assert.isFalse(archivedRequest.session.isResumed, 'An archived session should not be continued.');
+        }
     }
 
     @IsTest static void testScenario10() {
 
-        // [1] Register a mock where the saved session was made for another agent, and build a request that has earlier messages
-        SavedSessionMock mock = new SavedSessionMock();
-        mock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_other"},"environment_id":"env_1"}';
-        Test.setMock(HttpCalloutMock.class, mock);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.Request otherAgentRequest = new AIProvider.Request();
-        otherAgentRequest.modelIdentifier = 'agent_1';
-        otherAgentRequest.environmentId = 'env_1';
-        otherAgentRequest.endpoint = SESSIONS_ENDPOINT;
-        otherAgentRequest.session = new AIProvider.Session();
-        otherAgentRequest.session.resumeId = 'sesn_saved';
-        otherAgentRequest.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
-            new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
-        };
+        System.runAs(superUser) {
+            // [1] Register a mock where the saved session was made for another agent, and build a request that has earlier messages
+            SavedSessionMock mock = new SavedSessionMock();
+            mock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_other"},"environment_id":"env_1"}';
+            Test.setMock(HttpCalloutMock.class, mock);
 
-        // [2] Prepare a second request, for a saved session in another environment
-        SavedSessionMock otherEnvironmentMock = new SavedSessionMock();
-        otherEnvironmentMock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_other"}';
+            AIProvider.Request otherAgentRequest = new AIProvider.Request();
+            otherAgentRequest.modelIdentifier = 'agent_1';
+            otherAgentRequest.environmentId = 'env_1';
+            otherAgentRequest.endpoint = SESSIONS_ENDPOINT;
+            otherAgentRequest.session = new AIProvider.Session();
+            otherAgentRequest.session.resumeId = 'sesn_saved';
+            otherAgentRequest.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => USER_TEXT },
+                new Map<String, Object>{ 'role' => 'assistant', 'content' => ASSISTANT_TEXT },
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'And now?' }
+            };
 
-        AIProvider.Request otherEnvironmentRequest = new AIProvider.Request();
-        otherEnvironmentRequest.modelIdentifier = 'agent_1';
-        otherEnvironmentRequest.environmentId = 'env_1';
-        otherEnvironmentRequest.endpoint = SESSIONS_ENDPOINT;
-        otherEnvironmentRequest.session = new AIProvider.Session();
-        otherEnvironmentRequest.session.resumeId = 'sesn_saved';
-        otherEnvironmentRequest.messages = otherAgentRequest.messages;
+            // [2] Prepare a second request, for a saved session in another environment
+            SavedSessionMock otherEnvironmentMock = new SavedSessionMock();
+            otherEnvironmentMock.lookupBody = '{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_other"}';
 
-        // [3] Build the body for each, switching the mock between them
-        Test.startTest();
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(otherAgentRequest);
-            Test.setMock(HttpCalloutMock.class, otherEnvironmentMock);
-            new AIAnthropicAgentRequestBuilder().buildRequestBody(otherEnvironmentRequest);
-        Test.stopTest();
+            AIProvider.Request otherEnvironmentRequest = new AIProvider.Request();
+            otherEnvironmentRequest.modelIdentifier = 'agent_1';
+            otherEnvironmentRequest.environmentId = 'env_1';
+            otherEnvironmentRequest.endpoint = SESSIONS_ENDPOINT;
+            otherEnvironmentRequest.session = new AIProvider.Session();
+            otherEnvironmentRequest.session.resumeId = 'sesn_saved';
+            otherEnvironmentRequest.messages = otherAgentRequest.messages;
 
-        // [4] Check a new session replaced each of them
-        Assert.areEqual('sesn_new', otherAgentRequest.session.id, 'A session made for another agent should be replaced.');
-        Assert.isFalse(otherAgentRequest.session.isResumed, 'A session made for another agent should not be continued.');
-        Assert.areEqual('sesn_new', otherEnvironmentRequest.session.id, 'A session in another environment should be replaced.');
-        Assert.isFalse(otherEnvironmentRequest.session.isResumed, 'A session in another environment should not be continued.');
+            // [3] Build the body for each, switching the mock between them
+            Test.startTest();
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(otherAgentRequest);
+                Test.setMock(HttpCalloutMock.class, otherEnvironmentMock);
+                new AIAnthropicAgentRequestBuilder().buildRequestBody(otherEnvironmentRequest);
+            Test.stopTest();
+
+            // [4] Check a new session replaced each of them
+            Assert.areEqual('sesn_new', otherAgentRequest.session.id, 'A session made for another agent should be replaced.');
+            Assert.isFalse(otherAgentRequest.session.isResumed, 'A session made for another agent should not be continued.');
+            Assert.areEqual('sesn_new', otherEnvironmentRequest.session.id, 'A session in another environment should be replaced.');
+            Assert.isFalse(otherEnvironmentRequest.session.isResumed, 'A session in another environment should not be continued.');
+        }
     }
 }

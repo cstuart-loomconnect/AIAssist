@@ -26,90 +26,100 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
     @IsTest static void testScenario1() {
 
-        // [1] Create an agent, a conversation and an AI reply
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Rate the reply, then rate it again
-        Test.startTest();
-            AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL, 'Inaccurate', '  Wrong figure  ');
-            AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, null, null);
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and an AI reply
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [3] Read the saved ratings
-        List<AIFeedback__c> saved = [SELECT Rating__c, Reason__c, Comment__c FROM AIFeedback__c WHERE AIConversationMessage__c = :reply.Id];
+            // [2] Rate the reply, then rate it again
+            Test.startTest();
+                AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL, 'Inaccurate', '  Wrong figure  ');
+                AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, null, null);
+            Test.stopTest();
 
-        // [4] Check one rating is left and it replaced the first
-        Assert.areEqual(1, saved.size(), 'There should be one rating per user per reply.');
-        Assert.areEqual(AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, saved[0].Rating__c, 'The second rating should replace the first.');
-        Assert.isNull(saved[0].Reason__c, 'The reason should be cleared when the new rating has none.');
+            // [3] Read the saved ratings
+            List<AIFeedback__c> saved = [SELECT Rating__c, Reason__c, Comment__c FROM AIFeedback__c WHERE AIConversationMessage__c = :reply.Id];
+
+            // [4] Check one rating is left and it replaced the first
+            Assert.areEqual(1, saved.size(), 'There should be one rating per user per reply.');
+            Assert.areEqual(AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, saved[0].Rating__c, 'The second rating should replace the first.');
+            Assert.isNull(saved[0].Reason__c, 'The reason should be cleared when the new rating has none.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Create an agent, a conversation and an AI reply
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Rate the reply with a reason and an over-long comment
-        Test.startTest();
-            AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL, 'Inaccurate', 'c'.repeat(AIAssistApplicationConstants.FEEDBACK_COMMENT_LENGTH + 50));
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and an AI reply
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [3] Read the saved rating
-        AIFeedback__c saved = [SELECT Reason__c, Comment__c FROM AIFeedback__c WHERE AIConversationMessage__c = :reply.Id];
+            // [2] Rate the reply with a reason and an over-long comment
+            Test.startTest();
+                AIChatFeedbackService.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL, 'Inaccurate', 'c'.repeat(AIAssistApplicationConstants.FEEDBACK_COMMENT_LENGTH + 50));
+            Test.stopTest();
 
-        // [4] Check the reason and the cut comment
-        Assert.areEqual('Inaccurate', saved.Reason__c, 'The reason should be stored.');
-        Assert.areEqual(AIAssistApplicationConstants.FEEDBACK_COMMENT_LENGTH, saved.Comment__c.length(), 'The comment should be cut to the maximum length.');
+            // [3] Read the saved rating
+            AIFeedback__c saved = [SELECT Reason__c, Comment__c FROM AIFeedback__c WHERE AIConversationMessage__c = :reply.Id];
+
+            // [4] Check the reason and the cut comment
+            Assert.areEqual('Inaccurate', saved.Reason__c, 'The reason should be stored.');
+            Assert.areEqual(AIAssistApplicationConstants.FEEDBACK_COMMENT_LENGTH, saved.Comment__c.length(), 'The comment should be cut to the maximum length.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Create an agent, the user's conversation, another user's conversation and an AI reply in each
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 1, true)[0];
-        AIConversationMessage__c theirReply = AIAssistTestDataFactory.createAIConversationMessages(theirs.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+        System.runAs(superUser) {
+            // [1] Create an agent, the user's conversation, another user's conversation and an AI reply in each
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
 
-        AIConversationMessage__c ownReply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 1, true)[0];
+            AIConversationMessage__c theirReply = AIAssistTestDataFactory.createAIConversationMessages(theirs.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        List<String> messages = new List<String>();
+            AIConversationMessage__c ownReply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Submit a bad rating, then a rating on another user's reply
-        Test.startTest();
-            try {
-                AIChatFeedbackService.submitFeedback(ownReply.Id, 'Great', null, null);
-            } catch (AIChatFeedbackService.AIChatFeedbackServiceException ex) {
-                messages.add(ex.getMessage());
-            }
-            try {
-                AIChatFeedbackService.submitFeedback(theirReply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, null, null);
-            } catch (AIChatConversationService.AIChatConversationServiceException ex) {
-                messages.add(ex.getMessage());
-            }
-        Test.stopTest();
+            List<String> messages = new List<String>();
 
-        // [3] Count the saved ratings
-        Integer savedCount = [SELECT COUNT() FROM AIFeedback__c];
+            // [2] Submit a bad rating, then a rating on another user's reply
+            Test.startTest();
+                try {
+                    AIChatFeedbackService.submitFeedback(ownReply.Id, 'Great', null, null);
+                } catch (AIChatFeedbackService.AIChatFeedbackServiceException ex) {
+                    messages.add(ex.getMessage());
+                }
+                try {
+                    AIChatFeedbackService.submitFeedback(theirReply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, null, null);
+                } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+                    messages.add(ex.getMessage());
+                }
+            Test.stopTest();
 
-        // [4] Check both were refused and nothing was saved
-        Assert.areEqual(2, messages.size(), 'Both submissions should be refused.');
+            // [3] Count the saved ratings
+            Integer savedCount = [SELECT COUNT() FROM AIFeedback__c];
 
-        Assert.areEqual(Label.AI_Error_Feedback_Invalid, messages[0], 'A bad rating should give the invalid feedback message.');
-        Assert.areEqual(Label.AI_Error_Conversation_Not_Found, messages[1], 'A reply that is not the user\'s should give the not found message.');
+            // [4] Check both were refused and nothing was saved
+            Assert.areEqual(2, messages.size(), 'Both submissions should be refused.');
 
-        Assert.areEqual(0, savedCount, 'Nothing should be saved.');
+            Assert.areEqual(Label.AI_Error_Feedback_Invalid, messages[0], 'A bad rating should give the invalid feedback message.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, messages[1], 'A reply that is not the user\'s should give the not found message.');
+
+            Assert.areEqual(0, savedCount, 'Nothing should be saved.');
+        }
     }
 }

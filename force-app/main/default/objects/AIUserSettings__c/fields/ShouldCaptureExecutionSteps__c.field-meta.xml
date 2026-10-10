@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ShouldCaptureExecutionSteps__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Whether this user's conversations store AI Execution Steps (names, counts and timings of each provider call and data source). With Debug Mode Enabled also on, the request and response JSON and sent preview are kept on the last provider call of every turn, which uses the most storage. A Workflow Action a user runs is always recorded.</description>
+    <inlineHelpText
+  >Turn on to store execution steps for this user's conversations. Add Debug Mode to also keep request and response JSON.</inlineHelpText>
+    <label>Should Capture Execution Steps</label>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

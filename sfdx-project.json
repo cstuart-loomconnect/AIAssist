@@ -10,7 +10,6 @@
     }
   ],
   "name": "AIAssist",
-  "namespace": "LoomConnect",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "67.0"
 }

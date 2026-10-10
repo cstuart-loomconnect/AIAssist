@@ -57,7 +57,7 @@
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>WorkflowActionsEnabled__c</field>
+                <field>IsUserInitiatedChatEnabled__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
@@ -68,6 +68,10 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>DebugModeEnabled__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>ShouldCaptureExecutionSteps__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>

@@ -56,8 +56,11 @@ public without sharing class AIExecutionStepTracker {
     private final Id conversationId;
     private final Id userMessageId;
 
-    // True when AIAssistSettings__c.StepCaptureMode__c is Full: gates the request and response payloads and the sent preview.
+    // True when the user has AIUserSettings__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c on: gates the request and response payloads and the sent preview.
     public final Boolean captureFullDetail;
+
+    // False when the user has AIUserSettings__c.ShouldCaptureExecutionSteps__c off, so AIExecutionStepRecorder stores nothing for the turn. A tracker built elsewhere records by default.
+    public Boolean shouldCaptureSteps = true;
 
     public List<StepEntry> steps = new List<StepEntry>();
     public String sentPreviewText;

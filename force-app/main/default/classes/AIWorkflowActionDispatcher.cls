@@ -41,7 +41,7 @@ public without sharing class AIWorkflowActionDispatcher {
             if (!AIAssistSettingsService.isEnabled()) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Application_Inactive);
 
             // [2] The UI settings must switch Workflow Actions on for this user
-            if (AIAssistSettingsService.getUiSettings().AreWorkflowActionsEnabled__c != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
+            if (AIAssistSettingsService.getUiSettings().IsWorkflowActionsEnabled__c != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
 
             // [3] Make the same access check the message validator makes: an inactive agent, or one the user has since been removed from, runs nothing
             AIAgent__c agent = getAgent(agentId);

@@ -64,6 +64,7 @@ public without sharing class AIChatDataStructure {
         public String suggestedActionsDisplay = AIAssistApplicationConstants.SUGGESTED_ACTIONS_DISPLAY_CARDS;
         @AuraEnabled
         public Integer messagePageSize = AIAssistApplicationConstants.CHAT_DEFAULT_MESSAGE_PAGE_SIZE;
+        // Copied from UserState.newChatsDisabled by AIChatController, because the chat window reads it from the UI settings.
         @AuraEnabled
         public Boolean newChatsDisabled = false;
     }
@@ -77,6 +78,8 @@ public without sharing class AIChatDataStructure {
         public Boolean exportEnabled = false;
         @AuraEnabled
         public Boolean workflowActionsEnabled = false;
+        @AuraEnabled
+        public Boolean newChatsDisabled = false;
     }
 
     public class TermsState {
@@ -261,6 +264,8 @@ public without sharing class AIChatDataStructure {
         public List<ChatMessage> messages = new List<ChatMessage>();
         @AuraEnabled
         public Boolean isProcessing = false;
+        @AuraEnabled
+        public Boolean isHeld = false;
         @AuraEnabled
         public String status;
     }

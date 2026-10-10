@@ -30,192 +30,218 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
     @IsTest static void testScenario1() {
 
-        // [1] Create an agent with a default template and three others
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 5, false);
-        templates[0].IsDefault__c = true;
-        templates[1].DeveloperName__c = 'draft_client_email';
-        templates[1].Description__c = 'Drafts an email to the client.';
-        templates[2].DeveloperName__c = 'summarise_account';
-        templates[3].Description__c = 'Has a description but no name.';
-        templates[4].DeveloperName__c = 'retired_template';
-        templates[4].Description__c = 'Used to be offered.';
-        templates[4].IsActive__c = false;
-        insert templates;
+        System.runAs(superUser) {
+            // [1] Create an agent with a default template and three others
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        // [2] Work out the choice for a message that asked for nothing
-        AIPromptTemplateService.PromptTemplateChoice choice;
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 5, false);
+            templates[0].IsDefault__c = true;
+            templates[1].DeveloperName__c = 'draft_client_email';
+            templates[1].Description__c = 'Drafts an email to the client.';
+            templates[2].DeveloperName__c = 'summarise_account';
+            templates[3].Description__c = 'Has a description but no name.';
+            templates[4].DeveloperName__c = 'retired_template';
+            templates[4].Description__c = 'Used to be offered.';
+            templates[4].IsActive__c = false;
+            insert templates;
 
-        Test.startTest();
-            choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
-        Test.stopTest();
+            // [2] Work out the choice for a message that asked for nothing
+            AIPromptTemplateService.PromptTemplateChoice choice;
 
-        // [3] Check the default starts the turn and one template is offered
-        Assert.areEqual(templates[0].Id, choice.promptTemplate.Id, 'The default template should start the turn.');
-        Assert.areEqual(1, choice.routingTemplates.size(), 'Only a named, described, active template should be offered.');
-        Assert.areEqual(templates[1].Id, choice.routingTemplates[0].Id, 'The email template should be the one offered.');
+            Test.startTest();
+                choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
+            Test.stopTest();
+
+            // [3] Check the default starts the turn and one template is offered
+            Assert.areEqual(templates[0].Id, choice.promptTemplate.Id, 'The default template should start the turn.');
+            Assert.areEqual(1, choice.routingTemplates.size(), 'Only a named, described, active template should be offered.');
+            Assert.areEqual(templates[1].Id, choice.routingTemplates[0].Id, 'The email template should be the one offered.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Create an agent with a default template and another described one
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
-        templates[0].IsDefault__c = true;
-        templates[1].DeveloperName__c = 'draft_client_email';
-        templates[1].Description__c = 'Drafts an email to the client.';
-        insert templates;
+        System.runAs(superUser) {
+            // [1] Create an agent with a default template and another described one
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        // [2] Work out the choice for a message that asked for the email template
-        AIPromptTemplateService.PromptTemplateChoice choice;
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+            templates[0].IsDefault__c = true;
+            templates[1].DeveloperName__c = 'draft_client_email';
+            templates[1].Description__c = 'Drafts an email to the client.';
+            insert templates;
 
-        Test.startTest();
-            choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, templates[1].Id);
-        Test.stopTest();
+            // [2] Work out the choice for a message that asked for the email template
+            AIPromptTemplateService.PromptTemplateChoice choice;
 
-        // [3] Check the asked-for template is used and nothing is offered
-        Assert.areEqual(templates[1].Id, choice.promptTemplate.Id, 'The template that was asked for should be used.');
-        Assert.isTrue(choice.routingTemplates.isEmpty(), 'The model should have nothing to switch to when the user chose.');
+            Test.startTest();
+                choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, templates[1].Id);
+            Test.stopTest();
+
+            // [3] Check the asked-for template is used and nothing is offered
+            Assert.areEqual(templates[1].Id, choice.promptTemplate.Id, 'The template that was asked for should be used.');
+            Assert.isTrue(choice.routingTemplates.isEmpty(), 'The model should have nothing to switch to when the user chose.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Create two agents, a default template, an inactive one and another agent's template
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 2, false);
-        templates[0].IsDefault__c = true;
-        templates[1].IsActive__c = false;
-        insert templates;
+        System.runAs(superUser) {
+            // [1] Create two agents, a default template, an inactive one and another agent's template
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
 
-        AIPromptTemplate__c otherAgentsTemplate = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, true)[0];
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 2, false);
+            templates[0].IsDefault__c = true;
+            templates[1].IsActive__c = false;
+            insert templates;
 
-        // [2] Work out the choice for each request that cannot be honoured
-        AIPromptTemplateService.PromptTemplateChoice inactiveChoice;
-        AIPromptTemplateService.PromptTemplateChoice otherAgentChoice;
-        AIPromptTemplateService.PromptTemplateChoice nullChoice;
+            AIPromptTemplate__c otherAgentsTemplate = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, true)[0];
 
-        Test.startTest();
-            inactiveChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, templates[1].Id);
-            otherAgentChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, otherAgentsTemplate.Id);
-            nullChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, null);
-        Test.stopTest();
+            // [2] Work out the choice for each request that cannot be honoured
+            AIPromptTemplateService.PromptTemplateChoice inactiveChoice;
+            AIPromptTemplateService.PromptTemplateChoice otherAgentChoice;
+            AIPromptTemplateService.PromptTemplateChoice nullChoice;
 
-        // [3] Check each falls back to the default
-        Assert.areEqual(templates[0].Id, inactiveChoice.promptTemplate.Id, 'An inactive template should be ignored.');
-        Assert.areEqual(templates[0].Id, otherAgentChoice.promptTemplate.Id, 'Another agent\'s template should be ignored.');
-        Assert.areEqual(templates[0].Id, nullChoice.promptTemplate.Id, 'No request should use the default.');
+            Test.startTest();
+                inactiveChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, templates[1].Id);
+                otherAgentChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, otherAgentsTemplate.Id);
+                nullChoice = AIPromptTemplateService.getPromptTemplateChoice(agents[0].Id, null);
+            Test.stopTest();
+
+            // [3] Check each falls back to the default
+            Assert.areEqual(templates[0].Id, inactiveChoice.promptTemplate.Id, 'An inactive template should be ignored.');
+            Assert.areEqual(templates[0].Id, otherAgentChoice.promptTemplate.Id, 'Another agent\'s template should be ignored.');
+            Assert.areEqual(templates[0].Id, nullChoice.promptTemplate.Id, 'No request should use the default.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Create an agent with one active template and no default ticked
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIPromptTemplate__c onlyTemplate = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Work out the choice for a message that asked for nothing
-        AIPromptTemplateService.PromptTemplateChoice choice;
+        System.runAs(superUser) {
+            // [1] Create an agent with one active template and no default ticked
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIPromptTemplate__c onlyTemplate = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, true)[0];
 
-        Test.startTest();
-            choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
-        Test.stopTest();
+            // [2] Work out the choice for a message that asked for nothing
+            AIPromptTemplateService.PromptTemplateChoice choice;
 
-        // [3] Check the only template is the default and nothing is offered
-        Assert.areEqual(onlyTemplate.Id, choice.promptTemplate.Id, 'The only active template should count as the default.');
-        Assert.isTrue(choice.routingTemplates.isEmpty(), 'There is nothing else to offer.');
+            Test.startTest();
+                choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
+            Test.stopTest();
+
+            // [3] Check the only template is the default and nothing is offered
+            Assert.areEqual(onlyTemplate.Id, choice.promptTemplate.Id, 'The only active template should count as the default.');
+            Assert.isTrue(choice.routingTemplates.isEmpty(), 'There is nothing else to offer.');
+        }
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Create an agent with two described templates and no default
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
-        templates[0].DeveloperName__c = 'draft_client_email';
-        templates[0].Description__c = 'Drafts an email to the client.';
-        templates[1].DeveloperName__c = 'summarise_account';
-        templates[1].Description__c = 'Summarises an account.';
-        insert templates;
+        System.runAs(superUser) {
+            // [1] Create an agent with two described templates and no default
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        // [2] Work out the choice for a message that asked for nothing
-        AIPromptTemplateService.PromptTemplateChoice choice;
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+            templates[0].DeveloperName__c = 'draft_client_email';
+            templates[0].Description__c = 'Drafts an email to the client.';
+            templates[1].DeveloperName__c = 'summarise_account';
+            templates[1].Description__c = 'Summarises an account.';
+            insert templates;
 
-        Test.startTest();
-            choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
-        Test.stopTest();
+            // [2] Work out the choice for a message that asked for nothing
+            AIPromptTemplateService.PromptTemplateChoice choice;
 
-        // [3] Check no template starts the turn and both are offered
-        Assert.isNull(choice.promptTemplate, 'No template should start the turn when none is the default.');
-        Assert.areEqual(2, choice.routingTemplates.size(), 'Both described templates should be offered to the model.');
+            Test.startTest();
+                choice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
+            Test.stopTest();
+
+            // [3] Check no template starts the turn and both are offered
+            Assert.isNull(choice.promptTemplate, 'No template should start the turn when none is the default.');
+            Assert.areEqual(2, choice.routingTemplates.size(), 'Both described templates should be offered to the model.');
+        }
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Create an agent with no templates
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Work out the choice for the agent and for no agent
-        AIPromptTemplateService.PromptTemplateChoice noTemplatesChoice;
-        AIPromptTemplateService.PromptTemplateChoice noAgentChoice;
+        System.runAs(superUser) {
+            // [1] Create an agent with no templates
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        Test.startTest();
-            noTemplatesChoice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
-            noAgentChoice = AIPromptTemplateService.getPromptTemplateChoice(null, null);
-        Test.stopTest();
+            // [2] Work out the choice for the agent and for no agent
+            AIPromptTemplateService.PromptTemplateChoice noTemplatesChoice;
+            AIPromptTemplateService.PromptTemplateChoice noAgentChoice;
 
-        // [3] Check neither has a template or anything to offer
-        Assert.isNull(noTemplatesChoice.promptTemplate, 'An agent with no templates has no template.');
-        Assert.isTrue(noTemplatesChoice.routingTemplates.isEmpty(), 'An agent with no templates offers nothing.');
-        Assert.isNull(noAgentChoice.promptTemplate, 'No agent has no template.');
-        Assert.isTrue(noAgentChoice.routingTemplates.isEmpty(), 'No agent offers nothing.');
+            Test.startTest();
+                noTemplatesChoice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, null);
+                noAgentChoice = AIPromptTemplateService.getPromptTemplateChoice(null, null);
+            Test.stopTest();
+
+            // [3] Check neither has a template or anything to offer
+            Assert.isNull(noTemplatesChoice.promptTemplate, 'An agent with no templates has no template.');
+            Assert.isTrue(noTemplatesChoice.routingTemplates.isEmpty(), 'An agent with no templates offers nothing.');
+            Assert.isNull(noAgentChoice.promptTemplate, 'No agent has no template.');
+            Assert.isTrue(noAgentChoice.routingTemplates.isEmpty(), 'No agent offers nothing.');
+        }
     }
 
     @IsTest static void testScenario7() {
 
-        // [1] Create two agents, an active template, an inactive one and another agent's template
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 2, false);
-        templates[0].DeveloperName__c = 'draft_client_email';
-        templates[1].DeveloperName__c = 'retired_template';
-        templates[1].IsActive__c = false;
-        insert templates;
+        System.runAs(superUser) {
+            // [1] Create two agents, an active template, an inactive one and another agent's template
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
 
-        List<AIPromptTemplate__c> otherTemplates = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, false);
-        otherTemplates[0].DeveloperName__c = 'summarise_account';
-        insert otherTemplates;
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 2, false);
+            templates[0].DeveloperName__c = 'draft_client_email';
+            templates[1].DeveloperName__c = 'retired_template';
+            templates[1].IsActive__c = false;
+            insert templates;
 
-        // [2] Look each one up
-        AIPromptTemplate__c found;
-        AIPromptTemplate__c blankName;
-        AIPromptTemplate__c unknownName;
-        AIPromptTemplate__c inactive;
-        AIPromptTemplate__c otherAgents;
+            List<AIPromptTemplate__c> otherTemplates = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, false);
+            otherTemplates[0].DeveloperName__c = 'summarise_account';
+            insert otherTemplates;
 
-        Test.startTest();
-            found = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'draft_client_email');
-            blankName = AIPromptTemplateService.findActiveTemplate(agents[0].Id, ' ');
-            unknownName = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'made_up');
-            inactive = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'retired_template');
-            otherAgents = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'summarise_account');
-        Test.stopTest();
+            // [2] Look each one up
+            AIPromptTemplate__c found;
+            AIPromptTemplate__c blankName;
+            AIPromptTemplate__c unknownName;
+            AIPromptTemplate__c inactive;
+            AIPromptTemplate__c otherAgents;
 
-        // [3] Check only the active template of that agent is found
-        Assert.areEqual(templates[0].Id, found.Id, 'The active template should be found by its name.');
-        Assert.isNull(blankName, 'A blank name should find nothing.');
-        Assert.isNull(unknownName, 'An unknown name should find nothing.');
-        Assert.isNull(inactive, 'An inactive template should not be found.');
-        Assert.isNull(otherAgents, 'Another agent\'s template should not be found.');
+            Test.startTest();
+                found = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'draft_client_email');
+                blankName = AIPromptTemplateService.findActiveTemplate(agents[0].Id, ' ');
+                unknownName = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'made_up');
+                inactive = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'retired_template');
+                otherAgents = AIPromptTemplateService.findActiveTemplate(agents[0].Id, 'summarise_account');
+            Test.stopTest();
+
+            // [3] Check only the active template of that agent is found
+            Assert.areEqual(templates[0].Id, found.Id, 'The active template should be found by its name.');
+            Assert.isNull(blankName, 'A blank name should find nothing.');
+            Assert.isNull(unknownName, 'An unknown name should find nothing.');
+            Assert.isNull(inactive, 'An inactive template should not be found.');
+            Assert.isNull(otherAgents, 'Another agent\'s template should not be found.');
+        }
     }
 }
