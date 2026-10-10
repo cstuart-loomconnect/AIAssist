@@ -43,7 +43,7 @@ public without sharing class AIUsageService {
         if (todayForTest != null) return todayForTest;
 
         // [2] Look up the org's time zone once
-        if (orgTimeZone == null) orgTimeZone = [SELECT TimeZoneSidKey FROM Organization LIMIT 1].TimeZoneSidKey;
+        if (orgTimeZone == null) orgTimeZone = [SELECT TimeZoneSidKey FROM Organization WITH SYSTEM_MODE LIMIT 1].TimeZoneSidKey;
 
         // [3] Read the date as it is in that time zone right now
         return Date.valueOf(System.now().format('yyyy-MM-dd', orgTimeZone));
