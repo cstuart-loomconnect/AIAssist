@@ -3,10 +3,10 @@
     <fullName>FlowAPINameRequired</fullName>
     <active>true</active>
     <description
-  >Flow API Name is required when Action Type is Flow.</description>
+  >Flow API Name is required when Action Type is Flow or Screen Flow.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(ActionType__c, &quot;Flow&quot;), ISBLANK(FlowAPIName__c))</errorConditionFormula>
+  >AND(OR(ISPICKVAL(ActionType__c, &quot;Flow&quot;), ISPICKVAL(ActionType__c, &quot;Screen Flow&quot;)), ISBLANK(FlowAPIName__c))</errorConditionFormula>
     <errorDisplayField>FlowAPIName__c</errorDisplayField>
     <errorMessage
-  >Flow API Name is required when Action Type is Flow.</errorMessage>
+  >Flow API Name is required when Action Type is Flow or Screen Flow.</errorMessage>
 </ValidationRule>

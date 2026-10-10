@@ -12,6 +12,7 @@ Step 3: Check the user has confirmed, when the action requires it
 Step 4: Keep only the inputs the action declares, and set recordId from the server
 Step 5: Run the Apex class, or check the user can reach every record and start the Flow
 Step 6: Record a Success, Failed or Blocked step on the reply the action was suggested on, then return the output or throw the refusal
+Step 7: For a Screen Flow, make the same checks, hand the window the flow and its inputs, and record how it ended
 
 =================================================================
 =================================================================
@@ -37,29 +38,16 @@ public without sharing class AIWorkflowActionDispatcher {
 
         try {
 
-            // [1] Report the application switch first: with AI Assist off nothing else matters
-            if (!AIAssistSettingsService.isEnabled()) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Application_Inactive);
+            // [1] Check the application, the setting, the agent and the assignment, and read the action
+            action = getPermittedAction(workflowActionId, agentId);
 
-            // [2] The UI settings must switch Workflow Actions on for this user
-            if (AIAssistSettingsService.getUiSettings().IsWorkflowActionsEnabled__c != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
-
-            // [3] Make the same access check the message validator makes: an inactive agent, or one the user has since been removed from, runs nothing
-            AIAgent__c agent = getAgent(agentId);
-
-            if (agent == null || agent.IsActive__c != true || !AIMessageValidator.isUserAllowedOnAgent(agent, UserInfo.getUserId())) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
-
-            // [4] Read the action in system mode: it must be active and assigned to the agent through an active assignment
-            action = getAssignedAction(workflowActionId, agentId);
-
-            if (action == null) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
-
-            // [5] An action that requires confirmation runs only when the user has confirmed
+            // [2] An action that requires confirmation runs only when the user has confirmed
             if (action.RequiresConfirmation__c == true && isConfirmed != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Confirmation_Required);
 
-            // [6] Keep only the inputs the action declares; the browser can send anything
+            // [3] Keep only the inputs the action declares; the browser can send anything
             Map<String, Object> parameters = filterDeclaredInputs(action.InputSchema__c, inputParameters, workflowActionId);
 
-            // [7] Remove recordId: it is the conversation's record and nothing else, even when the schema declares an input of that name
+            // [4] Remove recordId: it is the conversation's record and nothing else, even when the schema declares an input of that name
             for (String declaredName : parameters.keySet().clone()) {
 
                 if (declaredName.equalsIgnoreCase('recordId')) parameters.remove(declaredName);
@@ -69,7 +57,7 @@ public without sharing class AIWorkflowActionDispatcher {
 
             if (action.ActionType__c == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX) {
 
-                // [8] An Apex action needs a class name
+                // [5] An Apex action needs a class name
                 if (String.isBlank(action.ApexClassName__c)) {
 
                     AIPlatformLogManager.logCustomMessage('Action ' + action.DeveloperName__c + ' has no Apex class.', null, 'AIWorkflowActionDispatcher', 'runWorkflowAction', null);
@@ -77,7 +65,7 @@ public without sharing class AIWorkflowActionDispatcher {
                     throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Failed);
                 }
 
-                // [9] Check the class implements the interface before anything in it runs, because the name was typed by a subscriber and even constructing a class runs its code. The empty namespace finds the subscriber's own unprefixed classes; the one-argument form looks only in the package's namespace once this is managed code
+                // [6] Check the class implements the interface before anything in it runs, because the name was typed by a subscriber and even constructing a class runs its code. The empty namespace finds the subscriber's own unprefixed classes; the one-argument form looks only in the package's namespace once this is managed code
                 Type apexType = Type.forName('', action.ApexClassName__c.trim());
 
                 if (apexType == null || !IAIWorkflowActionExecutor.class.isAssignableFrom(apexType)) {
@@ -87,10 +75,10 @@ public without sharing class AIWorkflowActionDispatcher {
                     throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Failed);
                 }
 
-                // [10] Find the conversation the action was suggested in
+                // [7] Find the conversation the action was suggested in
                 List<AIConversationMessage__c> suggestingMessages = messageId == null ? new List<AIConversationMessage__c>() : [SELECT AIConversation__c FROM AIConversationMessage__c WHERE Id = :messageId WITH SYSTEM_MODE LIMIT 1];
 
-                // [11] Build the request the class receives
+                // [8] Build the request the class receives
                 AIWorkflowActionRequest request = new AIWorkflowActionRequest();
                 request.recordId = recordId;
                 request.inputParameters = new Map<String, Object>(parameters);
@@ -100,13 +88,13 @@ public without sharing class AIWorkflowActionDispatcher {
                 request.actionName = action.DeveloperName__c;
                 request.isConfirmed = isConfirmed == true;
 
-                // [12] Run the class in the user's transaction, with the sharing it declares for itself
+                // [9] Run the class in the user's transaction, with the sharing it declares for itself
                 AIWorkflowActionResponse response = ((IAIWorkflowActionExecutor) apexType.newInstance()).execute(request);
                 output = response == null ? null : response.message;
 
             } else if (action.ActionType__c == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW) {
 
-                // [13] A Flow action needs a Flow name
+                // [10] A Flow action needs a Flow name
                 if (String.isBlank(action.FlowAPIName__c)) {
 
                     AIPlatformLogManager.logCustomMessage('Action ' + action.DeveloperName__c + ' has no Flow.', null, 'AIWorkflowActionDispatcher', 'runWorkflowAction', null);
@@ -114,12 +102,12 @@ public without sharing class AIWorkflowActionDispatcher {
                     throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Failed);
                 }
 
-                // [14] Build the Flow inputs, with the conversation's record as recordId
+                // [11] Build the Flow inputs, with the conversation's record as recordId
                 Map<String, Object> flowInputs = new Map<String, Object>(parameters);
 
                 if (recordId != null) flowInputs.put('recordId', recordId);
 
-                // [15] Note every input that is a record Id. A value that is not a record Id is not a record and is passed as it is
+                // [12] Note every input that is a record Id. A value that is not a record Id is not a record and is passed as it is
                 Map<Id, String> inputNameByRecordId = new Map<Id, String>();
 
                 for (String inputName : flowInputs.keySet()) {
@@ -129,7 +117,7 @@ public without sharing class AIWorkflowActionDispatcher {
                     if (passedId != null) inputNameByRecordId.put(passedId, inputName);
                 }
 
-                // [16] A Flow started from Apex does not run as the user: it runs in system context, so the user's object and field permissions are not applied. Check here that the user can read each record it is handed, or edit it when the action writes
+                // [13] A Flow started from Apex does not run as the user: it runs in system context, so the user's object and field permissions are not applied. Check here that the user can read each record it is handed, or edit it when the action writes
                 Boolean isWrite = action.ExecutionType__c == AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
                 Set<Id> refusedRecordIds = inputNameByRecordId.keySet().clone();
 
@@ -141,7 +129,7 @@ public without sharing class AIWorkflowActionDispatcher {
                     }
                 }
 
-                // [17] Refuse, and log which inputs, when the user cannot reach a record. The Flow does not start
+                // [14] Refuse, and log which inputs, when the user cannot reach a record. The Flow does not start
                 if (!refusedRecordIds.isEmpty()) {
 
                     List<String> refusedInputs = new List<String>();
@@ -154,14 +142,14 @@ public without sharing class AIWorkflowActionDispatcher {
                     throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
                 }
 
-                // [18] Start the Flow and read its output
+                // [15] Start the Flow and read its output
                 Flow.Interview interview = Flow.Interview.createInterview(action.FlowAPIName__c, flowInputs);
                 interview.start();
                 output = interview.getVariableValue(FLOW_OUTPUT_VARIABLE_NAME);
 
             } else {
 
-                // [19] Any other action type is not supported
+                // [16] Any other action type is not supported
                 AIPlatformLogManager.logCustomMessage('Action ' + action.DeveloperName__c + ' has an unsupported type.', null, 'AIWorkflowActionDispatcher', 'runWorkflowAction', null);
 
                 throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Failed);
@@ -169,7 +157,7 @@ public without sharing class AIWorkflowActionDispatcher {
 
         } catch (Exception ex) {
 
-            // [20] Log a system error in full and show the user only the Action Failed label; a refusal of our own is passed on as it is
+            // [17] Log a system error in full and show the user only the Action Failed label; a refusal of our own is passed on as it is
             if (ex.getTypeName().startsWith('System.')) {
 
                 AIPlatformLogManager.logException(ex, 'AIWorkflowActionDispatcher', 'runWorkflowAction');
@@ -181,16 +169,133 @@ public without sharing class AIWorkflowActionDispatcher {
             }
         }
 
-        // [21] Work out the outcome: Success, Failed (it ran and failed) or Blocked (refused before it ran)
+        // [18] Work out the outcome: Success, Failed (it ran and failed) or Blocked (refused before it ran)
         String status = problem == null ? AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS : (hasRun && problem.getMessage() == Label.AI_Error_Action_Failed ? AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED : AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED);
 
-        // [22] Record the outcome on the reply; a refusal before the action was even read has nothing to attach the evidence to
+        // [19] Record the outcome on the reply; a refusal before the action was even read has nothing to attach the evidence to
         AIExecutionStepRecorder.recordWorkflowActionStep(messageId, action, recordId, status, isConfirmed, System.currentTimeMillis() - startedAt);
 
-        // [23] Pass on the refusal, or return the output
+        // [20] Pass on the refusal, or return the output
         if (problem != null) throw problem;
 
         return output;
+    }
+
+    // A Screen Flow cannot run from Apex, so it is shown in the window, where it runs as the user and the platform applies the user's own permissions. This makes the same checks as an action that runs on the server and hands the window the flow and its inputs. recordId is the conversation's record and nothing else.
+    public static AIChatDataStructure.ScreenFlowLaunch prepareScreenFlow(Id workflowActionId, Id agentId, Id recordId, Map<String, Object> inputParameters, Boolean isConfirmed) {
+
+        // [1] Make the checks every action starts with
+        AIWorkflowAction__c action = getPermittedAction(workflowActionId, agentId);
+
+        // [2] Only a Screen Flow with a flow name is shown in the window
+        if (action.ActionType__c != AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW || String.isBlank(action.FlowAPIName__c)) {
+
+            AIPlatformLogManager.logCustomMessage('Action ' + action.DeveloperName__c + ' is not a Screen Flow with a Flow name.', null, 'AIWorkflowActionDispatcher', 'prepareScreenFlow', workflowActionId);
+
+            throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Failed);
+        }
+
+        // [3] An action that requires confirmation starts only when the user has confirmed
+        if (action.RequiresConfirmation__c == true && isConfirmed != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Confirmation_Required);
+
+        // [4] Keep only the declared inputs, and never a recordId from the browser
+        Map<String, Object> parameters = filterDeclaredInputs(action.InputSchema__c, inputParameters, workflowActionId);
+
+        for (String declaredName : parameters.keySet().clone()) {
+
+            if (declaredName.equalsIgnoreCase('recordId')) parameters.remove(declaredName);
+        }
+
+        // [5] Build the input variables, with the conversation's record as recordId
+        AIChatDataStructure.ScreenFlowLaunch launch = new AIChatDataStructure.ScreenFlowLaunch();
+        launch.flowApiName = action.FlowAPIName__c.trim();
+
+        for (String inputName : parameters.keySet()) {
+
+            launch.inputVariables.add(buildFlowVariable(inputName, parameters.get(inputName), getDeclaredType(action.InputSchema__c, inputName)));
+        }
+
+        if (recordId != null) launch.inputVariables.add(new Map<String, Object>{ 'name' => 'recordId', 'type' => 'String', 'value' => String.valueOf(recordId) });
+
+        // [6] Return what the window needs
+        return launch;
+    }
+
+    // The window reports how the Screen Flow ended: Finished, Error or Cancelled. This is the evidence on the reply. It is the browser's word, so it can only record a step on a Screen Flow action that is assigned to the agent, never run anything.
+    public static void recordScreenFlowOutcome(Id workflowActionId, Id agentId, Id messageId, Id recordId, String outcome, Boolean isConfirmed) {
+
+        // [1] Only an active Screen Flow action assigned to the agent has a step to record
+        AIWorkflowAction__c action = getAssignedAction(workflowActionId, agentId);
+
+        if (action == null || action.ActionType__c != AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW) return;
+
+        // [2] Finished is a Success, Error is Failed, and anything else means the user closed it first
+        String status = outcome == 'FINISHED' ? AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS : outcome == 'ERROR' ? AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED : AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED;
+
+        // [3] Record it on the reply the action was suggested on
+        AIExecutionStepRecorder.recordWorkflowActionStep(messageId, action, recordId, status, isConfirmed, null);
+    }
+
+    // The JSON Schema type of one declared input, or string when the schema does not say.
+    private static String getDeclaredType(String inputSchema, String inputName) {
+
+        try {
+
+            Map<String, Object> properties = (Map<String, Object>) ((Map<String, Object>) JSON.deserializeUntyped(inputSchema)).get('properties');
+            Map<String, Object> property = (Map<String, Object>) properties.get(inputName);
+
+            String jsonType = property.get('type') == null ? 'string' : String.valueOf(property.get('type'));
+            String format = property.get('format') == null ? null : String.valueOf(property.get('format'));
+
+            return jsonType == 'integer' || jsonType == 'number' ? 'Number' : jsonType == 'boolean' ? 'Boolean' : format == 'date' ? 'Date' : format == 'date-time' ? 'DateTime' : 'String';
+
+        } catch (Exception ex) {
+            return 'String';
+        }
+    }
+
+    // One input in the shape lightning-flow takes. A value that does not fit its declared type is passed as text, which the Flow then rejects as it would any bad input.
+    private static Map<String, Object> buildFlowVariable(String inputName, Object value, String flowType) {
+
+        Object typedValue = value;
+
+        try {
+
+            if (value == null) typedValue = null;
+            else if (flowType == 'Number') typedValue = value instanceof Decimal || value instanceof Integer || value instanceof Long ? value : (Object) Decimal.valueOf(String.valueOf(value));
+            else if (flowType == 'Boolean') typedValue = value instanceof Boolean ? value : (Object) Boolean.valueOf(String.valueOf(value));
+            else typedValue = String.valueOf(value);
+
+        } catch (Exception ex) {
+
+            flowType = 'String';
+            typedValue = String.valueOf(value);
+        }
+
+        return new Map<String, Object>{ 'name' => inputName, 'type' => flowType, 'value' => typedValue };
+    }
+
+    // The checks every run of an action starts with, whether it runs on the server or in the window as a Screen Flow. Returns the action, or throws a refusal that is a Custom Label.
+    private static AIWorkflowAction__c getPermittedAction(Id workflowActionId, Id agentId) {
+
+        // [1] Report the application switch first: with AI Assist off nothing else matters
+        if (!AIAssistSettingsService.isEnabled()) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Application_Inactive);
+
+        // [2] The UI settings must switch Workflow Actions on for this user
+        if (AIAssistSettingsService.getUiSettings().IsWorkflowActionsEnabled__c != true) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
+
+        // [3] Make the same access check the message validator makes: an inactive agent, or one the user has since been removed from, runs nothing
+        AIAgent__c agent = getAgent(agentId);
+
+        if (agent == null || agent.IsActive__c != true || !AIMessageValidator.isUserAllowedOnAgent(agent, UserInfo.getUserId())) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
+
+        // [4] Read the action in system mode: it must be active and assigned to the agent through an active assignment
+        AIWorkflowAction__c action = getAssignedAction(workflowActionId, agentId);
+
+        if (action == null) throw new AIWorkflowActionDispatcherException(Label.AI_Error_Action_Not_Permitted);
+
+        // [5] Return the action
+        return action;
     }
 
     // The user declined at the confirmation. Nothing ran; this is the evidence that it was offered and refused.

@@ -4,7 +4,7 @@
     <description
   >Determines which mechanism is used to execute this action.</description>
     <inlineHelpText
-  >Choose whether this action runs a Flow or an Apex class.</inlineHelpText>
+  >Choose whether this action runs an Apex class, an autolaunched Flow, or a Screen Flow. A Screen Flow is shown in a window over the chat and runs as the user.</inlineHelpText>
     <label>Action Type</label>
     <required>true</required>
     <trackHistory>true</trackHistory>
@@ -23,6 +23,11 @@
                 <fullName>Flow</fullName>
                 <default>false</default>
                 <label>Flow</label>
+            </value>
+            <value>
+                <fullName>Screen Flow</fullName>
+                <default>false</default>
+                <label>Screen Flow</label>
             </value>
         </valueSetDefinition>
     </valueSet>

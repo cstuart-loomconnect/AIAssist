@@ -63,6 +63,7 @@ public without sharing class AIChatActionService {
         suggestedActionCard.name = action.ActionName__c;
         suggestedActionCard.description = action.Description__c;
         suggestedActionCard.requiresConfirmation = action.RequiresConfirmation__c == true;
+        suggestedActionCard.isScreenFlow = action.ActionType__c == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW;
 
         // [2] Use the default confirmation message when the action has none
         suggestedActionCard.confirmationMessage = String.isBlank(action.ConfirmationMessage__c) ? Label.AI_Chat_Confirm_Action_Default : action.ConfirmationMessage__c;

@@ -53,6 +53,7 @@ public without sharing class AIAssistApplicationConstants {
     // AIWorkflowAction__c.ActionType__c
     public static final String WORKFLOW_ACTION_TYPE_APEX = 'Apex';
     public static final String WORKFLOW_ACTION_TYPE_FLOW = 'Flow';
+    public static final String WORKFLOW_ACTION_TYPE_SCREEN_FLOW = 'Screen Flow';
 
     // AIWorkflowAction__c.ExecutionType__c
     public static final String WORKFLOW_EXECUTION_READ_ONLY = 'Read Only';
@@ -127,8 +128,8 @@ public without sharing class AIAssistApplicationConstants {
 
     // The stepType of an entry in AIConversationMessage__c.ExecutionTraceJson__c
     public static final String STEP_TYPE_PROMPT_ASSEMBLY = 'Prompt Assembly';
-    public static final String STEP_TYPE_DATA_SOURCE = 'Data Source';
     public static final String STEP_TYPE_TEMPLATE_MATCH = 'Template Match';
+    public static final String STEP_TYPE_DATA_SOURCE = 'Data Source';
     public static final String STEP_TYPE_PROVIDER_CALL = 'Provider Call';
     public static final String STEP_TYPE_WORKFLOW_ACTION = 'Workflow Action';
     public static final String STEP_TYPE_PII_MASKING = 'PII Masking';
@@ -163,8 +164,8 @@ public without sharing class AIAssistApplicationConstants {
     public static final Integer STEP_SENT_PREVIEW_LENGTH = 255;
     public static final Integer STEP_FIELDS_SENT_LENGTH = 4000; // Names of the fields sent, kept short because the whole trace shares one 131,072 character field.
     public static final Integer STEP_OBJECTS_SENT_LENGTH = 255;
-
     public static final Integer STEP_DETAIL_LENGTH = 1000;
+
     // AIAgentManager - canonical (provider-agnostic) message shape built from AIConversationMessage__c history, before any provider handler reshapes it.
     public static final String CANONICAL_ROLE_KEY = 'role';
     public static final String CANONICAL_CONTENT_KEY = 'content';

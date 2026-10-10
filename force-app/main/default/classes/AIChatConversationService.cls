@@ -271,7 +271,7 @@ public without sharing class AIChatConversationService {
                 if (message.SuggestedWorkflowAction__c != null) actionIds.add(message.SuggestedWorkflowAction__c);
             }
 
-            if (!actionIds.isEmpty()) actionsById = new Map<Id, AIWorkflowAction__c>([SELECT Id, ActionName__c, Description__c, RequiresConfirmation__c, ConfirmationMessage__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id IN :actionIds AND IsActive__c = TRUE WITH SYSTEM_MODE]);
+            if (!actionIds.isEmpty()) actionsById = new Map<Id, AIWorkflowAction__c>([SELECT Id, ActionName__c, Description__c, ActionType__c, RequiresConfirmation__c, ConfirmationMessage__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id IN :actionIds AND IsActive__c = TRUE WITH SYSTEM_MODE]);
         }
 
         // [6] Turn each message into a chat message, restoring the real values in the AI Agent's replies
@@ -328,7 +328,7 @@ public without sharing class AIChatConversationService {
                 if (message.SuggestedWorkflowAction__c != null) actionIds.add(message.SuggestedWorkflowAction__c);
             }
 
-            if (!actionIds.isEmpty()) actionsById = new Map<Id, AIWorkflowAction__c>([SELECT Id, ActionName__c, Description__c, RequiresConfirmation__c, ConfirmationMessage__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id IN :actionIds AND IsActive__c = TRUE WITH SYSTEM_MODE]);
+            if (!actionIds.isEmpty()) actionsById = new Map<Id, AIWorkflowAction__c>([SELECT Id, ActionName__c, Description__c, ActionType__c, RequiresConfirmation__c, ConfirmationMessage__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id IN :actionIds AND IsActive__c = TRUE WITH SYSTEM_MODE]);
         }
 
         // [4] Turn each message into a chat message, restoring the real values in the AI Agent's replies
