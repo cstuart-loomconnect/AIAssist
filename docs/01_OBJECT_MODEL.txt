@@ -68,7 +68,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (19):
+Fields (20):
 
 [ ] AIAgentPersona__c (TextArea)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
@@ -79,6 +79,7 @@ Fields (19):
 [ ] ConversationVisibility__c (Picklist)
 [ ] Description__c (TextArea)
 [ ] DeveloperName__c (Text, required, unique, external ID)
+[ ] ExternalReference__c (Text, external ID): the agent's id in an external AI service, e.g. agent_... for the Anthropic Agent API
 [ ] GreetingMessage__c (TextArea)
 [ ] IdleTimeoutMinutes__c (Number)
 [ ] IsActive__c (Checkbox)
@@ -123,21 +124,25 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depe
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (9):
+Fields (11):
 
 [ ] AIAgent__c (Lookup to AIAgent__c, required)
 [ ] AIExclusionRules__c (TextArea)
 [ ] AIPrompt__c (LongTextArea)
 [ ] AISystemContext__c (TextArea)
 [ ] AITone__c (TextArea)
-[ ] Description__c (TextArea)
+[ ] DeveloperName__c (Text, unique, external id): the name a slash command and the model use to pick this template
+[ ] Description__c (TextArea): tells the model when to pick this template, so a template without one is never offered to it
 [ ] IsActive__c (Checkbox)
+[ ] IsDefault__c (Checkbox): the template used when none is chosen; one active default per Agent
 [ ] MaxResponseLength__c (Number)
 [ ] Version__c (Number)
 
-Validation rules (2):
+Validation rules (4):
 
 [ ] ActiveRequiresPrompt
+[ ] DefaultRequiresActive
+[ ] DeveloperNameFormat
 [ ] MaxResponseLengthPositive
 
 List views (2):
@@ -157,8 +162,10 @@ Presentation and platform:
 
 Trigger and handler:
 
-[ ] Trigger AIPromptTemplateTrigger (before update)
-[ ] AIPromptTemplateTriggerHandler (without sharing, 116 lines): Handler for managing AI Prompt Template events related to AI Assist, performing the business logic that runs on the AI Prompt Template trigger.
+[ ] Trigger AIPromptTemplateTrigger (before insert, before update)
+[ ] AIPromptTemplateTriggerHandler (without sharing): Raises the version when the wording changes, and refuses a second active default for an Agent.
+[ ] AIPromptTemplateService (without sharing): Works out which template answers a message (the one a slash command asked for, else the default) and which others the model may switch to.
+  [ ] Test: AIPromptTemplateServiceTest
   [ ] Test: AIPromptTemplateTriggerHandlerTest
 
 1.2.4 AIDataSource__c (AI Data Source)
@@ -504,7 +511,7 @@ Sharing: Private (external Private). Name field: AutoNumber. Field history: off.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (14):
+Fields (15):
 
 [ ] AIAgent__c (Lookup to AIAgent__c)
 [ ] AIPromptTemplate__c (Lookup to AIPromptTemplate__c)
@@ -512,6 +519,7 @@ Fields (14):
 [ ] ConversationCloseReason__c (Picklist)
 [ ] ConversationClosedTimestamp__c (DateTime)
 [ ] ConversationTokenUsage__c (Number)
+[ ] ExternalReference__c (Text, external ID): the conversation's id in an external AI service, e.g. the Anthropic Agent API session id (sesn_...)
 [ ] IsOnLegalHold__c (Checkbox)
 [ ] LastMessageTimestamp__c (DateTime)
 [ ] MessageCount__c (Summary)
@@ -981,7 +989,7 @@ Custom metadata type, visibility Protected.
 
 [ ] Object definition: label, plural label, description, visibility
 
-Fields (8):
+Fields (9):
 
 [ ] AgentDeveloperName__c (Text)
 [ ] AvailableTo__c (Picklist, required)
@@ -991,6 +999,7 @@ Fields (8):
 [ ] IsActive__c (Checkbox)
 [ ] ObjectAPIName__c (Text)
 [ ] PromptText__c (LongTextArea)
+[ ] PromptTemplateDeveloperName__c (Text): makes the command answer with that Prompt Template of the Agent
 
 List views (1):
 

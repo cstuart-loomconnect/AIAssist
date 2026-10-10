@@ -7,7 +7,7 @@ Class Name: AIChatController
 Description: The Apex controller behind the AI Assist chat window.
 
 Step 1: Open the window: build the chat context, up to the first state that stops it
-Step 2: Send a message: turn a slash command into its hidden instructions, then hand the message to AIConversationMessageService
+Step 2: Send a message: turn a slash command into its hidden instructions and the Prompt Template it names, then hand the message to AIConversationMessageService
 Step 3: Read and change conversations: earlier messages, updates, history, open, resume, retry and close
 Step 4: Run, decline, give feedback on or debug a reply, and export a conversation, each after proving the user owns it
 Step 5: Turn an expected refusal into its Custom Label, and log anything unexpected once and show the generic label
@@ -127,6 +127,7 @@ public without sharing class AIChatController {
             AIChatDataStructure.SendResult result = new AIChatDataStructure.SendResult();
             String trimmedText = request.text == null ? '' : request.text.trim();
             String messageBody = trimmedText;
+            Id promptTemplateId = null;
 
             if (AIChatCommandService.isCommandText(trimmedText)) {
 
@@ -143,12 +144,27 @@ public without sharing class AIChatController {
 
                 // [4] Add the command's hidden instructions after what the user typed
                 if (String.isNotBlank(command.PromptText__c)) messageBody = trimmedText + AIAssistApplicationConstants.CHAT_COMMAND_PROMPT_SEPARATOR + command.PromptText__c;
+
+                // [5] Find the prompt template the command asks for, and refuse the command when that template is missing, inactive or another agent's
+                if (String.isNotBlank(command.PromptTemplateDeveloperName__c)) {
+
+                    AIPromptTemplate__c commandPromptTemplate = AIPromptTemplateService.findActiveTemplate(request.agentId, command.PromptTemplateDeveloperName__c);
+
+                    if (commandPromptTemplate == null) {
+
+                        result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
+                        result.message = Label.AI_Error_Prompt_Template_Unavailable;
+                        return result;
+                    }
+
+                    promptTemplateId = commandPromptTemplate.Id;
+                }
             }
 
             try {
 
-                // [5] Send the message and report it back to the window
-                AIConversationMessage__c sentMessage = AIConversationMessageService.sendMessage(request.conversationId, request.agentId, messageBody, request.channel, request.objectApiName, request.recordId);
+                // [6] Send the message and report it back to the window
+                AIConversationMessage__c sentMessage = AIConversationMessageService.sendMessage(request.conversationId, request.agentId, messageBody, request.channel, request.objectApiName, request.recordId, promptTemplateId);
 
                 result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_SENT;
                 result.conversationId = sentMessage.AIConversation__c;
@@ -157,20 +173,20 @@ public without sharing class AIChatController {
 
             } catch (Exception ex) {
 
-                // [6] Pass on an unexpected failure, because a package exception's message is always a Custom Label and anything else goes to the outer handler, which logs it and shows the generic label
+                // [7] Pass on an unexpected failure, because a package exception's message is always a Custom Label and anything else goes to the outer handler, which logs it and shows the generic label
                 if (ex.getTypeName().startsWith('System.')) throw ex;
 
-                // [7] Show the refusal in place
+                // [8] Show the refusal in place
                 result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
                 result.message = ex.getMessage();
             }
 
-            // [8] Return the result
+            // [9] Return the result
             return result;
 
         } catch (Exception ex) {
 
-            // [9] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [10] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'sendMessage');

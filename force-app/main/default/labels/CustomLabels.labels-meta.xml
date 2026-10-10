@@ -533,6 +533,26 @@
     >That command is not available here. Type / to see the commands you can use.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Prompt_Template_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a slash command whose Prompt Template is unavailable.</shortDescription>
+        <value
+    >That command cannot be used right now because its prompt template is not available. Ask your administrator to check it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Prompt_Template_Default_Exists</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompt Template: a second active default for one Agent.</shortDescription>
+        <value
+    >This Agent already has an active default Prompt Template. Untick Is Default on the other one first.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Generic</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>

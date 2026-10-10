@@ -28,6 +28,12 @@ Version      Author                   Description
     // testScenario8: A turn gets a retryable provider failure -> nothing is recorded yet because the finalizer retries it as a new job.
     // testScenario9: A retryable turn is run as a real job -> the finalizer retries it as a second attempt that answers, and the lock is freed.
     // testScenario10: The user ran a Suggested Action from an earlier reply, and another failed -> the history notes both on the replies they ran from, other messages are untouched, and nothing is saved.
+    // testScenario11: The question asks for one of the agent's templates and another is the default -> the reply is answered with, and records, the template that was asked for and its version.
+    // testScenario12: The question asks for no template and the agent has a default and another template -> the reply records the default.
+    // testScenario13: The question asks for a template that has since been deactivated -> the default answers instead and the reply records it.
+    // testScenario14: A turn on the Anthropic Agent API for a conversation with no saved session -> the new session id is saved on the conversation and the reply is recorded.
+    // testScenario15: A turn on the Anthropic Agent API for a conversation whose saved session is gone -> a new session answers and its id replaces the saved one.
+    // testScenario16: A turn on a stateless provider for a conversation with no saved session -> nothing is saved on the conversation.
 
     @TestSetup static void setup() {
 
@@ -373,5 +379,203 @@ Version      Author                   Description
 
             Assert.areEqual(originalBodies.get(savedMessage.Id), savedMessage.MessageBody__c, 'The saved message body should not change.');
         }
+    }
+
+    @IsTest static void testScenario11() {
+
+        // [1] Create a chat user, an agent with a default template and another template, a conversation and a question that asks for the other template
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].IsDefault__c = true;
+        insert templates;
+
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, false)[0];
+        question.AIPromptTemplate__c = templates[1].Id;
+        insert question;
+
+        // [2] Lock the conversation and install the answering provider
+        AIConversationLockService.acquireLock(conversation.Id);
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [3] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [4] Read the reply and the template it was answered with
+        AIConversationMessage__c reply = [SELECT AIPromptTemplate__c, PromptTemplateVersion__c FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+        AIPromptTemplate__c askedFor = [SELECT Version__c FROM AIPromptTemplate__c WHERE Id = :templates[1].Id];
+
+        // [5] Check the reply records the template that was asked for
+        Assert.areEqual(templates[1].Id, reply.AIPromptTemplate__c, 'The reply should record the template that was asked for, not the default.');
+        Assert.areEqual(askedFor.Version__c, reply.PromptTemplateVersion__c, 'The reply should record that template\'s version.');
+    }
+
+    @IsTest static void testScenario12() {
+
+        // [1] Create a chat user, an agent with a default template and another template, a conversation and a question that asks for nothing
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[1].IsDefault__c = true;
+        insert templates;
+
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, true)[0];
+
+        // [2] Lock the conversation and install the answering provider
+        AIConversationLockService.acquireLock(conversation.Id);
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [3] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [4] Read the reply
+        AIConversationMessage__c reply = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+
+        // [5] Check the reply records the default
+        Assert.areEqual(templates[1].Id, reply.AIPromptTemplate__c, 'The reply should record the default template.');
+    }
+
+    @IsTest static void testScenario13() {
+
+        // [1] Create a chat user, an agent with a default template and another template, a conversation and a question that asks for the other one
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].IsDefault__c = true;
+        insert templates;
+
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, false)[0];
+        question.AIPromptTemplate__c = templates[1].Id;
+        insert question;
+
+        // [2] Deactivate the template that was asked for, lock the conversation and install the answering provider
+        templates[1].IsActive__c = false;
+        update templates[1];
+
+        AIConversationLockService.acquireLock(conversation.Id);
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [3] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [4] Read the reply
+        AIConversationMessage__c reply = [SELECT AIPromptTemplate__c, ProcessingStatus__c FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+
+        // [5] Check the default answered
+        Assert.areEqual(templates[0].Id, reply.AIPromptTemplate__c, 'The default should answer when the asked-for template is no longer active.');
+    }
+
+    @IsTest static void testScenario14() {
+
+        // [1] Create a chat user, an Anthropic Agent API model, an agent, a conversation with no saved session and the question
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT;
+        model.EnvironmentId__c = 'env_1';
+        model.ApiPath__c = '/v1/sessions';
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, true)[0];
+
+        // [2] Lock the conversation
+        AIConversationLockService.acquireLock(conversation.Id);
+
+        // [3] Install the Anthropic Agent API provider
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_AGENT);
+
+        // [4] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [5] Read the conversation and the reply
+        AIConversation__c savedConversation = [SELECT ExternalReference__c FROM AIConversation__c WHERE Id = :conversation.Id];
+        AIConversationMessage__c reply = [SELECT MessageBody__c FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+
+        // [6] Check the session id was saved and the reply recorded
+        Assert.areEqual(AIAssistTestProviderMock.SESSION_ID_NEW, savedConversation.ExternalReference__c, 'The new session id should be saved on the conversation.');
+        Assert.areEqual(AIAssistTestProviderMock.REPLY_TEXT, reply.MessageBody__c, 'The agent\'s reply should be recorded.');
+    }
+
+    @IsTest static void testScenario15() {
+
+        // [1] Create a chat user, an Anthropic Agent API model, an agent, a conversation whose saved session no longer exists and the question
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT;
+        model.EnvironmentId__c = 'env_1';
+        model.ApiPath__c = '/v1/sessions';
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, false)[0];
+        conversation.ExternalReference__c = 'sesn_gone';
+        insert conversation;
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, true)[0];
+
+        // [2] Lock the conversation
+        AIConversationLockService.acquireLock(conversation.Id);
+
+        // [3] Install the Anthropic Agent API provider
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_AGENT);
+
+        // [4] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [5] Read the conversation
+        AIConversation__c savedConversation = [SELECT ExternalReference__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+        // [6] Check the new session id replaced the saved one
+        Assert.areEqual(AIAssistTestProviderMock.SESSION_ID_NEW, savedConversation.ExternalReference__c, 'The new session id should replace the one that no longer exists.');
+    }
+
+    @IsTest static void testScenario16() {
+
+        // [1] Create a chat user, a stateless model, an agent, a conversation with no saved session and the question
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+        AIConversationMessage__c question = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, true)[0];
+
+        // [2] Lock the conversation
+        AIConversationLockService.acquireLock(conversation.Id);
+
+        // [3] Install the stateless provider
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [4] Run the job for the question
+        Test.startTest();
+            new AIMessageProcessingQueueable(question.Id, conversation.Id).execute(null);
+        Test.stopTest();
+
+        // [5] Read the conversation
+        AIConversation__c savedConversation = [SELECT ExternalReference__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+        // [6] Check nothing was saved on the conversation
+        Assert.isNull(savedConversation.ExternalReference__c, 'A stateless provider should save no reference.');
     }
 }

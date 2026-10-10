@@ -7,7 +7,7 @@ Class Name: AIAgentManager
 Description: Runs one conversation turn with the AI provider. It only makes the callouts and returns an AgentResult; it never inserts, updates or publishes a record.
 
 Step 1: Check the model configuration and get the provider's request builder and response handler
-Step 2: Turn the data sources into tools, the conversation into provider messages and the prompt template into the system prompt
+Step 2: Turn the data sources (and, when the user chose no template, the other prompt templates) into tools, the conversation into provider messages and the prompt template into the system prompt
 Step 3: Work out the run limits (tool-calling iterations, tool calls per reply, retry attempts, callout timeout)
 Step 4: Send the request in a loop, running any tools the model asks for, until it gives a final reply
 Step 5: Return an AgentResult saying whether the turn worked, failed, or can be retried
@@ -36,17 +36,22 @@ public without sharing class AIAgentManager {
         public String errorMessage; // For the log only: it can hold configuration or provider text and must never reach the user.
         public String failureReason; // An AIConversationMessage__c.FailureReason__c value.
         public String suggestedWorkflowActionId;
+        public Id selectedPromptTemplateId; // Set only when the model switched to another prompt template, so the reply records the one that produced it.
+        public Decimal selectedPromptTemplateVersion;
+        public String externalReference; // Set only when the provider keeps the conversation (the Anthropic Agent API session id), so the caller can save it on the conversation. Null for every other provider.
     }
 
     private static final Integer DEFAULT_MAX_OUTPUT_TOKENS = 1024;
 
-    // Runs one turn, starting at attemptNumber (1 for the first; the caller adds one for each retry). Every argument is loaded by the caller, so this class issues no SOQL. messageHistory must end with the message being answered. trace is filled in as the turn runs.
-    public static AgentResult executeAiMessage(AIAgent__c agent, AIModelConfiguration__c modelConfiguration, AIPromptTemplate__c promptTemplate, AIConversation__c conversation, List<AIConversationMessage__c> messageHistory, List<AIDataSource__c> availableDataSources, List<AIWorkflowAction__c> availableWorkflowActions, Integer attemptNumber, AIExecutionStepTracker trace) {
+    // Runs one turn, starting at attemptNumber (1 for the first; the caller adds one for each retry). Every argument is loaded by the caller, so this class issues no SOQL. routingPromptTemplates are the other templates the model may switch to (none when the user chose a template). messageHistory must end with the message being answered. trace is filled in as the turn runs.
+    public static AgentResult executeAiMessage(AIAgent__c agent, AIModelConfiguration__c modelConfiguration, AIPromptTemplate__c promptTemplate, List<AIPromptTemplate__c> routingPromptTemplates, AIConversation__c conversation, List<AIConversationMessage__c> messageHistory, List<AIDataSource__c> availableDataSources, List<AIWorkflowAction__c> availableWorkflowActions, Integer attemptNumber, AIExecutionStepTracker trace) {
 
         Long turnStartMilliseconds = System.currentTimeMillis();
         Decimal totalTokensUsed = 0; // Declared outside the try so every failure result reports the tokens already spent.
         Decimal inputTokensUsed = 0;
         Decimal outputTokensUsed = 0;
+        AIPromptTemplate__c selectedPromptTemplate; // Set when the model switches template, and recorded on the reply.
+        AIProvider.Session providerSession = new AIProvider.Session(); // Stays empty for a provider answered by one callout. Declared outside the try so every result can carry the session id.
 
         try {
 
@@ -98,39 +103,38 @@ public without sharing class AIAgentManager {
                 });
             }
 
-            // [7] Build the system prompt from the agent persona and the prompt template
-            List<String> systemPromptParts = new List<String>();
+            // [7] Offer the model the other prompt templates as one tool, so it can switch when the request fits one. Only templates with a name and a description can be told apart
+            Map<String, AIPromptTemplate__c> routingTemplateByDeveloperName = new Map<String, AIPromptTemplate__c>();
+            List<AIPromptTemplate__c> offeredRoutingTemplates = new List<AIPromptTemplate__c>();
+            List<String> offeredRoutingNames = new List<String>();
 
-            if (String.isNotBlank(agent.AIAgentPersona__c)) systemPromptParts.add('Persona: ' + agent.AIAgentPersona__c);
+            for (AIPromptTemplate__c routingTemplate : routingPromptTemplates == null ? new List<AIPromptTemplate__c>() : routingPromptTemplates) {
 
-            if (promptTemplate != null) {
+                if (String.isBlank(routingTemplate.DeveloperName__c) || String.isBlank(routingTemplate.Description__c) || routingTemplateByDeveloperName.containsKey(routingTemplate.DeveloperName__c)) continue;
 
-                if (String.isNotBlank(promptTemplate.AISystemContext__c)) systemPromptParts.add(promptTemplate.AISystemContext__c);
-                if (String.isNotBlank(promptTemplate.AIPrompt__c)) systemPromptParts.add(promptTemplate.AIPrompt__c);
-                if (String.isNotBlank(promptTemplate.AITone__c)) systemPromptParts.add('Tone: ' + promptTemplate.AITone__c);
-                if (String.isNotBlank(promptTemplate.AIExclusionRules__c)) systemPromptParts.add('Do not: ' + promptTemplate.AIExclusionRules__c);
+                routingTemplateByDeveloperName.put(routingTemplate.DeveloperName__c, routingTemplate);
+                offeredRoutingTemplates.add(routingTemplate);
+                offeredRoutingNames.add(routingTemplate.DeveloperName__c);
             }
 
-            // [8] Tell the model to reply in the user's language. Labels are translated by the platform but agent text is not. A turn runs as the user who sent the message, so this is their language.
-            systemPromptParts.add(String.format(AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION, new List<String>{UserInfo.getLanguage()}));
+            if (!routingTemplateByDeveloperName.isEmpty()) {
 
-            // [9] List the workflow actions the model may suggest (never run) and how to name one
-            if (availableWorkflowActions != null && !availableWorkflowActions.isEmpty()) {
+                AIProvider.ToolDefinition routingToolDefinition = new AIProvider.ToolDefinition();
+                routingToolDefinition.name = AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_NAME;
+                routingToolDefinition.description = AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_DESCRIPTION;
+                routingToolDefinition.inputSchema = new Map<String, Object>{
+                    'type' => 'object',
+                    'properties' => new Map<String, Object>{AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_ARGUMENT => new Map<String, Object>{'type' => 'string', 'enum' => offeredRoutingNames}},
+                    'required' => new List<String>{AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_ARGUMENT}
+                };
 
-                systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_INSTRUCTION);
-
-                for (AIWorkflowAction__c workflowAction : availableWorkflowActions) {
-
-                    systemPromptParts.add(workflowAction.DeveloperName__c + ': ' + (String.isNotBlank(workflowAction.Description__c) ? workflowAction.Description__c : workflowAction.OutputDescription__c));
-                }
-
-                systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_JSON_INSTRUCTION);
+                toolDefinitions.add(routingToolDefinition);
             }
 
-            // [10] Join the prompt and remove blank lines and repeated spaces to save tokens on every pass. Single line breaks stay so authored lists remain readable.
-            String systemPromptText = systemPromptParts.isEmpty() ? null : String.join(systemPromptParts, '\n').replaceAll('[ \\t]*\\n\\s*', '\n').replaceAll('[ \\t]+', ' ').trim();
+            // [8] Build the system prompt from the agent persona, the prompt template, the templates the model may switch to and the workflow actions
+            String systemPromptText = buildSystemPromptText(agent, promptTemplate, offeredRoutingTemplates, availableWorkflowActions);
 
-            // [11] Work out the run limits. The iteration limit is the agent's own, else the org default, kept between 1 and the cap (0 would skip the callout and no limit risks the 100 callout limit).
+            // [9] Work out the run limits. The iteration limit is the agent's own, else the org default, kept between 1 and the cap (0 would skip the callout and no limit risks the 100 callout limit).
             AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
             Integer maxToolCallingIterations = Math.max(1, Math.min(agent.MaxToolCallingIterations__c == null ? settings.DefaultMaxToolCallingIterations__c.intValue() : agent.MaxToolCallingIterations__c.intValue(), settings.MaxToolCallingIterationsCap__c.intValue()));
             Integer maxAttempts = 1 + settings.RetryAttempts__c.intValue();
@@ -138,12 +142,14 @@ public without sharing class AIAgentManager {
             Integer maxOutputTokens = modelConfiguration.MaximumOutputTokens__c == null ? DEFAULT_MAX_OUTPUT_TOKENS : modelConfiguration.MaximumOutputTokens__c.intValue();
             Integer configuredTimeoutMilliseconds = settings.CalloutTimeoutMilliseconds__c.intValue();
             String endpoint = 'callout:' + modelConfiguration.NamedCredential__c + modelConfiguration.ApiPath__c;
-            AIProvider.Session providerSession = new AIProvider.Session(); // Stays empty for a provider answered by one callout.
+
+            // Only the Anthropic Agent API keeps the conversation at the provider, so only it continues the session saved on the conversation. A retry starts a new session, because the failed attempt may already have sent the message to the old one.
+            if (modelConfiguration.AIProvider__c.equalsIgnoreCase(AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT) && conversation != null && (attemptNumber == null || attemptNumber <= 1)) providerSession.resumeId = conversation.ExternalReference__c;
 
             trace.toolCallingIterationsMax = maxToolCallingIterations;
             trace.attemptNumber = attemptNumber;
 
-            // [12] Set up what is carried between passes: the tool calls just finished (handed to the response handler at the top of the next pass), and what was sent and masked since the last provider call (the evidence for the next provider call step)
+            // [10] Set up what is carried between passes: the tool calls just finished (handed to the response handler at the top of the next pass), and what was sent and masked since the last provider call (the evidence for the next provider call step)
             List<AIProvider.ToolCall> previousToolCalls = null;
             List<Object> previousToolResults = null;
 
@@ -152,17 +158,17 @@ public without sharing class AIAgentManager {
             Set<String> fieldsSent = new Set<String>();
             List<AIPiiPseudonymizationService.MaskingTally> pendingMasking = new List<AIPiiPseudonymizationService.MaskingTally>();
 
-            // [13] Set up the callout error details. They are filled in when a callout cannot complete; the loop then stops and one failed or retryable result is returned after it.
+            // [11] Set up the callout error details. They are filled in when a callout cannot complete; the loop then stops and one failed or retryable result is returned after it.
             String calloutErrorMessage = null;
             String calloutFailureReason = AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
             Boolean isCalloutErrorRetryable = true;
 
-            // [14] Send requests until the model gives a final reply or a limit is hit
+            // [12] Send requests until the model gives a final reply or a limit is hit
             for (Integer iteration = 0; iteration < maxToolCallingIterations; iteration++) {
 
                 Boolean isLastIteration = iteration == maxToolCallingIterations - 1;
 
-                // [15] Add the previous pass's tool calls and results to the conversation before building this request
+                // [13] Add the previous pass's tool calls and results to the conversation before building this request
                 if (previousToolCalls != null) {
 
                     providerResponseHandler.handleResponse(providerMessages, null, previousToolCalls, previousToolResults, null);
@@ -171,7 +177,7 @@ public without sharing class AIAgentManager {
                     previousToolResults = null;
                 }
 
-                // [16] Never send a request if masking failed for any value in it
+                // [14] Never send a request if masking failed for any value in it
                 pendingMasking.addAll(AIPiiPseudonymizationService.takeTallies());
 
                 for (AIPiiPseudonymizationService.MaskingTally tally : pendingMasking) {
@@ -184,12 +190,13 @@ public without sharing class AIAgentManager {
                         maskingFailure.totalTokensUsed = totalTokensUsed;
                         maskingFailure.inputTokens = inputTokensUsed;
                         maskingFailure.outputTokens = outputTokensUsed;
+                        maskingFailure.externalReference = providerSession.id;
 
                         return maskingFailure;
                     }
                 }
 
-                // [17] Build the request in the provider's own format. On the last pass tool calls are switched off, so the model must answer with what it has.
+                // [15] Build the request in the provider's own format. On the last pass tool calls are switched off, so the model must answer with what it has.
                 AIProvider.Request canonicalRequest = new AIProvider.Request();
                 canonicalRequest.modelIdentifier = modelConfiguration.ModelIdentifier__c;
                 canonicalRequest.maxOutputTokens = maxOutputTokens;
@@ -205,7 +212,7 @@ public without sharing class AIAgentManager {
 
                 String requestBody = JSON.serialize(providerRequestBuilder.buildRequestBody(canonicalRequest));
 
-                // [18] Keep the request and a preview of the last user message on the trace, only when debug mode is on, because they are customer data (already masked)
+                // [16] Keep the request and a preview of the last user message on the trace, only when debug mode is on, because they are customer data (already masked)
                 if (trace.captureFullDetail) {
 
                     trace.lastRequestJson = requestBody;
@@ -223,7 +230,7 @@ public without sharing class AIAgentManager {
                     }
                 }
 
-                // [19] Build the HTTP request for the Named Credential endpoint
+                // [17] Build the HTTP request for the Named Credential endpoint
                 HttpRequest httpRequest = new HttpRequest();
                 httpRequest.setEndpoint(providerSession.endpoint == null ? endpoint : providerSession.endpoint);
                 httpRequest.setMethod(AIAssistApplicationConstants.HTTP_METHOD_POST);
@@ -239,7 +246,7 @@ public without sharing class AIAgentManager {
                 httpRequest.setTimeout(configuredTimeoutMilliseconds);
                 httpRequest.setBody(requestBody);
 
-                // [20] Call the provider. If the callout fails, work out the error, whether it can be retried, and stop the loop.
+                // [18] Call the provider. If the callout fails, work out the error, whether it can be retried, and stop the loop.
                 HttpResponse httpResponse;
                 trace.startStep(Label.AI_Step_Calling_Model, null);
 
@@ -257,10 +264,10 @@ public without sharing class AIAgentManager {
                         failedStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
                     }
 
-                    // [21] Log it here, because it becomes a result rather than being thrown again
+                    // [19] Log it here, because it becomes a result rather than being thrown again
                     AIPlatformLogManager.logException(ex, 'AIAgentManager', 'executeAiMessage');
 
-                    // [22] Tell a setup problem (an endpoint the org does not allow, or a missing Named Credential) from a temporary one. A setup problem fails the same way every time, so it is not retried.
+                    // [20] Tell a setup problem (an endpoint the org does not allow, or a missing Named Credential) from a temporary one. A setup problem fails the same way every time, so it is not retried.
                     String calloutDetail = ex.getMessage() == null ? '' : ex.getMessage();
                     Boolean isSetupProblem = calloutDetail.containsIgnoreCase('unauthorized endpoint') || calloutDetail.containsIgnoreCase('named credential');
 
@@ -271,7 +278,7 @@ public without sharing class AIAgentManager {
                     break;
                 }
 
-                // [23] Record the provider call step: what was sent (names and counts, never values), under which model, and what was masked
+                // [21] Record the provider call step: what was sent (names and counts, never values), under which model, and what was masked
                 AIExecutionStepTracker.StepEntry providerStep = trace.endStep(true);
                 providerStep.provider = modelConfiguration.AIProvider__c;
                 providerStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
@@ -291,7 +298,7 @@ public without sharing class AIAgentManager {
 
                 if (trace.captureFullDetail) trace.lastResponseJson = httpResponse.getBody();
 
-                // [24] If the status is not a success, end this attempt with a reason the user can be told and a message saying which record to fix. It is only retried when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could work next time; a rejected credential, a retired model, an exhausted quota and a bad request never are.
+                // [22] If the status is not a success, end this attempt with a reason the user can be told and a message saying which record to fix. It is only retried when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could work next time; a rejected credential, a retired model, an exhausted quota and a bad request never are.
                 Integer statusCode = httpResponse.getStatusCode();
 
                 if (!buildIntegerSet(settings.AIProviderSuccessStatusCodes__c).contains(statusCode)) {
@@ -308,13 +315,13 @@ public without sharing class AIAgentManager {
                     break;
                 }
 
-                // [25] Read the reply and add up the tokens used. A badly formed body throws, which is caught and logged below as a hard failure.
+                // [23] Read the reply and add up the tokens used. A badly formed body throws, which is caught and logged below as a hard failure.
                 AIProvider.Response modelResponse = providerResponseHandler.handleResponse(providerMessages, httpResponse, null, null, canonicalRequest);
                 totalTokensUsed += modelResponse.totalTokens;
                 inputTokensUsed += modelResponse.inputTokens;
                 outputTokensUsed += modelResponse.outputTokens;
 
-                // [26] If the model asked for no tools, this is its final reply
+                // [24] If the model asked for no tools, this is its final reply
                 if (modelResponse.toolCalls.isEmpty()) {
 
                     AgentResult successResult = new AgentResult();
@@ -323,8 +330,11 @@ public without sharing class AIAgentManager {
                     successResult.outputTokens = outputTokensUsed;
                     successResult.latencyMilliseconds = System.currentTimeMillis() - turnStartMilliseconds;
                     successResult.replyText = modelResponse.textContent;
+                    successResult.selectedPromptTemplateId = selectedPromptTemplate == null ? null : selectedPromptTemplate.Id;
+                    successResult.selectedPromptTemplateVersion = selectedPromptTemplate == null ? null : selectedPromptTemplate.Version__c;
+                    successResult.externalReference = providerSession.id;
 
-                    // [27] An empty reply counts as a failure
+                    // [25] An empty reply counts as a failure
                     if (String.isBlank(modelResponse.textContent)) {
 
                         successResult.errorMessage = 'The provider returned an empty reply.';
@@ -335,7 +345,7 @@ public without sharing class AIAgentManager {
 
                     successResult.isSuccessful = true;
 
-                    // [28] Look for a trailing {"suggested_workflow_action": "<DeveloperName>"} line. Only an action that was offered is accepted. The line is removed from the visible reply unless it was the whole reply (a blank reply would be rejected by the next request). Anything wrong leaves the reply as it is.
+                    // [26] Look for a trailing {"suggested_workflow_action": "<DeveloperName>"} line. Only an action that was offered is accepted. The line is removed from the visible reply unless it was the whole reply (a blank reply would be rejected by the next request). Anything wrong leaves the reply as it is.
                     Integer suggestionStart = modelResponse.textContent.lastIndexOf('{');
 
                     if (suggestionStart >= 0 && modelResponse.textContent.substring(suggestionStart).contains(AIAssistApplicationConstants.SUGGESTED_WORKFLOW_ACTION_JSON_KEY) && availableWorkflowActions != null) {
@@ -364,14 +374,14 @@ public without sharing class AIAgentManager {
                         }
                     }
 
-                    // [29] Return the final reply
+                    // [27] Return the final reply
                     return successResult;
                 }
 
-                // [30] Stop if this was the last pass. Tool calls were switched off, so this only happens if the provider ignored that, and their results could never be sent back.
+                // [28] Stop if this was the last pass. Tool calls were switched off, so this only happens if the provider ignored that, and their results could never be sent back.
                 if (isLastIteration) break;
 
-                // [31] Run the tools the model asked for. Every call gets a result because providers reject a reply that leaves one unanswered; a skipped call gets an explanation instead.
+                // [29] Run the tools the model asked for. Every call gets a result because providers reject a reply that leaves one unanswered; a skipped call gets an explanation instead.
                 List<Object> toolResults = new List<Object>();
 
                 for (Integer toolIndex = 0; toolIndex < modelResponse.toolCalls.size(); toolIndex++) {
@@ -385,20 +395,40 @@ public without sharing class AIAgentManager {
                         continue;
                     }
 
+                    // [30] Switch to the prompt template the model chose, and rebuild the system prompt without the list of choices so the next pass answers with the chosen template alone. A name that is not on the list changes nothing
+                    if (toolCall.name == AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_NAME && !routingTemplateByDeveloperName.isEmpty()) {
+
+                        AIPromptTemplate__c chosenTemplate = toolCall.arguments == null ? null : routingTemplateByDeveloperName.get(String.valueOf(toolCall.arguments.get(AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_ARGUMENT)));
+
+                        if (chosenTemplate == null) {
+
+                            toolResults.add(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN);
+
+                            continue;
+                        }
+
+                        promptTemplate = chosenTemplate;
+                        selectedPromptTemplate = chosenTemplate;
+                        systemPromptText = buildSystemPromptText(agent, promptTemplate, new List<AIPromptTemplate__c>(), availableWorkflowActions);
+                        toolResults.add(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_SELECTED);
+
+                        continue;
+                    }
+
                     AIDataSource__c dataSource = dataSourceByToolName.get(toolCall.name);
                     trace.startStep(Label.AI_Step_Reading_Data, dataSource == null ? null : dataSource.Id);
 
                     Object toolResult;
                     Boolean toolSucceeded = true;
 
-                    // [32] Run the data source. A failing tool does not end the turn: it is logged and the model is only told it failed, so it can react without seeing the real error.
+                    // [31] Run the data source. A failing tool does not end the turn: it is logged and the model is only told it failed, so it can react without seeing the real error.
                     try {
 
                         if (dataSource == null) throw new AIAgentManagerException('The model requested an unknown tool "' + toolCall.name + '".');
 
                         List<Object> toolRecords = AIDataSourceDispatcher.runDataSource(dataSource.Id, agent.Id, String.isBlank(conversation.RelatedRecordId__c) ? null : (Id) conversation.RelatedRecordId__c, toolCall.arguments, conversation.Id);
 
-                        // [33] Say so plainly when nothing was found, so the model stops retrying. Otherwise keep the records and note which objects and fields were sent.
+                        // [32] Say so plainly when nothing was found, so the model stops retrying. Otherwise keep the records and note which objects and fields were sent.
                         if (toolRecords == null || toolRecords.isEmpty()) {
 
                             toolResult = AIAssistApplicationConstants.TOOL_RESULT_NO_RECORDS_FOUND;
@@ -430,7 +460,7 @@ public without sharing class AIAgentManager {
                         toolSucceeded = false;
                     }
 
-                    // [34] Close the tool step. A tool the model made up still counts as a data source step, not a provider call.
+                    // [33] Close the tool step. A tool the model made up still counts as a data source step, not a provider call.
                     AIExecutionStepTracker.StepEntry toolStep = trace.endStep(toolSucceeded);
 
                     if (toolStep != null) {
@@ -442,12 +472,12 @@ public without sharing class AIAgentManager {
                     toolResults.add(toolResult);
                 }
 
-                // [35] Keep the tool calls and results to add to the conversation on the next pass
+                // [34] Keep the tool calls and results to add to the conversation on the next pass
                 previousToolCalls = modelResponse.toolCalls;
                 previousToolResults = toolResults;
             }
 
-            // [36] If a callout could not complete, return a failure that is retryable while attempts remain. It carries the tokens already spent so a retry adds to them.
+            // [35] If a callout could not complete, return a failure that is retryable while attempts remain. It carries the tokens already spent so a retry adds to them.
             if (calloutErrorMessage != null) {
 
                 AgentResult calloutFailure = new AgentResult();
@@ -457,23 +487,25 @@ public without sharing class AIAgentManager {
                 calloutFailure.inputTokens = inputTokensUsed;
                 calloutFailure.outputTokens = outputTokensUsed;
                 calloutFailure.isRetryable = isCalloutErrorRetryable && attemptNumber < maxAttempts;
+                calloutFailure.externalReference = providerSession.id;
 
                 return calloutFailure;
             }
 
-            // [37] The loop ended without a final reply, so return a limit failure
+            // [36] The loop ended without a final reply, so return a limit failure
             AgentResult limitFailure = new AgentResult();
             limitFailure.errorMessage = 'Reached the maximum of ' + maxToolCallingIterations + ' tool-calling iterations without a final response.';
             limitFailure.failureReason = AIAssistApplicationConstants.FAILURE_REASON_LIMIT_REACHED;
             limitFailure.totalTokensUsed = totalTokensUsed;
             limitFailure.inputTokens = inputTokensUsed;
             limitFailure.outputTokens = outputTokensUsed;
+            limitFailure.externalReference = providerSession.id;
 
             return limitFailure;
 
         } catch (Exception ex) {
 
-            // [38] Anything unexpected is logged and returned as a failed result. Tokens already spent are still billed, so they are included.
+            // [37] Anything unexpected is logged and returned as a failed result. Tokens already spent are still billed, so they are included.
             AIPlatformLogManager.logException(ex, 'AIAgentManager', 'executeAiMessage');
 
             AgentResult failure = new AgentResult();
@@ -481,15 +513,64 @@ public without sharing class AIAgentManager {
             failure.totalTokensUsed = totalTokensUsed;
             failure.inputTokens = inputTokensUsed;
             failure.outputTokens = outputTokensUsed;
+            failure.externalReference = providerSession.id;
             failure.failureReason = ex instanceof AIAgentManagerException || ex instanceof AIAssistSettingsService.AIAssistSettingsServiceException ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR : (ex.getTypeName().contains('ResponseHandlerException') || ex instanceof AIProvider.AIProviderException ? AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR : AIAssistApplicationConstants.FAILURE_REASON_OTHER);
 
             return failure;
 
         } finally {
 
-            // [39] Stop holding back PII mapping saves. The mappings stay cached in memory; the caller must still save them.
+            // [38] Stop holding back PII mapping saves. The mappings stay cached in memory; the caller must still save them.
             AIPiiMappingService.isDeferringWrites = false;
         }
+    }
+
+    // Builds the system prompt: the agent's persona, the prompt template, the templates the model may switch to, the language and the workflow actions it may suggest. Returns null when there is nothing to say.
+    private static String buildSystemPromptText(AIAgent__c agent, AIPromptTemplate__c promptTemplate, List<AIPromptTemplate__c> routingTemplates, List<AIWorkflowAction__c> availableWorkflowActions) {
+
+        // [1] Start with the agent persona
+        List<String> systemPromptParts = new List<String>();
+
+        if (String.isNotBlank(agent.AIAgentPersona__c)) systemPromptParts.add('Persona: ' + agent.AIAgentPersona__c);
+
+        // [2] Add the prompt template's wording
+        if (promptTemplate != null) {
+
+            if (String.isNotBlank(promptTemplate.AISystemContext__c)) systemPromptParts.add(promptTemplate.AISystemContext__c);
+            if (String.isNotBlank(promptTemplate.AIPrompt__c)) systemPromptParts.add(promptTemplate.AIPrompt__c);
+            if (String.isNotBlank(promptTemplate.AITone__c)) systemPromptParts.add('Tone: ' + promptTemplate.AITone__c);
+            if (String.isNotBlank(promptTemplate.AIExclusionRules__c)) systemPromptParts.add('Do not: ' + promptTemplate.AIExclusionRules__c);
+        }
+
+        // [3] List the other templates the model may switch to, with what each is for
+        if (routingTemplates != null && !routingTemplates.isEmpty()) {
+
+            systemPromptParts.add(AIAssistApplicationConstants.PROMPT_TEMPLATE_PROMPT_INSTRUCTION);
+
+            for (AIPromptTemplate__c routingTemplate : routingTemplates) {
+
+                systemPromptParts.add(routingTemplate.DeveloperName__c + ': ' + routingTemplate.Description__c);
+            }
+        }
+
+        // [4] Tell the model to reply in the user's language. Labels are translated by the platform but agent text is not. A turn runs as the user who sent the message, so this is their language.
+        systemPromptParts.add(String.format(AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION, new List<String>{UserInfo.getLanguage()}));
+
+        // [5] List the workflow actions the model may suggest (never run) and how to name one
+        if (availableWorkflowActions != null && !availableWorkflowActions.isEmpty()) {
+
+            systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_INSTRUCTION);
+
+            for (AIWorkflowAction__c workflowAction : availableWorkflowActions) {
+
+                systemPromptParts.add(workflowAction.DeveloperName__c + ': ' + (String.isNotBlank(workflowAction.Description__c) ? workflowAction.Description__c : workflowAction.OutputDescription__c));
+            }
+
+            systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_JSON_INSTRUCTION);
+        }
+
+        // [6] Join the prompt and remove blank lines and repeated spaces to save tokens on every pass. Single line breaks stay so authored lists remain readable.
+        return systemPromptParts.isEmpty() ? null : String.join(systemPromptParts, '\n').replaceAll('[ \\t]*\\n\\s*', '\n').replaceAll('[ \\t]+', ' ').trim();
     }
 
     // Turns a setting like "200,201" into a set of numbers. Anything that is not a number is skipped.

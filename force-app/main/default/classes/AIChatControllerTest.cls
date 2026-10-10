@@ -27,6 +27,8 @@ Version      Author                   Description
     // testScenario7: Debug, export and PII views are refused with the not authorised label for a user without the setting, and work with it.
     // testScenario8: Feedback, terms and a retry work, and feedback is refused while the setting is off.
     // testScenario9: An unexpected failure gives the window only the generic label and is logged.
+    // testScenario10: A slash command names a prompt template of the agent -> the message is sent and stores that template for the turn.
+    // testScenario11: A slash command names a template that is inactive or does not exist -> the command is refused with the label and nothing is stored.
 
     @TestSetup static void setup() {
 
@@ -354,5 +356,80 @@ Version      Author                   Description
         // [3] Check the generic label was shown and the failure logged
         Assert.areEqual(Label.AI_Error_Generic, shown, 'Only the generic label should be shown.');
         Assert.areEqual(1, logCount, 'The failure should be logged once.');
+    }
+
+    @IsTest static void testScenario10() {
+
+        // [1] Create an agent open to all users with a template, and install the answering provider mock
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+        update agent;
+
+        AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+        template.DeveloperName__c = 'draft_client_email';
+        insert template;
+
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [2] Supply a slash command that names the template
+        AIChatCommandService.testCommands = new List<AIChatCommand__mdt>{
+            new AIChatCommand__mdt(Command__c = '/email', IsActive__c = true, PromptTemplateDeveloperName__c = 'draft_client_email')
+        };
+
+        // [3] Send the command
+        AIChatDataStructure.SendResult result;
+
+        Test.startTest();
+            result = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{ 'agentId' => agent.Id, 'text' => '/email' }));
+        Test.stopTest();
+
+        // [4] Read the stored user message and the reply
+        AIConversationMessage__c userMessage = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE Sender__c = :AIAssistApplicationConstants.SENDER_USER];
+        AIConversationMessage__c reply = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+
+        // [5] Check the command was sent with the template and the reply was answered with it
+        Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_SENT, result.status, 'The command should be sent.');
+        Assert.areEqual(template.Id, userMessage.AIPromptTemplate__c, 'The message should store the template the command named.');
+        Assert.areEqual(template.Id, reply.AIPromptTemplate__c, 'The reply should be answered with that template.');
+    }
+
+    @IsTest static void testScenario11() {
+
+        // [1] Create an agent open to all users with an inactive template and install the answering provider mock
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+        update agent;
+
+        AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+        template.DeveloperName__c = 'retired_template';
+        template.IsActive__c = false;
+        insert template;
+
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [2] Supply slash commands that name the inactive template and a template that does not exist
+        AIChatCommandService.testCommands = new List<AIChatCommand__mdt>{
+            new AIChatCommand__mdt(Command__c = '/retired', IsActive__c = true, PromptTemplateDeveloperName__c = 'retired_template'),
+            new AIChatCommand__mdt(Command__c = '/missing', IsActive__c = true, PromptTemplateDeveloperName__c = 'made_up')
+        };
+
+        // [3] Send both commands
+        AIChatDataStructure.SendResult retired;
+        AIChatDataStructure.SendResult missing;
+
+        Test.startTest();
+            retired = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{ 'agentId' => agent.Id, 'text' => '/retired' }));
+            missing = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{ 'agentId' => agent.Id, 'text' => '/missing' }));
+        Test.stopTest();
+
+        // [4] Count the stored messages
+        Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c];
+
+        // [5] Check both are refused with the label and nothing is stored
+        Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR, retired.status, 'A command for an inactive template should be refused.');
+        Assert.areEqual(Label.AI_Error_Prompt_Template_Unavailable, retired.message, 'The refusal should be the Custom Label.');
+        Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR, missing.status, 'A command for a missing template should be refused.');
+        Assert.areEqual(Label.AI_Error_Prompt_Template_Unavailable, missing.message, 'The refusal should be the Custom Label.');
+        Assert.areEqual(0, messageCount, 'Nothing should be stored for a refused command.');
     }
 }

@@ -28,6 +28,7 @@ Version      Author                   Description
     // testScenario8: Retry a closed conversation, one with no user message, another user's, a wrong-type Id and a busy one -> each is refused with its label.
     // testScenario9: Close the user's own conversations with a given and the default reason, and another user's, a wrong-type and a null Id -> own ones close and the rest are reported as not found.
     // testScenario10: Estimate tokens for blank, exact, one-over and longest text -> blank is zero, an exact multiple is exact and anything over rounds up.
+    // testScenario11: Send naming one of the agent's templates, and sending without one -> the message stores the named template and the reply is answered with it, while a message that names none stores none.
 
     @TestSetup static void setup() {
 
@@ -420,5 +421,36 @@ Version      Author                   Description
         Assert.areEqual(3, exact, 'An exact multiple should be exact.');
         Assert.areEqual(4, rounded, 'One character over should round up.');
         Assert.areEqual(Math.ceil(AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS / (Decimal) perToken), huge, 'The longest allowed message should round up.');
+    }
+
+    @IsTest static void testScenario11() {
+
+        // [1] Create a chat user, an agent and two templates, the first of which is the default
+        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].IsDefault__c = true;
+        insert templates;
+
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+        AIConversationMessage__c named;
+
+        // [2] Send a message that names the second template as the chat user
+        System.runAs(chatUser) {
+            Test.startTest();
+                named = AIConversationMessageService.sendMessage(null, agent.Id, 'Write the email', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null, templates[1].Id);
+            Test.stopTest();
+        }
+
+        // [3] Read back the stored message and the reply
+        AIConversationMessage__c storedMessage = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE Id = :named.Id];
+        AIConversationMessage__c reply = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE AIConversation__c = :named.AIConversation__c AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+
+        // [4] Check the message stored the template and the reply used it
+        Assert.areEqual(templates[1].Id, storedMessage.AIPromptTemplate__c, 'The message should store the template it named.');
+        Assert.areEqual(templates[1].Id, reply.AIPromptTemplate__c, 'The reply should be answered with the named template.');
     }
 }

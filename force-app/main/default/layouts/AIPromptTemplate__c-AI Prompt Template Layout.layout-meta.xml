@@ -22,6 +22,10 @@
                 <field>Name</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>DeveloperName__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Required</behavior>
                 <field>Description__c</field>
             </layoutItems>
@@ -34,6 +38,10 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>IsActive__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>IsDefault__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>

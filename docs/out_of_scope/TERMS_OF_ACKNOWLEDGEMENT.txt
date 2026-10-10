@@ -1,0 +1,85 @@
+TERMS OF ACKNOWLEDGEMENT: CONFIRMATION EMAIL
+=============================================
+
+Status: OUT OF SCOPE. Designed, not built. Kept here so the design is not lost.
+
+When a user accepts the AI Assist usage terms, send them an email confirming the version and the date. It is a
+receipt, and it supports compliance evidence.
+
+Replaces the old AI-Assist field AIAssistSettings__c.AIAcknowledgeEmailTemplateId__c, which held a template Id
+but was never read by any Apex, trigger or LWC, so nothing ever sent the email.
+
+
+1. WHERE IT HOOKS IN
+--------------------
+A new last step in AIChatTermsService.acknowledgeTerms, after the AITermsAcknowledgment__c insert succeeds.
+No trigger. That service is the only writer of acknowledgments, so data loads and imports do not send email.
+
+
+2. NEW SETTINGS (AIAssistSettings__c)
+-------------------------------------
+  AcknowledgementEmailTemplate__c   Text(80)  Developer name of the EmailTemplate, not an Id.
+                                              Ids differ in every org, and in every subscriber org of a managed
+                                              package. Blank means no email, so there is no separate on/off field.
+  AcknowledgementEmailFrom__c       Text(80)  Optional. Display name of an org-wide email address. Blank sends
+                                              from the user who accepted.
+
+Add both fields to the three permission sets.
+
+
+3. NEW CLASS: AIChatTermsEmailService
+-------------------------------------
+sendConfirmation(Id userId, AITermsAcknowledgment__c acknowledgment), called from AIChatTermsService.
+  Step 1: Read the template name from the settings. Return if blank.
+  Step 2: Find the EmailTemplate by developer name.
+  Step 3: Render it with Messaging.renderStoredEmailTemplate(templateId, userId, acknowledgmentId). The user is
+          the recipient and the acknowledgment row is the related record, so the template can merge
+          TermsVersion__c, AcknowledgedDate__c and SignatureText__c.
+  Step 4: Send a SingleEmailMessage with setTargetObjectId(userId), setSaveAsActivity(false) and
+          setTreatTargetObjectAsRecipient(true). Do not use setToAddresses.
+  Step 5: If AcknowledgementEmailFrom__c is set, look up the org-wide address and call
+          setOrgWideEmailAddressId.
+
+
+4. FAILURE HANDLING
+-------------------
+A failed email must never undo or block the acknowledgment.
+  - The whole send is wrapped in try/catch.
+  - A missing template, email deliverability turned off (common in sandboxes) or a send error is logged with
+    AIPlatformLogManager.logCustomMessage, and acceptance carries on.
+  - This is deliberately different from the insert in AIChatTermsService, which throws if it fails.
+
+
+5. TEMPLATE CONTENT
+-------------------
+Subject: You have accepted the AI Assist usage terms (version {{{RelatedTo.TermsVersion__c}}})
+Body:    Greeting by first name, then a receipt:
+           Terms version   {{{RelatedTo.TermsVersion__c}}}
+           Accepted on     {{{RelatedTo.AcknowledgedDate__c}}}
+           Signed as       {{{RelatedTo.SignatureText__c}}}
+         A button linking to AIAssistSettings__c.AIUsagePolicyUrl__c, and a line telling the user to contact
+         their administrator if they did not accept, and that they will be asked again when the terms version
+         changes.
+
+Mockup: https://claude.ai/artifact/4N7aMNSRhh2xvBFytG8DxS
+
+
+6. TESTS
+--------
+  - No template configured: Limits.getEmailInvocations() is 0.
+  - Template configured: one email invocation. Test setup inserts an EmailTemplate.
+  - Missing template and a forced send failure: the acknowledgment row still exists and a log entry is written.
+
+
+7. OPEN DECISIONS
+-----------------
+  1. Ship a default template (AIAssist_Terms_Acknowledged) in the package? Recommended: yes. Templates in a
+     managed package are locked, so the setting must still allow pointing at the admin's own template.
+  2. Org-wide sender address setting? Recommended: yes, optional.
+  3. Record that the email went out (EmailSentDate__c on AITermsAcknowledgment__c)? Recommended: no, a log
+     entry on failure is enough unless auditors need proof of delivery.
+
+
+8. DOCS TO UPDATE IF BUILT
+--------------------------
+  01_OBJECT_MODEL.txt (two new settings fields), 02_APEX.txt (AIChatTermsEmailService).

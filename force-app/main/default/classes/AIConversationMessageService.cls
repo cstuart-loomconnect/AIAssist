@@ -43,6 +43,13 @@ public without sharing class AIConversationMessageService {
     // As above, but continues conversationId when it is still Active, the user's own and on the same agent: the chat window passes the one it has open. Anything else (blank, closed, over its caps) starts a new conversation, so check the returned message's AIConversation__c.
     public static AIConversationMessage__c sendMessage(Id conversationId, Id agentId, String messageBody, String channel, String relatedObjectApiName, Id relatedRecordId) {
 
+        // [1] Send without asking for a prompt template
+        return sendMessage(conversationId, agentId, messageBody, channel, relatedObjectApiName, relatedRecordId, null);
+    }
+
+    // As above, and answers the message with promptTemplateId, one of the agent's active Prompt Templates, instead of the agent's default (a slash command's template arrives this way). A blank Id, or one that is no longer active on the agent when the turn runs, leaves the choice to the default and the model.
+    public static AIConversationMessage__c sendMessage(Id conversationId, Id agentId, String messageBody, String channel, String relatedObjectApiName, Id relatedRecordId, Id promptTemplateId) {
+
         try {
 
             // [1] Check the request is allowed
@@ -118,7 +125,7 @@ public without sharing class AIConversationMessageService {
             Boolean isHeld = shouldStartProcessing && AIUsageLimitService.isInFlightCapReached();
 
             // [10] Build and insert the user's message
-            AIConversationMessage__c userMessage = new AIConversationMessage__c(AIConversation__c = conversation.Id, Sender__c = AIAssistApplicationConstants.SENDER_USER, MessageBody__c = messageBody, ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED, IsAwaitingCapacity__c = isHeld, TokenCount__c = chatContext.agent.TokenTrackingMethod__c == AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE ? estimatedTokens : null);
+            AIConversationMessage__c userMessage = new AIConversationMessage__c(AIConversation__c = conversation.Id, Sender__c = AIAssistApplicationConstants.SENDER_USER, MessageBody__c = messageBody, AIPromptTemplate__c = promptTemplateId, ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED, IsAwaitingCapacity__c = isHeld, TokenCount__c = chatContext.agent.TokenTrackingMethod__c == AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE ? estimatedTokens : null);
 
             AIMessagingDataService.insertOrThrow(new List<SObject>{ userMessage });
 

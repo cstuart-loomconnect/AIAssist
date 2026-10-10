@@ -28,6 +28,12 @@ Version      Author                   Description
     // testScenario8: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
     // testScenario9: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
     // testScenario10: The agent's persona opens the system prompt. A rejected credential, a retired model and an exhausted quota are never retried even when their status is listed as retryable, and say which record to fix; rate limiting is retried.
+    // testScenario11: Other prompt templates are offered and the model picks one -> the first request lists them and offers the select tool, the second request answers with the picked template alone, and the result names the picked template and its version.
+    // testScenario12: The model picks a template that was never offered, and a turn has no other templates -> the unknown pick changes nothing and is answered, and with nothing to pick from the tool is not offered.
+    // testScenario13: The Anthropic Agent API with a session saved on the conversation -> the saved session is looked up and continued, only the latest message is sent, and the result carries the session id.
+    // testScenario14: A stateless provider with a reference saved on the conversation -> the reference is ignored, no session is looked up, and the result carries no reference.
+    // testScenario15: The Anthropic Agent API on a retry -> a new session is started instead of continuing the saved one, and the result carries the new session id.
+    // testScenario16: The Anthropic Agent API when sending the message fails after a session was started -> the failed result still carries the session id.
 
     @TestSetup static void setup() {
 
@@ -92,7 +98,7 @@ Version      Author                   Description
 
         // [4] Run one turn with the provider
         Test.startTest();
-            result = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, new List<AIDataSource__c>(), actions, 1, trace);
+            result = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, new List<AIDataSource__c>(), actions, 1, trace);
         Test.stopTest();
 
         // [5] Read back what was sent to the provider
@@ -176,7 +182,7 @@ Version      Author                   Description
 
         // [5] Run one turn with the provider
         Test.startTest();
-            result = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, dataSources, new List<AIWorkflowAction__c>(), 1, trace);
+            result = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, dataSources, new List<AIWorkflowAction__c>(), 1, trace);
         Test.stopTest();
 
         // [6] Read back what was sent to the provider
@@ -234,7 +240,7 @@ Version      Author                   Description
 
         // [3] Run one turn with the provider
         Test.startTest();
-            result = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 1, new AIExecutionStepTracker(conversation.Id, null, false, false));
+            result = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 1, new AIExecutionStepTracker(conversation.Id, null, false, false));
         Test.stopTest();
 
         // [4] Read back what was sent to the provider
@@ -296,9 +302,9 @@ Version      Author                   Description
 
         // [3] Run the first, second and last attempts
         Test.startTest();
-            first = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            second = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 2, null);
-            last = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 3, null);
+            first = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            second = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 2, null);
+            last = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 3, null);
         Test.stopTest();
 
         // [4] Check which attempts can be retried and why they failed
@@ -345,8 +351,8 @@ Version      Author                   Description
 
         // [3] Run two turns
         Test.startTest();
-            timedOut = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            unreachable = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
+            timedOut = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            unreachable = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
         Test.stopTest();
 
         // [4] Check each failure is classified and retryable as expected
@@ -390,7 +396,7 @@ Version      Author                   Description
 
         // [3] Run one turn with the provider
         Test.startTest();
-            result = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
+            result = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
         Test.stopTest();
 
         // [4] Check the turn failed for good and kept the provider's message
@@ -443,7 +449,7 @@ Version      Author                   Description
         // [4] Run a turn with each badly configured model
         Test.startTest();
             for (AIModelConfiguration__c badModel : new List<AIModelConfiguration__c>{ noCredential, wrongCredential, wrongPath, wrongProvider }) {
-                results.add(AIAgentManager.executeAiMessage(agent, badModel, template, conversation, history, null, null, 1, null));
+                results.add(AIAgentManager.executeAiMessage(agent, badModel, template, null, conversation, history, null, null, 1, null));
             }
         Test.stopTest();
 
@@ -499,7 +505,7 @@ Version      Author                   Description
 
         // [3] Run one turn with the provider
         Test.startTest();
-            result = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, trace);
+            result = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, trace);
         Test.stopTest();
 
         // [4] Read back what the model was told on the second call
@@ -558,8 +564,8 @@ Version      Author                   Description
 
         // [4] Run two turns
         Test.startTest();
-            limited = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            empty = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
+            limited = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            empty = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
         Test.stopTest();
 
         // [5] Check the limit and the blank reply both fail the turn
@@ -633,11 +639,11 @@ Version      Author                   Description
 
         // [4] Run five turns
         Test.startTest();
-            reply = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            rejected = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            retired = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            noQuota = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
-            rateLimited = AIAgentManager.executeAiMessage(agent, model, template, conversation, history, null, null, 1, null);
+            reply = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            rejected = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            retired = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            noQuota = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
+            rateLimited = AIAgentManager.executeAiMessage(agent, model, template, null, conversation, history, null, null, 1, null);
         Test.stopTest();
 
         // [5] Read back the first request
@@ -661,5 +667,304 @@ Version      Author                   Description
 
         Assert.areEqual(AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED, rateLimited.failureReason, 'A 429 is rate limiting.');
         Assert.isTrue(rateLimited.isRetryable, 'Rate limiting is retried.');
+    }
+
+    @IsTest static void testScenario11() {
+
+        // [1] Build an Anthropic model, an agent with a default template, and two other described templates
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 3, false);
+        templates[0].AIPrompt__c = 'Default wording.';
+        templates[0].IsDefault__c = true;
+        templates[1].AIPrompt__c = 'Write the email in a warm tone.';
+        templates[1].DeveloperName__c = 'draft_client_email';
+        templates[1].Description__c = 'Drafts an email to the client.';
+        templates[2].AIPrompt__c = 'Summarise the account in five bullets.';
+        templates[2].DeveloperName__c = 'summarise_account';
+        templates[2].Description__c = 'Summarises an account.';
+        insert templates;
+
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 1, false);
+        templates = [SELECT Id, Name, DeveloperName__c, Description__c, IsDefault__c, AISystemContext__c, AIPrompt__c, AITone__c, AIExclusionRules__c, Version__c FROM AIPromptTemplate__c WHERE Id IN :templates ORDER BY DeveloperName__c NULLS FIRST];
+        AIPromptTemplate__c chosenTemplate = templates[2];
+
+        // [2] Script the model picking a template, then answering
+        HttpResponse pickResponse = new HttpResponse();
+        pickResponse.setStatusCode(200);
+        pickResponse.setBody('{"content":[{"type":"tool_use","id":"toolu_1","name":"select_prompt_template","input":{"template":"summarise_account"}}],"usage":{"input_tokens":4,"output_tokens":2}}');
+
+        HttpResponse replyResponse = new HttpResponse();
+        replyResponse.setStatusCode(200);
+        replyResponse.setBody('{"content":[{"type":"text","text":' + JSON.serialize('Here is the summary.') + '}],"usage":{"input_tokens":10,"output_tokens":5}}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(pickResponse);
+        mock.script.add(replyResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult result;
+
+        // [3] Run one turn with the default template and the other two offered
+        Test.startTest();
+            result = AIAgentManager.executeAiMessage(agent, model, templates[0], new List<AIPromptTemplate__c>{ templates[1], templates[2] }, conversation, history, null, null, 1, null);
+        Test.stopTest();
+
+        // [4] Read back what was sent to the provider
+        String firstBody = mock.requests[0].getBody();
+        String secondBody = mock.requests[1].getBody();
+
+        // [5] Check the choices were offered, then the picked template alone was used
+        Assert.isTrue(result.isSuccessful, 'The turn succeeded after the pick.');
+        Assert.areEqual(2, mock.requests.size(), 'Two provider calls.');
+
+        Assert.isTrue(firstBody.contains('"name":"select_prompt_template"'), 'The first request offers the select tool.');
+        Assert.isTrue(firstBody.contains('draft_client_email: Drafts an email to the client.'), 'The first request describes each template.');
+        Assert.isTrue(firstBody.contains('Default wording.'), 'The first request starts with the default template.');
+        Assert.isFalse(firstBody.contains('Summarise the account in five bullets.'), 'A template is not sent until it is picked.');
+
+        Assert.isTrue(secondBody.contains('Summarise the account in five bullets.'), 'The second request uses the picked template.');
+        Assert.isFalse(secondBody.contains('Default wording.'), 'The default wording is replaced by the picked template.');
+        Assert.isFalse(secondBody.contains('draft_client_email: Drafts an email to the client.'), 'The list of choices is dropped once one is picked.');
+        Assert.isTrue(secondBody.contains(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_SELECTED), 'The model is told the pick worked.');
+
+        Assert.areEqual(chosenTemplate.Id, result.selectedPromptTemplateId, 'The result names the template that produced the reply.');
+        Assert.areEqual(chosenTemplate.Version__c, result.selectedPromptTemplateVersion, 'And its version.');
+    }
+
+    @IsTest static void testScenario12() {
+
+        // [1] Build an Anthropic model, an agent, a default template and one other described template
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].AIPrompt__c = 'Default wording.';
+        templates[0].IsDefault__c = true;
+        templates[1].AIPrompt__c = 'Write the email in a warm tone.';
+        templates[1].DeveloperName__c = 'draft_client_email';
+        templates[1].Description__c = 'Drafts an email to the client.';
+        insert templates;
+
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 1, false);
+
+        // [2] Script the model picking a name that was never offered, then answering, and then a plain answer for the second turn
+        HttpResponse pickResponse = new HttpResponse();
+        pickResponse.setStatusCode(200);
+        pickResponse.setBody('{"content":[{"type":"tool_use","id":"toolu_1","name":"select_prompt_template","input":{"template":"made_up"}}],"usage":{"input_tokens":4,"output_tokens":2}}');
+
+        HttpResponse replyResponse = new HttpResponse();
+        replyResponse.setStatusCode(200);
+        replyResponse.setBody('{"content":[{"type":"text","text":' + JSON.serialize('Plain answer.') + '}],"usage":{"input_tokens":10,"output_tokens":5}}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(pickResponse);
+        mock.script.add(replyResponse);
+        mock.script.add(replyResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult unknownPick;
+        AIAgentManager.AgentResult nothingToPick;
+
+        // [3] Run one turn with a template on offer and one with none on offer
+        Test.startTest();
+            unknownPick = AIAgentManager.executeAiMessage(agent, model, templates[0], new List<AIPromptTemplate__c>{ templates[1] }, conversation, history, null, null, 1, null);
+            nothingToPick = AIAgentManager.executeAiMessage(agent, model, templates[0], new List<AIPromptTemplate__c>(), conversation, history, null, null, 1, null);
+        Test.stopTest();
+
+        // [4] Read back what was sent to the provider
+        String afterUnknownBody = mock.requests[1].getBody();
+        String nothingToPickBody = mock.requests[2].getBody();
+
+        // [5] Check the unknown pick changed nothing and no tool is offered without choices
+        Assert.isTrue(unknownPick.isSuccessful, 'The turn still succeeds after an unknown pick.');
+        Assert.isNull(unknownPick.selectedPromptTemplateId, 'An unknown pick selects nothing.');
+        Assert.isTrue(afterUnknownBody.contains(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN), 'The model is told the name is not on the list.');
+        Assert.isTrue(afterUnknownBody.contains('Default wording.'), 'The default template still answers.');
+
+        Assert.isTrue(nothingToPick.isSuccessful, 'A turn with nothing to pick succeeds.');
+        Assert.isFalse(nothingToPickBody.contains('select_prompt_template'), 'The select tool is not offered when there are no other templates.');
+    }
+
+    @IsTest static void testScenario13() {
+
+        // [1] Build an Anthropic Agent API model, an agent and a conversation that already has a saved session
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT;
+        model.ModelIdentifier__c = 'agent_1';
+        model.EnvironmentId__c = 'env_1';
+        model.ApiPath__c = '/v1/sessions';
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, false)[0];
+        conversation.ExternalReference__c = 'sesn_saved';
+        insert conversation;
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 2, false);
+
+        // [2] Script the lookup of the saved session, the events being accepted, and the agent's answer
+        HttpResponse lookupResponse = new HttpResponse();
+        lookupResponse.setStatusCode(200);
+        lookupResponse.setBody('{"id":"sesn_saved","status":"idle","archived_at":null,"agent":{"type":"agent","id":"agent_1"},"environment_id":"env_1"}');
+        HttpResponse sendResponse = new HttpResponse();
+        sendResponse.setStatusCode(200);
+        sendResponse.setBody('{}');
+        HttpResponse eventsResponse = new HttpResponse();
+        eventsResponse.setStatusCode(200);
+        eventsResponse.setBody('{"data":[{"type":"user.message"},{"type":"agent.message","content":[{"type":"text","text":"Hello again."}]},{"type":"span.model_request_end","model_usage":{"input_tokens":10,"output_tokens":5}},{"type":"session.status_idle","stop_reason":{"type":"end_turn"}}]}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(lookupResponse);
+        mock.script.add(sendResponse);
+        mock.script.add(eventsResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult result;
+
+        // [3] Run one turn
+        Test.startTest();
+            result = AIAgentManager.executeAiMessage(agent, model, null, null, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 1, null);
+        Test.stopTest();
+
+        // [4] Check the saved session was continued and only the latest message went with it
+        Assert.isTrue(result.isSuccessful, 'The turn should succeed.');
+        Assert.areEqual('Hello again.', result.replyText, 'The agent\'s answer should be the reply.');
+        Assert.areEqual('sesn_saved', result.externalReference, 'The result should carry the session id for the caller to save.');
+        Assert.areEqual('GET', mock.requests[0].getMethod(), 'The saved session should be looked up first.');
+        Assert.areEqual('callout:Test_Credential/v1/sessions/sesn_saved', mock.requests[0].getEndpoint(), 'The lookup should be for the saved session.');
+        Assert.areEqual('callout:Test_Credential/v1/sessions/sesn_saved/events', mock.requests[1].getEndpoint(), 'The message should be sent to the saved session.');
+        Assert.isFalse(mock.requests[1].getBody().contains(AIAssistApplicationConstants.ANTHROPIC_AGENT_TRANSCRIPT_HEADING), 'The earlier conversation should not be sent again.');
+    }
+
+    @IsTest static void testScenario14() {
+
+        // [1] Build a stateless Anthropic model and a conversation that has a reference saved on it
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, false)[0];
+        conversation.ExternalReference__c = 'sesn_saved';
+        insert conversation;
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 1, false);
+
+        // [2] Script a plain text reply
+        HttpResponse replyResponse = new HttpResponse();
+        replyResponse.setStatusCode(200);
+        replyResponse.setBody('{"content":[{"type":"text","text":"Hello."}],"usage":{"input_tokens":10,"output_tokens":5}}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(replyResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult result;
+
+        // [3] Run one turn
+        Test.startTest();
+            result = AIAgentManager.executeAiMessage(agent, model, null, null, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 1, null);
+        Test.stopTest();
+
+        // [4] Check the reference was ignored
+        Assert.isTrue(result.isSuccessful, 'The turn should succeed.');
+        Assert.isNull(result.externalReference, 'A stateless provider should return no reference.');
+        Assert.areEqual(1, mock.requests.size(), 'Only the model call should be made, with no session lookup.');
+        Assert.areEqual('callout:Test_Credential/v1/messages', mock.requests[0].getEndpoint(), 'The call should go to the messages endpoint.');
+    }
+
+    @IsTest static void testScenario15() {
+
+        // [1] Build an Anthropic Agent API model, an agent and a conversation that already has a saved session
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT;
+        model.ModelIdentifier__c = 'agent_1';
+        model.EnvironmentId__c = 'env_1';
+        model.ApiPath__c = '/v1/sessions';
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, false)[0];
+        conversation.ExternalReference__c = 'sesn_saved';
+        insert conversation;
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 2, false);
+
+        // [2] Script a new session being started, the events being accepted, and the agent's answer
+        HttpResponse startResponse = new HttpResponse();
+        startResponse.setStatusCode(200);
+        startResponse.setBody('{"id":"sesn_fresh"}');
+        HttpResponse sendResponse = new HttpResponse();
+        sendResponse.setStatusCode(200);
+        sendResponse.setBody('{}');
+        HttpResponse eventsResponse = new HttpResponse();
+        eventsResponse.setStatusCode(200);
+        eventsResponse.setBody('{"data":[{"type":"user.message"},{"type":"agent.message","content":[{"type":"text","text":"Hello again."}]},{"type":"session.status_idle","stop_reason":{"type":"end_turn"}}]}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(startResponse);
+        mock.script.add(sendResponse);
+        mock.script.add(eventsResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult result;
+
+        // [3] Run the turn as the second attempt
+        Test.startTest();
+            result = AIAgentManager.executeAiMessage(agent, model, null, null, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 2, null);
+        Test.stopTest();
+
+        // [4] Check a new session was started, with the earlier conversation written into the message
+        Assert.isTrue(result.isSuccessful, 'The retry should succeed.');
+        Assert.areEqual('sesn_fresh', result.externalReference, 'The result should carry the new session id.');
+        Assert.areEqual('POST', mock.requests[0].getMethod(), 'A new session should be started with no lookup of the saved one.');
+        Assert.areEqual('callout:Test_Credential/v1/sessions', mock.requests[0].getEndpoint(), 'The session should be started on the sessions endpoint.');
+        Assert.isTrue(mock.requests[1].getBody().contains(AIAssistApplicationConstants.ANTHROPIC_AGENT_TRANSCRIPT_HEADING), 'A new session should be given the earlier conversation.');
+    }
+
+    @IsTest static void testScenario16() {
+
+        // [1] Build an Anthropic Agent API model, an agent and a conversation with no saved session
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, false)[0];
+        model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT;
+        model.ModelIdentifier__c = 'agent_1';
+        model.EnvironmentId__c = 'env_1';
+        model.ApiPath__c = '/v1/sessions';
+        insert model;
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+        List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 1, false);
+
+        // [2] Script a new session being started, then the events being refused
+        HttpResponse startResponse = new HttpResponse();
+        startResponse.setStatusCode(200);
+        startResponse.setBody('{"id":"sesn_fresh"}');
+        HttpResponse refusedResponse = new HttpResponse();
+        refusedResponse.setStatusCode(400);
+        refusedResponse.setBody('{"error":{"type":"invalid_request_error","message":"bad events"}}');
+
+        ScriptedMock mock = new ScriptedMock();
+        mock.script.add(startResponse);
+        mock.script.add(refusedResponse);
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        AIAgentManager.AgentResult result;
+
+        // [3] Run one turn
+        Test.startTest();
+            result = AIAgentManager.executeAiMessage(agent, model, null, null, conversation, history, new List<AIDataSource__c>(), new List<AIWorkflowAction__c>(), 1, null);
+        Test.stopTest();
+
+        // [4] Check the turn failed but the session id was still returned, so it can be saved and not orphaned
+        Assert.isFalse(result.isSuccessful, 'The turn should fail.');
+        Assert.areEqual('sesn_fresh', result.externalReference, 'A failed turn should still carry the session that was started.');
     }
 }

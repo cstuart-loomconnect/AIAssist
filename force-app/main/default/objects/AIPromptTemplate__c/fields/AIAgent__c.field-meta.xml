@@ -5,7 +5,7 @@
     <description
   >Links this Prompt Template to the AI Agent it belongs to. The Agent&apos;s standing guardrails apply automatically to every Prompt Template assigned to it.</description>
     <inlineHelpText
-  >Select the Agent this template is assigned to. This template will only be considered for selection when that Agent is active in a conversation, and will inherit its Agent&apos;s settings automatically</inlineHelpText>
+  >Select the Agent this template is assigned to. An Agent can have several templates (for example one per task). This template is only considered when that Agent is active in a conversation, and inherits the Agent&apos;s settings automatically</inlineHelpText>
     <label>AI Agent</label>
     <referenceTo>AIAgent__c</referenceTo>
     <relationshipLabel>AI Prompt Templates</relationshipLabel>

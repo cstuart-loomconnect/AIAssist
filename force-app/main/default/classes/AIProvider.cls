@@ -53,6 +53,8 @@ public without sharing class AIProvider {
     // What a session-based provider keeps between the request builder, the response handler and the next pass of one turn. AIAgentManager makes one per turn and passes it on every request; it is empty for a provider that does not use it.
     public class Session {
         public String id;
+        public String resumeId; // A session saved from an earlier turn of this conversation, set by the manager only for a provider that keeps the conversation. The request builder continues it when it can, else starts a new one.
+        public Boolean isResumed = false; // True when the request builder continued resumeId, so the provider already holds the earlier messages and only the new one is sent.
         public String endpoint; // Where this session's requests are sent. Null until the session exists.
         public Map<String, String> headers = new Map<String, String>(); // Extra headers every request in this session needs.
     }

@@ -260,6 +260,14 @@ public without sharing class AIAssistApplicationConstants {
     public static final String TOOL_RESULT_SKIPPED_TOO_MANY_CALLS = 'Not run: too many tool calls in one step. Ask for fewer tools at once, or answer with the information you already have.';
     public static final String TOOL_RESULT_FAILED = 'This tool failed to run. Answer with the information you already have, or tell the user the information is unavailable.';
 
+    // AIAgentManager - the one built-in tool, which lets the model pick one of the Agent's other Prompt Templates when the user did not (no slash command). It is only offered when there are templates to choose from.
+    public static final String PROMPT_TEMPLATE_TOOL_NAME = 'select_prompt_template';
+    public static final String PROMPT_TEMPLATE_TOOL_ARGUMENT = 'template';
+    public static final String PROMPT_TEMPLATE_TOOL_DESCRIPTION = 'Switch to the prompt template that best fits what the user asked for. Call it before answering, only when the request clearly matches one of the templates listed in the instructions.';
+    public static final String PROMPT_TEMPLATE_PROMPT_INSTRUCTION = 'Prompt templates (if the request clearly matches one, call ' + PROMPT_TEMPLATE_TOOL_NAME + ' with its name before answering; otherwise answer as normal):';
+    public static final String TOOL_RESULT_PROMPT_TEMPLATE_SELECTED = 'The prompt template was selected and its instructions now apply. Answer the user\'s request.';
+    public static final String TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN = 'That is not one of the listed prompt templates. Answer with the instructions you already have.';
+
     // AIAgentManager - AI provider callout request.
     public static final String HTTP_METHOD_POST = 'POST';
     public static final String HTTP_HEADER_CONTENT_TYPE = 'Content-Type';
@@ -321,6 +329,9 @@ public without sharing class AIAssistApplicationConstants {
     public static final String ANTHROPIC_AGENT_STOP_REASON_REQUIRES_ACTION = 'requires_action';
     public static final String ANTHROPIC_AGENT_CONTENT_TYPE_TEXT = 'text';
     public static final String ANTHROPIC_AGENT_EVENTS_PATH = '/events';
+    public static final String ANTHROPIC_AGENT_FIELD_STATUS = 'status';
+    public static final String ANTHROPIC_AGENT_FIELD_ARCHIVED_AT = 'archived_at';
+    public static final String ANTHROPIC_AGENT_SESSION_STATUS_TERMINATED = 'terminated';
     public static final Integer ANTHROPIC_AGENT_MAX_CALLOUT_MILLISECONDS = 120000; // Salesforce's own ceiling for one callout.
     public static final Integer ANTHROPIC_AGENT_MIN_CALLOUT_MILLISECONDS = 2000;
     public static final String ANTHROPIC_AGENT_TRANSCRIPT_HEADING = 'Conversation so far:';

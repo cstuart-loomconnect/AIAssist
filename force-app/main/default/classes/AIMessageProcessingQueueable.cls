@@ -8,9 +8,10 @@ Description: The asynchronous worker that answers one message outside the user's
 
 Step 1: Attach the finalizer so retries, the next message and the lock release happen however the job ends
 Step 2: Load the triggering message, and stand down if the conversation's lock has expired
-Step 3: Load the conversation, agent, model connection, prompt, bounded history (noting any Suggested Action the user ran) and tools
+Step 3: Load the conversation, agent, model connection, prompt template (the one the user asked for, else the default, with the others the model may switch to), bounded history (noting any Suggested Action the user ran) and tools
 Step 4: Run the turn through the AI Agent Manager and save any held PII mappings
-Step 5: Hand a retryable result to the finalizer, otherwise record the outcome
+Step 5: Save the provider's reference to the conversation (the Anthropic Agent API session id) on the conversation
+Step 6: Hand a retryable result to the finalizer, otherwise record the outcome
 
 =================================================================
 =================================================================
@@ -28,6 +29,7 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
         public AIAgent__c agent;
         public AIModelConfiguration__c modelConfiguration;
         public AIPromptTemplate__c promptTemplate;
+        public List<AIPromptTemplate__c> routingPromptTemplates;
         public AIConversation__c conversation;
         public List<AIConversationMessage__c> messageHistory;
         public List<AIDataSource__c> dataSources;
@@ -95,7 +97,7 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             }
 
             // [6] Load the conversation. A missing one is a setup problem, so it is logged once and thrown for the catch below to report as a configuration error
-            List<AIConversation__c> conversationRows = [SELECT Id, AIAgent__c, RelatedObjectAPIName__c, RelatedRecordId__c FROM AIConversation__c WHERE Id = :triggeringMessage.AIConversation__c WITH USER_MODE LIMIT 1];
+            List<AIConversation__c> conversationRows = [SELECT Id, AIAgent__c, ExternalReference__c, RelatedObjectAPIName__c, RelatedRecordId__c FROM AIConversation__c WHERE Id = :triggeringMessage.AIConversation__c WITH USER_MODE LIMIT 1];
 
             if (conversationRows.isEmpty()) {
 
@@ -123,8 +125,9 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
                 throw new AIMessageProcessingQueueableException(Label.AI_Error_Generic);
             }
 
-            // [9] Load the active prompt template. Having none is fine: no system prompt is built
-            AIPromptTemplate__c promptTemplate = getActivePromptTemplate(agent.Id);
+            // [9] Load the prompt template: the one the user's slash command asked for, else the agent's default. Having none is fine, and no system prompt is built from a template. The other templates are kept for the model to switch to
+            AIPromptTemplateService.PromptTemplateChoice promptTemplateChoice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, getRequestedPromptTemplateId(triggeringMessage.Id));
+            AIPromptTemplate__c promptTemplate = promptTemplateChoice.promptTemplate;
 
             // [10] Pass what is known about this turn to the outcome service, so it can record usage even if the turn fails
             responseContext.agentId = agent.Id;
@@ -166,6 +169,7 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.agent = agent;
             responseRequest.modelConfiguration = modelConfiguration;
             responseRequest.promptTemplate = promptTemplate;
+            responseRequest.routingPromptTemplates = promptTemplateChoice.routingTemplates;
             responseRequest.conversation = conversation;
             responseRequest.messageHistory = orderedHistory;
             responseRequest.dataSources = getAssignedDataSources(agent.Id);
@@ -176,32 +180,46 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.trace = new AIExecutionStepTracker(conversationId, triggeringMessageId, AIAssistSettingsService.getUiSettings().ShowExecutionTraceToUser__c == true, AIAssistSettingsService.getSettings().StepCaptureMode__c == AIAssistApplicationConstants.STEP_CAPTURE_FULL);
 
             // [17] Run the turn through the AI Agent Manager
-            AIAgentManager.AgentResult agentResult = AIAgentManager.executeAiMessage(responseRequest.agent, responseRequest.modelConfiguration, responseRequest.promptTemplate, responseRequest.conversation, responseRequest.messageHistory, responseRequest.dataSources, responseRequest.workflowActions, responseRequest.attemptNumber, responseRequest.trace);
+            AIAgentManager.AgentResult agentResult = AIAgentManager.executeAiMessage(responseRequest.agent, responseRequest.modelConfiguration, responseRequest.promptTemplate, responseRequest.routingPromptTemplates, responseRequest.conversation, responseRequest.messageHistory, responseRequest.dataSources, responseRequest.workflowActions, responseRequest.attemptNumber, responseRequest.trace);
 
-            // [18] Add the tokens earlier attempts spent, so the result covers the whole turn
+            // [18] Record the template the model switched to, so the reply names the one that produced it
+            if (agentResult.selectedPromptTemplateId != null) {
+
+                responseContext.promptTemplateId = agentResult.selectedPromptTemplateId;
+                responseContext.promptTemplateVersion = agentResult.selectedPromptTemplateVersion;
+            }
+
+            // [19] Add the tokens earlier attempts spent, so the result covers the whole turn
             agentResult.totalTokensUsed = (agentResult.totalTokensUsed == null ? 0 : agentResult.totalTokensUsed) + priorInputTokens + priorOutputTokens;
             agentResult.inputTokens = (agentResult.inputTokens == null ? 0 : agentResult.inputTokens) + priorInputTokens;
             agentResult.outputTokens = (agentResult.outputTokens == null ? 0 : agentResult.outputTokens) + priorOutputTokens;
             tokensSoFar = agentResult.totalTokensUsed;
             finalizer.recordTokensSpent(agentResult.inputTokens, agentResult.outputTokens);
 
-            // [19] Save the PII mappings tool calls created. They were held in memory so they could not block the next callout, and every callout is done now
+            // [20] Save the PII mappings tool calls created. They were held in memory so they could not block the next callout, and every callout is done now
             AIPiiMappingService.isDeferringWrites = false;
             AIPiiMappingService.saveCached();
 
-            // [20] Leave a retryable result to the finalizer, which schedules a fresh job with fresh limits once this one ends
+            // [21] Save the provider's own reference to the conversation (the Anthropic Agent API session id) when it is new, so the next turn continues it. This is done even when the turn failed, because the session exists at the provider either way. In system mode, because users only read the field.
+            if (String.isNotBlank(agentResult.externalReference) && agentResult.externalReference != conversation.ExternalReference__c) {
+
+                List<Database.SaveResult> referenceResults = Database.update(new List<AIConversation__c>{new AIConversation__c(Id = conversation.Id, ExternalReference__c = agentResult.externalReference)}, false, AccessLevel.SYSTEM_MODE);
+                AIPlatformLogManager.logExceptions(referenceResults, 'AIMessageProcessingQueueable', 'execute');
+            }
+
+            // [22] Leave a retryable result to the finalizer, which schedules a fresh job with fresh limits once this one ends
             if (agentResult.isRetryable) {
 
                 finalizer.scheduleRetry(agentResult.inputTokens, agentResult.outputTokens);
                 return;
             }
 
-            // [21] Record the outcome of the turn
+            // [23] Record the outcome of the turn
             AIMessageOutcomeService.recordAiResponseOutcome(responseContext, agentResult, responseRequest.trace);
 
         } catch (Exception ex) {
 
-            // [22] Log the error and record the turn as failed. A System exception is Other, anything else is a configuration error
+            // [24] Log the error and record the turn as failed. A System exception is Other, anything else is a configuration error
             AIPlatformLogManager.logException(ex, 'AIMessageProcessingQueueable', 'execute');
             AIMessageOutcomeService.recordAiResponseFailure(responseContext, tokensSoFar, ex.getMessage(), !ex.getTypeName().startsWith('System.') ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR : AIAssistApplicationConstants.FAILURE_REASON_OTHER);
         }
@@ -227,17 +245,17 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
         }
     }
 
-    // Gets the agent's active prompt template. None is valid, and with more than one active the most recently edited wins so the answer is stable.
+    // Gets the Prompt Template a slash command asked for on the message, ignoring the user's access: only super users can read that field, but every user's turn must honour their command.
     @TestVisible
-    private static AIPromptTemplate__c getActivePromptTemplate(Id agentId) {
+    private static Id getRequestedPromptTemplateId(Id messageId) {
 
-        // [1] Nothing to find without an agent
-        if (agentId == null) return null;
+        // [1] Nothing was asked for without a message
+        if (messageId == null) return null;
 
-        // [2] Query the newest active template, ignoring the user's access
-        List<AIPromptTemplate__c> templates = [SELECT Id, AISystemContext__c, AIPrompt__c, AITone__c, AIExclusionRules__c, MaxResponseLength__c, Version__c FROM AIPromptTemplate__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE WITH SYSTEM_MODE ORDER BY LastModifiedDate DESC LIMIT 1];
+        // [2] Query the field in system mode
+        List<AIConversationMessage__c> messages = [SELECT AIPromptTemplate__c FROM AIConversationMessage__c WHERE Id = :messageId WITH SYSTEM_MODE LIMIT 1];
 
-        return templates.isEmpty() ? null : templates[0];
+        return messages.isEmpty() ? null : messages[0].AIPromptTemplate__c;
     }
 
     // Gets the agent, ignoring the user's access.

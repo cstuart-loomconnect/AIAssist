@@ -48,7 +48,7 @@ public without sharing class AIChatCommandService {
         List<AIChatDataStructure.CommandOption> options = new List<AIChatDataStructure.CommandOption>();
 
         // [2] Read every command, or the test commands when a test has set them
-        List<AIChatCommand__mdt> allCommands = testCommands != null ? testCommands : [SELECT Id, DeveloperName, Command__c, Description__c, PromptText__c, ObjectAPIName__c, AgentDeveloperName__c, AvailableTo__c, IsActive__c, DisplayOrder__c FROM AIChatCommand__mdt WITH SYSTEM_MODE];
+        List<AIChatCommand__mdt> allCommands = testCommands != null ? testCommands : [SELECT Id, DeveloperName, Command__c, Description__c, PromptText__c, ObjectAPIName__c, AgentDeveloperName__c, PromptTemplateDeveloperName__c, AvailableTo__c, IsActive__c, DisplayOrder__c FROM AIChatCommand__mdt WITH SYSTEM_MODE];
 
         // [3] Find the agent's developer name, because commands can be limited to one agent
         List<AIAgent__c> matchingAgents = [SELECT DeveloperName__c FROM AIAgent__c WHERE Id = :agentId WITH SYSTEM_MODE LIMIT 1];
@@ -93,7 +93,7 @@ public without sharing class AIChatCommandService {
     public static AIChatCommand__mdt findCommand(String commandToken, Id agentId, String objectApiName) {
 
         // [1] Read every command, or the test commands when a test has set them
-        List<AIChatCommand__mdt> allCommands = testCommands != null ? testCommands : [SELECT Id, DeveloperName, Command__c, Description__c, PromptText__c, ObjectAPIName__c, AgentDeveloperName__c, AvailableTo__c, IsActive__c, DisplayOrder__c FROM AIChatCommand__mdt WITH SYSTEM_MODE];
+        List<AIChatCommand__mdt> allCommands = testCommands != null ? testCommands : [SELECT Id, DeveloperName, Command__c, Description__c, PromptText__c, ObjectAPIName__c, AgentDeveloperName__c, PromptTemplateDeveloperName__c, AvailableTo__c, IsActive__c, DisplayOrder__c FROM AIChatCommand__mdt WITH SYSTEM_MODE];
 
         // [2] Find the agent's developer name, because commands can be limited to one agent
         List<AIAgent__c> matchingAgents = [SELECT DeveloperName__c FROM AIAgent__c WHERE Id = :agentId WITH SYSTEM_MODE LIMIT 1];

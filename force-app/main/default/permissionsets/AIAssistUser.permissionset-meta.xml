@@ -28,6 +28,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>AIAgent__c.ExternalReference__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>AIAgent__c.GreetingMessage__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -104,6 +109,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversation__c.ConversationTokenUsage__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversation__c.ExternalReference__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

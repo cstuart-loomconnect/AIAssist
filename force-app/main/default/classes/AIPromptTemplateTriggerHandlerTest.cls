@@ -4,7 +4,7 @@ Class Name: AIPromptTemplateTriggerHandlerTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIPromptTemplateTrigger and AIPromptTemplateTriggerHandler: the version that goes up only when the wording the model is given changes.
+Description: Testing utility for AIPromptTemplateTrigger and AIPromptTemplateTriggerHandler: the version that goes up only when the wording the model is given changes, and the one active default template per agent.
 
 =================================================================
 =================================================================
@@ -23,6 +23,11 @@ Version      Author                   Description
     // testScenario3: Change the wording on 201 templates in bulk -> every one is versioned once with no queries in the update.
     // testScenario4: Settings switched off, wording changed, and the handler called with null input -> nothing is versioned and nothing is thrown.
     // testScenario5: The handler throws unexpectedly during a wording change -> the version is not raised and one platform log is written.
+    // testScenario6: A second active default is inserted for an agent that already has one, with a default for another agent beside it -> only the second default for the same agent is refused with the label.
+    // testScenario7: Two defaults for one agent are inserted together -> the first is saved and the second is refused.
+    // testScenario8: The default is moved by unticking it and ticking another, and then a template is ticked while another is still the default -> the move is saved and the clash is refused, and an unrelated edit to the default is never refused.
+    // testScenario9: The default rule throws unexpectedly -> the second default is not refused and one platform log names the method.
+    // testScenario10: A default that is not active, a Developer Name with capitals or spaces, and a valid Developer Name are inserted -> the first two are refused by their validation rules and the valid one is saved.
 
     @TestSetup static void setup() {
 
@@ -164,5 +169,156 @@ Version      Author                   Description
 
         Assert.areEqual('AIPromptTemplateTriggerHandler', logs[0].ClassName__c, 'The log should name the handler class.');
         Assert.areEqual('handleBeforeUpdate', logs[0].MethodName__c, 'The log should name the failing method.');
+    }
+
+    @IsTest static void testScenario6() {
+
+        // [1] Create two agents and give the first a default template
+        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+        List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
+
+        AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 1, false)[0];
+        firstDefault.IsDefault__c = true;
+        insert firstDefault;
+
+        AIPromptTemplate__c clashingDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 1, false)[0];
+        clashingDefault.IsDefault__c = true;
+
+        AIPromptTemplate__c otherAgentsDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, false)[0];
+        otherAgentsDefault.IsDefault__c = true;
+
+        List<Database.SaveResult> results;
+
+        // [2] Insert a second default for the first agent and a default for the second agent
+        Test.startTest();
+            results = Database.insert(new List<AIPromptTemplate__c>{ clashingDefault, otherAgentsDefault }, false);
+        Test.stopTest();
+
+        // [3] Count the active defaults each agent has
+        Integer firstAgentDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agents[0].Id AND IsDefault__c = TRUE];
+        Integer secondAgentDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agents[1].Id AND IsDefault__c = TRUE];
+
+        // [4] Check only the clash was refused
+        Assert.isFalse(results[0].isSuccess(), 'A second default for the same agent should be refused.');
+        Assert.areEqual(Label.AI_Error_Prompt_Template_Default_Exists, results[0].getErrors()[0].getMessage(), 'The refusal should say the agent already has a default.');
+        Assert.isTrue(results[1].isSuccess(), 'A default for another agent should be saved.');
+        Assert.areEqual(1, firstAgentDefaults, 'The first agent should keep one default.');
+        Assert.areEqual(1, secondAgentDefaults, 'The second agent should have its own default.');
+    }
+
+    @IsTest static void testScenario7() {
+
+        // [1] Create an agent and two default templates for it
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].IsDefault__c = true;
+        templates[1].IsDefault__c = true;
+
+        List<Database.SaveResult> results;
+
+        // [2] Insert both together
+        Test.startTest();
+            results = Database.insert(templates, false);
+        Test.stopTest();
+
+        // [3] Count the defaults saved
+        Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+
+        // [4] Check the first was saved and the second refused
+        Assert.isTrue(results[0].isSuccess(), 'The first default should be saved.');
+        Assert.isFalse(results[1].isSuccess(), 'The second default in the same save should be refused.');
+        Assert.areEqual(1, savedDefaults, 'Only one default should be saved.');
+    }
+
+    @IsTest static void testScenario8() {
+
+        // [1] Create an agent with a default and a second active template
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+        templates[0].IsDefault__c = true;
+        insert templates;
+
+        List<Database.SaveResult> unrelatedEditResults;
+        List<Database.SaveResult> moveResults;
+        List<Database.SaveResult> clashResults;
+
+        // [2] Edit the default's description, then move the default to the second template, then tick the first again while the second is the default
+        Test.startTest();
+            templates[0].Description__c = 'An unrelated edit.';
+            unrelatedEditResults = Database.update(new List<AIPromptTemplate__c>{ templates[0] }, false);
+
+            templates[0].IsDefault__c = false;
+            templates[1].IsDefault__c = true;
+            moveResults = Database.update(templates, false);
+
+            templates[0].IsDefault__c = true;
+            clashResults = Database.update(new List<AIPromptTemplate__c>{ templates[0] }, false);
+        Test.stopTest();
+
+        // [3] Read back which template is the default
+        AIPromptTemplate__c savedDefault = [SELECT Id FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+
+        // [4] Check the unrelated edit and the move were saved and the clash was refused
+        Assert.isTrue(unrelatedEditResults[0].isSuccess(), 'Editing the default for another reason should never be refused.');
+        Assert.isTrue(moveResults[0].isSuccess() && moveResults[1].isSuccess(), 'Moving the default in one save should be saved.');
+        Assert.isFalse(clashResults[0].isSuccess(), 'Ticking a second default should be refused.');
+        Assert.areEqual(templates[1].Id, savedDefault.Id, 'The moved default should be the one that remains.');
+    }
+
+    @IsTest static void testScenario9() {
+
+        // [1] Create an agent with a default, and force the default rule to throw
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+        firstDefault.IsDefault__c = true;
+        insert firstDefault;
+
+        AIPromptTemplate__c secondDefault = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+        secondDefault.IsDefault__c = true;
+
+        AIPromptTemplateTriggerHandler.isTestDefaultRuleExceptionThrown = true;
+
+        // [2] Insert a second default
+        Test.startTest();
+            insert secondDefault;
+        Test.stopTest();
+
+        // [3] Read the defaults and the logs back
+        Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+        List<AIPlatformLog__c> logs = [SELECT ClassName__c, MethodName__c FROM AIPlatformLog__c];
+
+        // [4] Check the rule was not applied and one log names the method
+        Assert.areEqual(2, savedDefaults, 'The second default should not be refused when the rule fails.');
+        Assert.areEqual(1, logs.size(), 'Exactly one platform log should be written.');
+
+        Assert.areEqual('AIPromptTemplateTriggerHandler', logs[0].ClassName__c, 'The log should name the handler class.');
+        Assert.areEqual('handleBeforeSave', logs[0].MethodName__c, 'The log should name the failing method.');
+    }
+
+    @IsTest static void testScenario10() {
+
+        // [1] Create an agent and three templates: an inactive default, a bad Developer Name and a good one
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 3, false);
+        templates[0].IsActive__c = false;
+        templates[0].IsDefault__c = true;
+        templates[1].DeveloperName__c = 'Draft Client Email';
+        templates[2].DeveloperName__c = 'draft_client_email';
+
+        List<Database.SaveResult> results;
+
+        // [2] Insert all three
+        Test.startTest();
+            results = Database.insert(templates, false);
+        Test.stopTest();
+
+        // [3] Check the first two were refused and the good one saved
+        Assert.isFalse(results[0].isSuccess(), 'A default that is not active should be refused.');
+        Assert.isFalse(results[1].isSuccess(), 'A Developer Name with capitals and spaces should be refused.');
+        Assert.isTrue(results[2].isSuccess(), 'A valid Developer Name should be saved.');
     }
 }
