@@ -8,8 +8,6 @@
     <columns>AllowedChannels__c</columns>
     <columns>IsUserInitiatedChatEnabled__c</columns>
     <columns>DebugModeEnabled__c</columns>
-    <columns>MaxConcurrentConversations__c</columns>
-    <columns>MaxTokensPer24Hours__c</columns>
     <columns>UsageLimitReachedBehavior__c</columns>
     <filterScope>Everything</filterScope>
     <label>All</label>

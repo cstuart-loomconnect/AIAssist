@@ -344,6 +344,23 @@ public without sharing class AIAssistTestDataFactory {
         return userSettingsRows;
     }
 
+    // An active usage policy with the given limits, assigned to the user. A limit left null is not set.
+    public static AIUsagePolicy__c createAIUsagePolicyForUser(Id userId, Decimal maxConcurrentConversations, Decimal maxConversationsPer24Hours, Decimal maxTokensPer24Hours, String usageLimitReachedBehavior) {
+
+        // [1] Create the policy
+        AIUsagePolicy__c policy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = maxConcurrentConversations, MaxConversationsPer24Hours__c = maxConversationsPer24Hours, MaxTokensPer24Hours__c = maxTokensPer24Hours, UsageLimitReachedBehavior__c = usageLimitReachedBehavior);
+
+        System.runAs(getSetupUser()) {
+
+            insert policy;
+
+            // [2] Assign it to the user
+            insert new AIUsagePolicyAssignment__c(AIUsagePolicy__c = policy.Id, AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER, User__c = userId, IsActive__c = true);
+        }
+
+        return policy;
+    }
+
     // The org-level UI settings that switch Workflow Actions on or off for every user.
     public static AIAssistUISettings__c upsertUiSettings(Boolean isWorkflowActionsEnabled) {
 

@@ -229,9 +229,6 @@ public class SampleDataLoader {
           DebugModeEnabled__c = isRunningUser,
           ConversationExportEnabled__c = isRunningUser,
           IsUserInitiatedChatEnabled__c = true,
-          MaxConcurrentConversations__c = isRunningUser ? null : 5,
-          MaxConversationsPer24Hours__c = isRunningUser ? null : 30,
-          MaxTokensPer24Hours__c = isRunningUser ? null : 300000,
           UsageLimitReachedBehavior__c = 'Notify Only'
         )
       );

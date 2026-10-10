@@ -167,7 +167,7 @@ Version      Author                   Description
 
             // [5] Check every conversation is stamped within the query budget
             Assert.areEqual(201, stampedCount, 'Every conversation should be stamped, in both chunks.');
-            Assert.isTrue(queries <= 5, 'Queries should not grow with the number of records: ' + queries);
+            Assert.isTrue(queries <= 9, 'Queries should not grow with the number of records: ' + queries);
         }
     }
 

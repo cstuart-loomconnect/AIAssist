@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UsageDate__c</fullName>
+    <description
+  >The day the counters on this record belong to, in the org&apos;s time zone. A record from an earlier day counts as zero and is started again on the user&apos;s next use.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Set by the platform. Do not edit.</inlineHelpText>
+    <label>Usage Date</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Date</type>
+</CustomField>

@@ -434,7 +434,7 @@ Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (12):
+Fields (9). The numeric usage limits (tokens a day, conversations a day, concurrent conversations) are set on AIUsagePolicy__c only; a user who needs their own is assigned a policy through AIUsagePolicyAssignment__c:
 
 [ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
@@ -442,16 +442,9 @@ Fields (12):
 [ ] DebugModeEnabled__c (Checkbox)
 [ ] IsActive__c (Checkbox)
 [ ] IsUserInitiatedChatEnabled__c (Checkbox)
-[ ] MaxConcurrentConversations__c (Number)
-[ ] MaxConversationsPer24Hours__c (Number)
-[ ] MaxTokensPer24Hours__c (Number)
 [ ] ShouldCaptureExecutionSteps__c (Checkbox)
 [ ] UsageLimitReachedBehavior__c (Picklist)
 [ ] User__c (Lookup to User)
-
-Validation rules (1):
-
-[ ] LimitsMustBePositive
 
 List views (2):
 
@@ -502,6 +495,31 @@ Presentation and platform:
 [ ] Tab
 [ ] Access in each permission set (object, field, tab) is correct
 
+
+1.3.5 AIUsage__c (AI Usage)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: off.
+What it is: what one user has used of AI Assist today. One record per user, written only by the platform. The limits it is checked against stay on AIUserSettings__c and AIUsagePolicy__c.
+Day: the org's calendar day. A record dated an earlier day counts as zero and is started again on the user's next use, so no scheduled job is needed to reset it.
+Written by: AIConversationMessageTriggerHandler (tokens) and AIConversationTriggerHandler (conversations started), through AIUsageService. Read by AIUsageLimitService.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (7):
+
+[ ] AIUserSettings__c (Lookup to AIUserSettings__c): the user's own settings row; blank when their limits come from a usage policy
+[ ] ConversationsStarted__c (Number)
+[ ] InputTokens__c (Number)
+[ ] OutputTokens__c (Number)
+[ ] TokensUsed__c (Number)
+[ ] UsageDate__c (Date)
+[ ] User__c (Lookup to User): the key the record is found by
+
+Presentation and platform:
+
+[ ] No tab in the package: confirm that is intended
+[ ] Access in each permission set (object, field, tab) is correct: Super User full, Admin read only, User none (the code reads and writes it in system mode)
 
 1.4 RUNTIME: CONVERSATIONS AND WHAT THEY PRODUCE
 ------------------------------------------------

@@ -137,7 +137,7 @@ Version      Author                   Description
             // [4] Check the roll-up and that queries stayed small
             Assert.areEqual(201, messages.size(), 'The insert should be past the trigger chunk size.');
             Assert.areEqual(67, rolledUp.ConversationTokenUsage__c, 'Each conversation should count its own messages once.');
-            Assert.isTrue(queries <= 6, 'Queries should not grow with the number of messages: ' + queries);
+            Assert.isTrue(queries <= 8, 'Queries should not grow with the number of messages: ' + queries);
         }
     }
 

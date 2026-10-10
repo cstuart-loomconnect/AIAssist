@@ -93,9 +93,9 @@ public without sharing class AIChatConversationService {
         if (!canResume) throw new AIChatConversationServiceException(Label.AI_Error_Conversation_Closed);
 
         // [3] Refuse when the user is already at their concurrent conversation limit
-        AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsageLimits(UserInfo.getUserId());
 
-        if (userSettings != null && userSettings.IsActive__c == true && userSettings.MaxConcurrentConversations__c != null && countActiveConversations(UserInfo.getUserId()) >= userSettings.MaxConcurrentConversations__c) {
+        if (usageLimits != null && usageLimits.MaxConcurrentConversations__c != null && countActiveConversations(UserInfo.getUserId()) >= usageLimits.MaxConcurrentConversations__c) {
 
             throw new AIChatConversationServiceException(Label.AI_Error_Concurrent_Limit);
         }

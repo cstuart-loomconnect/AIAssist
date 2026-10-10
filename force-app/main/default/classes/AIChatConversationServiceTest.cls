@@ -316,9 +316,7 @@ Version      Author                   Description
             update agent;
 
             // [2] Limit the user's concurrent conversations and fill the limit
-            AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(UserInfo.getUserId(), false)[0];
-            settings.MaxConcurrentConversations__c = 1;
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert settings; }
+            AIAssistTestDataFactory.createAIUsagePolicyForUser(UserInfo.getUserId(), 1, null, null, null);
 
             AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true);
 

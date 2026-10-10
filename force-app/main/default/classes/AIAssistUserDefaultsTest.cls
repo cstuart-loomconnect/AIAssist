@@ -47,9 +47,6 @@ Version      Author                   Description
             Assert.areEqual(false, settings.ShouldCaptureExecutionSteps__c, 'ShouldCaptureExecutionSteps__c should default to false.');
             Assert.areEqual(true, settings.IsUserInitiatedChatEnabled__c, 'IsUserInitiatedChatEnabled__c should default to true.');
             Assert.areEqual(false, settings.ConversationExportEnabled__c, 'ConversationExportEnabled__c should default to false.');
-            Assert.isNull(settings.MaxTokensPer24Hours__c, 'MaxTokensPer24Hours__c should default to no limit.');
-            Assert.isNull(settings.MaxConcurrentConversations__c, 'MaxConcurrentConversations__c should default to no limit.');
-            Assert.isNull(settings.MaxConversationsPer24Hours__c, 'MaxConversationsPer24Hours__c should default to no limit.');
             Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY, settings.UsageLimitReachedBehavior__c, 'UsageLimitReachedBehavior__c should default to blocking new conversations only.');
             Assert.areEqual(AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN, settings.ConversationVisibilityScope__c, 'ConversationVisibilityScope__c should default to the user\'s own conversations.');
             Assert.areEqual(AIAssistApplicationConstants.CHANNEL_RECORD_PAGE_CHAT + AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR + AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, settings.AllowedChannels__c, 'AllowedChannels__c should default to Record Page Chat and Utility Bar.');
