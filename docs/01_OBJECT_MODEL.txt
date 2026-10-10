@@ -434,7 +434,7 @@ Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (12):
+Fields (9). The numeric usage limits (tokens a day, conversations a day, concurrent conversations) are set on AIUsagePolicy__c only; a user who needs their own is assigned a policy through AIUsagePolicyAssignment__c:
 
 [ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
@@ -442,16 +442,9 @@ Fields (12):
 [ ] DebugModeEnabled__c (Checkbox)
 [ ] IsActive__c (Checkbox)
 [ ] IsUserInitiatedChatEnabled__c (Checkbox)
-[ ] MaxConcurrentConversations__c (Number)
-[ ] MaxConversationsPer24Hours__c (Number)
-[ ] MaxTokensPer24Hours__c (Number)
 [ ] ShouldCaptureExecutionSteps__c (Checkbox)
 [ ] UsageLimitReachedBehavior__c (Picklist)
 [ ] User__c (Lookup to User)
-
-Validation rules (1):
-
-[ ] LimitsMustBePositive
 
 List views (2):
 
@@ -502,6 +495,31 @@ Presentation and platform:
 [ ] Tab
 [ ] Access in each permission set (object, field, tab) is correct
 
+
+1.3.5 AIUsage__c (AI Usage)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: off.
+What it is: what one user has used of AI Assist today. One record per user, written only by the platform. The limits it is checked against stay on AIUserSettings__c and AIUsagePolicy__c.
+Day: the org's calendar day. A record dated an earlier day counts as zero and is started again on the user's next use, so no scheduled job is needed to reset it.
+Written by: AIConversationMessageTriggerHandler (tokens) and AIConversationTriggerHandler (conversations started), through AIUsageService. Read by AIUsageLimitService.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (7):
+
+[ ] AIUserSettings__c (Lookup to AIUserSettings__c): the user's own settings row; blank when their limits come from a usage policy
+[ ] ConversationsStarted__c (Number)
+[ ] InputTokens__c (Number)
+[ ] OutputTokens__c (Number)
+[ ] TokensUsed__c (Number)
+[ ] UsageDate__c (Date)
+[ ] User__c (Lookup to User): the key the record is found by
+
+Presentation and platform:
+
+[ ] No tab in the package: confirm that is intended
+[ ] Access in each permission set (object, field, tab) is correct: Super User full, Admin read only, User none (the code reads and writes it in system mode)
 
 1.4 RUNTIME: CONVERSATIONS AND WHAT THEY PRODUCE
 ------------------------------------------------
@@ -561,15 +579,19 @@ Trigger and handler:
 1.4.2 AIConversationMessage__c (AI Conversation Message)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversation__c, AIModelConfiguration__c, AIPromptTemplate__c, AIWorkflowAction__c.
+Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversation__c, AIModelConfiguration__c, AIPromptTemplate__c, AIWorkflowAction__c, AIPIIMaskingRecord__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (16):
+Fields (21):
 
 [ ] AIConversation__c (MasterDetail to AIConversation__c)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
 [ ] AIPromptTemplate__c (Lookup to AIPromptTemplate__c)
+[ ] DebugRequestJson__c (LongTextArea)
+[ ] DebugResponseJson__c (LongTextArea)
+[ ] DebugSentPreviewText__c (Text)
+[ ] ExecutionTraceJson__c (LongTextArea)
 [ ] FailureReason__c (Picklist)
 [ ] InReplyTo__c (Lookup to AIConversationMessage__c)
 [ ] InputTokenCount__c (Number)
@@ -578,6 +600,7 @@ Fields (16):
 [ ] LatencyMilliseconds__c (Number)
 [ ] MessageBody__c (LongTextArea)
 [ ] OutputTokenCount__c (Number)
+[ ] PIIValuesMasked__c (Summary)
 [ ] ProcessingStatus__c (Picklist)
 [ ] PromptTemplateVersion__c (Number)
 [ ] Sender__c (Picklist)
@@ -605,67 +628,12 @@ Trigger and handler:
 [ ] AIConversationMessageTriggerHandler (without sharing, 233 lines): Handler for managing AI Conversation Message events related to AI Assist, performing the business logic that runs on the AI Conversation Message trigger.
   [ ] Test: AIConversationMessageTriggerHandlerTest
 
-1.4.3 AIExecutionStep__c (AI Execution Step)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.4.3 Execution trace (no longer an object)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversationMessage__c, AIDataSource__c, AIWorkflowAction__c.
+What ran to produce a reply is one JSON array in AIConversationMessage__c.ExecutionTraceJson__c (131,072 characters), not a record per step. Each entry has step, stepType (Prompt Assembly, Template Match, Data Source, Provider Call, Workflow Action, PII Masking, Other), status, ms and a stepDetail that names the template, data source or masked fields (never values). Administrators' entries also carry provider, model, what was sent, iteration and attempt counts, and workflow action and confirmation details. Debug payloads are in DebugRequestJson__c, DebugResponseJson__c and DebugSentPreviewText__c on the same message. Written by AIExecutionStepRecorder.
 
-[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
-
-Fields (27):
-
-[ ] AIConversationMessage__c (MasterDetail to AIConversationMessage__c)
-[ ] AIDataSource__c (Lookup to AIDataSource__c)
-[ ] AIWorkflowAction__c (Lookup to AIWorkflowAction__c)
-[ ] AttemptNumber__c (Number)
-[ ] ConfirmedBy__c (Lookup to User)
-[ ] ConfirmedDate__c (DateTime)
-[ ] DurationMilliseconds__c (Number)
-[ ] FieldsSentCount__c (Number)
-[ ] FieldsSent__c (LongTextArea)
-[ ] ModelIdentifier__c (Text)
-[ ] ObjectsSent__c (TextArea)
-[ ] PIIMaskingApplied__c (Checkbox)
-[ ] PIIValuesMasked__c (Summary)
-[ ] Provider__c (Text)
-[ ] RecordsSentCount__c (Number)
-[ ] RequestJson__c (LongTextArea)
-[ ] RequiredConfirmation__c (Checkbox)
-[ ] ResponseJson__c (LongTextArea)
-[ ] SentPreviewText__c (Text)
-[ ] Status__c (Picklist)
-[ ] StepDetail__c (TextArea)
-[ ] StepOrder__c (Number)
-[ ] StepType__c (Picklist)
-[ ] TargetObject__c (Text)
-[ ] TargetRecordId__c (Text, external ID)
-[ ] ToolCallingIterationsMax__c (Number)
-[ ] ToolCallingIterationsUsed__c (Number)
-
-Validation rules (3):
-
-[ ] ConfirmedActionNeedsConfirmer
-[ ] EvidenceCannotBeRewritten
-[ ] ProviderCallNeedsProvider
-
-List views (6):
-
-[ ] All
-[ ] BlockedOrCancelled
-[ ] Failed
-[ ] ProviderCalls
-[ ] Unmasked
-[ ] WorkflowActions
-
-Compact layouts (1):
-
-[ ] AIExecutionStepCompact
-
-Presentation and platform:
-
-[ ] Page layout: AI Execution Step Layout
-[ ] Tab
-[ ] Access in each permission set (object, field, tab) is correct
+[ ] Access in each permission set (field) is correct: read only, because only Apex writes the trace
 
 1.4.4 AIFeedback__c (AI Feedback)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -797,19 +765,20 @@ Presentation and platform:
 1.4.8 AIPIIMaskingRecord__c (AI PII Masking Record)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIExecutionStep__c.
+Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversationMessage__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (8):
+Fields (9):
 
-[ ] AIExecutionStep__c (MasterDetail to AIExecutionStep__c)
+[ ] AIConversationMessage__c (MasterDetail to AIConversationMessage__c)
 [ ] ComplianceGroup__c (Text)
 [ ] MaskingStrategy__c (Text)
 [ ] Outcome__c (Picklist)
 [ ] PIIFieldType__c (Text)
 [ ] SourceField__c (Text)
 [ ] SourceObject__c (Text)
+[ ] StepOrder__c (Number)
 [ ] ValuesMasked__c (Number)
 
 Validation rules (1):

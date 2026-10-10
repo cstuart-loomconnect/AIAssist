@@ -4,13 +4,14 @@ Class Name: AIConversationMessageTriggerHandler
 =================================================================
 =================================================================
 
-Description: Rolls new AI Conversation Messages up onto their AI Conversation.
+Description: Rolls new AI Conversation Messages up onto their AI Conversation, and adds their tokens to the conversation owner's usage for the day.
 
 Step 1: Skip if the handler is already running in this transaction
 Step 2: Keep only the messages that belong to a conversation
 Step 3: Lock the conversations and work out the new token total and last message time
 Step 4: Move the retention expiry for agents that count from the last message
 Step 5: Update the conversations and log any failures
+Step 6: Add the tokens to each conversation owner's usage for today
 
 =================================================================
 =================================================================
@@ -87,6 +88,7 @@ public without sharing class AIConversationMessageTriggerHandler {
             // [1] Work out the tokens to add and the newest message time for each conversation
             Map<Id, Decimal> tokensByConversationId = new Map<Id, Decimal>();
             Map<Id, Datetime> lastMessageByConversationId = new Map<Id, Datetime>();
+            Map<Id, AIUsageService.UsageToAdd> usageByConversationId = new Map<Id, AIUsageService.UsageToAdd>();
 
             for (AIConversationMessage__c message : messagesToRollUp) {
 
@@ -94,6 +96,13 @@ public without sharing class AIConversationMessageTriggerHandler {
 
                     Decimal tokensSoFar = tokensByConversationId.containsKey(message.AIConversation__c) ? tokensByConversationId.get(message.AIConversation__c) : 0;
                     tokensByConversationId.put(message.AIConversation__c, tokensSoFar + message.TokenCount__c);
+
+                    if (!usageByConversationId.containsKey(message.AIConversation__c)) usageByConversationId.put(message.AIConversation__c, new AIUsageService.UsageToAdd());
+
+                    AIUsageService.UsageToAdd usage = usageByConversationId.get(message.AIConversation__c);
+                    usage.tokens += message.TokenCount__c;
+                    usage.inputTokens += message.InputTokenCount__c == null ? 0 : message.InputTokenCount__c;
+                    usage.outputTokens += message.OutputTokenCount__c == null ? 0 : message.OutputTokenCount__c;
                 }
 
                 // [2] The failed-turn System message records tokens but is not a conversation event, so it does not move the last message time
@@ -169,6 +178,25 @@ public without sharing class AIConversationMessageTriggerHandler {
             // [10] Save the changes and log any that fail
             AIMessagingDataService.updateAndLogFailures(conversationsToUpdate, 'AIConversationMessageTriggerHandler', 'rollUpMessagesOntoConversations');
 
+            // [11] Add the tokens to each conversation owner's usage for today
+            Map<Id, AIUsageService.UsageToAdd> usageByUserId = new Map<Id, AIUsageService.UsageToAdd>();
+
+            for (AIConversation__c conversation : conversations) {
+
+                AIUsageService.UsageToAdd conversationUsage = usageByConversationId.get(conversation.Id);
+
+                if (conversationUsage == null || conversation.OwnerId == null) continue;
+
+                if (!usageByUserId.containsKey(conversation.OwnerId)) usageByUserId.put(conversation.OwnerId, new AIUsageService.UsageToAdd());
+
+                AIUsageService.UsageToAdd userUsage = usageByUserId.get(conversation.OwnerId);
+                userUsage.tokens += conversationUsage.tokens;
+                userUsage.inputTokens += conversationUsage.inputTokens;
+                userUsage.outputTokens += conversationUsage.outputTokens;
+            }
+
+            AIUsageService.addUsage(usageByUserId);
+
         } catch (Exception ex) {
             AIPlatformLogManager.logException(ex, 'AIConversationMessageTriggerHandler', 'rollUpMessagesOntoConversations');
         }
@@ -193,6 +221,6 @@ public without sharing class AIConversationMessageTriggerHandler {
         if (conversationIds == null || conversationIds.isEmpty()) return new List<AIConversation__c>();
 
         // [2] Query and lock the conversations
-        return [SELECT Id, ConversationTokenUsage__c, LastMessageTimestamp__c, RetentionExpiryDate__c, AIAgent__c FROM AIConversation__c WHERE Id IN :conversationIds WITH SYSTEM_MODE FOR UPDATE];
+        return [SELECT Id, OwnerId, ConversationTokenUsage__c, LastMessageTimestamp__c, RetentionExpiryDate__c, AIAgent__c FROM AIConversation__c WHERE Id IN :conversationIds WITH SYSTEM_MODE FOR UPDATE];
     }
 }

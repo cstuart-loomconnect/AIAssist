@@ -35,6 +35,10 @@ Version      Author                   Description
     // testScenario15: A recordId sent by the browser is ignored even when the schema declares it; the action receives the server's record -> output holds the server's record Id and only the targetId input.
     // testScenario16: An input that is not a record Id is not checked -> Action Failed because only the Flow is missing.
 
+    // testScenario17: A Screen Flow is checked on the server and handed to the window with typed inputs and the server's recordId; undeclared inputs and a browser recordId are dropped -> the flow name, three typed variables and recordId.
+    // testScenario18: A Screen Flow is refused when it is not a Screen Flow, needs confirmation and has none, or is run from Apex -> Action Failed, Confirmation Required, Action Failed with a Failed step.
+    // testScenario19: How a Screen Flow ended is recorded: Finished is Success, Error is Failed, anything else Cancelled, and an action that is not a Screen Flow records nothing -> three steps.
+
     @TestSetup static void setup() {
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
@@ -121,15 +125,15 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            AIExecutionStep__c step = [SELECT StepType__c, Status__c, AIWorkflowAction__c, RequiredConfirmation__c, DurationMilliseconds__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+            AIExecutionStepRecorder.TraceStep step = readSteps(reply.Id)[0];
 
             // [4] Check the outcome
             Assert.areEqual('echo:hello', output, 'The action\'s output.');
 
-            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.StepType__c, 'A Workflow Action step.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.Status__c, 'Success.');
-            Assert.areEqual(action.Id, step.AIWorkflowAction__c, 'The action.');
-            Assert.isFalse(step.RequiredConfirmation__c, 'It did not need confirmation.');
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.stepType, 'A Workflow Action step.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.status, 'Success.');
+            Assert.areEqual(String.valueOf(action.Id), step.workflowActionId, 'The action.');
+            Assert.isFalse(step.requiredConfirmation, 'It did not need confirmation.');
         }
     }
 
@@ -282,18 +286,18 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            List<AIExecutionStep__c> steps = [SELECT Status__c, RequiredConfirmation__c, ConfirmedBy__c, ConfirmedDate__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id ORDER BY StepOrder__c];
+            List<AIExecutionStepRecorder.TraceStep> steps = readSteps(reply.Id);
 
             // [4] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Confirmation_Required, code, 'The text is the Custom Label.');
             Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
 
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].Status__c, 'The first attempt is evidence too.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].Status__c, 'The second succeeded.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].status, 'The first attempt is evidence too.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].status, 'The second succeeded.');
 
-            Assert.isTrue(steps[1].RequiredConfirmation__c, 'It required confirmation.');
-            Assert.areEqual(chatUser.Id, steps[1].ConfirmedBy__c, 'Who confirmed.');
-            Assert.isNotNull(steps[1].ConfirmedDate__c, 'And when.');
+            Assert.isTrue(steps[1].requiredConfirmation, 'It required confirmation.');
+            Assert.areEqual(String.valueOf(chatUser.Id), steps[1].confirmedBy, 'Who confirmed.');
+            Assert.isNotNull(steps[1].confirmedDate, 'And when.');
         }
     }
 
@@ -340,7 +344,7 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            Integer failedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED];
+            Integer failedSteps = countSteps(reply.Id, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED);
 
             // [4] Check the outcome
             Assert.areEqual(3, shown.size(), 'Every one of the three was refused.');
@@ -390,7 +394,12 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            Integer targetSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND TargetRecordId__c = :String.valueOf(conversation.Id)];
+            Integer targetSteps = 0;
+
+            for (AIExecutionStepRecorder.TraceStep traceStep : readSteps(reply.Id)) {
+
+                if (traceStep.targetRecordId == String.valueOf(conversation.Id)) targetSteps++;
+            }
 
             // [4] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
@@ -429,11 +438,11 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            List<AIExecutionStep__c> steps = [SELECT Status__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+            List<AIExecutionStepRecorder.TraceStep> steps = readSteps(reply.Id);
 
             // [4] Check the outcome
             Assert.areEqual(1, steps.size(), 'Only the real cancellation.');
-            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].Status__c, 'Cancelled.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].status, 'Cancelled.');
         }
     }
 
@@ -689,7 +698,7 @@ Version      Author                   Description
             }
 
             // [3] Read the results back
-            blockedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED];
+            blockedSteps = countSteps(reply.Id, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED);
 
             // [4] Check the outcome
             Assert.areEqual(1, blockedSteps, 'The refusal is recorded as Blocked.');
@@ -899,5 +908,171 @@ Version      Author                   Description
             // [3] Check the outcome
             Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Plain text is passed on; only the missing Flow fails.');
         }
+    }
+
+    // Shared data for the Screen Flow scenarios: an agent, a chat user, the action and a reply.
+    private static AIWorkflowAction__c screenFlowAction(AIAgent__c agent, User chatUser, String actionType, String flowName) {
+
+        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, actionType, flowName, false)[0];
+        action.InputSchema__c = '{"properties":{"amount":{"type":"number"},"urgent":{"type":"boolean"},"note":{"type":"string"}}}';
+        insert action;
+        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+
+        return action;
+    }
+
+    @IsTest static void testScenario17() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
+
+            AIWorkflowAction__c action = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW, 'Log_A_Call');
+            Id recordId = chatUser.Id;
+
+            AIChatDataStructure.ScreenFlowLaunch launch;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    launch = AIWorkflowActionDispatcher.prepareScreenFlow(action.Id, agent.Id, recordId, new Map<String, Object>{ 'amount' => '12.5', 'urgent' => 'true', 'note' => 'Call back', 'extra' => 'dropped', 'recordId' => '001000000000000AAA' }, true);
+                Test.stopTest();
+            }
+
+            // [3] Read the variables by name
+            Map<String, Map<String, Object>> variables = new Map<String, Map<String, Object>>();
+
+            for (Map<String, Object> variable : launch.inputVariables) variables.put((String) variable.get('name'), variable);
+
+            // [4] Check the outcome
+            Assert.areEqual('Log_A_Call', launch.flowApiName, 'The flow to show.');
+            Assert.areEqual(4, variables.size(), 'Three declared inputs and recordId, nothing else.');
+            Assert.areEqual(12.5, (Decimal) variables.get('amount').get('value'), 'A number is passed as a number.');
+            Assert.areEqual('Number', variables.get('amount').get('type'), 'The flow type.');
+            Assert.areEqual(true, variables.get('urgent').get('value'), 'A boolean is passed as a boolean.');
+            Assert.areEqual('Call back', variables.get('note').get('value'), 'Text as text.');
+            Assert.areEqual(String.valueOf(recordId), variables.get('recordId').get('value'), 'recordId is the server\'s.');
+        }
+    }
+
+    @IsTest static void testScenario18() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
+
+            AIWorkflowAction__c headlessFlow = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'Some_Flow');
+            AIWorkflowAction__c needsConfirmation = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW, 'Log_A_Call');
+            needsConfirmation.RequiresConfirmation__c = true;
+            needsConfirmation.ConfirmationMessage__c = 'Open the form?';
+            update needsConfirmation;
+            AIWorkflowAction__c screenFlow = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW, 'Log_A_Call');
+
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            String notScreenFlow;
+            String unconfirmed;
+            String fromApex;
+
+            // [2] Run the actions under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.prepareScreenFlow(headlessFlow.Id, agent.Id, null, null, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        notScreenFlow = ex.getMessage();
+                    }
+
+                    try {
+                        AIWorkflowActionDispatcher.prepareScreenFlow(needsConfirmation.Id, agent.Id, null, null, false);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        unconfirmed = ex.getMessage();
+                    }
+
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(screenFlow.Id, agent.Id, reply.Id, null, null, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        fromApex = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Failed, notScreenFlow, 'A headless Flow is not shown in the window.');
+            Assert.areEqual(Label.AI_Error_Action_Confirmation_Required, unconfirmed, 'Confirmation is still required.');
+            Assert.areEqual(Label.AI_Error_Action_Failed, fromApex, 'A Screen Flow cannot run from Apex.');
+        }
+    }
+
+    @IsTest static void testScenario19() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+            AIWorkflowAction__c screenFlow = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW, 'Log_A_Call');
+            AIWorkflowAction__c headlessFlow = screenFlowAction(agent, chatUser, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'Some_Flow');
+
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            // [2] Record each way the flow can end, and an outcome claimed for an action that is not a Screen Flow
+            Test.startTest();
+                AIWorkflowActionDispatcher.recordScreenFlowOutcome(screenFlow.Id, agent.Id, reply.Id, null, 'FINISHED', true);
+                AIWorkflowActionDispatcher.recordScreenFlowOutcome(screenFlow.Id, agent.Id, reply.Id, null, 'ERROR', true);
+                AIWorkflowActionDispatcher.recordScreenFlowOutcome(screenFlow.Id, agent.Id, reply.Id, null, null, true);
+                AIWorkflowActionDispatcher.recordScreenFlowOutcome(headlessFlow.Id, agent.Id, reply.Id, null, 'FINISHED', true);
+            Test.stopTest();
+
+            // [3] Read the steps back
+            List<AIExecutionStepRecorder.TraceStep> steps = readSteps(reply.Id);
+
+            // [4] Check the outcome
+            Assert.areEqual(3, steps.size(), 'Only the Screen Flow action records a step.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[0].status, 'Finished.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED, steps[1].status, 'Error.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[2].status, 'Closed early.');
+        }
+    }
+
+    private static List<AIExecutionStepRecorder.TraceStep> readSteps(Id messageId) {
+
+        return AIExecutionStepRecorder.parseTrace([SELECT ExecutionTraceJson__c FROM AIConversationMessage__c WHERE Id = :messageId].ExecutionTraceJson__c);
+    }
+
+    private static Integer countSteps(Id messageId, String status) {
+
+        Integer stepCount = 0;
+
+        for (AIExecutionStepRecorder.TraceStep traceStep : readSteps(messageId)) {
+
+            if (traceStep.status == status) stepCount++;
+        }
+
+        return stepCount;
     }
 }

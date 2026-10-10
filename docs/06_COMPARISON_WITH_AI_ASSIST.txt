@@ -50,7 +50,7 @@ Objects and fields
   AIAssistUISettings__c.IsEnabled__c, IsWorkflowActionsEnabled__c - UI switches; debug mode and step capture are on AIUserSettings__c.
   AIConversationMessage__c: AIModelConfiguration__c, AIPromptTemplate__c, FailureReason__c, InReplyTo__c, Input/OutputTokenCount__c, IsAwaitingCapacity__c, IsSuperseded__c, LatencyMilliseconds__c, ProcessingStatus__c, PromptTemplateVersion__c - Per-message tracing and status.
   AIConversation__c.IsOnLegalHold__c, LastMessageTimestamp__c - Legal hold and precise last-message time.
-  AIExecutionStep__c (27 fields vs 13 in the old repo): ConfirmedBy/Date, FieldsSent(+Count), ObjectsSent, PIIMaskingApplied, PIIValuesMasked, Provider, ModelIdentifier, RecordsSentCount, RequiredConfirmation, StepType, TargetObject, TargetRecordId - Audit of data sent to the model.
+  AIConversationMessage__c.ExecutionTraceJson__c (replaces the old repo's AIExecutionStep__c records): one JSON trace per reply holding each step's type, status, time, wording and the audit of data sent to the model. Masking records now sit under the message.
   AIDataSource__c.MaxRows__c, AIFeedback__c.Reason__c, AIModelConfiguration__c.EnvironmentId__c, AIPromptTemplate__c.Version__c, AIPlatformLog__c / AIPlatformLogEvent__e Severity__c - Smaller additions.
   IsActive__c replaces Active__c on AIPiiRegistry__c and the three PII __mdt types.
   AIAssistViewSharedConversations custom permission, globalValueSets, 133 custom labels (old: 6) - Visibility permission, shared picklists and translatable messages.

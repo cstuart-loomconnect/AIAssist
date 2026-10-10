@@ -8,8 +8,9 @@ Description: Holds the in-memory record of one turn: each timed phase, the attem
 
 Step 1: Start timing a phase (a data source read or a provider call)
 Step 2: End the phase and keep it as a typed, timed step
-Step 3: Add what was masked to the step that sent the data
-Step 4: Hand the tracker to AIExecutionStepRecorder, which saves it once the reply exists
+Step 3: Add a step that is not a timed phase (prompt assembly, masking, a template match)
+Step 4: Add what was masked to the PII Masking step
+Step 5: Hand the tracker to AIExecutionStepRecorder, which saves it as one JSON trace once the reply exists
 
 =================================================================
 =================================================================
@@ -38,6 +39,9 @@ public without sharing class AIExecutionStepTracker {
         public Long durationMilliseconds;
         public Boolean isSuccess = true;
         public String status;
+        public String stepDetail;
+        public String dataSourceName;
+        public String workflowActionName;
         public String provider;
         public String modelIdentifier;
         public Decimal recordsSentCount;
@@ -106,6 +110,21 @@ public without sharing class AIExecutionStepTracker {
         phaseStartedAtMillis = null;
         phaseDataSourceId = null;
 
+        return entry;
+    }
+
+    // Adds a step that is not a timed phase: prompt assembly, masking, a template match. The caller says how long it took and what it did, naming setup records and fields but never values.
+    public StepEntry addStep(String stepType, Boolean isSuccess, Long durationMilliseconds, String stepDetail) {
+
+        // [1] Build the step
+        StepEntry entry = new StepEntry();
+        entry.stepType = stepType;
+        entry.isSuccess = isSuccess != false;
+        entry.durationMilliseconds = durationMilliseconds;
+        entry.stepDetail = stepDetail;
+        steps.add(entry);
+
+        // [2] Return it so the caller can add more
         return entry;
     }
 

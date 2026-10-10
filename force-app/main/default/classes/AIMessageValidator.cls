@@ -30,6 +30,7 @@ public without sharing class AIMessageValidator {
         public Id userId;
         public AIAgent__c agent;
         public AIUserSettings__c userSettings;
+        public AIUsagePolicy__c usageLimits;
     }
 
     public static final String TERMS_ACCEPTED = 'ACCEPTED';
@@ -89,6 +90,7 @@ public without sharing class AIMessageValidator {
 
         // [12] Load the user's settings. No settings row means unrestricted
         chatContext.userSettings = AIUsagePolicyService.getUserSettings(chatContext.userId);
+        chatContext.usageLimits = AIUsagePolicyService.getUsageLimits(chatContext.userId);
 
         if (String.isNotBlank(channel)) {
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <allowInChatterGroups>false</allowInChatterGroups>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >What one user has used of AI Assist today: tokens and conversations started. One record per user, kept by the platform only. The counters belong to the day in UsageDate__c, and a record from an earlier day counts as zero and starts again on the user&apos;s next use. The limits that apply to the user are kept on AI User Settings and AI Usage Policy.</description>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableLicensing>false</enableLicensing>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <enableSharing>true</enableSharing>
+    <enableStreamingApi>true</enableStreamingApi>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>AI Usage</label>
+    <nameField>
+        <displayFormat>AI Usage - {00000}</displayFormat>
+        <label>AI Usage Name</label>
+        <trackHistory>false</trackHistory>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>AI Usage</pluralLabel>
+    <searchLayouts/>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

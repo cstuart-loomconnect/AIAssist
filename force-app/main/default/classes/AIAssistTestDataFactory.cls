@@ -315,21 +315,31 @@ public without sharing class AIAssistTestDataFactory {
         return messages;
     }
 
-    // Steps of type Other, successful: neither a provider call (which needs a provider and model) nor a workflow action (which needs evidence of who confirmed it).
-    public static List<AIExecutionStep__c> createAIExecutionSteps(Id messageId, Integer numberOfSteps, Boolean shouldDoInsert) {
+    // Trace steps of type Other, successful: neither a provider call (which carries a provider and model) nor a workflow action. When asked, they are saved as the message's execution trace.
+    public static List<AIExecutionStepRecorder.TraceStep> createAIExecutionTraceSteps(Id messageId, Integer numberOfSteps, Boolean shouldSaveTrace) {
 
         // [1] Build each step in order
-        List<AIExecutionStep__c> steps = new List<AIExecutionStep__c>();
+        List<AIExecutionStepRecorder.TraceStep> steps = new List<AIExecutionStepRecorder.TraceStep>();
 
         for (Integer itemIndex = 0; itemIndex < numberOfSteps; itemIndex++) {
 
-            steps.add(new AIExecutionStep__c(AIConversationMessage__c = messageId, StepType__c = AIAssistApplicationConstants.STEP_TYPE_OTHER, Status__c = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, StepOrder__c = itemIndex + 1));
+            AIExecutionStepRecorder.TraceStep traceStep = new AIExecutionStepRecorder.TraceStep();
+            traceStep.step = itemIndex + 1;
+            traceStep.stepType = AIAssistApplicationConstants.STEP_TYPE_OTHER;
+            traceStep.status = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
+            steps.add(traceStep);
         }
 
-        // [2] Insert them when asked, and return them
-        if (shouldDoInsert && !steps.isEmpty()) insert steps;
+        // [2] Save them as the message's trace when asked, and return them
+        if (shouldSaveTrace) saveExecutionTrace(messageId, steps);
 
         return steps;
+    }
+
+    // Saves the steps as the execution trace on the message, in the form the recorder writes.
+    public static void saveExecutionTrace(Id messageId, List<AIExecutionStepRecorder.TraceStep> steps) {
+
+        AIMessagingDataService.updateOrThrow(new List<SObject>{ new AIConversationMessage__c(Id = messageId, ExecutionTraceJson__c = JSON.serialize(steps, true)) });
     }
 
     // One active settings row for the user.
@@ -342,6 +352,23 @@ public without sharing class AIAssistTestDataFactory {
         if (shouldDoInsert && !userSettingsRows.isEmpty()) insert userSettingsRows;
 
         return userSettingsRows;
+    }
+
+    // An active usage policy with the given limits, assigned to the user. A limit left null is not set.
+    public static AIUsagePolicy__c createAIUsagePolicyForUser(Id userId, Decimal maxConcurrentConversations, Decimal maxConversationsPer24Hours, Decimal maxTokensPer24Hours, String usageLimitReachedBehavior) {
+
+        // [1] Create the policy
+        AIUsagePolicy__c policy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = maxConcurrentConversations, MaxConversationsPer24Hours__c = maxConversationsPer24Hours, MaxTokensPer24Hours__c = maxTokensPer24Hours, UsageLimitReachedBehavior__c = usageLimitReachedBehavior);
+
+        System.runAs(getSetupUser()) {
+
+            insert policy;
+
+            // [2] Assign it to the user
+            insert new AIUsagePolicyAssignment__c(AIUsagePolicy__c = policy.Id, AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER, User__c = userId, IsActive__c = true);
+        }
+
+        return policy;
     }
 
     // The org-level UI settings that switch Workflow Actions on or off for every user.

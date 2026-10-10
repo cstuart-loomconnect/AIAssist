@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>LimitsMustBePositive</fullName>
-    <active>true</active>
-    <description>Usage limits must be 1 or more, or left blank.</description>
-    <errorConditionFormula
-  >OR(AND(NOT(ISBLANK(MaxConcurrentConversations__c)), MaxConcurrentConversations__c &lt; 1), AND(NOT(ISBLANK(MaxConversationsPer24Hours__c)), MaxConversationsPer24Hours__c &lt; 1), AND(NOT(ISBLANK(MaxTokensPer24Hours__c)), MaxTokensPer24Hours__c &lt; 1))</errorConditionFormula>
-    <errorMessage>Usage limits must be 1 or more, or left blank.</errorMessage>
-</ValidationRule>

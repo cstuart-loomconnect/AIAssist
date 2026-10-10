@@ -4,11 +4,12 @@ Class Name: AIConversationTriggerHandler
 =================================================================
 =================================================================
 
-Description: Handler for the AI Conversation trigger: sets the retention expiry date and the close timestamp.
+Description: Handler for the AI Conversation trigger: sets the retention expiry date and the close timestamp, and counts each new conversation in its owner's usage for the day.
 
 Step 1: Before insert, set the expiry date for retention counted from creation or from the last message
 Step 2: Before update, find the conversations that have just closed and stamp their close time
 Step 3: Set the expiry date for retention counted from the close date
+Step 4: After insert, add each new conversation to its owner's usage for today
 
 =================================================================
 =================================================================
@@ -23,6 +24,7 @@ public without sharing class AIConversationTriggerHandler {
 
     private static Boolean isBeforeInsertHandlerRunning = false;
     private static Boolean isBeforeUpdateHandlerRunning = false;
+    private static Boolean isAfterInsertHandlerRunning = false;
 
     @TestVisible
     private static Boolean isTestCustomExceptionThrown = false;
@@ -85,6 +87,44 @@ public without sharing class AIConversationTriggerHandler {
 
         } catch (Exception ex) {
             AIPlatformLogManager.logException(ex, 'AIConversationTriggerHandler', 'handleBeforeUpdate');
+        }
+    }
+
+    // Runs after new conversations are saved and counts each one in its owner's usage for today. Never blocks the save.
+    public static void handleAfterInsert(List<AIConversation__c> newConversations) {
+
+        try {
+
+            // [1] Do nothing if this handler is already running
+            if (isAfterInsertHandlerRunning) return;
+            isAfterInsertHandlerRunning = true;
+
+            // [2] Throw on purpose when a test asks for it
+            if (isTestCustomExceptionThrown) {
+
+                throw new AIConversationTriggerHandlerException('Test exception for AIConversationTriggerHandler.handleAfterInsert');
+            }
+
+            // [3] Count the new conversations for each owner
+            Map<Id, AIUsageService.UsageToAdd> additionsByUserId = new Map<Id, AIUsageService.UsageToAdd>();
+
+            for (AIConversation__c conversation : newConversations == null ? new List<AIConversation__c>() : newConversations) {
+
+                if (conversation.OwnerId == null) continue;
+
+                if (!additionsByUserId.containsKey(conversation.OwnerId)) additionsByUserId.put(conversation.OwnerId, new AIUsageService.UsageToAdd());
+
+                additionsByUserId.get(conversation.OwnerId).conversations++;
+            }
+
+            // [4] Add them to the owners' usage for today
+            AIUsageService.addUsage(additionsByUserId);
+
+            // [5] Allow the handler to run again
+            isAfterInsertHandlerRunning = false;
+
+        } catch (Exception ex) {
+            AIPlatformLogManager.logException(ex, 'AIConversationTriggerHandler', 'handleAfterInsert');
         }
     }
 

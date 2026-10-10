@@ -60,22 +60,24 @@ public without sharing class AIChatDebugService {
             debugTrace.model = modelConfiguration.ModelIdentifier__c;
         }
 
-        // [4] Add each execution step of the reply, and the totals and payloads they carry
-        for (AIExecutionStep__c step : [SELECT StepOrder__c, Status__c, StepType__c, StepDetail__c, DurationMilliseconds__c, AIDataSource__c, AIDataSource__r.DeveloperName__c, AIWorkflowAction__c, AIWorkflowAction__r.ActionName__c, ToolCallingIterationsUsed__c, ToolCallingIterationsMax__c, AttemptNumber__c, SentPreviewText__c, RequestJson__c, ResponseJson__c, PIIValuesMasked__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id WITH SYSTEM_MODE ORDER BY StepOrder__c]) {
+        // [4] Add each execution step of the reply, and the totals they carry
+        for (AIExecutionStepRecorder.TraceStep step : AIExecutionStepRecorder.parseTrace(reply.ExecutionTraceJson__c)) {
 
             debugTrace.steps.add(AIChatConversationService.buildExecutionStep(step));
-            if (step.AIDataSource__c != null) debugTrace.toolCalls++;
-            if (step.Status__c == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED) debugTrace.isSuccess = false;
-            if (step.PIIValuesMasked__c != null) debugTrace.piiFieldsMasked += step.PIIValuesMasked__c.intValue();
+            if (step.stepType == AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE) debugTrace.toolCalls++;
+            if (step.status == AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED) debugTrace.isSuccess = false;
 
-            // [5] Take the iteration and attempt figures, which every step of a reply carries, and the payloads, which only the last provider call carries
-            if (step.ToolCallingIterationsUsed__c != null) debugTrace.toolCallingIterationsUsed = step.ToolCallingIterationsUsed__c.intValue();
-            if (step.ToolCallingIterationsMax__c != null) debugTrace.toolCallingIterationsMax = step.ToolCallingIterationsMax__c.intValue();
-            if (step.AttemptNumber__c != null) debugTrace.attemptNumber = step.AttemptNumber__c.intValue();
-            if (String.isNotBlank(step.RequestJson__c)) debugTrace.requestJson = step.RequestJson__c;
-            if (String.isNotBlank(step.ResponseJson__c)) debugTrace.responseJson = step.ResponseJson__c;
-            if (String.isNotBlank(step.SentPreviewText__c)) debugTrace.sentPreviewText = step.SentPreviewText__c;
+            // [5] Take the iteration and attempt figures, which only the last provider call carries
+            if (step.iterationsUsed != null) debugTrace.toolCallingIterationsUsed = step.iterationsUsed;
+            if (step.iterationsMax != null) debugTrace.toolCallingIterationsMax = step.iterationsMax;
+            if (step.attempt != null) debugTrace.attemptNumber = step.attempt;
         }
+
+        // [5] Add the masked-value total and the payloads, which are saved only when the user had debug mode on
+        if (reply.PIIValuesMasked__c != null) debugTrace.piiFieldsMasked = reply.PIIValuesMasked__c.intValue();
+        if (String.isNotBlank(reply.DebugRequestJson__c)) debugTrace.requestJson = reply.DebugRequestJson__c;
+        if (String.isNotBlank(reply.DebugResponseJson__c)) debugTrace.responseJson = reply.DebugResponseJson__c;
+        if (String.isNotBlank(reply.DebugSentPreviewText__c)) debugTrace.sentPreviewText = reply.DebugSentPreviewText__c;
 
         // [6] Return the trace
         return debugTrace;

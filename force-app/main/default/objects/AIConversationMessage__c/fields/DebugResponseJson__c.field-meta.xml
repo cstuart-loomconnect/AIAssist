@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DebugResponseJson__c</fullName>
+    <complianceGroup>PII</complianceGroup>
+    <description
+  >The response received on the last provider call. Kept only when the user had debug mode on.</description>
+    <inlineHelpText>Holds customer data.</inlineHelpText>
+    <label>Debug Response Json</label>
+    <length>131072</length>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+    <trackTrending>false</trackTrending>
+</CustomField>

@@ -14,7 +14,8 @@ Version      Author                   Description
 */
 trigger AIConversationTrigger on AIConversation__c(
   before insert,
-  before update
+  before update,
+  after insert
 ) {
   if (!AIAssistSettingsService.isEnabled())
     return;
@@ -29,6 +30,11 @@ trigger AIConversationTrigger on AIConversation__c(
         Trigger.newMap
       );
     }
+  }
+
+  // After Context
+  if (Trigger.isAfter && Trigger.isInsert) {
+    AIConversationTriggerHandler.handleAfterInsert(Trigger.new);
   }
 
 }

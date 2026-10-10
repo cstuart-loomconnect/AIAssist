@@ -131,9 +131,9 @@ Sections are in call order, lowest layer first, so a class is checked after the 
   [ ] Test: AIMessageProcessingFinalizerTest
 [ ] AIMessageOutcomeService (inherited sharing, 449 lines): What happens when a turn ends, wherever it ended: in AIMessageProcessingQueueable or, if the job was killed, in AIMessageProcessingFinalizer.
   [ ] Test: AIMessageOutcomeServiceTest
-[ ] AIExecutionStepTracker (inherited sharing, 141 lines): The in-memory record of one turn: each timed phase (a data source read, a provider call), the iteration and attempt counts, and what was sent to the provider.
+[ ] AIExecutionStepTracker (inherited sharing, 141 lines): The in-memory record of one turn: each timed phase (a data source read, a provider call) and each untimed step (prompt assembly, masking, template match), the iteration and attempt counts, and what was sent to the provider.
   [ ] Test: AIExecutionStepTrackerTest
-[ ] AIExecutionStepRecorder (inherited sharing, 272 lines): Turns one AIExecutionStepTracker into the AIExecutionStep__c rows (and the AIPIIMaskingRecord__c rows under them) for a turn that has just ended.
+[ ] AIExecutionStepRecorder (inherited sharing, 272 lines): Turns one AIExecutionStepTracker into the JSON trace on the message (AIConversationMessage__c.ExecutionTraceJson__c) and the AIPIIMaskingRecord__c rows against that message, for a turn that has just ended. Also appends a workflow action the user runs later.
   [ ] Test: AIExecutionStepRecorderTest
 
 

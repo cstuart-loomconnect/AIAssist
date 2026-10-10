@@ -132,7 +132,9 @@ public without sharing class AIAgentManager {
             }
 
             // [8] Build the system prompt from the agent persona, the prompt template, the templates the model may switch to and the workflow actions
+            Long assemblyStartedAt = System.currentTimeMillis();
             String systemPromptText = buildSystemPromptText(agent, promptTemplate, offeredRoutingTemplates, availableWorkflowActions);
+            trace.addStep(AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY, true, System.currentTimeMillis() - assemblyStartedAt, getPromptAssemblyDetail('Built', agent, promptTemplate, offeredRoutingTemplates, availableWorkflowActions));
 
             // [9] Work out the run limits. The iteration limit is the agent's own, else the org default, kept between 1 and the cap (0 would skip the callout and no limit risks the 100 callout limit).
             AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
@@ -177,15 +179,27 @@ public without sharing class AIAgentManager {
                     previousToolResults = null;
                 }
 
-                // [14] Never send a request if masking failed for any value in it
+                // [14] Record what was masked as its own step, and never send a request if masking failed for any value in it
                 pendingMasking.addAll(AIPiiPseudonymizationService.takeTallies());
 
-                for (AIPiiPseudonymizationService.MaskingTally tally : pendingMasking) {
+                if (!pendingMasking.isEmpty()) {
 
-                    if (tally.outcome == AIAssistApplicationConstants.MASKING_OUTCOME_FAILED) {
+                    AIPiiPseudonymizationService.MaskingTally failedTally = null;
+
+                    for (AIPiiPseudonymizationService.MaskingTally tally : pendingMasking) {
+
+                        if (tally.outcome == AIAssistApplicationConstants.MASKING_OUTCOME_FAILED && failedTally == null) failedTally = tally;
+                    }
+
+                    AIExecutionStepTracker.StepEntry maskingStep = trace.addStep(AIAssistApplicationConstants.STEP_TYPE_PII_MASKING, failedTally == null, null, getMaskingDetail(pendingMasking, iteration == 0, failedTally));
+                    trace.addMaskingTallies(maskingStep, pendingMasking);
+
+                    pendingMasking = new List<AIPiiPseudonymizationService.MaskingTally>();
+
+                    if (failedTally != null) {
 
                         AgentResult maskingFailure = new AgentResult();
-                        maskingFailure.errorMessage = 'Masking failed for ' + tally.sourceObject + '.' + tally.sourceField + '; the request was not sent.';
+                        maskingFailure.errorMessage = 'Masking failed for ' + failedTally.sourceObject + '.' + failedTally.sourceField + '; the request was not sent.';
                         maskingFailure.failureReason = AIAssistApplicationConstants.FAILURE_REASON_PII_MASKING_FAILED;
                         maskingFailure.totalTokensUsed = totalTokensUsed;
                         maskingFailure.inputTokens = inputTokensUsed;
@@ -262,6 +276,7 @@ public without sharing class AIAgentManager {
 
                         failedStep.provider = modelConfiguration.AIProvider__c;
                         failedStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
+                        failedStep.stepDetail = 'The call to the provider failed before a reply came back.';
                     }
 
                     // [19] Log it here, because it becomes a result rather than being thrown again
@@ -287,9 +302,6 @@ public without sharing class AIAgentManager {
                 providerStep.objectsSent = String.join(new List<String>(objectsSent), ', ');
                 providerStep.fieldsSent = String.join(new List<String>(fieldsSent), ', ');
 
-                trace.addMaskingTallies(providerStep, pendingMasking);
-
-                pendingMasking = new List<AIPiiPseudonymizationService.MaskingTally>();
                 recordsSent = 0;
                 objectsSent.clear();
                 fieldsSent.clear();
@@ -305,6 +317,7 @@ public without sharing class AIAgentManager {
 
                     providerStep.isSuccess = false;
                     calloutFailureReason = AIProvider.getFailureReason(statusCode, httpResponse.getBody());
+                    providerStep.stepDetail = 'The provider returned HTTP status ' + statusCode + ' (' + calloutFailureReason + ').';
 
                     Boolean isCredentialRejected = calloutFailureReason == AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
                     Boolean isModelRetired = calloutFailureReason == AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
@@ -334,8 +347,13 @@ public without sharing class AIAgentManager {
                     successResult.selectedPromptTemplateVersion = selectedPromptTemplate == null ? null : selectedPromptTemplate.Version__c;
                     successResult.externalReference = providerSession.id;
 
+                    providerStep.stepDetail = 'Final reply.';
+
                     // [25] An empty reply counts as a failure
                     if (String.isBlank(modelResponse.textContent)) {
+
+                        providerStep.isSuccess = false;
+                        providerStep.stepDetail = 'The provider returned an empty reply.';
 
                         successResult.errorMessage = 'The provider returned an empty reply.';
                         successResult.failureReason = AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
@@ -378,6 +396,18 @@ public without sharing class AIAgentManager {
                     return successResult;
                 }
 
+                // Say what the model asked for, by name
+                List<String> requestedNames = new List<String>();
+
+                for (AIProvider.ToolCall requestedCall : modelResponse.toolCalls) {
+
+                    if (requestedCall.name == AIAssistApplicationConstants.PROMPT_TEMPLATE_TOOL_NAME) requestedNames.add('a prompt template switch');
+                    else if (dataSourceByToolName.containsKey(requestedCall.name)) requestedNames.add('the data source ' + AIChatDataStructure.humanise(requestedCall.name));
+                    else requestedNames.add('an unknown tool');
+                }
+
+                providerStep.stepDetail = 'The model asked for ' + String.join(requestedNames, ', ') + '.';
+
                 // [28] Stop if this was the last pass. Tool calls were switched off, so this only happens if the provider ignored that, and their results could never be sent back.
                 if (isLastIteration) break;
 
@@ -402,14 +432,21 @@ public without sharing class AIAgentManager {
 
                         if (chosenTemplate == null) {
 
+                            AIExecutionStepTracker.StepEntry unknownTemplateStep = trace.addStep(AIAssistApplicationConstants.STEP_TYPE_TEMPLATE_MATCH, true, 0L, 'The model asked for a template that is not offered, so nothing changed.');
+                            unknownTemplateStep.status = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED;
                             toolResults.add(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN);
 
                             continue;
                         }
 
+                        trace.addStep(AIAssistApplicationConstants.STEP_TYPE_TEMPLATE_MATCH, true, 0L, 'Switched from ' + getTemplateName(promptTemplate) + ' to ' + getTemplateName(chosenTemplate) + '.');
+
                         promptTemplate = chosenTemplate;
                         selectedPromptTemplate = chosenTemplate;
+
+                        Long rebuildStartedAt = System.currentTimeMillis();
                         systemPromptText = buildSystemPromptText(agent, promptTemplate, new List<AIPromptTemplate__c>(), availableWorkflowActions);
+                        trace.addStep(AIAssistApplicationConstants.STEP_TYPE_PROMPT_ASSEMBLY, true, System.currentTimeMillis() - rebuildStartedAt, getPromptAssemblyDetail('Rebuilt', agent, promptTemplate, new List<AIPromptTemplate__c>(), availableWorkflowActions));
                         toolResults.add(AIAssistApplicationConstants.TOOL_RESULT_PROMPT_TEMPLATE_SELECTED);
 
                         continue;
@@ -420,6 +457,7 @@ public without sharing class AIAgentManager {
 
                     Object toolResult;
                     Boolean toolSucceeded = true;
+                    Integer recordsReturned = 0;
 
                     // [31] Run the data source. A failing tool does not end the turn: it is logged and the model is only told it failed, so it can react without seeing the real error.
                     try {
@@ -437,6 +475,7 @@ public without sharing class AIAgentManager {
 
                             toolResult = toolRecords;
                             recordsSent += toolRecords.size();
+                            recordsReturned = toolRecords.size();
 
                             if (String.isNotBlank(dataSource.TargetObject__c)) objectsSent.add(dataSource.TargetObject__c);
 
@@ -467,6 +506,11 @@ public without sharing class AIAgentManager {
 
                         toolStep.stepType = AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE;
                         toolStep.targetObject = dataSource == null ? null : dataSource.TargetObject__c;
+                        toolStep.dataSourceName = dataSource == null ? null : dataSource.DeveloperName__c;
+
+                        if (dataSource == null) toolStep.stepDetail = 'The model asked for a data source that does not exist.';
+                        else if (!toolSucceeded) toolStep.stepDetail = AIChatDataStructure.humanise(dataSource.DeveloperName__c) + ' failed. The model carried on without it.';
+                        else toolStep.stepDetail = 'Ran ' + AIChatDataStructure.humanise(dataSource.DeveloperName__c) + (String.isBlank(dataSource.TargetObject__c) ? '' : ' on ' + dataSource.TargetObject__c) + '. ' + recordsReturned + (recordsReturned == 1 ? ' record' : ' records') + ' returned.';
                     }
 
                     toolResults.add(toolResult);
@@ -523,6 +567,57 @@ public without sharing class AIAgentManager {
             // [38] Stop holding back PII mapping saves. The mappings stay cached in memory; the caller must still save them.
             AIPiiMappingService.isDeferringWrites = false;
         }
+    }
+
+    // The name to show for a prompt template: its name, else its developer name tidied.
+    private static String getTemplateName(AIPromptTemplate__c template) {
+
+        // [1] Use the name, else the developer name tidied
+        if (template == null) return 'no template';
+        return String.isNotBlank(template.Name) ? template.Name : AIChatDataStructure.humanise(template.DeveloperName__c);
+    }
+
+    // The plain wording for a prompt assembly step: the agent, the template, the templates the model may switch to and the workflow actions offered. Names only.
+    private static String getPromptAssemblyDetail(String verb, AIAgent__c agent, AIPromptTemplate__c promptTemplate, List<AIPromptTemplate__c> offeredRoutingTemplates, List<AIWorkflowAction__c> availableWorkflowActions) {
+
+        // [1] Name the agent and the template
+        String detail = verb + ' the prompt for agent ' + (agent == null || String.isBlank(agent.Name) ? 'unknown' : agent.Name) + ' using prompt template ' + getTemplateName(promptTemplate) + '.';
+
+        // [2] Name the templates the model may switch to
+        List<String> routingNames = new List<String>();
+
+        for (AIPromptTemplate__c routingTemplate : offeredRoutingTemplates) routingNames.add(getTemplateName(routingTemplate));
+
+        detail += routingNames.isEmpty() ? ' No other templates offered.' : ' Other templates offered: ' + String.join(routingNames, ', ') + '.';
+
+        // [3] Name the workflow actions the model may suggest
+        List<String> actionNames = new List<String>();
+
+        for (AIWorkflowAction__c offeredAction : availableWorkflowActions == null ? new List<AIWorkflowAction__c>() : availableWorkflowActions) actionNames.add(AIChatDataStructure.humanise(offeredAction.DeveloperName__c));
+
+        detail += actionNames.isEmpty() ? ' No workflow actions offered.' : ' Workflow actions offered: ' + String.join(actionNames, ', ') + '.';
+
+        return detail;
+    }
+
+    // The plain wording for a masking step: how many values were masked, and which fields, naming the type and count of each. Never the values.
+    private static String getMaskingDetail(List<AIPiiPseudonymizationService.MaskingTally> tallies, Boolean isRequest, AIPiiPseudonymizationService.MaskingTally failedTally) {
+
+        // [1] A failure names the field and says nothing was sent
+        if (failedTally != null) return 'Masking failed for ' + failedTally.sourceObject + '.' + failedTally.sourceField + '. The request was not sent.';
+
+        // [2] Add up the values and describe each field
+        Decimal valuesMasked = 0;
+        List<String> fieldDescriptions = new List<String>();
+
+        for (AIPiiPseudonymizationService.MaskingTally tally : tallies) {
+
+            valuesMasked += tally.valuesMasked == null ? 0 : tally.valuesMasked;
+            fieldDescriptions.add(tally.sourceObject + '.' + tally.sourceField + ' (' + tally.piiFieldType + ', ' + (tally.valuesMasked == null ? 0 : tally.valuesMasked.intValue()) + (tally.outcome == AIAssistApplicationConstants.MASKING_OUTCOME_MASKED ? '' : ', ' + tally.outcome.toLowerCase()) + ')');
+        }
+
+        // [3] Say it
+        return 'Masked ' + valuesMasked.intValue() + (valuesMasked == 1 ? ' value' : ' values') + (isRequest ? ' in the request: ' : ' in the data returned: ') + String.join(fieldDescriptions, ', ') + '.';
     }
 
     // Builds the system prompt: the agent's persona, the prompt template, the templates the model may switch to, the language and the workflow actions it may suggest. Returns null when there is nothing to say.

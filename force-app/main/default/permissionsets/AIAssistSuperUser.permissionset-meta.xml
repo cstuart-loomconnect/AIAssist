@@ -320,6 +320,36 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.DebugRequestJson__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.DebugResponseJson__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.DebugSentPreviewText__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.ExecutionTraceJson__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.PIIValuesMasked__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIPIIMaskingRecord__c.StepOrder__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>AIConversationMessage__c.MessageBody__c</field>
         <readable>true</readable>
@@ -472,136 +502,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIDataSource__c.TargetObject__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.AIDataSource__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.AIWorkflowAction__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.AttemptNumber__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ConfirmedBy__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ConfirmedDate__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.DurationMilliseconds__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.FieldsSentCount__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.FieldsSent__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ModelIdentifier__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ObjectsSent__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.PIIMaskingApplied__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIExecutionStep__c.PIIValuesMasked__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.Provider__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.RecordsSentCount__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.RequestJson__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.RequiredConfirmation__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ResponseJson__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.SentPreviewText__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.Status__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.StepDetail__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.StepOrder__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.StepType__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.TargetObject__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.TargetRecordId__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ToolCallingIterationsMax__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIExecutionStep__c.ToolCallingIterationsUsed__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -996,6 +896,41 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>AIUsage__c.AIUserSettings__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.ConversationsStarted__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.InputTokens__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.OutputTokens__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.TokensUsed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.UsageDate__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsage__c.User__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>AIUserSettings__c.AllowedChannels__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1022,21 +957,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIUserSettings__c.IsUserInitiatedChatEnabled__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.MaxConcurrentConversations__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.MaxConversationsPer24Hours__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.MaxTokensPer24Hours__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1188,15 +1108,6 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
-        <object>AIExecutionStep__c</object>
-        <viewAllRecords>true</viewAllRecords>
-    </objectPermissions>
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
-        <allowDelete>true</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>true</modifyAllRecords>
         <object>AIFeedback__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -1305,6 +1216,15 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
+        <object>AIUsage__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
         <object>AIUserSettings__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
@@ -1331,10 +1251,6 @@
     </tabSettings>
     <tabSettings>
         <tab>AIDataSource__c</tab>
-        <visibility>Available</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>AIExecutionStep__c</tab>
         <visibility>Available</visibility>
     </tabSettings>
     <tabSettings>

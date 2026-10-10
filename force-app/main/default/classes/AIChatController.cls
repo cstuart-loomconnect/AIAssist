@@ -424,6 +424,63 @@ public without sharing class AIChatController {
         }
     }
 
+    // The user chose to run a Screen Flow action. Nothing runs on the server: this makes the checks and returns the flow and its inputs for the window to show, where the flow runs as the user.
+    @AuraEnabled
+    public static AIChatDataStructure.ScreenFlowLaunch launchScreenFlowAction(Id messageId, String inputsJson) {
+
+        try {
+
+            // [1] Refuse when inline actions are switched off
+            AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
+            if (!uiSettings.inlineActionsEnabled) throw new AIChatControllerException(Label.AI_Error_Action_Not_Permitted);
+
+            // [2] Check the user owns the reply that suggested the action, and that it suggested one
+            AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(messageId);
+            if (suggestingMessage.SuggestedWorkflowAction__c == null) throw new AIChatControllerException(Label.AI_Error_Action_Not_Permitted);
+
+            // [3] Make the checks and build the flow's inputs, as confirmed
+            Map<String, Object> inputs = String.isBlank(inputsJson) ? new Map<String, Object>() : (Map<String, Object>) JSON.deserializeUntyped(inputsJson);
+
+            return AIWorkflowActionDispatcher.prepareScreenFlow(suggestingMessage.SuggestedWorkflowAction__c, suggestingMessage.AIConversation__r.AIAgent__c, AIChatDataStructure.getIdOrNull(suggestingMessage.AIConversation__r.RelatedRecordId__c), inputs, true);
+
+        } catch (Exception ex) {
+
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'launchScreenFlowAction');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // The Screen Flow has ended in the window: FINISHED, ERROR, or anything else for closed before it finished. This is only the evidence on the reply.
+    @AuraEnabled
+    public static void recordScreenFlowOutcome(Id messageId, String outcome) {
+
+        try {
+
+            // [1] Check the user owns the reply that suggested the action
+            AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(messageId);
+
+            // [2] Record how the flow ended
+            AIWorkflowActionDispatcher.recordScreenFlowOutcome(suggestingMessage.SuggestedWorkflowAction__c, suggestingMessage.AIConversation__r.AIAgent__c, suggestingMessage.Id, AIChatDataStructure.getIdOrNull(suggestingMessage.AIConversation__r.RelatedRecordId__c), outcome, true);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'recordScreenFlowOutcome');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
     // The user pressed Cancel on the confirmation. Nothing runs; the evidence records that it was offered and declined.
     @AuraEnabled
     public static void declineSuggestedAction(Id messageId) {

@@ -144,7 +144,7 @@
     <compactLayoutAssignment>AIUserSettingsCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >Stores per-user access scope, platform feature gates, and personal usage limits for AI Assist. One record per User, editable via self-service where appropriate or restricted via permission set for admin-controlled fields.</description>
+  >Stores per-user access scope, platform feature gates, and what happens when a usage limit is reached for AI Assist. The numeric usage limits are set on AI Usage Policy. One record per User, editable via self-service where appropriate or restricted via permission set for admin-controlled fields.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

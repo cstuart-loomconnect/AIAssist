@@ -31,7 +31,7 @@ public without sharing class AIAssistUserDefaults {
         public AIUserSettings__c buildSettings(User user) {
 
             // [1] Copy each section onto the record, linked to the user
-            return new AIUserSettings__c(User__c = user.Id, IsActive__c = isActive, AllowedChannels__c = access.allowedChannels, DebugModeEnabled__c = workflow.debugModeEnabled, MaxTokensPer24Hours__c = limits.maxTokensPer24Hours, ShouldCaptureExecutionSteps__c = workflow.shouldCaptureExecutionSteps, IsUserInitiatedChatEnabled__c = workflow.isUserInitiatedChatEnabled, UsageLimitReachedBehavior__c = limits.usageLimitReachedBehavior, MaxConcurrentConversations__c = limits.maxConcurrentConversations, MaxConversationsPer24Hours__c = limits.maxConversationsPer24Hours, ConversationExportEnabled__c = workflow.conversationExportEnabled, ConversationVisibilityScope__c = access.conversationVisibilityScope);
+            return new AIUserSettings__c(User__c = user.Id, IsActive__c = isActive, AllowedChannels__c = access.allowedChannels, DebugModeEnabled__c = workflow.debugModeEnabled, ShouldCaptureExecutionSteps__c = workflow.shouldCaptureExecutionSteps, IsUserInitiatedChatEnabled__c = workflow.isUserInitiatedChatEnabled, UsageLimitReachedBehavior__c = limits.usageLimitReachedBehavior, ConversationExportEnabled__c = workflow.conversationExportEnabled, ConversationVisibilityScope__c = access.conversationVisibilityScope);
         }
     }
 
@@ -51,12 +51,9 @@ public without sharing class AIAssistUserDefaults {
         public Boolean conversationExportEnabled = false;
     }
 
-    // Rate and usage limits. A null limit means no limit.
+    // What happens when a usage limit is reached. The limits themselves are set on usage policies, not on the user.
     public class LimitsSection {
 
-        public Decimal maxTokensPer24Hours = null;
-        public Decimal maxConcurrentConversations = null;
-        public Decimal maxConversationsPer24Hours = null;
         public String usageLimitReachedBehavior = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY;
     }
 

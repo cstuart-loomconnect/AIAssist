@@ -21,7 +21,7 @@ Version      Author                   Description
     // testScenario1: With no row and no policy the answer is null; an inactive row counts as no row -> null for each.
     // testScenario2: With policies only, limits take the lowest value, the behavior that blocks most, and the widest visibility -> lowest limits, strictest behavior, widest scope.
     // testScenario3: Capabilities add up: a flag, or a channel, allowed by any policy is allowed, and a policy with no channels opens every channel -> combined channels and flags, null channels when open.
-    // testScenario4: The user row overrides a policy where it has a value, and falls through to the policies where it is blank -> own values win, blanks come from the policy.
+    // testScenario4: The numeric limits come from the policy only, and the user row's behavior wins where it is set and falls through to the policy where it is blank -> limits from the policy, own behavior wins.
     // testScenario5: A user row can switch a capability on, but cannot switch off one a policy grants -> row switches export on, policy keeps debug on.
     // testScenario6: New chats follow the user's row when they have one, otherwise any policy that allows them -> the row's off beats a policy's on, a policy allows when there is no row.
 
@@ -45,12 +45,14 @@ Version      Author                   Description
                 AIUserSettings__c nothing = AIUsagePolicyService.resolve(null, null);
                 AIUserSettings__c emptyList = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>());
                 AIUserSettings__c inactiveResult = AIUsagePolicyService.resolve(inactiveRow, null);
+                AIUsagePolicy__c noLimits = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>());
             Test.stopTest();
 
             // [3] Check each answer is null
             Assert.isNull(nothing, 'No row and no policy means no personal limits.');
             Assert.isNull(emptyList, 'An empty list is the same.');
             Assert.isNull(inactiveResult, 'An inactive row is ignored.');
+            Assert.isNull(noLimits, 'With no policy there are no limits.');
         }
     }
 
@@ -71,13 +73,14 @@ Version      Author                   Description
             // [2] Resolve the policies together
             Test.startTest();
                 AIUserSettings__c resolved = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ loose, strict, middle });
+                AIUsagePolicy__c limits = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>{ loose, strict, middle });
             Test.stopTest();
 
             // [3] Check the lowest limits, strictest behavior and widest scope win
-            Assert.areEqual(2, resolved.MaxConcurrentConversations__c, 'The lowest.');
-            Assert.areEqual(20, resolved.MaxConversationsPer24Hours__c, 'The lowest that is set; a blank limit sets nothing.');
-            Assert.areEqual(100000, resolved.MaxTokensPer24Hours__c, 'The lowest.');
-            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, resolved.UsageLimitReachedBehavior__c, 'The behavior that blocks most.');
+            Assert.areEqual(2, limits.MaxConcurrentConversations__c, 'The lowest.');
+            Assert.areEqual(20, limits.MaxConversationsPer24Hours__c, 'The lowest that is set; a blank limit sets nothing.');
+            Assert.areEqual(100000, limits.MaxTokensPer24Hours__c, 'The lowest.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, limits.UsageLimitReachedBehavior__c, 'The behavior that blocks most.');
             Assert.areEqual(AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL, resolved.ConversationVisibilityScope__c, 'The widest scope.');
             Assert.isTrue(resolved.IsActive__c, 'The answer is always active.');
         }
@@ -121,19 +124,20 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a policy and a user row that overrides some of its values
             AIUsagePolicy__c groupPolicy = new AIUsagePolicy__c(MaxConcurrentConversations__c = 3, MaxConversationsPer24Hours__c = 50, MaxTokensPer24Hours__c = 200000, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
-            AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, MaxTokensPer24Hours__c = 900000, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY);
+            AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY);
 
             // [2] Resolve the row with the policy
             Test.startTest();
-                AIUserSettings__c resolved = AIUsagePolicyService.resolve(row, new List<AIUsagePolicy__c>{ groupPolicy });
+                AIUsagePolicy__c limits = AIUsagePolicyService.resolveUsageLimits(row, new List<AIUsagePolicy__c>{ groupPolicy });
+                AIUsagePolicy__c limitsWithoutRow = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>{ groupPolicy });
             Test.stopTest();
 
-            // [3] Check the row wins where set and blanks come from the policy
-            Assert.areEqual(900000, resolved.MaxTokensPer24Hours__c, 'The user\'s own value wins, even where it is higher.');
-            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY, resolved.UsageLimitReachedBehavior__c, 'The user\'s own behavior wins.');
-
-            Assert.areEqual(3, resolved.MaxConcurrentConversations__c, 'Blank on the row, so taken from the policy.');
-            Assert.areEqual(50, resolved.MaxConversationsPer24Hours__c, 'Blank on the row, so taken from the policy.');
+            // [3] Check the limits come from the policy and the row's behavior wins where it is set
+            Assert.areEqual(200000, limits.MaxTokensPer24Hours__c, 'The numeric limits come from the policy, never from the user\'s row.');
+            Assert.areEqual(3, limits.MaxConcurrentConversations__c, 'The numeric limits come from the policy, never from the user\'s row.');
+            Assert.areEqual(50, limits.MaxConversationsPer24Hours__c, 'The numeric limits come from the policy, never from the user\'s row.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY, limits.UsageLimitReachedBehavior__c, 'The user\'s own behavior wins.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, limitsWithoutRow.UsageLimitReachedBehavior__c, 'With no row, the behavior comes from the policy.');
         }
     }
 

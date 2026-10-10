@@ -5,7 +5,7 @@
   >The API name of the Flow to run, used when Action Type is Flow.</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Required if Action Type is Flow. Enter the exact API name of the Flow. The Flow runs in system context, not as the user: their object and field permissions are not applied. AI Assist checks the user can access every record Id passed to the Flow (edit access for Write actions) and sets recordId itself. A Flow set to run in system context without sharing is refused.</inlineHelpText>
+  >Required if Action Type is Flow. Enter the exact API name of the Flow. The Flow runs in system context, not as the user: their object and field permissions are not applied. AI Assist checks the user can access every record Id passed to the Flow (edit access for Write actions) and sets recordId itself. A Flow set to run in system context without sharing is refused. A Screen Flow instead runs in the browser as the user.</inlineHelpText>
     <label>Flow API Name</label>
     <length>100</length>
     <required>false</required>

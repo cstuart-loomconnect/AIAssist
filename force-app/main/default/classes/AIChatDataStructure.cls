@@ -223,6 +223,8 @@ public without sharing class AIChatDataStructure {
         @AuraEnabled
         public Boolean hasRun = false;
         @AuraEnabled
+        public Boolean isScreenFlow = false;
+        @AuraEnabled
         public List<ActionInputField> inputFields = new List<ActionInputField>();
     }
 
@@ -250,6 +252,10 @@ public without sharing class AIChatDataStructure {
         public Boolean isSuccess = false;
         @AuraEnabled
         public Long durationMs;
+        @AuraEnabled
+        public String stepType;
+        @AuraEnabled
+        public String stepDetail;
     }
 
     public class MessagePage {
@@ -305,6 +311,14 @@ public without sharing class AIChatDataStructure {
         public Boolean isSuccess = false;
         @AuraEnabled
         public String message;
+    }
+
+    // What the window needs to render a Screen Flow: the flow to start and its input variables in the shape lightning-flow takes (name, type, value).
+    public class ScreenFlowLaunch {
+        @AuraEnabled
+        public String flowApiName;
+        @AuraEnabled
+        public List<Map<String, Object>> inputVariables = new List<Map<String, Object>>();
     }
 
     public class DebugTrace {
