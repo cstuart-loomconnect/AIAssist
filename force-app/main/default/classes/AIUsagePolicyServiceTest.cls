@@ -23,13 +23,12 @@ Version      Author                   Description
     // testScenario3: Capabilities add up: a flag, or a channel, allowed by any policy is allowed, and a policy with no channels opens every channel -> combined channels and flags, null channels when open.
     // testScenario4: The user row overrides a policy where it has a value, and falls through to the policies where it is blank -> own values win, blanks come from the policy.
     // testScenario5: A user row can switch a capability on, but cannot switch off one a policy grants -> row switches export on, policy keeps debug on.
+    // testScenario6: New chats follow the user's row when they have one, otherwise any policy that allows them -> the row's off beats a policy's on, a policy allows when there is no row.
 
     @TestSetup static void setup() {
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -79,7 +78,7 @@ Version      Author                   Description
     @IsTest static void testScenario3() {
 
         // [1] Create policies with different channels and capabilities
-        AIUsagePolicy__c first = new AIUsagePolicy__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE, WorkflowActionsEnabled__c = true);
+        AIUsagePolicy__c first = new AIUsagePolicy__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE, ShouldCaptureExecutionSteps__c = true);
         AIUsagePolicy__c second = new AIUsagePolicy__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, DebugModeEnabled__c = true);
         AIUsagePolicy__c unrestricted = new AIUsagePolicy__c(ConversationExportEnabled__c = true);
 
@@ -95,7 +94,7 @@ Version      Author                   Description
         // [4] Check channels and flags add up and an open policy allows every channel
         Assert.isTrue(channels.contains(AIAssistApplicationConstants.CHANNEL_MOBILE) && channels.contains(AIAssistApplicationConstants.CHANNEL_UTILITY_BAR), 'Channels allowed by either policy.');
 
-        Assert.isTrue(both.WorkflowActionsEnabled__c, 'Granted by the first.');
+        Assert.isTrue(both.ShouldCaptureExecutionSteps__c, 'Granted by the first.');
         Assert.isTrue(both.DebugModeEnabled__c, 'Granted by the second.');
         Assert.isFalse(both.ConversationExportEnabled__c, 'Granted by neither.');
 
@@ -125,7 +124,7 @@ Version      Author                   Description
     @IsTest static void testScenario5() {
 
         // [1] Create a policy that grants capabilities and a row that tries to switch one off
-        AIUsagePolicy__c grants = new AIUsagePolicy__c(DebugModeEnabled__c = true, WorkflowActionsEnabled__c = true);
+        AIUsagePolicy__c grants = new AIUsagePolicy__c(DebugModeEnabled__c = true, ShouldCaptureExecutionSteps__c = true);
         AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, DebugModeEnabled__c = false, ConversationExportEnabled__c = true);
 
         // [2] Resolve the row with the policy
@@ -136,6 +135,29 @@ Version      Author                   Description
         // [3] Check the row cannot remove a granted capability
         Assert.isTrue(resolved.DebugModeEnabled__c, 'An unticked box on the row does not take away what the policy grants.');
         Assert.isTrue(resolved.ConversationExportEnabled__c, 'A ticked box on the row switches it on for that user.');
-        Assert.isTrue(resolved.WorkflowActionsEnabled__c, 'From the policy.');
+        Assert.isTrue(resolved.ShouldCaptureExecutionSteps__c, 'From the policy.');
+    }
+
+    @IsTest static void testScenario6() {
+
+        // [1] Create a policy that allows new chats, a row that turns them off, and a row that leaves them on
+        AIUsagePolicy__c allows = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = true);
+        AIUsagePolicy__c blocks = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = false);
+        AIUserSettings__c pausedRow = new AIUserSettings__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = false);
+        AIUserSettings__c openRow = new AIUserSettings__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = true);
+
+        // [2] Resolve each combination
+        Test.startTest();
+            AIUserSettings__c rowOffPolicyOn = AIUsagePolicyService.resolve(pausedRow, new List<AIUsagePolicy__c>{ allows });
+            AIUserSettings__c rowOnPolicyOff = AIUsagePolicyService.resolve(openRow, new List<AIUsagePolicy__c>{ blocks });
+            AIUserSettings__c noRowPolicyOn = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ blocks, allows });
+            AIUserSettings__c noRowPolicyOff = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ blocks });
+        Test.stopTest();
+
+        // [3] Check the row decides when there is one, and the policies decide when there is not
+        Assert.isFalse(rowOffPolicyOn.IsUserInitiatedChatEnabled__c, 'The row turning new chats off beats a policy allowing them.');
+        Assert.isTrue(rowOnPolicyOff.IsUserInitiatedChatEnabled__c, 'The row allowing new chats beats a policy that does not.');
+        Assert.isTrue(noRowPolicyOn.IsUserInitiatedChatEnabled__c, 'With no row, one allowing policy is enough.');
+        Assert.isFalse(noRowPolicyOff.IsUserInitiatedChatEnabled__c, 'With no row and no allowing policy, new chats are off.');
     }
 }

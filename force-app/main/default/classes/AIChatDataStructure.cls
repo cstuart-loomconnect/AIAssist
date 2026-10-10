@@ -64,8 +64,6 @@ public without sharing class AIChatDataStructure {
         public String suggestedActionsDisplay = AIAssistApplicationConstants.SUGGESTED_ACTIONS_DISPLAY_CARDS;
         @AuraEnabled
         public Integer messagePageSize = AIAssistApplicationConstants.CHAT_DEFAULT_MESSAGE_PAGE_SIZE;
-        @AuraEnabled
-        public Boolean newChatsDisabled = false;
     }
 
     public class UserState {
@@ -77,6 +75,8 @@ public without sharing class AIChatDataStructure {
         public Boolean exportEnabled = false;
         @AuraEnabled
         public Boolean workflowActionsEnabled = false;
+        @AuraEnabled
+        public Boolean newChatsDisabled = false;
     }
 
     public class TermsState {

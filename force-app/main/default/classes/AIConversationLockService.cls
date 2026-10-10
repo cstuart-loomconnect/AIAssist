@@ -13,7 +13,7 @@ Step 4: A scheduled retry keeps the lock for itself (extendLock); a turn that ca
 
 A lock is an expiry time, not a checkbox: while it holds a time in the future the conversation is locked, and blank or
 past means free. If a job and its finalizer both fail without releasing it, it expires after
-AIAssistSettings__c.ProcessingLockMinutes__c and the next message takes it over.
+AIAssistSettings__c.ProcessingLockSeconds__c and the next message takes it over.
 
 Every method that changes the lock reads the conversation SELECT ... FOR UPDATE first, which holds the record until the
 transaction ends, so two callers cannot change the lock at once. A record held past the platform's wait is reported as
@@ -45,7 +45,7 @@ public without sharing class AIConversationLockService {
         if (conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now()) return false;
 
         // [3] Take the lock for the configured time
-        setLockedUntil(conversationId, System.now().addMinutes(AIAssistSettingsService.getSettings().ProcessingLockMinutes__c.intValue()));
+        setLockedUntil(conversationId, System.now().addSeconds(AIAssistSettingsService.getSettings().ProcessingLockSeconds__c.intValue()));
 
         return true;
     }
@@ -70,7 +70,7 @@ public without sharing class AIConversationLockService {
         if (lockRow(conversationId) == null) return;
 
         // [2] Restart the full lock time
-        setLockedUntil(conversationId, System.now().addMinutes(AIAssistSettingsService.getSettings().ProcessingLockMinutes__c.intValue()));
+        setLockedUntil(conversationId, System.now().addSeconds(AIAssistSettingsService.getSettings().ProcessingLockSeconds__c.intValue()));
     }
 
     // Frees the conversation without looking for a waiting message, for a turn that could not be handed on.
@@ -95,7 +95,7 @@ public without sharing class AIConversationLockService {
         // [3] Keep the lock for the waiting message and hand it on
         if (!newestUserMessages.isEmpty() && newestUserMessages[0].Id != processedMessageId) {
 
-            setLockedUntil(conversationId, System.now().addMinutes(AIAssistSettingsService.getSettings().ProcessingLockMinutes__c.intValue()));
+            setLockedUntil(conversationId, System.now().addSeconds(AIAssistSettingsService.getSettings().ProcessingLockSeconds__c.intValue()));
 
             return newestUserMessages[0].Id;
         }

@@ -34,8 +34,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -205,9 +203,9 @@ Version      Author                   Description
         AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
         AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
-        AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
-        uiSettings.IsUserInitiatedChatEnabled__c = false;
-        upsert uiSettings;
+        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+        userSettings.IsUserInitiatedChatEnabled__c = false;
+        insert userSettings;
 
         // [2] Send a normal and a blank message as the chat user
         List<String> labels = new List<String>();

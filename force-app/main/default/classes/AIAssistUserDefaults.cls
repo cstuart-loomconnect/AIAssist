@@ -31,7 +31,7 @@ public without sharing class AIAssistUserDefaults {
         public AIUserSettings__c buildSettings(User user) {
 
             // [1] Copy each section onto the record, linked to the user
-            return new AIUserSettings__c(User__c = user.Id, IsActive__c = isActive, AllowedChannels__c = access.allowedChannels, DebugModeEnabled__c = workflow.debugModeEnabled, MaxTokensPer24Hours__c = limits.maxTokensPer24Hours, WorkflowActionsEnabled__c = workflow.workflowActionsEnabled, UsageLimitReachedBehavior__c = limits.usageLimitReachedBehavior, MaxConcurrentConversations__c = limits.maxConcurrentConversations, MaxConversationsPer24Hours__c = limits.maxConversationsPer24Hours, ConversationExportEnabled__c = workflow.conversationExportEnabled, ConversationVisibilityScope__c = access.conversationVisibilityScope);
+            return new AIUserSettings__c(User__c = user.Id, IsActive__c = isActive, AllowedChannels__c = access.allowedChannels, DebugModeEnabled__c = workflow.debugModeEnabled, MaxTokensPer24Hours__c = limits.maxTokensPer24Hours, ShouldCaptureExecutionSteps__c = workflow.shouldCaptureExecutionSteps, IsUserInitiatedChatEnabled__c = workflow.isUserInitiatedChatEnabled, UsageLimitReachedBehavior__c = limits.usageLimitReachedBehavior, MaxConcurrentConversations__c = limits.maxConcurrentConversations, MaxConversationsPer24Hours__c = limits.maxConversationsPer24Hours, ConversationExportEnabled__c = workflow.conversationExportEnabled, ConversationVisibilityScope__c = access.conversationVisibilityScope);
         }
     }
 
@@ -46,7 +46,8 @@ public without sharing class AIAssistUserDefaults {
     public class WorkflowSection {
 
         public Boolean debugModeEnabled = false;
-        public Boolean workflowActionsEnabled = false;
+        public Boolean shouldCaptureExecutionSteps = false;
+        public Boolean isUserInitiatedChatEnabled = true;
         public Boolean conversationExportEnabled = false;
     }
 

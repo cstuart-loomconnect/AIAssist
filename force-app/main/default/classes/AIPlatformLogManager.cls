@@ -7,7 +7,7 @@ Class Name: AIPlatformLogManager
 Description: Records what went wrong by publishing AIPlatformLogEvent__e, without ever being the thing that goes wrong.
 
 Step 1: Check there is something to log and build the event
-Step 2: Skip quietly if exception logging is off or the publish allowance is used up
+Step 2: Skip quietly if the publish allowance is used up
 Step 3: Cut the text fields to the event's field sizes and publish the event
 Step 4: Swallow any failure so a log call never throws
 
@@ -40,8 +40,8 @@ public without sharing class AIPlatformLogManager {
             // [3] If a record failed to save, point the event at that record
             if (caughtException instanceof DmlException && ((DmlException) caughtException).getNumDml() > 0) exceptionLogEvent.RelatedRecordId__c = ((DmlException) caughtException).getDmlId(0);
 
-            // [4] Publish only if exception logging is on and the publish allowance is not used up
-            if (AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c != false && Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
+            // [4] Publish only if the publish allowance is not used up
+            if (Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
 
                 // [5] Stamp the time and user, and cut each text field to fit the event, because an over-length value would make the whole publish fail
                 exceptionLogEvent.OccurredAt__c = System.now();
@@ -101,8 +101,8 @@ public without sharing class AIPlatformLogManager {
             // [4] Build one event for the whole batch
             AIPlatformLogEvent__e dmlFailureLogEvent = new AIPlatformLogEvent__e(ClassName__c = className, MethodName__c = methodName, ExceptionType__c = AIAssistApplicationConstants.LOG_TYPE_DML_FAILURE, ExceptionMessage__c = failedCount + ' of ' + saveResults.size() + ' record(s) failed to save', ExceptionLogDetail__c = String.join(errorLines, '\n'), RelatedRecordId__c = failedRecordIds.isEmpty() ? null : failedRecordIds[0], Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_ERROR);
 
-            // [5] Publish only if exception logging is on and the publish allowance is not used up
-            if (AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c != false && Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
+            // [5] Publish only if the publish allowance is not used up
+            if (Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
 
                 // [6] Stamp the time and user, and cut each text field to fit the event
                 dmlFailureLogEvent.OccurredAt__c = System.now();
@@ -162,8 +162,8 @@ public without sharing class AIPlatformLogManager {
             // [2] Build the event from the message
             AIPlatformLogEvent__e customMessageLogEvent = new AIPlatformLogEvent__e(ClassName__c = className, MethodName__c = methodName, ExceptionType__c = AIAssistApplicationConstants.LOG_TYPE_CUSTOM_MESSAGE, ExceptionMessage__c = message, ExceptionLogDetail__c = logDetail, RelatedRecordId__c = recordId, Severity__c = severity);
 
-            // [3] Publish only if exception logging is on and the publish allowance is not used up
-            if (AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c != false && Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
+            // [3] Publish only if the publish allowance is not used up
+            if (Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()) {
 
                 // [4] Stamp the time and user, and cut each text field to fit the event
                 customMessageLogEvent.OccurredAt__c = System.now();

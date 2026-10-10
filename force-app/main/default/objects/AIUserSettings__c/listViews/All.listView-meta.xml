@@ -6,7 +6,7 @@
     <columns>IsActive__c</columns>
     <columns>ConversationVisibilityScope__c</columns>
     <columns>AllowedChannels__c</columns>
-    <columns>WorkflowActionsEnabled__c</columns>
+    <columns>IsUserInitiatedChatEnabled__c</columns>
     <columns>DebugModeEnabled__c</columns>
     <columns>MaxConcurrentConversations__c</columns>
     <columns>MaxTokensPer24Hours__c</columns>

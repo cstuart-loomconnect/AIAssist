@@ -26,14 +26,12 @@ Version      Author                   Description
     // testScenario6: Recording with no message, no trace or a trace with no steps -> nothing is saved.
     // testScenario7: A value longer than its field -> it is cut instead of losing the evidence row.
     // testScenario8: Bulk: two hundred steps -> all saved in one insert, in order.
-    // testScenario9: Each capture mode -> Off stores no step for the turn, Summary, Full and a blank or unknown setting store steps.
+    // testScenario9: A trace the user has step capture off for, and one with it on -> the first stores no step for the turn, the second stores its step.
 
     @TestSetup static void setup() {
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -322,37 +320,24 @@ Version      Author                   Description
 
         AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 5, 1, true)[0];
 
-        Map<String, Integer> stepsBySetting = new Map<String, Integer>();
+        Map<Boolean, Integer> stepsByCaptureSetting = new Map<Boolean, Integer>();
 
-        // [2] Record one step under each capture mode setting
+        // [2] Record one step with step capture off, then on
         Test.startTest();
-            for (String configured : new List<String>{
-                'Off',
-                'Summary',
-                'full',
-                '',
-                'Everything'
-            }) {
-
-                AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-                settings.StepCaptureMode__c = configured;
-                update settings;
-                AIAssistSettingsService.cachedSettings = null;
+            for (Boolean shouldCaptureSteps : new List<Boolean>{ false, true }) {
 
                 AIExecutionStepTracker trace = new AIExecutionStepTracker(conversation.Id, message.Id, false, false);
+                trace.shouldCaptureSteps = shouldCaptureSteps;
                 trace.startStep('Calling the model', null);
                 trace.endStep(true);
                 delete [SELECT Id FROM AIExecutionStep__c];
                 AIExecutionStepRecorder.recordExecutionSteps(message.Id, trace, 'Anthropic', 'model-1');
-                stepsBySetting.put(configured, [SELECT COUNT() FROM AIExecutionStep__c]);
+                stepsByCaptureSetting.put(shouldCaptureSteps, [SELECT COUNT() FROM AIExecutionStep__c]);
             }
         Test.stopTest();
 
-        // [3] Check Off stores nothing and every other setting stores the step
-        Assert.areEqual(0, stepsBySetting.get('Off'), 'Off stores no step.');
-        Assert.areEqual(1, stepsBySetting.get('Summary'), 'Summary stores it.');
-        Assert.areEqual(1, stepsBySetting.get('full'), 'Full stores it.');
-        Assert.areEqual(1, stepsBySetting.get(''), 'A blank setting stores steps.');
-        Assert.areEqual(1, stepsBySetting.get('Everything'), 'And so does an unknown one.');
+        // [3] Check off stores nothing and on stores the step
+        Assert.areEqual(0, stepsByCaptureSetting.get(false), 'With step capture off nothing is stored.');
+        Assert.areEqual(1, stepsByCaptureSetting.get(true), 'With step capture on the step is stored.');
     }
 }

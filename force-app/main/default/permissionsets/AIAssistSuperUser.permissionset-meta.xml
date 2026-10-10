@@ -42,11 +42,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIAgent__c.ObjectApiNames__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>AIAgent__c.AIModelConfiguration__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -117,6 +112,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>AIAgent__c.ObjectApiNames__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>AIAgent__c.RetentionTrigger__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -147,17 +147,12 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIConversationMessage__c.InputTokenCount__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIConversationMessage__c.LatencyMilliseconds__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>AIConversationMessage__c.InReplyTo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.InputTokenCount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -168,6 +163,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIConversationMessage__c.IsSuperseded__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversationMessage__c.LatencyMilliseconds__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -497,6 +497,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>AIModelConfiguration__c.EnvironmentId__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>AIModelConfiguration__c.IsActive__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -513,11 +518,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIModelConfiguration__c.NamedCredential__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIModelConfiguration__c.EnvironmentId__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -811,6 +811,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUsagePolicy__c.IsUserInitiatedChatEnabled__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>AIUsagePolicy__c.MaxConcurrentConversations__c</field>
         <readable>true</readable>
@@ -826,13 +831,13 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>AIUsagePolicy__c.UsageLimitReachedBehavior__c</field>
+        <editable>true</editable>
+        <field>AIUsagePolicy__c.ShouldCaptureExecutionSteps__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIUsagePolicy__c.WorkflowActionsEnabled__c</field>
+        <field>AIUsagePolicy__c.UsageLimitReachedBehavior__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -861,6 +866,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUserSettings__c.IsUserInitiatedChatEnabled__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>AIUserSettings__c.MaxConcurrentConversations__c</field>
         <readable>true</readable>
@@ -876,6 +886,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>AIUserSettings__c.ShouldCaptureExecutionSteps__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>AIUserSettings__c.UsageLimitReachedBehavior__c</field>
         <readable>true</readable>
@@ -883,11 +898,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIUserSettings__c.User__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>AIUserSettings__c.WorkflowActionsEnabled__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

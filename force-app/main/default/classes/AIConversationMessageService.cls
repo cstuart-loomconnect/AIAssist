@@ -98,7 +98,7 @@ public without sharing class AIConversationMessageService {
             // [5] Refuse a new conversation while new chats are paused
             Boolean isNewConversation = conversation == null;
 
-            if (isNewConversation && AIAssistSettingsService.getUiSettings().IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
+            if (isNewConversation && chatContext.userSettings != null && chatContext.userSettings.IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
 
             // [6] Check the usage limits
             AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);

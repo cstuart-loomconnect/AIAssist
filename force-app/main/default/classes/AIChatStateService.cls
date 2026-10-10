@@ -7,7 +7,7 @@ Class Name: AIChatStateService
 Description: Works out what state the chat window is in for the signed-in user (the settings behind ChatContext.state).
 
 Step 1: Build the UI settings from the org's UI settings record
-Step 2: Build what this user may do (debug, export, Workflow Actions) from the UI settings and their own settings row
+Step 2: Build what this user may do (debug, export, new chats, Workflow Actions) from their own settings and the UI settings
 Step 3: Check the channel is allowed and whether the terms have to be accepted
 Step 4: Name the one reason the user cannot send a message right now, if there is one
 
@@ -33,9 +33,8 @@ public without sharing class AIChatStateService {
         uiState.showTimestamps = uiSettings.ShowTimestampOnMessages__c == true;
         uiState.feedbackEnabled = uiSettings.IsFeedbackEnabled__c != false;
         uiState.typingIndicatorEnabled = uiSettings.TypingIndicatorEnabled__c != false;
-        uiState.showExecutionTrace = uiSettings.ShowExecutionTraceToUser__c == true;
-        uiState.inlineActionsEnabled = uiSettings.AllowInlineWorkflowActions__c != false;
-        uiState.newChatsDisabled = uiSettings.IsUserInitiatedChatEnabled__c == false;
+        uiState.showExecutionTrace = uiSettings.ShouldShowExecutionTrace__c == true;
+        uiState.inlineActionsEnabled = uiSettings.IsInlineWorkflowActionsEnabled__c != false;
 
         // [3] Show suggested actions as cards unless inline buttons were asked for
         uiState.suggestedActionsDisplay = uiSettings.SuggestedActionsDisplay__c != null && uiSettings.SuggestedActionsDisplay__c.trim().equalsIgnoreCase(AIAssistApplicationConstants.SUGGESTED_ACTIONS_DISPLAY_INLINE_BUTTONS) ? AIAssistApplicationConstants.SUGGESTED_ACTIONS_DISPLAY_INLINE_BUTTONS : AIAssistApplicationConstants.SUGGESTED_ACTIONS_DISPLAY_CARDS;
@@ -46,7 +45,7 @@ public without sharing class AIChatStateService {
         return uiState;
     }
 
-    // Builds what the signed-in user may do. Debug mode and Workflow Actions follow the UI settings; export follows the user's settings row, so with no row there is no export.
+    // Builds what the signed-in user may do. Workflow Actions follow the UI settings; debug mode, export and new chats follow the user's settings, so with none there is no debug and no export, and new chats are allowed.
     public static AIChatDataStructure.UserState buildUserState(AIUserSettings__c userSettings) {
 
         // [1] Create the result for the signed-in user
@@ -56,12 +55,13 @@ public without sharing class AIChatStateService {
         // [2] Use an empty row when the user has none
         AIUserSettings__c settings = userSettings == null ? new AIUserSettings__c() : userSettings;
 
-        // [3] Debug mode and Workflow Actions come from the UI settings, and export from the user's row; all need the application on
+        // [3] Workflow Actions come from the UI settings, and debug mode, export and new chats from the user's settings; all need the application on
         Boolean isApplicationOn = AIAssistSettingsService.isEnabled();
         AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-        userState.debugMode = isApplicationOn && uiSettings.IsDebugModeEnabled__c == true;
+        userState.debugMode = isApplicationOn && settings.DebugModeEnabled__c == true;
         userState.exportEnabled = isApplicationOn && settings.ConversationExportEnabled__c == true;
-        userState.workflowActionsEnabled = isApplicationOn && uiSettings.AreWorkflowActionsEnabled__c == true;
+        userState.workflowActionsEnabled = isApplicationOn && uiSettings.IsWorkflowActionsEnabled__c == true;
+        userState.newChatsDisabled = userSettings != null && userSettings.IsUserInitiatedChatEnabled__c == false;
 
         return userState;
     }

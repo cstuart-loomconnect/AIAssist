@@ -26,8 +26,6 @@ Version      Author                   Description
     // testScenario4: A batch where every record saved logs nothing.
     // testScenario5: logCustomMessage records a warning with the related record, and does nothing when both the message and the detail are blank.
     // testScenario6: Missing input is ignored without throwing: no exception, no class name, no method name and no save results.
-    // testScenario7: With exception logging switched off nothing is published, so nothing is saved.
-    // testScenario8: With platform logging switched off events are published but dropped rather than saved as records.
 
     private static final String CLASS_NAME = 'AIPlatformLogManagerTest';
 
@@ -35,8 +33,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -184,47 +180,5 @@ Version      Author                   Description
 
         // [3] Check nothing was logged and nothing threw
         Assert.areEqual(0, logCount, 'Invalid input should log nothing, and should not throw.');
-    }
-
-    @IsTest static void testScenario7() {
-
-        // [1] Switch exception logging off
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.IsExceptionLoggingEnabled__c = false;
-        update settings;
-
-        AIAssistSettingsService.cachedSettings = null;
-
-        // [2] Log an exception
-        Test.startTest();
-            AIPlatformLogManager.logException(new NullPointerException(), CLASS_NAME, 'testScenario7');
-        Test.stopTest();
-
-        // [3] Count the saved logs
-        Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c];
-
-        // [4] Check nothing was saved
-        Assert.areEqual(0, logCount, 'Nothing was published, so nothing should be saved.');
-    }
-
-    @IsTest static void testScenario8() {
-
-        // [1] Switch platform logging off
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.IsPlatformLoggingEnabled__c = false;
-        update settings;
-
-        AIAssistSettingsService.cachedSettings = null;
-
-        // [2] Log an exception
-        Test.startTest();
-            AIPlatformLogManager.logException(new NullPointerException(), CLASS_NAME, 'testScenario8');
-        Test.stopTest();
-
-        // [3] Count the saved logs
-        Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c];
-
-        // [4] Check the event was dropped rather than saved
-        Assert.areEqual(0, logCount, 'With platform logging off the event should be dropped rather than saved.');
     }
 }

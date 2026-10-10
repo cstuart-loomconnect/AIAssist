@@ -320,13 +320,12 @@ public without sharing class AIAssistTestDataFactory {
         return userSettingsRows;
     }
 
-    // The org-level UI settings that switch debug mode and Workflow Actions on or off for every user.
-    public static AIAssistUISettings__c upsertUiSettings(Boolean isDebugModeEnabled, Boolean areWorkflowActionsEnabled) {
+    // The org-level UI settings that switch Workflow Actions on or off for every user.
+    public static AIAssistUISettings__c upsertUiSettings(Boolean isWorkflowActionsEnabled) {
 
-        // [1] Set the two switches on the org defaults and save them
+        // [1] Set the switch on the org defaults and save them
         AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
-        uiSettings.IsDebugModeEnabled__c = isDebugModeEnabled;
-        uiSettings.AreWorkflowActionsEnabled__c = areWorkflowActionsEnabled;
+        uiSettings.IsWorkflowActionsEnabled__c = isWorkflowActionsEnabled;
         upsert uiSettings;
 
         return uiSettings;

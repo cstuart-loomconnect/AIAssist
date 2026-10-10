@@ -6,7 +6,7 @@ Class Name: AIExecutionStepRecorder
 
 Description: Saves the execution steps (and masking records) for a turn that has just ended, as audit evidence.
 
-Step 1: Skip the turn when there is no message, no steps, or step capture is Off
+Step 1: Skip the turn when there is no message, no steps, or the user has step capture off
 Step 2: Find the last provider call, the only one that carries the debug payloads
 Step 3: Build one execution step per tracker entry
 Step 4: Save the steps, logging any that fail
@@ -27,8 +27,8 @@ public without sharing class AIExecutionStepRecorder {
 
         try {
 
-            // [1] Do nothing when there is no message or no steps, or when step capture is Off (a workflow action a user runs is still recorded by recordWorkflowActionStep)
-            if (messageId == null || executionTrace == null || executionTrace.steps.isEmpty() || AIAssistSettingsService.getSettings().StepCaptureMode__c == AIAssistApplicationConstants.STEP_CAPTURE_OFF) return;
+            // [1] Do nothing when there is no message or no steps, or when the user has step capture off (a workflow action a user runs is still recorded by recordWorkflowActionStep)
+            if (messageId == null || executionTrace == null || executionTrace.steps.isEmpty() || !executionTrace.shouldCaptureSteps) return;
 
             // [2] Find the last provider call, because only that call keeps its payloads
             Integer lastProviderCallIndex = -1;

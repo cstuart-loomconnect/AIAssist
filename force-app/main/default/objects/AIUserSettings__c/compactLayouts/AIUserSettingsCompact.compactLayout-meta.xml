@@ -5,6 +5,6 @@
     <fields>User__c</fields>
     <fields>IsActive__c</fields>
     <fields>DebugModeEnabled__c</fields>
-    <fields>WorkflowActionsEnabled__c</fields>
+    <fields>IsUserInitiatedChatEnabled__c</fields>
     <label>AIUser Settings Compact</label>
 </CompactLayout>

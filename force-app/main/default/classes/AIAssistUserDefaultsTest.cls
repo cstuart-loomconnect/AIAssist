@@ -25,8 +25,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -43,7 +41,8 @@ Version      Author                   Description
         // [3] Check each default value
         Assert.areEqual(true, settings.IsActive__c, 'IsActive__c should default to true.');
         Assert.areEqual(false, settings.DebugModeEnabled__c, 'DebugModeEnabled__c should default to false.');
-        Assert.areEqual(false, settings.WorkflowActionsEnabled__c, 'WorkflowActionsEnabled__c should default to false.');
+        Assert.areEqual(false, settings.ShouldCaptureExecutionSteps__c, 'ShouldCaptureExecutionSteps__c should default to false.');
+        Assert.areEqual(true, settings.IsUserInitiatedChatEnabled__c, 'IsUserInitiatedChatEnabled__c should default to true.');
         Assert.areEqual(false, settings.ConversationExportEnabled__c, 'ConversationExportEnabled__c should default to false.');
         Assert.isNull(settings.MaxTokensPer24Hours__c, 'MaxTokensPer24Hours__c should default to no limit.');
         Assert.isNull(settings.MaxConcurrentConversations__c, 'MaxConcurrentConversations__c should default to no limit.');

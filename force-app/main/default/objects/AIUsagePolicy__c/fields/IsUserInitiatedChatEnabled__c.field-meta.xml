@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsUserInitiatedChatEnabled__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description
+  >Whether users covered by this policy can start new conversations. A user with their own AI User Settings row follows that row instead.</description>
+    <inlineHelpText
+  >Where several policies apply, new conversations are allowed if any of them allows them.</inlineHelpText>
+    <label>Is User Initiated Chat Enabled</label>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

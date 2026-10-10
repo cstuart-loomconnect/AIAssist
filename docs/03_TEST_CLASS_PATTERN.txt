@@ -34,8 +34,7 @@ RULES
    - Method names are testScenario1, testScenario2, ... matching the list.
 
 4. TestSetup
-   - Upsert AIAssistSettings__c org defaults with IsEnabled__c,
-     IsExceptionLoggingEnabled__c and IsPlatformLoggingEnabled__c all true.
+   - Upsert AIAssistSettings__c org defaults with IsEnabled__c true.
    - (IsApplicationActive__c does not exist in this repo; use IsEnabled__c.)
 
 5. Test body order
@@ -124,8 +123,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 

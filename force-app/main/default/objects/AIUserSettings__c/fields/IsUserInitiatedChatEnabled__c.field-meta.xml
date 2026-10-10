@@ -3,10 +3,11 @@
     <fullName>IsUserInitiatedChatEnabled__c</fullName>
     <defaultValue>true</defaultValue>
     <description
-  >Whether users can start new conversations. Unchecked, new conversations are refused while existing open conversations can continue.</description>
+  >Whether this user can start new conversations. Unchecked, their new conversations are refused while existing open conversations can continue.</description>
     <inlineHelpText
-  >Turn this off to block new conversations without disrupting ones already in progress.</inlineHelpText>
+  >Turn this off to stop this user starting new conversations without disrupting ones already in progress.</inlineHelpText>
     <label>Is User Initiated Chat Enabled</label>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

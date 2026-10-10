@@ -5,7 +5,7 @@
     <description
   >Only set on a &quot;Provider callout&quot; step - the exact JSON body of that callout, already pseudonymised, since it&apos;s built from the same masked values sent to the provider.</description>
     <inlineHelpText
-  >Left blank for a data source step. Only captured when AIAssistSettings__c.StepCaptureMode__c is Full, to avoid the storage cost otherwise.</inlineHelpText>
+  >Left blank for a data source step. Only captured for a user with AIUserSettings__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c both on, to avoid the storage cost otherwise.</inlineHelpText>
     <label>Request JSON</label>
     <length>131072</length>
     <securityClassification>Confidential</securityClassification>

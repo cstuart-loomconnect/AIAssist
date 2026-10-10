@@ -39,8 +39,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -99,7 +97,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -140,7 +138,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -149,7 +147,7 @@ Version      Author                   Description
         AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
         AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        AIAssistTestDataFactory.upsertUiSettings(false, false);
+        AIAssistTestDataFactory.upsertUiSettings(false);
 
         List<String> codes = new List<String>();
 
@@ -190,7 +188,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -237,7 +235,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -292,7 +290,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -343,7 +341,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -385,7 +383,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -425,7 +423,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -460,7 +458,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.KeysExecutor', true)[0];
@@ -506,7 +504,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -569,7 +567,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.ContextExecutor', true)[0];
@@ -607,7 +605,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
@@ -663,7 +661,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
@@ -724,7 +722,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
@@ -766,7 +764,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.RecordExecutor', false)[0];
@@ -808,7 +806,7 @@ Version      Author                   Description
         AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
         AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(false, true);
+        AIAssistTestDataFactory.upsertUiSettings(true);
         insert userSettings;
 
         AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];

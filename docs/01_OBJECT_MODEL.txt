@@ -361,7 +361,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (12):
+Fields (13):
 
 [ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
@@ -370,11 +370,12 @@ Fields (12):
 [ ] Description__c (Text)
 [ ] IsActive__c (Checkbox)
 [ ] IsDefault__c (Checkbox)
+[ ] IsUserInitiatedChatEnabled__c (Checkbox)
 [ ] MaxConcurrentConversations__c (Number)
 [ ] MaxConversationsPer24Hours__c (Number)
 [ ] MaxTokensPer24Hours__c (Number)
+[ ] ShouldCaptureExecutionSteps__c (Checkbox)
 [ ] UsageLimitReachedBehavior__c (Picklist)
-[ ] WorkflowActionsEnabled__c (Checkbox)
 
 Validation rules (1):
 
@@ -433,19 +434,20 @@ Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (11):
+Fields (12):
 
 [ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
 [ ] ConversationVisibilityScope__c (Picklist)
 [ ] DebugModeEnabled__c (Checkbox)
 [ ] IsActive__c (Checkbox)
+[ ] IsUserInitiatedChatEnabled__c (Checkbox)
 [ ] MaxConcurrentConversations__c (Number)
 [ ] MaxConversationsPer24Hours__c (Number)
 [ ] MaxTokensPer24Hours__c (Number)
+[ ] ShouldCaptureExecutionSteps__c (Checkbox)
 [ ] UsageLimitReachedBehavior__c (Picklist)
 [ ] User__c (Lookup to User)
-[ ] WorkflowActionsEnabled__c (Checkbox)
 
 Validation rules (1):
 
@@ -1021,7 +1023,7 @@ Hierarchy custom setting, visibility Public.
 
 [ ] Object definition: label, description, type, visibility
 
-Fields (18):
+Fields (15):
 
 [ ] AIProviderSuccessStatusCodes__c (Text)
 [ ] AIUsagePolicyUrl__c (Url)
@@ -1029,18 +1031,15 @@ Fields (18):
 [ ] CurrentTermsVersion__c (Text)
 [ ] DefaultMaxToolCallingIterations__c (Number)
 [ ] IsEnabled__c (Checkbox)
-[ ] IsExceptionLoggingEnabled__c (Checkbox)
-[ ] IsPlatformLoggingEnabled__c (Checkbox)
 [ ] MaxMessageLength__c (Number)
 [ ] MaxMessagesInFlight__c (Number)
 [ ] MaxMessagesPerUserPerMinute__c (Number)
 [ ] MaxPIIRegistryObjects__c (Number)
 [ ] MaxToolCallingIterationsCap__c (Number)
 [ ] MaxToolCallsPerIteration__c (Number)
-[ ] ProcessingLockMinutes__c (Number)
+[ ] ProcessingLockSeconds__c (Number)
 [ ] RetryAttempts__c (Number)
 [ ] RetryableStatusCodes__c (Text)
-[ ] StepCaptureMode__c (Text)
 
 Presentation and platform:
 
@@ -1054,17 +1053,15 @@ Hierarchy custom setting, visibility Public.
 
 [ ] Object definition: label, description, type, visibility
 
-Fields (12):
+Fields (10):
 
-[ ] AllowInlineWorkflowActions__c (Checkbox)
-[ ] AreWorkflowActionsEnabled__c (Checkbox)
-[ ] IsDebugModeEnabled__c (Checkbox)
 [ ] IsEnabled__c (Checkbox)
 [ ] IsFeedbackEnabled__c (Checkbox)
+[ ] IsInlineWorkflowActionsEnabled__c (Checkbox)
 [ ] IsMaintenanceMode__c (Checkbox)
-[ ] IsUserInitiatedChatEnabled__c (Checkbox)
+[ ] IsWorkflowActionsEnabled__c (Checkbox)
 [ ] MaxVisibleMessageHistory__c (Number)
-[ ] ShowExecutionTraceToUser__c (Checkbox)
+[ ] ShouldShowExecutionTrace__c (Checkbox)
 [ ] ShowTimestampOnMessages__c (Checkbox)
 [ ] SuggestedActionsDisplay__c (Text)
 [ ] TypingIndicatorEnabled__c (Checkbox)

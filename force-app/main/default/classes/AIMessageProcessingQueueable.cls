@@ -176,8 +176,11 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.workflowActions = getAssignedActions(agent.Id);
             responseRequest.attemptNumber = attemptNumber;
 
-            // [16] Show live progress as the org-wide setting says, and capture request and response payloads only when the step capture mode is Full
-            responseRequest.trace = new AIExecutionStepTracker(conversationId, triggeringMessageId, AIAssistSettingsService.getUiSettings().ShowExecutionTraceToUser__c == true, AIAssistSettingsService.getSettings().StepCaptureMode__c == AIAssistApplicationConstants.STEP_CAPTURE_FULL);
+            // [16] Show live progress as the UI settings say, store steps when the user's settings say so, and keep request and response payloads only for a user with both step capture and debug mode on
+            AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+            Boolean shouldCaptureSteps = userSettings?.ShouldCaptureExecutionSteps__c == true;
+            responseRequest.trace = new AIExecutionStepTracker(conversationId, triggeringMessageId, AIAssistSettingsService.getUiSettings().ShouldShowExecutionTrace__c == true, shouldCaptureSteps && userSettings.DebugModeEnabled__c == true);
+            responseRequest.trace.shouldCaptureSteps = shouldCaptureSteps;
 
             // [17] Run the turn through the AI Agent Manager
             AIAgentManager.AgentResult agentResult = AIAgentManager.executeAiMessage(responseRequest.agent, responseRequest.modelConfiguration, responseRequest.promptTemplate, responseRequest.routingPromptTemplates, responseRequest.conversation, responseRequest.messageHistory, responseRequest.dataSources, responseRequest.workflowActions, responseRequest.attemptNumber, responseRequest.trace);

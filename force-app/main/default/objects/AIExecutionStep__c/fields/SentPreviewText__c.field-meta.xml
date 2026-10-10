@@ -6,7 +6,7 @@
   >Only set on a &quot;Provider callout&quot; step - a short excerpt of the newest user-role message actually sent on that callout, already pseudonymised (e.g. showing ‹PERSON_1› in place of a name).</description>
     <externalId>false</externalId>
     <inlineHelpText
-  >Truncated - a preview, not the full request. See Request JSON for that. Only captured when AIAssistSettings__c.StepCaptureMode__c is Full.</inlineHelpText>
+  >Truncated - a preview, not the full request. See Request JSON for that. Only captured for a user with AIUserSettings__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c both on.</inlineHelpText>
     <label>Sent Preview Text</label>
     <length>255</length>
     <required>false</required>

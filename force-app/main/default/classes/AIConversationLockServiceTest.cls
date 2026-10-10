@@ -30,8 +30,6 @@ Version      Author                   Description
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.IsEnabled__c = true;
-        settings.IsExceptionLoggingEnabled__c = true;
-        settings.IsPlatformLoggingEnabled__c = true;
         upsert settings;
     }
 
@@ -61,7 +59,7 @@ Version      Author                   Description
         Assert.isTrue(first, 'The first caller should take the lock.');
         Assert.isFalse(second, 'The second caller should be told another message is being processed.');
         Assert.isTrue(afterLock, 'The conversation should read as locked.');
-        Assert.isTrue(lockedUntil > System.now() .addMinutes(AIAssistSettingsService.getSettings() .ProcessingLockMinutes__c.intValue() - 1), 'The lock should last the configured time.');
+        Assert.isTrue(lockedUntil > System.now() .addSeconds(AIAssistSettingsService.getSettings() .ProcessingLockSeconds__c.intValue() - 1), 'The lock should last the configured time.');
     }
 
     @IsTest static void testScenario2() {
@@ -166,7 +164,7 @@ Version      Author                   Description
         .ProcessingLockedUntil__c;
 
         // [4] Check the extend restarted the lock time and the release cleared it
-        Assert.isTrue(extended > System.now() .addMinutes(AIAssistSettingsService.getSettings() .ProcessingLockMinutes__c.intValue() - 1), 'The lock should be reset to its full time.');
+        Assert.isTrue(extended > System.now() .addSeconds(AIAssistSettingsService.getSettings() .ProcessingLockSeconds__c.intValue() - 1), 'The lock should be reset to its full time.');
         Assert.isFalse(lockedAfterRelease, 'The conversation should be released.');
         Assert.isNull(released, 'A blank value should mean unlocked.');
     }
