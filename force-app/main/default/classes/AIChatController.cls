@@ -89,13 +89,20 @@ public without sharing class AIChatController {
             AIConversation__c conversation = AIConversationVisibilityService.getViewableConversation(conversationId);
             AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
 
-            // [2] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it
-            if (AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null && AIConversationMessageService.startHeldMessage()) conversation.ProcessingLockedUntil__c = System.now().addMinutes(1);
+            // [2] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it. Only a conversation with a held message asks, so the other updates do no org-wide work
+            Boolean isHeld = AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null && AIConversationMessageService.hasHeldMessage(conversationId);
 
-            // [3] Report the conversation's status and whether a reply is still being worked on
+            if (isHeld && AIConversationMessageService.startHeldMessage()) {
+
+                conversation.ProcessingLockedUntil__c = System.now().addMinutes(1);
+                isHeld = false;
+            }
+
+            // [3] Report the conversation's status, whether a reply is still being worked on and whether the message is still waiting for a place
             AIChatDataStructure.ConversationUpdate conversationUpdate = new AIChatDataStructure.ConversationUpdate();
             conversationUpdate.status = conversation.Status__c;
-            conversationUpdate.isProcessing = conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now();
+            conversationUpdate.isHeld = isHeld;
+            conversationUpdate.isProcessing = isHeld || (conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now());
 
             // [4] Add the messages newer than the last one the window has
             conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(userSettings), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));

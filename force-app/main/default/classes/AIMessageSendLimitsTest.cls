@@ -25,6 +25,7 @@ Version      Author                   Description
     // testScenario3: A user at the messages-per-minute limit is refused, and another user is not -> the third message is refused with the rate limited label, the other user's first is accepted.
     // testScenario4: A message longer than the configured maximum is refused, and one at the maximum is accepted -> too long label for 21 characters, no refusal for 20.
     // testScenario5: A message that has waited at the cap for longer than the timeout is failed as Service Busy by any user's poll or by the maintenance job, is not started afterwards, and one still inside the timeout is left waiting -> failed as Service Busy, in-timeout message started and not failed.
+    // testScenario6: A chat window update does the held-message work only for a conversation that has a message waiting at the cap -> a conversation with none leaves another user's expired waiting message alone, the one with a waiting message reports it held and still processing, and another user's window sees nothing held.
 
     @TestSetup static void setup() {
 
@@ -324,5 +325,77 @@ Version      Author                   Description
         Assert.isTrue(startedBySender, 'The message inside the timeout started.');
         Assert.isFalse(afterAll.get(waiting[2].Id).IsAwaitingCapacity__c, 'It is the one that was started.');
         Assert.areNotEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, afterAll.get(waiting[2].Id).ProcessingStatus__c, 'And it was not failed.');
+    }
+
+    @IsTest static void testScenario6() {
+
+        // [1] Create two users with access and an agent
+        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+
+        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+
+        AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+        // [2] Create a conversation with a waiting message and one without for the first user, and a conversation with an expired waiting message for the second
+        AIConversation__c holdingConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[0].Id, 1, true)[0];
+        AIConversation__c quietConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[0].Id, 1, true)[0];
+        AIConversation__c otherConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+
+        List<AIConversationMessage__c> waiting = new List<AIConversationMessage__c>();
+        for (Integer index = 0; index < 2; index++) {
+
+            System.runAs(users[index]) {
+
+                AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(index == 0 ? holdingConversation.Id : otherConversation.Id, AIAssistApplicationConstants.SENDER_USER, 0, 1, false)[0];
+                message.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED;
+                message.IsAwaitingCapacity__c = true;
+                AIMessagingDataService.insertOrThrow(new List<SObject>{ message });
+                waiting.add(message);
+            }
+        }
+
+        Test.setCreatedDate(waiting[1].Id, System.now().addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES - 1));
+
+        // [3] Set the limit on the settings record
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.put('MaxMessagesInFlight__c', 5);
+        update settings;
+        AIAssistSettingsService.cachedSettings = null;
+
+        AIChatDataStructure.ConversationUpdate quietUpdate;
+        String otherStatusAfterQuiet;
+        AIChatDataStructure.ConversationUpdate holdingUpdate;
+        AIChatDataStructure.ConversationUpdate otherUpdate;
+
+        // [4] Update the quiet conversation, then the one holding a message, then the other user's own, with the cap reached
+        Test.startTest();
+            AIUsageLimitService.inFlightForTest = 5;
+
+            System.runAs(users[0]) {
+
+                quietUpdate = AIChatController.getConversationUpdate(quietConversation.Id, null);
+            }
+
+            // The state after the quiet update is itself under test, so it is read here.
+            otherStatusAfterQuiet = [SELECT ProcessingStatus__c FROM AIConversationMessage__c WHERE Id = :waiting[1].Id].ProcessingStatus__c;
+
+            System.runAs(users[0]) {
+
+                holdingUpdate = AIChatController.getConversationUpdate(holdingConversation.Id, null);
+            }
+
+            System.runAs(users[1]) {
+
+                otherUpdate = AIChatController.getConversationUpdate(otherConversation.Id, null);
+            }
+        Test.stopTest();
+
+        // [5] Check the quiet update did no held-message work, and the others reported what they hold
+        Assert.isFalse(quietUpdate.isHeld, 'Nothing is waiting in the quiet conversation.');
+        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED, otherStatusAfterQuiet, 'So it did not sweep another user\'s expired message.');
+        Assert.isTrue(holdingUpdate.isHeld, 'The cap is still reached, so the message is still waiting.');
+        Assert.isTrue(holdingUpdate.isProcessing, 'And the window keeps polling.');
+        Assert.isFalse(otherUpdate.isHeld, 'The other user\'s message was failed by the sweep, so it is no longer waiting.');
     }
 }

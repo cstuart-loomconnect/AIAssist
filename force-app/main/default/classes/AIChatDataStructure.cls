@@ -262,6 +262,8 @@ public without sharing class AIChatDataStructure {
         @AuraEnabled
         public Boolean isProcessing = false;
         @AuraEnabled
+        public Boolean isHeld = false;
+        @AuraEnabled
         public String status;
     }
 
