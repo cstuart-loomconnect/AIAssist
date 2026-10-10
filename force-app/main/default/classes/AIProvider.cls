@@ -21,6 +21,7 @@ changes.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development - Request/ToolDefinition/Response/ToolCall and stringifyToolResult moved from AIAgentManager, plus the provider lookup.
+2.0          Chandler Stuart          Provider presets for the credential set-up, and getFailureReason.
 */
 
 public inherited sharing class AIProvider {
@@ -30,13 +31,50 @@ public inherited sharing class AIProvider {
   // Keyed by the lower-cased AIProvider__c value, so the match is case-insensitive.
   private static final Map<String, Type> REQUEST_BUILDER_BY_PROVIDER = new Map<String, Type>{
     AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC.toLowerCase() => AIAnthropicRequestBuilder.class, // Anthropic - Messages API
-    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiRequestBuilder.class // OpenAI - Chat Completions API
+    AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiRequestBuilder.class // OpenAI, and any service with an OpenAI-compatible Chat Completions API: the base URL is the Named Credential's
   };
 
   private static final Map<String, Type> RESPONSE_HANDLER_BY_PROVIDER = new Map<String, Type>{
     AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC.toLowerCase() => AIAnthropicResponseHandler.class,
     AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI.toLowerCase() => AIOpenAiResponseHandler.class
   };
+
+  // How a provider is connected to: what a Named Credential and a Model Configuration for it start from. The key itself is never here; headerValue is the formula that reads it from the External Credential named in {0}.
+  public class Preset {
+    public String baseUrl; // Null when the customer has their own.
+    public String apiPath;
+    public String headerName;
+    public String headerValue;
+    public String versionHeaderName;
+    public String versionHeaderValue;
+  }
+
+  // The preset for a provider, or null for one this package does not know. An OpenAI-compatible service uses the OpenAI preset with its own base URL.
+  public static Preset getPreset(String providerName, String modelIdentifier) {
+    if (!isSupported(providerName))
+      return null;
+
+    Preset preset = new Preset();
+    if (
+      providerName.equalsIgnoreCase(
+        AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+      )
+    ) {
+      preset.baseUrl = 'https://api.anthropic.com';
+      preset.apiPath = '/v1/messages';
+      preset.headerName = 'x-api-key';
+      preset.headerValue = '{!$Credential.{0}.ApiKey}';
+      preset.versionHeaderName = 'anthropic-version';
+      preset.versionHeaderValue = '2023-06-01';
+    } else {
+      preset.baseUrl = 'https://api.openai.com';
+      preset.apiPath = '/v1/chat/completions';
+      preset.headerName = 'Authorization';
+      preset.headerValue = 'Bearer {!$Credential.{0}.ApiKey}';
+    }
+
+    return preset;
+  }
 
   // The canonical shape of one outbound request to an AI provider. Built by AIAgentManager from
   // AIModelConfiguration__c, the assembled system prompt, and conversation history/tools - an
@@ -114,6 +152,41 @@ public inherited sharing class AIProvider {
         providerName.toLowerCase()
       )
       .newInstance();
+  }
+
+  // Why a provider refused a request, from its HTTP status and what its error body says, as an AIConversationMessage__c.FailureReason__c value. The body is checked because providers reuse statuses: OpenAI answers 429 for an exhausted quota (which waiting does not fix) and 404 for a retired model.
+  public static String getFailureReason(
+    Integer statusCode,
+    String responseBody
+  ) {
+    String body = responseBody == null ? '' : responseBody.toLowerCase();
+
+    if (
+      statusCode == 401 ||
+      statusCode == 403 ||
+      body.contains('invalid_api_key') ||
+      body.contains('authentication_error') ||
+      body.contains('permission_error') ||
+      body.contains('insufficient_quota')
+    )
+      return AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
+
+    if (
+      statusCode == 410 ||
+      body.contains('model_not_found') ||
+      body.contains('deprecated') ||
+      body.contains('decommissioned') ||
+      (statusCode == 404 && body.contains('model'))
+    )
+      return AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
+
+    if (statusCode == 429)
+      return AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED;
+
+    if (statusCode == 408 || statusCode == 504)
+      return AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
+
+    return AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
   }
 
   // Tool results are fed back to the provider as text either way - a String passes through untouched, anything else is JSON-serialized.

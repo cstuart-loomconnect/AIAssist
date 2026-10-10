@@ -161,14 +161,14 @@ private class AIChatFeedbackServiceTest {
       1,
       true
     )[0];
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     Test.startTest();
     try {
       AIChatFeedbackService.submitFeedback(ownReply.Id, 'Great', null, null);
       Assert.fail('Bad rating.');
-    } catch (AIMessagingException ex) {
-      codes.add(ex.code);
+    } catch (AIChatFeedbackService.AIChatFeedbackServiceException ex) {
+      messages.add(ex.getMessage());
     }
     try {
       AIChatFeedbackService.submitFeedback(
@@ -178,12 +178,17 @@ private class AIChatFeedbackServiceTest {
         null
       );
       Assert.fail('Not theirs.');
-    } catch (AIMessagingException ex) {
-      codes.add(ex.code);
+    } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+      messages.add(ex.getMessage());
     }
     Test.stopTest();
 
-    Assert.areEqual(2, codes.size(), 'Both refused.');
+    Assert.areEqual(2, messages.size(), 'Both refused.');
+    Assert.areEqual(
+      Label.AI_Error_Feedback_Invalid,
+      messages[0],
+      'A bad rating.'
+    );
     Assert.areEqual(0, [SELECT COUNT() FROM AIFeedback__c], 'Nothing saved.');
   }
 

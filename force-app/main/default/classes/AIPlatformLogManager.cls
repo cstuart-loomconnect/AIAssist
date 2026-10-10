@@ -24,6 +24,7 @@ provider echoed back, and a debug log is readable by far more people than the pl
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Severity stamped. Debug statements removed (they carried exception text). Allowance check uses Publish Immediately, not DML statements. Delete and Upsert overloads dropped (nothing calls them).
+3.0          Chandler Stuart          Under org limit pressure only errors are published; logCustomMessage takes a severity.
 */
 
 public inherited sharing class AIPlatformLogManager {
@@ -71,7 +72,8 @@ public inherited sharing class AIPlatformLogManager {
           .getDmlId(0);
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         exceptionLogEvent.OccurredAt__c = System.now();
@@ -187,7 +189,8 @@ public inherited sharing class AIPlatformLogManager {
       );
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         dmlFailureLogEvent.OccurredAt__c = System.now();
@@ -246,10 +249,52 @@ public inherited sharing class AIPlatformLogManager {
     String methodName,
     Id recordId
   ) {
+    logCustomMessage(
+      message,
+      logDetail,
+      className,
+      methodName,
+      recordId,
+      AIAssistApplicationConstants.LOG_SEVERITY_WARNING
+    );
+  }
+
+  private static Boolean isAuditEntry = false;
+
+  // An audit entry: a change to a credential or to who may use one. Info, not an error, and published even under org limit pressure, because a gap in the audit trail is worse than one more event.
+  public static void logAudit(
+    String message,
+    String logDetail,
+    String className,
+    String methodName
+  ) {
+    isAuditEntry = true;
+    try {
+      logCustomMessage(
+        message,
+        logDetail,
+        className,
+        methodName,
+        null,
+        AIAssistApplicationConstants.LOG_SEVERITY_INFO
+      );
+    } finally {
+      isAuditEntry = false;
+    }
+  }
+
+  // As above with a severity.
+  public static void logCustomMessage(
+    String message,
+    String logDetail,
+    String className,
+    String methodName,
+    Id recordId,
+    String severity
+  ) {
     try {
       if (String.isBlank(message) && String.isBlank(logDetail))
         return;
-
       AIPlatformLogEvent__e customMessageLogEvent = new AIPlatformLogEvent__e(
         ClassName__c = className,
         MethodName__c = methodName,
@@ -257,11 +302,12 @@ public inherited sharing class AIPlatformLogManager {
         ExceptionMessage__c = message,
         ExceptionLogDetail__c = logDetail,
         RelatedRecordId__c = recordId,
-        Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_WARNING
+        Severity__c = severity
       );
 
       if (
-        AIAssistSettingsService.isExceptionLoggingEnabled() &&
+        AIAssistSettingsService.getSettings().IsExceptionLoggingEnabled__c !=
+        false &&
         Limits.getPublishImmediateDML() < Limits.getLimitPublishImmediateDML()
       ) {
         customMessageLogEvent.OccurredAt__c = System.now();

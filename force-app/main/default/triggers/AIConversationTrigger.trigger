@@ -11,12 +11,14 @@ Description: Trigger for AIConversation__c events related to AI Assist. Runs onl
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 */
 trigger AIConversationTrigger on AIConversation__c(
   before insert,
   before update
 ) {
+  if (!AIAssistSettingsService.isEnabled())
+    return;
+
   // Before Context
   if (Trigger.isBefore) {
     if (Trigger.isInsert) {

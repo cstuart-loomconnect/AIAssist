@@ -8,7 +8,7 @@ Description: What state the chat window is in for the signed-in user: the UI set
 (debug, export, Workflow Actions), whether the channel is allowed, and whether the terms have to be
 accepted. The settings behind ChatContext.state.
 
-The user's own AIUserSettings__c row is read in system mode through AIMessagingSelector, because the
+The user's own AIUserSettings__c row is read in system mode (AIUsagePolicyResolver.getUserSettings), because the
 User permission set cannot read it; only the signed-in user's row is ever asked for. With no row the
 user has no debug, no export and no Workflow Actions, matching AIWorkflowActionDispatcher.
 
@@ -17,13 +17,10 @@ user has no debug, no export and no Workflow Actions, matching AIWorkflowActionD
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old state service. The user type and the terms copy on user settings are gone; Workflow Actions are off without a settings row.
+2.0          Chandler Stuart          setBlockedState: every state the chat window can be blocked in, and the plan-cap warning. The user state comes from AIFeatureService.
 */
 
 public with sharing class AIChatStateService {
-  public static AIUserSettings__c getUserSettings() {
-    return AIMessagingSelector.getUserSettings(UserInfo.getUserId());
-  }
-
   public static AIChatDataStructure.UiSettings buildUiSettings(
     AIAssistUISettings__c uiSettings
   ) {
@@ -60,14 +57,22 @@ public with sharing class AIChatStateService {
     userState.userId = UserInfo.getUserId();
     userState.firstName = UserInfo.getFirstName();
 
-    if (userSettings == null)
-      return userState;
-
-    userState.debugMode = userSettings.DebugModeEnabled__c == true;
-    userState.exportEnabled = userSettings.ConversationExportEnabled__c == true;
-    userState.workflowActionsEnabled =
-      userSettings.IsActive__c == true &&
-      userSettings.WorkflowActionsEnabled__c == true;
+    // Application and user in one place (AIFeatureService). A custom permission can grant debug mode or actions to a user with no settings row; export has no permission, so no row means no export.
+    AIUserSettings__c settings = userSettings == null
+      ? new AIUserSettings__c()
+      : userSettings;
+    userState.debugMode = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_DEBUG_MODE,
+      settings
+    );
+    userState.exportEnabled = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_EXPORT,
+      settings
+    );
+    userState.workflowActionsEnabled = AIFeatureService.isFeatureEnabled(
+      AIAssistApplicationConstants.APP_FEATURE_RUN_ACTIONS,
+      settings
+    );
 
     return userState;
   }
@@ -102,11 +107,97 @@ public with sharing class AIChatStateService {
       : appSettings.CurrentTermsVersion__c.trim();
     termsState.policyUrl = appSettings.AIUsagePolicyUrl__c;
     termsState.required =
-      AIMessagingSelector.getTermsAcceptanceStatus(
+      AIMessageValidator.getTermsAcceptanceStatus(
         UserInfo.getUserId(),
         termsState.version
-      ) != AIMessagingSelector.TERMS_ACCEPTED;
+      ) != AIMessageValidator.TERMS_ACCEPTED;
 
     return termsState;
+  }
+
+  // A test cannot change who holds a licence.
+  @TestVisible
+  private static Boolean isLicensedForTest;
+
+  // Fills in why the user cannot send a message right now, One reason is given, the first that applies, most fundamental first: the application, the org's limits, the user's licence and access, the terms, then usage. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
+  public static void setBlockedState(AIChatDataStructure.ChatContext context) {
+    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
+
+    Boolean isLicensed = true;
+    if (isLicensedForTest != null) {
+      isLicensed = isLicensedForTest;
+    } else {
+      try {
+        isLicensed = UserInfo.isCurrentUserLicensed(getPackageNamespace());
+      } catch (Exception notAManagedPackage) {
+        isLicensed = true; // Not installed as a managed package (a development org): there is no licence to hold.
+      }
+    }
+
+    if (appSettings.IsEnabled__c == false) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE;
+      context.blockedMessage = Label.AI_Error_Application_Inactive;
+    } else if (!isLicensed) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE;
+      context.blockedMessage = Label.AI_Chat_Blocked_No_Licence;
+    } else if (context.terms != null && context.terms.required) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_TERMS;
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_NO_AGENT
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED;
+      context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
+    } else if (
+      context.state == AIAssistApplicationConstants.CHAT_STATE_READY &&
+      countQueuedMessageJobs() >=
+      AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
+    ) {
+      context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_BUSY;
+      context.blockedMessage = Label.AI_Error_Service_Busy;
+    }
+  }
+
+  public static AIUserSettings__c getUserSettings() {
+    return AIUsagePolicyResolver.getUserSettings(UserInfo.getUserId());
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static Integer countQueuedMessageJobs() {
+    return systemReader.countQueuedMessageJobs();
+  }
+
+  @TestVisible
+  private static String getPackageNamespace() {
+    return systemReader.getPackageNamespace();
+  }
+
+  private without sharing class SystemReader {
+    // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
+    public Integer countQueuedMessageJobs() {
+      Datetime oneDayAgo = Datetime.now().addDays(-1);
+      String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
+
+      return [
+        SELECT COUNT()
+        FROM AsyncApexJob
+        WHERE
+          ApexClass.Name = 'AIMessageProcessingQueueable'
+          AND ApexClass.NamespacePrefix = :packageNamespace
+          AND JobType = 'Queueable'
+          AND Status IN ('Queued', 'Preparing', 'Processing')
+          AND CreatedDate >= :oneDayAgo
+        WITH SYSTEM_MODE
+      ];
+    }
+
+    // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+    public String getPackageNamespace() {
+      return AIChatStateService.class.getName().contains('.')
+        ? AIChatStateService.class.getName().substringBefore('.')
+        : null;
+    }
   }
 }

@@ -20,9 +20,13 @@ Writes (resuming) go through the package gateway after the checks here.
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old conversation service. One parameterised message query instead of four, ownership in every query, resume checks the concurrent limit, and step labels are Custom Labels.
+2.0          Chandler Stuart          getSharedConversationHistory lists conversations other users started that the viewer may read; buildConversationView no longer filters on the owner, its callers check access.
 */
 
 public with sharing class AIChatConversationService {
+  public class AIChatConversationServiceException extends Exception {
+  }
+
   private static final String MESSAGE_FIELDS =
     'Id, AIConversation__c, Sender__c, MessageBody__c, TokenCount__c, ProcessingStatus__c, SuggestedWorkflowAction__c, CreatedDate, ' +
     '(SELECT StepOrder__c, Status__c, StepType__c, StepDetail__c, DurationMilliseconds__c, AIDataSource__c, AIDataSource__r.DeveloperName__c, AIWorkflowAction__c, AIWorkflowAction__r.ActionName__c FROM AIExecutionSteps__r ORDER BY StepOrder__c), ' +
@@ -38,8 +42,7 @@ public with sharing class AIChatConversationService {
       conversationId == null ||
       conversationId.getSobjectType() != AIConversation__c.SObjectType
     )
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 
@@ -57,8 +60,7 @@ public with sharing class AIChatConversationService {
     ];
 
     if (conversations.isEmpty())
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 
@@ -71,8 +73,7 @@ public with sharing class AIChatConversationService {
       messageId == null ||
       messageId.getSobjectType() != AIConversationMessage__c.SObjectType
     )
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 
@@ -81,7 +82,6 @@ public with sharing class AIChatConversationService {
         Id,
         AIConversation__c,
         AIConversation__r.Name,
-        AIConversation__r.PublicId__c,
         AIConversation__r.RelatedRecordId__c,
         AIConversation__r.AIAgent__c,
         Sender__c,
@@ -98,8 +98,7 @@ public with sharing class AIChatConversationService {
     ];
 
     if (messages.isEmpty())
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Conversation_Not_Found
       );
 
@@ -150,8 +149,7 @@ public with sharing class AIChatConversationService {
       conversation.Status__c ==
       AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
     if (!canResume)
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONVERSATION_CLOSED,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Conversation_Closed
       );
 
@@ -160,11 +158,10 @@ public with sharing class AIChatConversationService {
       userSettings != null &&
       userSettings.IsActive__c == true &&
       userSettings.MaxConcurrentConversations__c != null &&
-      AIMessagingSelector.countActiveConversations(UserInfo.getUserId()) >=
+      countActiveConversations(UserInfo.getUserId()) >=
       userSettings.MaxConcurrentConversations__c
     ) {
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
+      throw new AIChatConversationServiceException(
         Label.AI_Error_Concurrent_Limit
       );
     }
@@ -216,6 +213,32 @@ public with sharing class AIChatConversationService {
     List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
     for (AIConversation__c conversation : conversations)
       summaries.add(toConversationSummary(conversation));
+
+    return summaries;
+  }
+
+  // Conversations other people started that the user may read (see AIConversationVisibilityService), newest activity first. Read-only: none of them can be sent to, closed, resumed, exported or acted on.
+  public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
+    List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
+
+    for (
+      AIConversation__c conversation : AIConversationVisibilityService.getSharedConversations(
+        AIConversationVisibilityService.getEffectiveScope(
+          AIChatStateService.getUserSettings()
+        ),
+        CONVERSATION_FIELDS,
+        new Map<String, Object>{
+          'userSender' => AIAssistApplicationConstants.SENDER_USER
+        },
+        AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS
+      )
+    ) {
+      AIChatDataStructure.ConversationSummary summary = toConversationSummary(
+        conversation
+      );
+      summary.ownerName = conversation.Owner.Name;
+      summaries.add(summary);
+    }
 
     return summaries;
   }
@@ -276,6 +299,7 @@ public with sharing class AIChatConversationService {
     return String.join(lines, '\n');
   }
 
+  // The caller has already checked the user may read the conversation: assertOwnsConversation for their own, AIConversationVisibilityService.assertCanView when it may be someone else's.
   public static AIChatDataStructure.ConversationView buildConversationView(
     Id conversationId,
     Integer pageSize,
@@ -286,10 +310,9 @@ public with sharing class AIChatConversationService {
     AIConversation__c conversation = (AIConversation__c) Database.queryWithBinds(
       'SELECT ' +
         CONVERSATION_FIELDS +
-        ' FROM AIConversation__c WHERE Id = :conversationId AND OwnerId = :userId LIMIT 1',
+        ' FROM AIConversation__c WHERE Id = :conversationId LIMIT 1',
       new Map<String, Object>{
         'conversationId' => conversationId,
-        'userId' => UserInfo.getUserId(),
         'userSender' => userSender
       },
       AccessLevel.SYSTEM_MODE
@@ -370,7 +393,7 @@ public with sharing class AIChatConversationService {
     List<AIConversationMessage__c> newestFirst = (List<AIConversationMessage__c>) Database.queryWithBinds(
       'SELECT ' +
         MESSAGE_FIELDS +
-        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders' +
+        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders AND IsSuperseded__c = FALSE' +
         boundaryFilter +
         ' ORDER BY CreatedDate DESC, Id DESC LIMIT :maxRows',
       new Map<String, Object>{
@@ -487,7 +510,7 @@ public with sharing class AIChatConversationService {
     List<AIConversationMessage__c> newerMessages = (List<AIConversationMessage__c>) Database.queryWithBinds(
       'SELECT ' +
         MESSAGE_FIELDS +
-        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders' +
+        ' FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND Sender__c IN :visibleSenders AND IsSuperseded__c = FALSE' +
         boundaryFilter +
         ' ORDER BY CreatedDate ASC, Id ASC LIMIT :maxRows',
       new Map<String, Object>{
@@ -711,5 +734,48 @@ public with sharing class AIChatConversationService {
     summary.relatedObjectApiName = conversation.RelatedObjectAPIName__c;
 
     return summary;
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static Integer countActiveConversations(Id userId) {
+    return systemReader.countActiveConversations(userId);
+  }
+
+  private without sharing class SystemReader {
+    // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation.
+    public Integer countActiveConversations(Id userId) {
+      Datetime currentTime = System.now();
+      Integer activeConversations = 0;
+
+      for (AIConversation__c conversation : [
+        SELECT
+          CreatedDate,
+          LastMessageTimestamp__c,
+          AIAgent__r.IdleTimeoutMinutes__c
+        FROM AIConversation__c
+        WHERE
+          OwnerId = :userId
+          AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
+        WITH SYSTEM_MODE
+        ORDER BY LastModifiedDate DESC
+        LIMIT :AIAssistApplicationConstants.MAX_ACTIVE_CONVERSATIONS_COUNTED
+      ]) {
+        Datetime lastActivity = conversation.LastMessageTimestamp__c == null
+          ? conversation.CreatedDate
+          : conversation.LastMessageTimestamp__c;
+        if (
+          conversation.AIAgent__r?.IdleTimeoutMinutes__c == null ||
+          lastActivity.addMinutes(
+            Integer.valueOf(conversation.AIAgent__r.IdleTimeoutMinutes__c)
+          ) > currentTime
+        )
+          activeConversations++;
+      }
+
+      return activeConversations;
+    }
   }
 }

@@ -58,9 +58,7 @@ public with sharing class AIChatCommandService {
     String agentDeveloperName = matchingAgents.isEmpty()
       ? null
       : matchingAgents[0].DeveloperName__c;
-    String userLevel = AIMessagingSelector.getHighestPermissionLevel(
-      UserInfo.getUserId()
-    );
+    String userLevel = getHighestPermissionLevel(UserInfo.getUserId());
 
     // Usable means active, for this object (or any), this agent (or any) and a level the user holds.
     List<AIChatCommand__mdt> usableCommands = new List<AIChatCommand__mdt>();
@@ -139,9 +137,7 @@ public with sharing class AIChatCommandService {
     String agentDeveloperName = matchingAgents.isEmpty()
       ? null
       : matchingAgents[0].DeveloperName__c;
-    String userLevel = AIMessagingSelector.getHighestPermissionLevel(
-      UserInfo.getUserId()
-    );
+    String userLevel = getHighestPermissionLevel(UserInfo.getUserId());
 
     // Usable means active, for this object (or any), this agent (or any) and a level the user holds.
     List<AIChatCommand__mdt> usableCommands = new List<AIChatCommand__mdt>();
@@ -234,5 +230,66 @@ public with sharing class AIChatCommandService {
 
   public static String getCommandToken(String text) {
     return text.trim().split('\\s', 2)[0];
+  }
+
+  // Admin, Super User or User, by the highest AI Assist permission set the user holds. Decides which slash commands they see.
+  private static String getHighestPermissionLevel(Id userId) {
+    Set<String> heldPermissionSetNames = getHeldPermissionSetNames(userId);
+
+    return heldPermissionSetNames.contains(
+        AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER
+      )
+      ? AIAssistApplicationConstants.USER_LEVEL_ADMIN
+      : heldPermissionSetNames.contains(
+            AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER
+          )
+          ? AIAssistApplicationConstants.USER_LEVEL_SUPER_USER
+          : AIAssistApplicationConstants.USER_LEVEL_USER;
+  }
+
+  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
+  private static SystemReader systemReader = new SystemReader();
+
+  @TestVisible
+  private static Set<String> getHeldPermissionSetNames(Id userId) {
+    return systemReader.getHeldPermissionSetNames(userId);
+  }
+
+  private without sharing class SystemReader {
+    // The API names of every permission set the user holds: assigned directly, and the name of each permission set group assigned to them together with the permission sets inside that group. A permission set reached only through a group has no assignment row of its own, so matching on assignment rows alone would miss it.
+    public Set<String> getHeldPermissionSetNames(Id userId) {
+      Set<String> heldNames = new Set<String>();
+      Set<Id> heldGroupIds = new Set<Id>();
+
+      for (PermissionSetAssignment heldAssignment : [
+        SELECT
+          PermissionSet.Name,
+          PermissionSetGroupId,
+          PermissionSetGroup.DeveloperName
+        FROM PermissionSetAssignment
+        WHERE AssigneeId = :userId
+        WITH SYSTEM_MODE
+        LIMIT 2000
+      ]) {
+        heldNames.add(heldAssignment.PermissionSet.Name);
+        if (heldAssignment.PermissionSetGroupId != null) {
+          heldGroupIds.add(heldAssignment.PermissionSetGroupId);
+          heldNames.add(heldAssignment.PermissionSetGroup.DeveloperName);
+        }
+      }
+
+      if (!heldGroupIds.isEmpty()) {
+        for (PermissionSetGroupComponent member : [
+          SELECT PermissionSet.Name
+          FROM PermissionSetGroupComponent
+          WHERE PermissionSetGroupId IN :heldGroupIds
+          WITH SYSTEM_MODE
+          LIMIT 2000
+        ])
+          heldNames.add(member.PermissionSet.Name);
+      }
+
+      return heldNames;
+    }
   }
 }

@@ -219,15 +219,6 @@
         <value>AI Assist</value>
     </labels>
     <labels>
-        <fullName>AI_Chat_Usage_Warning</fullName>
-        <categories>AI Assist,Chat</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: usage banner before a limit is hit.</shortDescription>
-        <value>You&apos;re close to your AI Assist usage limit.</value>
-    </labels>
-    <labels>
         <fullName>AI_Chat_Working</fullName>
         <categories>AI Assist,Chat</categories>
         <language>en_US</language>
@@ -345,30 +336,6 @@
         <protected>false</protected>
         <shortDescription>Shared button or status text: Yes.</shortDescription>
         <value>Yes</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Agents_Empty</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: empty agent list.</shortDescription>
-        <value>No agents yet. Create your first agent to get started.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_Delete_Confirm</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: delete confirmation.</shortDescription>
-        <value>Delete this record? This cannot be undone.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Console_List_Empty</fullName>
-        <categories>AI Assist,Console</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: empty list.</shortDescription>
-        <value>No records to show.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Action_Confirmation_Required</fullName>
@@ -508,16 +475,6 @@
     >This conversation has ended. Start a new conversation to continue.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Conversation_Limit_Daily</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: Max Conversations Per 24 Hours reached.</shortDescription>
-        <value
-    >You&apos;ve reached the number of conversations allowed in 24 hours. Try again later.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Conversation_Not_Found</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -532,19 +489,9 @@
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
         <protected>false</protected>
-        <shortDescription
-    >Chat: Max Tokens Per 24 Hours reached.</shortDescription>
+        <shortDescription>Chat: Max Tokens Per Day reached.</shortDescription>
         <value
     >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Data_Deletion_Not_Approved</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: deletion run attempted before approval.</shortDescription>
-        <value>This data deletion request has not been approved yet.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Data_Unavailable</fullName>
@@ -634,104 +581,6 @@
     >You don&apos;t have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
     </labels>
     <labels>
-        <fullName>AI_Error_Plan_AI_Rules_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: AI Evaluated rule not licensed.</shortDescription>
-        <value
-    >AI evaluated violation rules are not included in your plan. Use a deterministic rule, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Actions_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console and chat: workflow actions are not licensed.</shortDescription>
-        <value
-    >Workflow actions are not included in your plan. Ask your account team about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Apex_Not_Included</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Apex source or action not licensed.</shortDescription>
-        <value
-    >Apex data sources and actions are not included in your plan. Use a SOQL data source or a Flow action, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Actions</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Workflow Actions reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active workflow actions. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Agents</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Agents reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active agents. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Data_Sources</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: Max Active Data Sources reached. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows {0} active data sources. Deactivate one, or ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Messages</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Chat: Max Monthly Messages reached.</shortDescription>
-        <value
-    >Your organisation has used this month&apos;s message allowance. Ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Limit_Tokens</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Chat: Max Monthly Tokens reached.</shortDescription>
-        <value
-    >Your organisation has used this month&apos;s token allowance. Ask your account team about a larger plan.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Providers_Limit</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: a second provider was activated.</shortDescription>
-        <value
-    >Your plan allows one AI provider. Deactivate the other configurations, or ask about upgrading.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_Plan_Retention_Cap</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: retention above Max Conversation Retention Days. {0} is the limit.</shortDescription>
-        <value
-    >Your plan allows conversations to be kept for up to {0} days. Choose a shorter period.</value>
-    </labels>
-    <labels>
         <fullName>AI_Error_Privacy_Masking_Failed</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -742,6 +591,26 @@
     >We couldn&apos;t safely protect personal information in this request, so it wasn&apos;t sent. Please contact your administrator.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_Provider_Authentication</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the provider rejected the credential or the account.</shortDescription>
+        <value
+    >AI Assist couldn&apos;t sign in to the AI service. Ask your administrator to check the API key and the account.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Model_Retired</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the configured model is retired or unknown.</shortDescription>
+        <value
+    >The AI model this agent uses is no longer available. Ask your administrator to update the model configuration.</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Provider_Not_Configured</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>
@@ -750,6 +619,16 @@
     >Chat: the agent has no active Model Configuration.</shortDescription>
         <value
     >AI Assist hasn&apos;t been fully set up yet. Ask your administrator to complete the model configuration.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the provider is rate limiting (HTTP 429).</shortDescription>
+        <value
+    >The AI service is handling too many requests right now. Wait a minute, then try again.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Provider_Timeout</fullName>
@@ -799,6 +678,25 @@
     >Chat: provider returned no usable content.</shortDescription>
         <value
     >The AI service returned an empty response. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the per-user messages-per-minute limit.</shortDescription>
+        <value
+    >You&apos;re sending messages too quickly. Wait a moment, then try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Service_Busy</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the pending-job cap is reached.</shortDescription>
+        <value>AI Assist is busy, try again shortly.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Terms_Not_Acknowledged</fullName>
@@ -866,24 +764,6 @@
     >Console: data source and agent screens.</shortDescription>
         <value
     >AI Assist only reads data the signed-in user already has access to. Sharing rules and field-level security always apply.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Data_Deletion_Kept</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: data deletion request.</shortDescription>
-        <value
-    >After deletion the request keeps counts only, never the deleted content. Violations and usage totals are kept with the person removed.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Data_Deletion_Request</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: data deletion request.</shortDescription>
-        <value
-    >A data deletion request removes a person&apos;s conversations, messages and feedback. Legal holds are skipped. A second person must approve.</value>
     </labels>
     <labels>
         <fullName>AI_Guidance_Data_Source_Max_Rows</fullName>
@@ -1022,35 +902,6 @@
     >Test mode lets administrators try an agent without opening it to users.</value>
     </labels>
     <labels>
-        <fullName>AI_Guidance_Usage_Cost</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: usage and model configuration.</shortDescription>
-        <value
-    >Costs are estimates from the prices you enter. Your provider invoice is the source of truth.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Usage_Limits</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Console: user settings and agent settings.</shortDescription>
-        <value
-    >Limits protect your AI spend. Leave a limit blank only if you intend it to be unlimited.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Guidance_Violation_Review</fullName>
-        <categories>AI Assist,Guidance</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Console: violation review.</shortDescription>
-        <value
-    >Review each violation and mark it Reviewed or Dismissed. Dismiss only when the rule fired incorrectly.</value>
-    </labels>
-    <labels>
         <fullName>AI_Guidance_Write_Actions</fullName>
         <categories>AI Assist,Guidance</categories>
         <language>en_US</language>
@@ -1083,14 +934,6 @@
         <protected>false</protected>
         <shortDescription>Progress event Step Label.</shortDescription>
         <value>Thinking</value>
-    </labels>
-    <labels>
-        <fullName>AI_Step_Checking_Rules</fullName>
-        <categories>AI Assist,Step</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription>Progress event Step Label.</shortDescription>
-        <value>Checking usage rules</value>
     </labels>
     <labels>
         <fullName>AI_Step_Finalising</fullName>
@@ -1290,5 +1133,80 @@
         <protected>false</protected>
         <shortDescription>Agent wizard step help: review.</shortDescription>
         <value>Review your choices, then activate the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Object_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent object: the object API name does not exist in this org.</shortDescription>
+        <value
+    >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_No_Licence</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the user has no package licence.</shortDescription>
+        <value
+    >You don&apos;t have an AI Assist licence. Ask your administrator to assign one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_Not_Assigned</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: no agent is available to the user.</shortDescription>
+        <value
+    >You haven&apos;t been given access to an AI Assist agent here. Ask your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Record_Page_Chat</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Record Page Chat.</shortDescription>
+        <value>Record Page Chat</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Utility_Bar</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Utility Bar.</shortDescription>
+        <value>Utility Bar</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Mobile</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Mobile.</shortDescription>
+        <value>Mobile</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_Anthropic</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: Anthropic.</shortDescription>
+        <value>Anthropic</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_OpenAI</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: OpenAI.</shortDescription>
+        <value>OpenAI</value>
     </labels>
 </CustomLabels>

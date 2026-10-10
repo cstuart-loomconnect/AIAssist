@@ -25,9 +25,9 @@ private class AIAgentManagerTest {
   // testScenario5: A callout exception is retryable, and one that says timed out is reported as a timeout while any other is a provider error.
   // testScenario6: A status that is neither a success nor retryable fails the turn for good with the provider's own error kept for the log.
   // testScenario7: A model configuration with no Named Credential, a credential or path of the wrong shape, or an unsupported provider fails as a configuration error before any callout.
-  // testScenario8: A data source that writes to the database throws AIDataSourceWriteException, carrying the tokens spent so far, before the next callout is attempted.
-  // testScenario9: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
-  // testScenario10: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
+  // testScenario8: A tool the model made up fails with a generic message, tool calls beyond the per-reply cap are skipped with an explanation, and the turn still completes.
+  // testScenario9: Tool calls on the last allowed iteration fail the turn as a limit, and a reply with no text fails it as a provider error.
+  // testScenario10: The agent's persona opens the system prompt. A rejected credential, a retired model and an exhausted quota are never retried even when their status is listed as retryable, and say which record to fix; rate limiting is retried.
 
   @TestSetup
   static void setup() {
@@ -57,17 +57,6 @@ private class AIAgentManagerTest {
       if (next instanceof Exception)
         throw (Exception) next;
       return (HttpResponse) next;
-    }
-  }
-
-  // An Apex data source that writes to the database, which a data source must never do.
-  public class WritingExecutor implements IAIDataSourceExecutor {
-    public List<SObject> execute(
-      Id recordId,
-      Map<String, Object> inputParameters
-    ) {
-      insert new Account(Name = 'Written by a data source');
-      return new List<SObject>();
     }
   }
 
@@ -169,7 +158,7 @@ private class AIAgentManagerTest {
       new List<AIWorkflowAction__c>{ action },
       true
     );
-    List<AIWorkflowAction__c> actions = AIMessagingSelector.getAssignedActions(
+    List<AIWorkflowAction__c> actions = AIMessageProcessingQueueable.getAssignedActions(
       world.agent.Id
     );
     ScriptedMock mock = new ScriptedMock();
@@ -228,6 +217,17 @@ private class AIAgentManagerTest {
       'The prompt template is sent as the system prompt.'
     );
     Assert.isTrue(
+      mock.requests[0]
+        .getBody()
+        .contains(
+          String.format(
+            AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
+            new List<String>{ UserInfo.getLanguage() }
+          )
+        ),
+      'The model is told to reply in the user\'s language.'
+    );
+    Assert.isTrue(
       mock.requests[0].getBody().contains('Test message 0'),
       'The history is sent.'
     );
@@ -274,7 +274,7 @@ private class AIAgentManagerTest {
       new List<AIDataSource__c>{ dataSource },
       true
     );
-    List<AIDataSource__c> dataSources = AIMessagingSelector.getAssignedDataSources(
+    List<AIDataSource__c> dataSources = AIMessageProcessingQueueable.getAssignedDataSources(
       world.agent.Id
     );
     String accountName = [SELECT Name FROM Account WHERE Id = :account.Id].Name;
@@ -402,7 +402,7 @@ private class AIAgentManagerTest {
   static void testScenario4() {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    ); // The model allows two retries: three attempts.
+    ); // The settings allow two retries by default: three attempts.
     ScriptedMock mock = new ScriptedMock();
     mock.script.add(response(503, 'Unavailable'));
     mock.script.add(response(408, 'Request timeout'));
@@ -571,64 +571,6 @@ private class AIAgentManagerTest {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
-    AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(
-      1,
-      AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX,
-      'AIAgentManagerTest.WritingExecutor',
-      false
-    )[0];
-    dataSource.BindingType__c = AIAssistApplicationConstants.DATA_SOURCE_BINDING_UNBOUND;
-    insert dataSource;
-    AIAssistTestDataFactory.createAIAgentDataSources(
-      world.agent.Id,
-      new List<AIDataSource__c>{ dataSource },
-      true
-    );
-    AIPlanLimitService.setLimitForTest(
-      AIAssistApplicationConstants.FEATURE_APEX_DATA_SOURCES_ALLOWED,
-      true
-    );
-    List<AIDataSource__c> dataSources = AIMessagingSelector.getAssignedDataSources(
-      world.agent.Id
-    );
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        anthropicToolUse('toolu_1', dataSources[0].DeveloperName__c)
-      )
-    );
-    Test.setMock(HttpCalloutMock.class, mock);
-
-    Test.startTest();
-    try {
-      run(world, dataSources, null, 1, null);
-      Assert.fail('A data source that writes should have thrown.');
-    } catch (AIAgentManager.AIDataSourceWriteException ex) {
-      Assert.isTrue(
-        ex.getMessage().contains('wrote to the database'),
-        'The error says the data source wrote.'
-      );
-      Assert.areEqual(
-        6,
-        ex.tokensUsed,
-        'The tokens spent so far are kept so they can still be recorded after the rollback.'
-      );
-    }
-    Test.stopTest();
-
-    Assert.areEqual(
-      1,
-      mock.requests.size(),
-      'The next callout was never attempted.'
-    );
-  }
-
-  @IsTest
-  static void testScenario9() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    );
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.MaxToolCallsPerIteration__c = 1;
     update settings;
@@ -677,7 +619,7 @@ private class AIAgentManagerTest {
   }
 
   @IsTest
-  static void testScenario10() {
+  static void testScenario9() {
     World world = createWorld(
       AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
     );
@@ -710,5 +652,93 @@ private class AIAgentManagerTest {
       empty.failureReason,
       'It is reported as a provider error.'
     );
+  }
+
+  @IsTest
+  static void testScenario10() {
+    World world = createWorld(
+      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    );
+    world.agent.AIAgentPersona__c = 'A patient mortgage adviser.';
+    world.model.ModelIdentifier__c = 'retired-model-1';
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(response(200, anthropicText('Hello.')));
+    mock.script.add(
+      response(
+        401,
+        '{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
+      )
+    );
+    mock.script.add(
+      response(
+        404,
+        '{"type":"error","error":{"type":"not_found_error","message":"model: retired-model-1"}}'
+      )
+    );
+    mock.script.add(response(429, '{"error":{"code":"insufficient_quota"}}'));
+    mock.script.add(response(429, '{"error":{"code":"rate_limit_exceeded"}}'));
+    Test.setMock(HttpCalloutMock.class, mock);
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.RetryableStatusCodes__c = '401,404,429,503';
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    Test.startTest();
+    AIAgentManager.AgentResult reply = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult rejected = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult retired = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult noQuota = run(world, null, null, 1, null);
+    AIAgentManager.AgentResult rateLimited = run(world, null, null, 1, null);
+    Test.stopTest();
+
+    Assert.isTrue(reply.isSuccessful, 'The first turn replied.');
+    Assert.isTrue(
+      mock.requests[0]
+        .getBody()
+        .contains('Persona: A patient mortgage adviser.'),
+      'The persona is in the system prompt: ' + mock.requests[0].getBody()
+    );
+    Assert.isTrue(
+      mock.requests[0].getBody().indexOf('Persona:') <
+      mock.requests[0].getBody().indexOf('Be brief.'),
+      'The persona comes before the template.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
+      rejected.failureReason,
+      'A 401 is a rejected credential.'
+    );
+    Assert.isFalse(
+      rejected.isRetryable,
+      'A rejected credential is not retried.'
+    );
+    Assert.isTrue(
+      rejected.errorMessage.contains(world.model.NamedCredential__c) &&
+      rejected.errorMessage.contains(world.model.Id),
+      'The message names the credential and the record to fix: ' +
+      rejected.errorMessage
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED,
+      retired.failureReason,
+      'A 404 naming the model is a retired model.'
+    );
+    Assert.isFalse(retired.isRetryable, 'A retired model is not retried.');
+    Assert.isTrue(
+      retired.errorMessage.contains('retired-model-1'),
+      'The message names the model: ' + retired.errorMessage
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
+      noQuota.failureReason,
+      'An exhausted quota is an account problem.'
+    );
+    Assert.isFalse(noQuota.isRetryable, 'Waiting does not refill a quota.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED,
+      rateLimited.failureReason,
+      'A 429 is rate limiting.'
+    );
+    Assert.isTrue(rateLimited.isRetryable, 'Rate limiting is retried.');
   }
 }

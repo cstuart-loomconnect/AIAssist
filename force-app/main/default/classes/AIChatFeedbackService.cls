@@ -19,6 +19,9 @@ Version      Author                   Description
 */
 
 public with sharing class AIChatFeedbackService {
+  public class AIChatFeedbackServiceException extends Exception {
+  }
+
   public static void submitFeedback(
     Id messageId,
     String rating,
@@ -29,10 +32,7 @@ public with sharing class AIChatFeedbackService {
       rating != AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL &&
       rating != AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL
     )
-      throw AIMessagingException.newRefusal(
-        AIAssistApplicationConstants.ERROR_FEEDBACK_INVALID,
-        Label.AI_Error_Feedback_Invalid
-      );
+      throw new AIChatFeedbackServiceException(Label.AI_Error_Feedback_Invalid);
 
     AIConversationMessage__c assertedMessage = AIChatConversationService.assertOwnsAgentMessage(
       messageId
@@ -67,12 +67,17 @@ public with sharing class AIChatFeedbackService {
       false,
       AccessLevel.SYSTEM_MODE
     );
-    if (!upsertResult.isSuccess())
-      throw AIMessagingException.newFailure(
+    if (!upsertResult.isSuccess()) {
+      AIPlatformLogManager.logCustomMessage(
         'Feedback could not be saved: ' +
         upsertResult.getErrors()[0].getMessage(),
+        null,
+        'AIChatFeedbackService',
+        'submitFeedback',
         null
       );
+      throw new AIChatFeedbackServiceException(Label.AI_Error_Generic);
+    }
   }
 
   // Written as the user, in user mode, because the object model only lets users acknowledge for themselves.
@@ -92,11 +97,16 @@ public with sharing class AIChatFeedbackService {
       AccessLevel.USER_MODE
     );
 
-    if (!insertResult.isSuccess())
-      throw AIMessagingException.newFailure(
+    if (!insertResult.isSuccess()) {
+      AIPlatformLogManager.logCustomMessage(
         'Terms could not be acknowledged: ' +
         insertResult.getErrors()[0].getMessage(),
+        null,
+        'AIChatFeedbackService',
+        'acknowledgeTerms',
         null
       );
+      throw new AIChatFeedbackServiceException(Label.AI_Error_Generic);
+    }
   }
 }

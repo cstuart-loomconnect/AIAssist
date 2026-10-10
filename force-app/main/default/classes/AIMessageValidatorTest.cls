@@ -91,18 +91,12 @@ private class AIMessageValidatorTest {
         null
       );
       Assert.fail('A switched-off application should have thrown.');
-    } catch (AIMessagingException ex) {
-      Assert.areEqual(
-        AIAssistApplicationConstants.ERROR_APPLICATION_DISABLED,
-        ex.code,
-        'The code.'
-      );
+    } catch (AIMessageValidator.AIMessageValidatorException ex) {
       Assert.areEqual(
         Label.AI_Error_Application_Inactive,
         ex.getMessage(),
         'The text is the Custom Label.'
       );
-      Assert.isTrue(ex.isRefusal, 'An expected refusal, not a fault.');
     }
     Test.stopTest();
   }
@@ -128,12 +122,7 @@ private class AIMessageValidatorTest {
         null
       );
       Assert.fail('Maintenance mode should have thrown.');
-    } catch (AIMessagingException ex) {
-      Assert.areEqual(
-        AIAssistApplicationConstants.ERROR_MAINTENANCE_MODE,
-        ex.code,
-        'The code.'
-      );
+    } catch (AIMessageValidator.AIMessageValidatorException ex) {
       Assert.areEqual(
         Label.AI_Error_Maintenance_Mode,
         ex.getMessage(),
@@ -152,7 +141,7 @@ private class AIMessageValidatorTest {
     )[0];
     String atTheLimit = 'x'
       .repeat(AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS);
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     Test.startTest();
     for (String body : new List<String>{ '   ', null, atTheLimit + 'x' }) {
@@ -165,8 +154,8 @@ private class AIMessageValidatorTest {
           null
         );
         Assert.fail('This message should have been refused.');
-      } catch (AIMessagingException ex) {
-        codes.add(ex.code);
+      } catch (AIMessageValidator.AIMessageValidatorException ex) {
+        messages.add(ex.getMessage());
       }
     }
 
@@ -179,19 +168,11 @@ private class AIMessageValidatorTest {
     );
     Test.stopTest();
 
+    Assert.areEqual(Label.AI_Error_Message_Empty, messages[0], 'Blank.');
+    Assert.areEqual(Label.AI_Error_Message_Empty, messages[1], 'Null.');
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-      codes[0],
-      'Blank.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-      codes[1],
-      'Null.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,
-      codes[2],
+      Label.AI_Error_Message_Too_Long,
+      messages[2],
       'One over the limit.'
     );
     Assert.isNotNull(allowed, 'A message exactly at the limit is allowed.');
@@ -212,7 +193,6 @@ private class AIMessageValidatorTest {
     update agents[0];
     Id deletedId = agents[1].Id;
     delete agents[1];
-    Map<Id, String> codeByAgentId = new Map<Id, String>();
     Map<Id, String> messageByAgentId = new Map<Id, String>();
 
     Test.startTest();
@@ -228,8 +208,7 @@ private class AIMessageValidatorTest {
           null
         );
         Assert.fail('This agent should have been refused.');
-      } catch (AIMessagingException ex) {
-        codeByAgentId.put(agentId, ex.code);
+      } catch (AIMessageValidator.AIMessageValidatorException ex) {
         messageByAgentId.put(agentId, ex.getMessage());
       }
     }
@@ -237,30 +216,20 @@ private class AIMessageValidatorTest {
     try {
       AIMessageValidator.validateSendRequest(null, 'Hello', null, null, null);
       Assert.fail('No agent should have been refused.');
-    } catch (AIMessagingException ex) {
-      codeByAgentId.put(null, ex.code);
+    } catch (AIMessageValidator.AIMessageValidatorException ex) {
+      messageByAgentId.put(null, ex.getMessage());
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_AGENT_INACTIVE,
-      codeByAgentId.get(agents[0].Id),
-      'An inactive agent.'
-    );
-    Assert.areEqual(
       Label.AI_Error_Agent_Inactive,
       messageByAgentId.get(agents[0].Id),
-      'With its own label.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_FOUND,
-      codeByAgentId.get(deletedId),
-      'A deleted agent.'
+      'An inactive agent.'
     );
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Available,
       messageByAgentId.get(deletedId),
-      'Reported as not available.'
+      'A deleted agent.'
     );
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Available,
@@ -268,8 +237,8 @@ private class AIMessageValidatorTest {
       'An Id of the wrong type is reported the same way.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_FOUND,
-      codeByAgentId.get(null),
+      Label.AI_Error_Agent_Not_Available,
+      messageByAgentId.get(null),
       'No Id at all.'
     );
   }
@@ -304,7 +273,7 @@ private class AIMessageValidatorTest {
       'AIAssistUser',
       true
     );
-    Map<Id, String> codeByAgentId = new Map<Id, String>();
+    Map<Id, String> messageByAgentId = new Map<Id, String>();
 
     Test.startTest();
     System.runAs(users[0]) {
@@ -317,32 +286,32 @@ private class AIMessageValidatorTest {
             null,
             null
           );
-          codeByAgentId.put(agent.Id, 'ALLOWED');
-        } catch (AIMessagingException ex) {
-          codeByAgentId.put(agent.Id, ex.code);
+          messageByAgentId.put(agent.Id, 'ALLOWED');
+        } catch (AIMessageValidator.AIMessageValidatorException ex) {
+          messageByAgentId.put(agent.Id, ex.getMessage());
         }
       }
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_ASSIGNED,
-      codeByAgentId.get(agents[0].Id),
+      Label.AI_Error_Agent_Not_Assigned,
+      messageByAgentId.get(agents[0].Id),
       'An agent nobody is assigned to is closed.'
     );
     Assert.areEqual(
       'ALLOWED',
-      codeByAgentId.get(agents[1].Id),
+      messageByAgentId.get(agents[1].Id),
       'Assigned by name.'
     );
     Assert.areEqual(
       'ALLOWED',
-      codeByAgentId.get(agents[2].Id),
+      messageByAgentId.get(agents[2].Id),
       'Assigned by permission set.'
     );
     Assert.areEqual(
       'ALLOWED',
-      codeByAgentId.get(agents[3].Id),
+      messageByAgentId.get(agents[3].Id),
       'Open to all users.'
     );
   }
@@ -391,8 +360,8 @@ private class AIMessageValidatorTest {
             null
           );
           outcomes.add('ALLOWED');
-        } catch (AIMessagingException ex) {
-          outcomes.add(ex.code);
+        } catch (AIMessageValidator.AIMessageValidatorException ex) {
+          outcomes.add(ex.getMessage());
           messages.add(ex.getMessage());
         }
       }
@@ -400,12 +369,12 @@ private class AIMessageValidatorTest {
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_TERMS_NOT_ACKNOWLEDGED,
+      Label.AI_Error_Terms_Not_Acknowledged,
       outcomes[0],
       'Never accepted.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_TERMS_VERSION_CHANGED,
+      Label.AI_Error_Terms_Version_Changed,
       outcomes[1],
       'Accepted an earlier version.'
     );
@@ -458,20 +427,20 @@ private class AIMessageValidatorTest {
             null
           );
           outcomeByChannel.put(channel, 'ALLOWED');
-        } catch (AIMessagingException ex) {
-          outcomeByChannel.put(channel, ex.code);
+        } catch (AIMessageValidator.AIMessageValidatorException ex) {
+          outcomeByChannel.put(channel, ex.getMessage());
         }
       }
     }
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CHANNEL_NOT_ALLOWED,
+      Label.AI_Error_Channel_Not_Allowed,
       outcomeByChannel.get('Carrier Pigeon'),
       'An undefined channel would fail on the restricted picklist, so it is refused first.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CHANNEL_NOT_ALLOWED,
+      Label.AI_Error_Channel_Not_Allowed,
       outcomeByChannel.get(AIAssistApplicationConstants.CHANNEL_UTILITY_BAR),
       'Outside the allow-list.'
     );
@@ -500,8 +469,12 @@ private class AIMessageValidatorTest {
       model.Id,
       false
     );
-    agents[1].ObjectType__c = 'Contact';
     insert agents;
+    AIAssistTestDataFactory.createAIAgentObjects(
+      agents[1].Id,
+      new List<String>{ 'Contact' },
+      true
+    );
     Account ownAccount;
     System.runAs(users[0]) {
       ownAccount = AIAssistTestDataFactory.createAccounts(1, true)[0];
@@ -538,8 +511,8 @@ private class AIMessageValidatorTest {
             (Id) attempt[2]
           );
           outcomes.add('ALLOWED');
-        } catch (AIMessagingException ex) {
-          outcomes.add(ex.code);
+        } catch (AIMessageValidator.AIMessageValidatorException ex) {
+          outcomes.add(ex.getMessage());
         }
       }
     }
@@ -556,17 +529,17 @@ private class AIMessageValidatorTest {
       'A blank object name is filled in from the Id.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_RECORD_ACCESS_DENIED,
+      Label.AI_Error_Record_Access_Denied,
       outcomes[2],
       'The object name does not match the Id.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_RECORD_ACCESS_DENIED,
+      Label.AI_Error_Record_Access_Denied,
       outcomes[3],
       'Another user\'s private conversation is a record this user cannot see.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_AGENT_NOT_AVAILABLE,
+      Label.AI_Error_Agent_Not_Available,
       outcomes[4],
       'An agent built for Contact is not offered for an Account.'
     );

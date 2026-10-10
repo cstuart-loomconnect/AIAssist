@@ -24,6 +24,7 @@ A bound data source needs the record the chat is about; an unbound one does not.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Definition loaded in system mode and checked against the agent; data runs in user mode; plan gate for Apex sources; row cap; single-use helpers inlined.
+3.0          Chandler Stuart          Apex class lookup uses Type.forName with an empty namespace so a subscriber's own class is found from managed code.
 */
 
 public inherited sharing class AIDataSourceDispatcher {
@@ -112,17 +113,13 @@ public inherited sharing class AIDataSourceDispatcher {
       dataSource.SourceType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX
     ) {
-      if (!AIPlanLimitService.isApexAllowed())
-        throw new AIDataSourceExecutorException(
-          'Apex data sources are not included in the plan.'
-        );
       if (String.isBlank(dataSource.ApexClassName__c))
         throw new AIDataSourceExecutorException(
           'Data source "' + dataSource.DeveloperName__c + '" has no Apex class.'
         );
 
-      // Checked before anything in the class runs, not after: the name was typed by a subscriber, format rules only stop junk, and even constructing a class runs its code.
-      Type apexType = Type.forName(dataSource.ApexClassName__c.trim());
+      // Checked before anything in the class runs, not after: the name was typed by a subscriber, format rules only stop junk, and even constructing a class runs its code. The empty namespace makes the lookup find the subscriber's own unprefixed classes; the one-argument form looks only in the package's namespace once this is managed code.
+      Type apexType = Type.forName('', dataSource.ApexClassName__c.trim());
 
       if (
         apexType == null ||
@@ -136,8 +133,20 @@ public inherited sharing class AIDataSourceDispatcher {
 
       Object executor = apexType.newInstance();
 
-      rawResults = ((IAIDataSourceExecutor) executor)
-        .execute(recordId, parameters);
+      AIDataSourceRequest request = new AIDataSourceRequest();
+      request.recordId = recordId;
+      request.inputParameters = new Map<String, Object>(parameters);
+      request.conversationId = conversationId;
+      request.agentId = agentId;
+      request.userId = UserInfo.getUserId();
+      request.dataSourceName = dataSource.DeveloperName__c;
+      request.maxRows = dataSource.MaxRows__c == null
+        ? null
+        : dataSource.MaxRows__c.intValue();
+
+      AIDataSourceResponse response = ((IAIDataSourceExecutor) executor)
+        .execute(request);
+      rawResults = response == null ? new List<SObject>() : response.records;
     } else {
       throw new AIDataSourceExecutorException(
         'Data source "' +

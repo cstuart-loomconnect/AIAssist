@@ -4,61 +4,88 @@ Class Name: AIAgentTriggerHandler
 =================================================================
 =================================================================
 
-Description: Stamps the Public Id and Developer Name on a new agent. The Public Id is how an external system refers to the agent; the Developer Name is its unique External Id, derived from its name so it can move between orgs.
-
-Safe in the subscriber's transactions: the trigger is on the package's own AIAgent__c object, does no
-DML of its own and cannot recurse. It does nothing while AIAssistSettings__c.IsEnabled__c is off.
-A failure is logged and the record still saves.
-
-An agent the plan does not include (too many active, or a retention longer than the cap) is refused with the plan label; see AIPlanActivationService.
+Description: Handler for managing AI Agent events related to AI Assist,
+performing the business logic that runs on the AI Agent trigger.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
-4.0          Chandler Stuart          Plan check added, before insert and before update. It is not behind the application switch and it does stop the save.
 */
 
-public inherited sharing class AIAgentTriggerHandler {
+public without sharing class AIAgentTriggerHandler {
   public class AIAgentTriggerHandlerException extends Exception {
   }
+
+  private static Boolean isAfterUpdateHandlerRunning = false;
 
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
-  public static void handleBeforeInsert(List<AIAgent__c> newRecords) {
-    AIPlanActivationService.checkAgents(newRecords, null);
-
+  public static void handleAfterUpdate(
+    Map<Id, AIAgent__c> oldAgentsById,
+    List<AIAgent__c> newAgents
+  ) {
     try {
-      if (!AIAssistSettingsService.isEnabled())
-        return;
-      if (isTestCustomExceptionThrown) {
-        throw new AIAgentTriggerHandlerException(
-          'Test exception for AIAgentTriggerHandler.handleBeforeInsert'
+      if (!isAfterUpdateHandlerRunning) {
+        isAfterUpdateHandlerRunning = true;
+
+        if (isTestCustomExceptionThrown) {
+          throw new AIAgentTriggerHandlerException(
+            'Test exception for AIAgentTriggerHandler.handleAfterUpdate'
+          );
+        }
+
+        Map<Id, AIAgent__c> agentsWithChangedRetentionById = getAgentsWithChangedRetention(
+          oldAgentsById,
+          newAgents
         );
+
+        if (!agentsWithChangedRetentionById.isEmpty()) {
+          Database.executeBatch(
+            new AIConversationRetentionRecalcBatch(
+              agentsWithChangedRetentionById.keySet()
+            ),
+            AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
+          );
+        }
+
+        isAfterUpdateHandlerRunning = false;
       }
-
-      if (newRecords == null || newRecords.isEmpty())
-        return;
-
-      AIAssistGlobalUtility.generatePublicId(newRecords);
-      AIAssistGlobalUtility.generateDeveloperName(newRecords);
-    } catch (Exception caughtException) {
+    } catch (Exception e) {
       AIPlatformLogManager.logException(
-        caughtException,
+        e,
         'AIAgentTriggerHandler',
-        'handleBeforeInsert'
+        'handleAfterUpdate'
       );
     }
   }
 
-  // Only the plan check: identifiers are stamped once, on insert.
-  public static void handleBeforeUpdate(
-    Map<Id, AIAgent__c> oldRecordsById,
-    List<AIAgent__c> newRecords
+  // Agents whose retention days or retention trigger just changed.
+  private static Map<Id, AIAgent__c> getAgentsWithChangedRetention(
+    Map<Id, AIAgent__c> oldAgentsById,
+    List<AIAgent__c> newAgents
   ) {
-    AIPlanActivationService.checkAgents(newRecords, oldRecordsById);
+    Map<Id, AIAgent__c> agentsWithChangedRetentionById = new Map<Id, AIAgent__c>();
+
+    if (oldAgentsById == null || newAgents == null)
+      return agentsWithChangedRetentionById;
+
+    for (AIAgent__c newAgent : newAgents) {
+      AIAgent__c oldAgent = oldAgentsById.get(newAgent.Id);
+      if (oldAgent == null)
+        continue;
+
+      Boolean hasRetentionChanged =
+        newAgent.ConversationRetentionDays__c !=
+        oldAgent.ConversationRetentionDays__c ||
+        newAgent.RetentionTrigger__c != oldAgent.RetentionTrigger__c;
+      if (hasRetentionChanged) {
+        agentsWithChangedRetentionById.put(newAgent.Id, newAgent);
+      }
+    }
+
+    return agentsWithChangedRetentionById;
   }
 }

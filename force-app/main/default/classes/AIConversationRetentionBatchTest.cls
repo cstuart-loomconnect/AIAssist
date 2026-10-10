@@ -18,11 +18,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationRetentionBatchTest {
-  // testScenario1: An expired conversation is deleted together with its messages and feedback.
+  // testScenario1: An expired conversation is deleted together with its messages and its feedback.
   // testScenario2: A conversation on legal hold is kept however old it is.
   // testScenario3: The boundary: expiring today is deleted, expiring tomorrow is kept, and no expiry date is kept.
   // testScenario4: Bulk: 200 expired conversations are deleted in one pass.
-  // testScenario5: Switched off, nothing is deleted.
+  // testScenario5: Retention still runs while the application is switched off.
 
   @TestSetup
   static void setup() {
@@ -77,6 +77,11 @@ private class AIConversationRetentionBatchTest {
       0,
       [SELECT COUNT() FROM AIConversationMessage__c WHERE Id = :message.Id],
       'And so are its messages.'
+    );
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM AIFeedback__c],
+      'And so is its feedback, not left behind with a blank conversation.'
     );
   }
 
@@ -213,9 +218,9 @@ private class AIConversationRetentionBatchTest {
     Test.stopTest();
 
     Assert.areEqual(
-      1,
+      0,
       [SELECT COUNT() FROM AIConversation__c],
-      'Kept while off.'
+      'Deleted although the application is off.'
     );
   }
 }

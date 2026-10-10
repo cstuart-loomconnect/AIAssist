@@ -22,6 +22,8 @@ private class AIChatStateServiceTest {
   // testScenario2: With no settings row a user has no debug, export or Workflow Actions, and with a row each follows its flag.
   // testScenario3: A channel is allowed with no row, no list or no channel, and otherwise only when it is on the list.
   // testScenario4: Terms are required until the current version is signed, and not when none is configured.
+  // testScenario5: Each blocked state is named with its message: inactive, sandbox not activated, no licence, not assigned and terms; a ready user is not blocked.
+  // testScenario6: Not busy while the queue is not full; busy needs the queue to be full.
 
   @TestSetup
   static void setup() {
@@ -81,6 +83,16 @@ private class AIChatStateServiceTest {
     AIUserSettings__c inactive = new AIUserSettings__c(
       IsActive__c = false,
       WorkflowActionsEnabled__c = true
+    );
+
+    // The user running the tests may hold the custom permissions; this scenario is about a user who does not.
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_DEBUG_MODE,
+      false
+    );
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_RUN_ACTIONS,
+      false
     );
 
     Test.startTest();
@@ -164,5 +176,100 @@ private class AIChatStateServiceTest {
     );
     Assert.isFalse(signed.required, 'Signed.');
     Assert.isFalse(none.required, 'Nothing configured.');
+  }
+
+  private static AIChatDataStructure.ChatContext blocked(String state) {
+    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
+    context.state = state;
+    AIChatStateService.setBlockedState(context);
+    return context;
+  }
+
+  @IsTest
+  static void testScenario5() {
+    AIChatStateService.isLicensedForTest = true;
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    String ready = AIAssistApplicationConstants.CHAT_STATE_READY;
+
+    Test.startTest();
+    AIChatDataStructure.ChatContext notBlocked = blocked(ready);
+
+    settings.IsEnabled__c = false;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIChatDataStructure.ChatContext inactive = blocked(
+      AIAssistApplicationConstants.CHAT_STATE_INACTIVE
+    );
+
+    settings.IsEnabled__c = true;
+    update settings;
+    AIAssistSettingsService.clearCache();
+    AIChatStateService.isLicensedForTest = false;
+    AIChatDataStructure.ChatContext noLicence = blocked(ready);
+    AIChatStateService.isLicensedForTest = null;
+    AIChatDataStructure.ChatContext realLicenceCheck = blocked(ready);
+    AIChatStateService.isLicensedForTest = true;
+
+    AIChatDataStructure.ChatContext notAssigned = blocked(
+      AIAssistApplicationConstants.CHAT_STATE_NO_AGENT
+    );
+
+    AIChatDataStructure.ChatContext termsContext = new AIChatDataStructure.ChatContext();
+    termsContext.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
+    termsContext.terms = new AIChatDataStructure.TermsState();
+    termsContext.terms.required = true;
+    AIChatStateService.setBlockedState(termsContext);
+
+    Test.stopTest();
+
+    Assert.isNull(notBlocked.blockedState, 'A ready user is not blocked.');
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE,
+      inactive.blockedState,
+      'Switched off.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Application_Inactive,
+      inactive.blockedMessage,
+      'With its message.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_NO_LICENCE,
+      noLicence.blockedState,
+      'No licence.'
+    );
+    Assert.isNull(
+      realLicenceCheck.blockedState,
+      'Outside a managed package there is no licence to lack.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED,
+      notAssigned.blockedState,
+      'No agent for this user.'
+    );
+    Assert.areEqual(
+      AIAssistApplicationConstants.CHAT_BLOCKED_TERMS,
+      termsContext.blockedState,
+      'Terms to accept.'
+    );
+  }
+
+  @IsTest
+  static void testScenario6() {
+    AIChatStateService.isLicensedForTest = true;
+    String ready = AIAssistApplicationConstants.CHAT_STATE_READY;
+
+    Test.startTest();
+    AIChatDataStructure.ChatContext busy = new AIChatDataStructure.ChatContext();
+    busy.state = ready;
+    Integer queued = AIChatStateService.countQueuedMessageJobs();
+    AIChatStateService.setBlockedState(busy);
+    Test.stopTest();
+
+    Assert.areEqual(0, queued, 'Nothing is queued in this test.');
+    Assert.isNull(
+      busy.blockedState,
+      'So it is not busy; busy needs the queue to be full.'
+    );
   }
 }

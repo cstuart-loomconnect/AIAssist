@@ -11,22 +11,13 @@ Description: Trigger for AIConversationMessage__c events related to AI Assist. R
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Routes by context to the handler's handle methods.
 */
-trigger AIConversationMessageTrigger on AIConversationMessage__c(
-  before insert,
-  after insert
-) {
-  // Before Context
-  if (Trigger.isBefore) {
-    if (Trigger.isInsert) {
-      AIConversationMessageTriggerHandler.handleBeforeInsert(Trigger.new);
-    }
-  }
-
+trigger AIConversationMessageTrigger on AIConversationMessage__c(after insert) {
   // After Context
   if (Trigger.isAfter) {
     if (Trigger.isInsert) {
+      if (!AIAssistSettingsService.isEnabled())
+        return;
       AIConversationMessageTriggerHandler.handleAfterInsert(Trigger.new);
     }
   }

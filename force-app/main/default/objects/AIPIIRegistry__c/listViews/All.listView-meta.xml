@@ -3,7 +3,7 @@
     <fullName>All</fullName>
     <columns>NAME</columns>
     <columns>ObjectAPIName__c</columns>
-    <columns>Active__c</columns>
+    <columns>IsActive__c</columns>
     <columns>SyncStatus__c</columns>
     <columns>FieldCount__c</columns>
     <columns>MaxFieldsToQuery__c</columns>

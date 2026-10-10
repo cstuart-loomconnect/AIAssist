@@ -4,91 +4,112 @@ Class Name: AIPromptTemplateTriggerHandler
 =================================================================
 =================================================================
 
-Description: Stamps the Developer Name on a new prompt template, and raises Version__c whenever the wording the model is given changes (the prompt, system context, tone or exclusion rules).
-
-Safe in the subscriber's transactions: the trigger is on the package's own AIPromptTemplate__c object, does no
-DML of its own and cannot recurse. It does nothing while AIAssistSettings__c.IsEnabled__c is off.
-A failure is logged and the record still saves.
+Description: Handler for managing AI Prompt Template events related to AI Assist,
+performing the business logic that runs on the AI Prompt Template trigger.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-3.0          Chandler Stuart          Restructured to the standard pattern: the trigger only routes by context to handleBeforeInsert, handleAfterUpdate and so on, each handler has its own exception type and a test seam, and a failure is logged and never stops the save.
 */
 
-public inherited sharing class AIPromptTemplateTriggerHandler {
+public without sharing class AIPromptTemplateTriggerHandler {
   public class AIPromptTemplateTriggerHandlerException extends Exception {
   }
+
+  private static Boolean isBeforeUpdateHandlerRunning = false;
 
   @TestVisible
   private static Boolean isTestCustomExceptionThrown = false;
 
-  private static Set<Id> versionedIds = new Set<Id>();
-
-  public static void handleBeforeInsert(List<AIPromptTemplate__c> newRecords) {
+  public static void handleBeforeUpdate(
+    Map<Id, AIPromptTemplate__c> oldTemplatesById,
+    Map<Id, AIPromptTemplate__c> newTemplatesById
+  ) {
     try {
-      if (!AIAssistSettingsService.isEnabled())
-        return;
-      if (isTestCustomExceptionThrown) {
-        throw new AIPromptTemplateTriggerHandlerException(
-          'Test exception for AIPromptTemplateTriggerHandler.handleBeforeInsert'
+      if (!isBeforeUpdateHandlerRunning) {
+        isBeforeUpdateHandlerRunning = true;
+
+        if (isTestCustomExceptionThrown) {
+          throw new AIPromptTemplateTriggerHandlerException(
+            'Test exception for AIPromptTemplateTriggerHandler.handleBeforeUpdate'
+          );
+        }
+
+        Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById = getTemplatesWithChangedWording(
+          oldTemplatesById,
+          newTemplatesById
         );
+
+        if (!templatesWithChangedWordingById.isEmpty()) {
+          raiseVersionOfChangedTemplates(
+            oldTemplatesById,
+            templatesWithChangedWordingById
+          );
+        }
+
+        isBeforeUpdateHandlerRunning = false;
       }
-
-      if (newRecords == null || newRecords.isEmpty())
-        return;
-
-      AIAssistGlobalUtility.generateDeveloperName(newRecords);
-    } catch (Exception caughtException) {
+    } catch (Exception e) {
       AIPlatformLogManager.logException(
-        caughtException,
+        e,
         'AIPromptTemplateTriggerHandler',
-        'handleBeforeInsert'
+        'handleBeforeUpdate'
       );
     }
   }
 
-  // Version__c goes up by one whenever the wording the model is given changes, so every reply can say which version produced it. A change to anything else leaves it alone, and a template is versioned once per transaction.
-  public static void handleBeforeUpdate(
-    Map<Id, AIPromptTemplate__c> oldRecordsById,
-    Map<Id, AIPromptTemplate__c> newRecordsById
+  // The templates whose prompt, system context, tone or exclusion rules just changed.
+  private static Map<Id, AIPromptTemplate__c> getTemplatesWithChangedWording(
+    Map<Id, AIPromptTemplate__c> oldTemplatesById,
+    Map<Id, AIPromptTemplate__c> newTemplatesById
+  ) {
+    Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById = new Map<Id, AIPromptTemplate__c>();
+
+    if (oldTemplatesById == null || newTemplatesById == null)
+      return templatesWithChangedWordingById;
+
+    for (AIPromptTemplate__c newTemplate : newTemplatesById.values()) {
+      AIPromptTemplate__c oldTemplate = oldTemplatesById.get(newTemplate.Id);
+      if (oldTemplate == null)
+        continue;
+
+      Boolean hasWordingChanged =
+        newTemplate.AIPrompt__c != oldTemplate.AIPrompt__c ||
+        newTemplate.AISystemContext__c != oldTemplate.AISystemContext__c ||
+        newTemplate.AITone__c != oldTemplate.AITone__c ||
+        newTemplate.AIExclusionRules__c != oldTemplate.AIExclusionRules__c;
+
+      if (hasWordingChanged) {
+        templatesWithChangedWordingById.put(newTemplate.Id, newTemplate);
+      }
+    }
+
+    return templatesWithChangedWordingById;
+  }
+
+  // Version__c goes up by one whenever the wording the model is given changes, so every reply can say which version produced it. A change to anything else leaves it alone.
+  private static void raiseVersionOfChangedTemplates(
+    Map<Id, AIPromptTemplate__c> oldTemplatesById,
+    Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById
   ) {
     try {
-      if (!AIAssistSettingsService.isEnabled())
-        return;
-      if (isTestCustomExceptionThrown) {
-        throw new AIPromptTemplateTriggerHandlerException(
-          'Test exception for AIPromptTemplateTriggerHandler.handleBeforeUpdate'
+      for (
+        AIPromptTemplate__c changedTemplate : templatesWithChangedWordingById.values()
+      ) {
+        AIPromptTemplate__c oldTemplate = oldTemplatesById.get(
+          changedTemplate.Id
         );
+
+        changedTemplate.Version__c =
+          (oldTemplate.Version__c == null ? 1 : oldTemplate.Version__c) + 1;
       }
-
-      if (oldRecordsById == null || newRecordsById == null)
-        return;
-
-      for (AIPromptTemplate__c template : newRecordsById.values()) {
-        AIPromptTemplate__c previous = oldRecordsById.get(template.Id);
-
-        if (previous == null || versionedIds.contains(template.Id))
-          continue;
-
-        if (
-          template.AIPrompt__c != previous.AIPrompt__c ||
-          template.AISystemContext__c != previous.AISystemContext__c ||
-          template.AITone__c != previous.AITone__c ||
-          template.AIExclusionRules__c != previous.AIExclusionRules__c
-        ) {
-          template.Version__c =
-            (previous.Version__c == null ? 1 : previous.Version__c) + 1;
-          versionedIds.add(template.Id);
-        }
-      }
-    } catch (Exception caughtException) {
+    } catch (Exception e) {
       AIPlatformLogManager.logException(
-        caughtException,
+        e,
         'AIPromptTemplateTriggerHandler',
-        'handleBeforeUpdate'
+        'raiseVersionOfChangedTemplates'
       );
     }
   }

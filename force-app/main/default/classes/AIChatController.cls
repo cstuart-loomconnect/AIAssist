@@ -10,7 +10,7 @@ asks for and what it is shown.
 
 Sending and processing a message belongs to AIConversationMessageService. A refusal the window should
 render in place (limits, paused, not assigned, terms) comes back as a SendResult whose status is
-SENT, BLOCKED, LIMIT or ERROR, chosen from AIMessagingException.code and never from message text, with
+SENT, BLOCKED, LIMIT or ERROR, the exception's own message is a Custom Label, with
 the code itself and the Custom Label to show. Anything unexpected is logged once and the window gets
 the generic label; provider, configuration and class names never reach it.
 
@@ -22,9 +22,13 @@ Every method that touches a conversation or reply first proves the signed-in use
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old controller. Codes instead of message text, Custom Labels throughout, IsEnabled__c, the suggested action runs through the workflow dispatcher with its plan, user and assignment gates, and a decline records that the user cancelled.
+2.0          Chandler Stuart          getPiiMappings removed (security model principle 4). Reading a conversation (earlier messages, update, open) is allowed to a user the visibility rules reach; every write, export and action stays with the starter. getSharedConversationHistory added.
 */
 
 public with sharing class AIChatController {
+  public class AIChatControllerException extends Exception {
+  }
+
   @AuraEnabled
   public static AIChatDataStructure.ChatContext getChatContext(
     String recordId,
@@ -33,84 +37,100 @@ public with sharing class AIChatController {
     String agentKey
   ) {
     try {
-      AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
-      context.channel = channel;
-
-      AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
-      AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-      AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
-
-      context.ui = AIChatStateService.buildUiSettings(uiSettings);
-      context.user = AIChatStateService.buildUserState(userSettings);
-
-      if (appSettings.IsEnabled__c == false) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
-        return context;
-      }
-      if (uiSettings.IsMaintenanceMode__c == true) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
-        return context;
-      }
-      if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
-        return context;
-      }
-
-      context.terms = AIChatStateService.buildTermsState(appSettings);
-      if (context.terms.required) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
-        return context;
-      }
-
-      context.record = AIChatContextService.buildRecordContext(
+      AIChatDataStructure.ChatContext context = buildChatContext(
         recordId,
-        objectApiName
-      );
-      context.agents = AIChatContextService.getAvailableAgents(
-        context.record.objectApiName
-      );
-      context.agent = AIChatContextService.selectAgent(
-        context.agents,
+        objectApiName,
+        channel,
         agentKey
       );
-
-      if (context.agent == null) {
-        context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
-        return context;
-      }
-
-      context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
-      context.usage = AIChatUsageService.buildUsageState(userSettings);
-      context.commands = AIChatCommandService.getAvailableCommands(
-        context.agent.id,
-        context.record
-      );
-
-      AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
-        context.agent.id,
-        context.record.recordId
-      );
-
-      if (activeConversation != null) {
-        context.openConversation = AIChatConversationService.toConversationSummary(
-          activeConversation
-        );
-        if (
-          context.agent.loadTrigger !=
-          AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
-        )
-          context.conversation = AIChatConversationService.buildConversationView(
-            activeConversation.Id,
-            context.ui.messagePageSize,
-            context.user,
-            context.ui
-          );
-      }
+      // Why the user cannot send right now, if they cannot, and the plan-cap warning: named for the window rather than left for it to work out.
+      AIChatStateService.setBlockedState(context);
 
       return context;
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getChatContext');
     }
+  }
+
+  // Everything the window needs to open, up to the first state that stops it.
+  private static AIChatDataStructure.ChatContext buildChatContext(
+    String recordId,
+    String objectApiName,
+    String channel,
+    String agentKey
+  ) {
+    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
+    context.channel = channel;
+
+    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
+    AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
+    AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+
+    context.ui = AIChatStateService.buildUiSettings(uiSettings);
+    context.user = AIChatStateService.buildUserState(userSettings);
+
+    // Switched off, or switched on in another org (a copied sandbox).
+    if (!AIAssistSettingsService.isEnabled()) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
+      return context;
+    }
+    if (uiSettings.IsMaintenanceMode__c == true) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
+      return context;
+    }
+    if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
+      return context;
+    }
+
+    context.terms = AIChatStateService.buildTermsState(appSettings);
+    if (context.terms.required) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
+      return context;
+    }
+
+    context.record = AIChatContextService.buildRecordContext(
+      recordId,
+      objectApiName
+    );
+    context.agents = AIChatContextService.getAvailableAgents(
+      context.record.objectApiName
+    );
+    context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
+
+    if (context.agent == null) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
+      return context;
+    }
+
+    context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
+    context.commands = AIChatCommandService.getAvailableCommands(
+      context.agent.id,
+      context.record
+    );
+
+    AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
+      context.agent.id,
+      context.record.recordId
+    );
+
+    if (activeConversation != null) {
+      context.openConversation = AIChatConversationService.toConversationSummary(
+        activeConversation
+      );
+      if (
+        context.agent.loadTrigger !=
+        AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
+      )
+        context.conversation = AIChatConversationService.buildConversationView(
+          activeConversation.Id,
+          context.ui.messagePageSize,
+          context.user,
+          context.ui
+        );
+    }
+
+    return context;
   }
 
   @AuraEnabled
@@ -119,7 +139,7 @@ public with sharing class AIChatController {
     Id beforeMessageId
   ) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      AIConversationVisibilityService.assertCanView(conversationId);
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
@@ -143,10 +163,17 @@ public with sharing class AIChatController {
     Id afterMessageId
   ) {
     try {
-      AIConversation__c conversation = AIChatConversationService.assertOwnsConversation(
+      AIConversation__c conversation = AIConversationVisibilityService.assertCanView(
         conversationId
       );
       AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+
+      // A message of this user's held at the cap on messages in flight is started from here once a place is free: only its sender can start it.
+      if (
+        AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null &&
+        AIConversationMessageService.startHeldMessage()
+      )
+        conversation.ProcessingLockedUntil__c = System.now().addMinutes(1);
 
       AIChatDataStructure.ConversationUpdate conversationUpdate = new AIChatDataStructure.ConversationUpdate();
       conversationUpdate.status = conversation.Status__c;
@@ -161,10 +188,6 @@ public with sharing class AIChatController {
           AIAssistSettingsService.getUiSettings()
         )
       );
-      conversationUpdate.usage = AIChatUsageService.buildUsageState(
-        userSettings
-      );
-
       return conversationUpdate;
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getConversationUpdate');
@@ -224,41 +247,14 @@ public with sharing class AIChatController {
           null,
           null
         );
-      } catch (AIMessagingException refusal) {
-        // Already logged by the service when it was a fault; a refusal is the system working. The message is always a Custom Label.
-        // How the window shows a refusal: LIMIT refreshes the usage banner, BLOCKED shows the "Not sent" card, ERROR is anything else. Chosen from the code, never from the text.
-        if (!refusal.isRefusal) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-        } else if (
-          new Set<String>{
-              AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-              AIAssistApplicationConstants.ERROR_CONVERSATION_LIMIT_DAILY,
-              AIAssistApplicationConstants.ERROR_DAILY_USAGE_LIMIT,
-              AIAssistApplicationConstants.ERROR_PLAN_LIMIT_MESSAGES,
-              AIAssistApplicationConstants.ERROR_PLAN_LIMIT_USAGE
-            }
-            .contains(refusal.code)
-        ) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_LIMIT;
-        } else if (
-          new Set<String>{
-              AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-              AIAssistApplicationConstants.ERROR_MESSAGE_TOO_LONG,
-              AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND
-            }
-            .contains(refusal.code)
-        ) {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-        } else {
-          result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_BLOCKED;
+      } catch (Exception sendException) {
+        // A package exception's message is always a Custom Label. Anything else goes to the outer handler, which logs it and shows the generic label.
+        if (sendException.getTypeName().startsWith('System.')) {
+          throw sendException;
         }
-        result.code = refusal.code;
-        result.message = refusal.getMessage();
+        result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
+        result.message = sendException.getMessage();
       }
-
-      result.usage = AIChatUsageService.buildUsageState(
-        AIChatStateService.getUserSettings()
-      );
 
       return result;
     } catch (Exception caughtException) {
@@ -295,7 +291,7 @@ public with sharing class AIChatController {
     Id conversationId
   ) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      AIConversationVisibilityService.assertCanView(conversationId);
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
@@ -339,6 +335,16 @@ public with sharing class AIChatController {
     }
   }
 
+  // Other people's conversations this user may read, under the agent's visibility and the user's own scope. Read-only.
+  @AuraEnabled
+  public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
+    try {
+      return AIChatConversationService.getSharedConversationHistory();
+    } catch (Exception caughtException) {
+      throw toAura(caughtException, 'getSharedConversationHistory');
+    }
+  }
+
   @AuraEnabled
   public static void submitFeedback(
     Id messageId,
@@ -353,10 +359,7 @@ public with sharing class AIChatController {
           )
           .feedbackEnabled
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       AIChatFeedbackService.submitFeedback(messageId, rating, reason, comment);
     } catch (Exception caughtException) {
@@ -384,8 +387,7 @@ public with sharing class AIChatController {
         AIAssistSettingsService.getUiSettings()
       );
       if (!uiSettings.inlineActionsEnabled)
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_ACTION_NOT_PERMITTED,
+        throw new AIChatControllerException(
           Label.AI_Error_Action_Not_Permitted
         );
 
@@ -426,37 +428,13 @@ public with sharing class AIChatController {
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .debugMode
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       return AIChatDebugService.getDebugTrace(
         AIChatConversationService.assertOwnsAgentMessage(messageId)
       );
     } catch (Exception caughtException) {
       throw toAura(caughtException, 'getDebugTrace');
-    }
-  }
-
-  @AuraEnabled
-  public static String getPiiMappings(Id messageId) {
-    try {
-      if (
-        !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
-          .debugMode
-      )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
-
-      return AIChatDebugService.getPiiMappings(
-        AIChatConversationService.assertOwnsAgentMessage(messageId)
-          .AIConversation__c
-      );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getPiiMappings');
     }
   }
 
@@ -484,10 +462,7 @@ public with sharing class AIChatController {
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .exportEnabled
       )
-        throw AIMessagingException.newRefusal(
-          AIAssistApplicationConstants.ERROR_NOT_AUTHORISED,
-          Label.AI_Error_Not_Authorised
-        );
+        throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
       AIChatConversationService.assertOwnsConversation(conversationId);
 
@@ -504,7 +479,7 @@ public with sharing class AIChatController {
   ) {
     String errorText = Label.AI_Error_Generic;
 
-    if (caughtException instanceof AIMessagingException) {
+    if (!caughtException.getTypeName().startsWith('System.')) {
       errorText = caughtException.getMessage();
     } else {
       AIPlatformLogManager.logException(

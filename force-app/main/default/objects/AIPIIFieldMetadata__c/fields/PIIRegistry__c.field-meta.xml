@@ -7,7 +7,7 @@
     <label>PII Registry</label>
     <referenceTo>AIPIIRegistry__c</referenceTo>
     <relationshipLabel>AI PII Field Metadata</relationshipLabel>
-    <relationshipName>AI_PII_Field_Metadata</relationshipName>
+    <relationshipName>AIPIIFieldMetadata</relationshipName>
     <relationshipOrder>0</relationshipOrder>
     <reparentableMasterDetail>false</reparentableMasterDetail>
     <trackTrending>false</trackTrending>

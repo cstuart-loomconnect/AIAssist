@@ -41,15 +41,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>IsTestModeEnabled__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
                 <field>Description__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>ObjectType__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
@@ -130,16 +122,8 @@
         <editHeading>true</editHeading>
         <label>Fallback Settings</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>NoMatchBehavior__c</field>
-            </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>AIFallbackMessage__c</field>
-            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
@@ -149,20 +133,8 @@
         <editHeading>true</editHeading>
         <label>Setup Tracking</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>SetupStatus__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>SetupCurrentStep__c</field>
-            </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>SetupLastEdited__c</field>
-            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
@@ -183,11 +155,7 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>PublicId__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
+                <behavior>Required</behavior>
                 <field>DeveloperName__c</field>
             </layoutItems>
         </layoutColumns>
@@ -224,11 +192,9 @@
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>
-        <fields>Active__c</fields>
-        <fields>DetectionMethod__c</fields>
-        <fields>BlockRequest__c</fields>
-        <fields>ViolationTypeProduced__c</fields>
-        <relatedList>AIViolationRule__c.Agent__c</relatedList>
+        <fields>ObjectApiName__c</fields>
+        <fields>IsActive__c</fields>
+        <relatedList>AIAgentObject__c.AIAgent__c</relatedList>
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>

@@ -4,10 +4,7 @@
     <columns>NAME</columns>
     <columns>IsActive__c</columns>
     <columns>AccessMode__c</columns>
-    <columns>SetupStatus__c</columns>
-    <columns>ObjectType__c</columns>
     <columns>AIModelConfiguration__c</columns>
-    <columns>IsTestModeEnabled__c</columns>
     <columns>ConversationVisibility__c</columns>
     <columns>LAST_UPDATE</columns>
     <filterScope>Everything</filterScope>

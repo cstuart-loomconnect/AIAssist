@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UsageLimitReachedBehavior__c</fullName>
+    <description
+  >What happens when a user covered by this policy reaches one of its limits.</description>
+    <inlineHelpText
+  >Block New Messages is the strictest. Where several policies apply, the strictest behavior is used.</inlineHelpText>
+    <label>Usage Limit Reached Behavior</label>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Block New Messages</fullName>
+                <default>false</default>
+                <label>Block New Messages</label>
+            </value>
+            <value>
+                <fullName>Block New Conversations Only</fullName>
+                <default>false</default>
+                <label>Block New Conversations Only</label>
+            </value>
+            <value>
+                <fullName>Notify Only</fullName>
+                <default>false</default>
+                <label>Notify Only</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

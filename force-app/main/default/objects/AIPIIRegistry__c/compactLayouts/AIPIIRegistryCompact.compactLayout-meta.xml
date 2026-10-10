@@ -3,7 +3,7 @@
     <fullName>AIPIIRegistryCompact</fullName>
     <fields>Name</fields>
     <fields>ObjectAPIName__c</fields>
-    <fields>Active__c</fields>
+    <fields>IsActive__c</fields>
     <fields>SyncStatus__c</fields>
     <fields>FieldCount__c</fields>
     <fields>LastSynced__c</fields>

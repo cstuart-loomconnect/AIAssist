@@ -44,10 +44,6 @@
         <editHeading>true</editHeading>
         <label>Session Evidence</label>
         <layoutColumns>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>LoginHistoryId__c</field>
-            </layoutItems>
         </layoutColumns>
         <layoutColumns/>
         <style>TwoColumnsTopToBottom</style>

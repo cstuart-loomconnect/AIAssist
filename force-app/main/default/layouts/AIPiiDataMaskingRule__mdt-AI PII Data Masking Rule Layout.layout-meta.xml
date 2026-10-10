@@ -16,7 +16,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Active__c</field>
+                <field>IsActive__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -104,7 +104,7 @@
     <relatedLists>
         <fields>MasterLabel</fields>
         <fields>PIIFieldType__c</fields>
-        <fields>Active__c</fields>
+        <fields>IsActive__c</fields>
         <fields>DisplayOrder__c</fields>
         <fields>Keyword__c</fields>
         <fields>MatchField__c</fields>

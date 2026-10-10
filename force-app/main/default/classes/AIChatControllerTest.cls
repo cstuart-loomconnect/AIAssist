@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest
 private class AIChatControllerTest {
-  // testScenario1: A ready context offers the agent, the usage meter and no open conversation.
+  // testScenario1: A ready context offers the agent and no open conversation.
   // testScenario2: The context stops early with the right state when the application is off, in maintenance, the channel is not allowed, the terms are unsigned, or no agent is offered.
   // testScenario3: Sending a message creates the conversation, and the window gets SENT with the conversation and message.
   // testScenario4: A refusal comes back as a status chosen from its code, with the Custom Label and the code: LIMIT for a limit, BLOCKED for access, ERROR for a bad message.
@@ -74,7 +74,6 @@ private class AIChatControllerTest {
       'Ready.'
     );
     Assert.areEqual(agent.Id, context.agent.id, 'The agent.');
-    Assert.isNotNull(context.usage, 'The usage meter.');
     Assert.isNull(context.openConversation, 'No conversation yet.');
   }
 
@@ -203,14 +202,9 @@ private class AIChatControllerTest {
     Test.stopTest();
 
     Assert.areEqual(
-      AIAssistApplicationConstants.CHAT_SEND_STATUS_LIMIT,
+      AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       limited.status,
-      'A limit.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONCURRENT_LIMIT,
-      limited.code,
-      'With its code.'
+      'A limit is an error status.'
     );
     Assert.areEqual(
       Label.AI_Error_Concurrent_Limit,
@@ -218,9 +212,9 @@ private class AIChatControllerTest {
       'The text is the Custom Label.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.CHAT_SEND_STATUS_BLOCKED,
+      AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       blocked.status,
-      'Blocked.'
+      'Blocked is an error status.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
@@ -375,6 +369,15 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
+    // The user running the tests may hold the custom permissions; this scenario is about a user who does not.
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_DEBUG_MODE,
+      false
+    );
+    AIFeatureService.permissionForTest.put(
+      AIAssistApplicationConstants.PERMISSION_RUN_ACTIONS,
+      false
+    );
     String shown;
 
     Test.startTest();
@@ -394,7 +397,6 @@ private class AIChatControllerTest {
     AIChatDataStructure.DebugTrace trace = AIChatController.getDebugTrace(
       reply.Id
     );
-    String pairs = AIChatController.getPiiMappings(reply.Id);
     String exported = AIChatController.exportConversation(conversation.Id);
     AIChatDataStructure.FailureDetail detail = AIChatController.getFailureDetail(
       conversation.Id
@@ -407,7 +409,6 @@ private class AIChatControllerTest {
       'The text is the Custom Label.'
     );
     Assert.areEqual(reply.Id, trace.replyMessageId, 'The trace.');
-    Assert.areEqual('{ }', pairs, 'No masking.');
     Assert.isTrue(exported.contains('Test message'), 'The transcript.');
     Assert.isNotNull(detail, 'The failure detail.');
   }

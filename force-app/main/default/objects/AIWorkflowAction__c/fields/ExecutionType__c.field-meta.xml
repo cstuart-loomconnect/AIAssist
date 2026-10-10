@@ -4,7 +4,7 @@
     <description
   >Indicates whether this action only retrieves information or makes a change.</description>
     <inlineHelpText
-  >Read Only actions can generally run without confirmation. Write actions change data and should typically require confirmation.</inlineHelpText>
+  >Read Only actions can generally run without confirmation. Write actions change data and should typically require confirmation. For a Flow, a Write action runs only when the user has edit access to every record passed to it; a Read Only action needs read access.</inlineHelpText>
     <label>Execution Type</label>
     <required>true</required>
     <trackHistory>true</trackHistory>
@@ -15,12 +15,12 @@
             <sorted>false</sorted>
             <value>
                 <fullName>Read Only</fullName>
-                <default>true</default>
+                <default>false</default>
                 <label>Read Only</label>
             </value>
             <value>
                 <fullName>Write</fullName>
-                <default>false</default>
+                <default>true</default>
                 <label>Write</label>
             </value>
         </valueSetDefinition>

@@ -21,15 +21,8 @@ Flow (the numbered comments in executeAiMessage):
     back with a retryable status, with attempts left, returns isRetryable = true. This class
     never schedules a retry (AIMessageProcessingFinalizer does).
 
-Governor limits are checked before each piece of work (AIGovernorLimits), because a
-LimitException cannot be caught: each callout's timeout is trimmed to what is left of the 120
-second callout budget, and tool calls stop when SOQL, callouts, CPU or heap run low. A skipped
-tool call still gets a result saying why, since providers reject a reply that leaves one
-unanswered. On the last allowed iteration the model is sent the request with tool calls
-disabled, so it must answer with what it has.
-
-A data source that writes to the database throws AIDataSourceWriteException, which is never caught
-here or in the queueable: escaping the job rolls the transaction back and undoes the write.
+On the last allowed iteration the model is sent the request with tool calls disabled, so it
+must answer with what it has.
 
 What the model is sent, and what it is not:
 - The callout is pinned to the Named Credential on the agent's model configuration. Nothing the
@@ -53,17 +46,13 @@ after this returns, or they are lost.
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 2.0          Chandler Stuart          Rebuilt for the object model: failure reasons, input and output tokens, latency, provider and masking evidence on the steps, masking failure stops the request, data sources checked against the agent, user-facing step text from Custom Labels, single-use helpers inlined.
+3.0          Chandler Stuart          The system prompt tells the model to reply in the user's Salesforce language.
 */
 
 public inherited sharing class AIAgentManager {
   private static final Integer DEFAULT_MAX_OUTPUT_TOKENS = 1024;
 
   public class AIAgentManagerException extends Exception {
-  }
-
-  // Thrown when a data source wrote to the database. Never caught by this class or the queueable: escaping the job rolls the transaction back, and the finalizer then records the failure and the tokens.
-  public class AIDataSourceWriteException extends Exception {
-    public Decimal tokensUsed = 0;
   }
 
   // Always returned, never null. isSuccessful and isRetryable tell the caller which update to make; this class makes none.
@@ -93,33 +82,6 @@ public inherited sharing class AIAgentManager {
     Integer attemptNumber,
     AIExecutionStepTracker trace
   ) {
-    return executeAiMessage(
-      agent,
-      modelConfiguration,
-      promptTemplate,
-      conversation,
-      messageHistory,
-      availableDataSources,
-      availableWorkflowActions,
-      attemptNumber,
-      trace,
-      null
-    );
-  }
-
-  // As above, with the agent's AI evaluated violation rules, whose detection instructions are added to the system prompt. The caller checks the reply for their signal tags afterwards (AIViolationService); this class makes no DML.
-  public static AgentResult executeAiMessage(
-    AIAgent__c agent,
-    AIModelConfiguration__c modelConfiguration,
-    AIPromptTemplate__c promptTemplate,
-    AIConversation__c conversation,
-    List<AIConversationMessage__c> messageHistory,
-    List<AIDataSource__c> availableDataSources,
-    List<AIWorkflowAction__c> availableWorkflowActions,
-    Integer attemptNumber,
-    AIExecutionStepTracker trace,
-    List<AIViolationRule__c> aiRules
-  ) {
     Long turnStartMilliseconds = System.currentTimeMillis();
     Decimal totalTokensUsed = 0; // Declared outside the try so every failure result reports the tokens already spent.
     Decimal inputTokensUsed = 0;
@@ -148,7 +110,7 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has no Named Credential or API path.'
         );
       if (
@@ -159,7 +121,7 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has a Named Credential name of the wrong shape.'
         );
       if (
@@ -172,13 +134,13 @@ public inherited sharing class AIAgentManager {
       )
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has an API path of the wrong shape.'
         );
       if (!AIProvider.isSupported(modelConfiguration.AIProvider__c))
         throw new AIAgentManagerException(
           'Model configuration "' +
-            modelConfiguration.DeveloperName__c +
+            modelConfiguration.Name +
             '" has an unsupported provider "' +
             modelConfiguration.AIProvider__c +
             '".'
@@ -256,8 +218,11 @@ public inherited sharing class AIAgentManager {
         );
       }
 
-      // The system prompt: the template plus a compact list of workflow actions the model may suggest, never run.
+      // The system prompt: who the agent is, the template, then a compact list of workflow actions the model may suggest, never run.
       List<String> systemPromptParts = new List<String>();
+
+      if (String.isNotBlank(agent.AIAgentPersona__c))
+        systemPromptParts.add('Persona: ' + agent.AIAgentPersona__c);
 
       if (promptTemplate != null) {
         if (String.isNotBlank(promptTemplate.AISystemContext__c))
@@ -271,6 +236,14 @@ public inherited sharing class AIAgentManager {
             'Do not: ' + promptTemplate.AIExclusionRules__c
           );
       }
+
+      // Replies match the user. Labels are translated by the platform; agent text is not, so the model is told. A turn runs as the user who sent the message, so this is their language.
+      systemPromptParts.add(
+        String.format(
+          AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
+          new List<String>{ UserInfo.getLanguage() }
+        )
+      );
 
       if (
         availableWorkflowActions != null && !availableWorkflowActions.isEmpty()
@@ -291,12 +264,6 @@ public inherited sharing class AIAgentManager {
         );
       }
 
-      String violationInstructions = AIViolationService.buildPromptInstructions(
-        aiRules
-      );
-      if (violationInstructions != null)
-        systemPromptParts.add(violationInstructions);
-
       // Blank lines and repeated spaces collapsed to keep token usage down on every pass; single line breaks stay so authored lists remain readable.
       String systemPromptText = systemPromptParts.isEmpty()
         ? null
@@ -306,26 +273,23 @@ public inherited sharing class AIAgentManager {
             .trim();
 
       // [3] Run limits. Iterations: the agent's own, else the org default, clamped to 1..cap (0 would skip the callout; unbounded risks the 100 callout limit).
+      AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
       Integer maxToolCallingIterations = Math.max(
         1,
         Math.min(
           agent.MaxToolCallingIterations__c == null
-            ? AIAssistSettingsService.getDefaultMaxToolCallingIterations()
+            ? settings.DefaultMaxToolCallingIterations__c.intValue()
             : agent.MaxToolCallingIterations__c.intValue(),
-          AIAssistSettingsService.getMaxToolCallingIterationsCap()
+          settings.MaxToolCallingIterationsCap__c.intValue()
         )
       );
-      Integer maxAttempts =
-        1 +
-        (modelConfiguration.RetryAttempts__c == null
-          ? 0
-          : modelConfiguration.RetryAttempts__c.intValue());
-      Integer maxToolCallsPerIteration = AIAssistSettingsService.getMaxToolCallsPerIteration();
+      Integer maxAttempts = 1 + settings.RetryAttempts__c.intValue();
+      Integer maxToolCallsPerIteration = settings.MaxToolCallsPerIteration__c.intValue();
       Integer maxOutputTokens = modelConfiguration.MaximumOutputTokens__c ==
         null
         ? DEFAULT_MAX_OUTPUT_TOKENS
         : modelConfiguration.MaximumOutputTokens__c.intValue();
-      Integer configuredTimeoutMilliseconds = AIAssistSettingsService.getCalloutTimeoutMilliseconds(); // Throws if not configured.
+      Integer configuredTimeoutMilliseconds = settings.CalloutTimeoutMilliseconds__c.intValue();
       String endpoint =
         'callout:' +
         modelConfiguration.NamedCredential__c +
@@ -333,8 +297,6 @@ public inherited sharing class AIAgentManager {
 
       trace.toolCallingIterationsMax = maxToolCallingIterations;
       trace.attemptNumber = attemptNumber;
-
-      Long calloutBudgetStartMilliseconds = System.currentTimeMillis();
 
       // Tool calls from the pass just finished, handed to the response handler at the top of the next pass because they join providerMessages before that pass's request is built.
       List<AIProvider.ToolCall> previousToolCalls = null;
@@ -402,24 +364,6 @@ public inherited sharing class AIAgentManager {
           providerRequestBuilder.buildRequestBody(canonicalRequest)
         );
 
-        // Trim this callout to what is left of the transaction's 120 second callout budget.
-        Integer remainingMilliseconds = AIGovernorLimits.getRemainingCalloutMilliseconds(
-          calloutBudgetStartMilliseconds
-        );
-
-        if (
-          remainingMilliseconds <
-          AIAssistApplicationConstants.MIN_CALLOUT_TIMEOUT_MILLISECONDS
-        ) {
-          calloutErrorMessage =
-            'Ran out of callout time after ' +
-            iteration +
-            ' tool-calling iteration(s).';
-          calloutFailureReason = AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
-          isCalloutErrorRetryable = false; // A retry would repeat the same iterations and run out again.
-          break;
-        }
-
         // Payloads are customer data, kept only for a user with debug mode on. They are already masked.
         if (trace.captureFullDetail) {
           trace.lastRequestJson = requestBody;
@@ -466,9 +410,7 @@ public inherited sharing class AIAgentManager {
             modelConfiguration.ApiVersionHeaderName__c,
             modelConfiguration.ApiVersionHeaderValue__c
           );
-        httpRequest.setTimeout(
-          Math.min(configuredTimeoutMilliseconds, remainingMilliseconds)
-        );
+        httpRequest.setTimeout(configuredTimeoutMilliseconds);
         httpRequest.setBody(requestBody);
 
         HttpResponse httpResponse;
@@ -483,27 +425,34 @@ public inherited sharing class AIAgentManager {
             failedStep.modelIdentifier = modelConfiguration.ModelIdentifier__c;
           }
 
-          // Uncommitted DML earlier in this transaction that the per-tool check missed: treated as a data source write, so it is rolled back too.
-          if (AIGovernorLimits.isUncommittedWorkException(calloutException)) {
-            throw new AIDataSourceWriteException(
-              'A database write earlier in this turn blocked the AI provider callout. AI data sources must be read-only.',
-              calloutException
-            );
-          }
-
           // Logged here because it becomes a result rather than being rethrown.
           AIPlatformLogManager.logException(
             calloutException,
             'AIAgentManager',
             'executeAiMessage'
           );
-          calloutErrorMessage =
-            'AI provider callout failed: ' + calloutException.getMessage();
-          calloutFailureReason = String.isNotBlank(
-              calloutException.getMessage()
-            ) && calloutException.getMessage().containsIgnoreCase('timed out')
-            ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
-            : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+          String calloutDetail = calloutException.getMessage() == null
+            ? ''
+            : calloutException.getMessage();
+          // An endpoint the org does not allow, or a Named Credential that is missing, fails the same way every time: a setup problem, not retried.
+          Boolean isSetupProblem =
+            calloutDetail.containsIgnoreCase('unauthorized endpoint') ||
+            calloutDetail.containsIgnoreCase('named credential');
+          calloutErrorMessage = isSetupProblem
+            ? 'The AI provider could not be called: ' +
+              calloutDetail +
+              ' Check Named Credential "' +
+              modelConfiguration.NamedCredential__c +
+              '" on AI Model Configuration ' +
+              modelConfiguration.Id +
+              '.'
+            : 'AI provider callout failed: ' + calloutDetail;
+          calloutFailureReason = isSetupProblem
+            ? AIAssistApplicationConstants.FAILURE_REASON_CONFIGURATION_ERROR
+            : (calloutDetail.containsIgnoreCase('timed out')
+                ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
+                : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR);
+          isCalloutErrorRetryable = !isSetupProblem;
           break;
         }
 
@@ -531,23 +480,60 @@ public inherited sharing class AIAgentManager {
         if (trace.captureFullDetail)
           trace.lastResponseJson = httpResponse.getBody();
 
-        // A retryable status (AIAssistSettings__c.RetryableStatusCodes__c) ends this attempt so the caller can retry with fresh limits.
+        // Any status that is not a success ends this attempt with a reason the user can be told and a message that says which record to fix. It is retried only when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could succeed next time: a rejected credential, a retired model, an exhausted quota and a bad request never are.
+        Integer statusCode = httpResponse.getStatusCode();
         if (
-          AIAssistSettingsService.getRetryStatusCodes()
-            .contains(httpResponse.getStatusCode())
+          !toIntegerSet(settings.AIProviderSuccessStatusCodes__c)
+            .contains(statusCode)
         ) {
           providerStep.isSuccess = false;
+          calloutFailureReason = AIProvider.getFailureReason(
+            statusCode,
+            httpResponse.getBody()
+          );
+          Boolean isCredentialRejected =
+            calloutFailureReason ==
+            AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED;
+          Boolean isModelRetired =
+            calloutFailureReason ==
+            AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED;
+          isCalloutErrorRetryable =
+            toIntegerSet(settings.RetryableStatusCodes__c)
+              .contains(statusCode) &&
+            !AIAssistApplicationConstants.NEVER_RETRIED_STATUS_CODES.contains(
+              statusCode
+            ) &&
+            !isCredentialRejected &&
+            !isModelRetired;
           calloutErrorMessage =
-            'AI provider returned a retryable HTTP status: ' +
-            httpResponse.getStatusCode();
-          calloutFailureReason = httpResponse.getStatusCode() == 408 ||
-            httpResponse.getStatusCode() == 504
-            ? AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT
-            : AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
+            'AI provider returned ' +
+            (isCalloutErrorRetryable ? 'a retryable ' : '') +
+            'HTTP status ' +
+            statusCode +
+            ' (' +
+            calloutFailureReason +
+            '). ' +
+            (isCredentialRejected
+              ? 'The credential or the account was rejected: check the API key and billing behind Named Credential "' +
+                modelConfiguration.NamedCredential__c +
+                '" on AI Model Configuration ' +
+                modelConfiguration.Id +
+                '. '
+              : (isModelRetired
+                  ? 'Model "' +
+                    modelConfiguration.ModelIdentifier__c +
+                    '" is not available: update Model Identifier on AI Model Configuration ' +
+                    modelConfiguration.Id +
+                    '. '
+                  : '')) +
+            'Provider said: ' +
+            (String.isBlank(httpResponse.getBody())
+              ? '(nothing)'
+              : httpResponse.getBody().abbreviate(1000));
           break;
         }
 
-        // Parse the reply. Throws for any other non-success status: a hard failure, caught and logged below.
+        // Parse the reply. A malformed body throws: a hard failure, caught and logged below.
         AIProvider.Response modelResponse = providerResponseHandler.handleResponse(
           providerMessages,
           httpResponse,
@@ -645,14 +631,6 @@ public inherited sharing class AIAgentManager {
             );
             continue;
           }
-          if (!AIGovernorLimits.isSafeToRunToolCall()) {
-            toolResults.add(
-              AIAssistApplicationConstants.TOOL_RESULT_SKIPPED_LIMITS_REACHED
-            );
-            continue;
-          }
-
-          AIGovernorLimits.DmlSnapshot dmlBeforeTool = AIGovernorLimits.takeDmlSnapshot();
           AIDataSource__c dataSource = dataSourceByToolName.get(toolCall.name);
           trace.startStep(
             Label.AI_Step_Reading_Data,
@@ -720,15 +698,6 @@ public inherited sharing class AIAgentManager {
               : dataSource.TargetObject__c;
           }
           toolResults.add(toolResult);
-
-          // A data source that wrote to the database has blocked every later callout in this transaction. Fail now, as AIDataSourceWriteException, so the write is rolled back.
-          if (AIGovernorLimits.isUncommittedDmlSince(dmlBeforeTool)) {
-            throw new AIDataSourceWriteException(
-              'AI data source "' +
-                toolCall.name +
-                '" wrote to the database. Data sources must be read-only, since a write blocks every later provider callout in the transaction.'
-            );
-          }
         }
 
         previousToolCalls = modelResponse.toolCalls;
@@ -758,10 +727,6 @@ public inherited sharing class AIAgentManager {
       limitFailure.inputTokens = inputTokensUsed;
       limitFailure.outputTokens = outputTokensUsed;
       return limitFailure;
-    } catch (AIDataSourceWriteException dataSourceWriteException) {
-      // Not logged here (the finalizer logs it once, after the rollback). Rethrown with the tokens spent so far so they can still be recorded.
-      dataSourceWriteException.tokensUsed = totalTokensUsed;
-      throw dataSourceWriteException;
     } catch (Exception caughtException) {
       AIPlatformLogManager.logException(
         caughtException,
@@ -788,5 +753,20 @@ public inherited sharing class AIAgentManager {
       // Deferral only applies while the loop runs. The mappings stay cached in memory; the caller must still save them.
       AIPiiMappingService.isDeferringWrites = false;
     }
+  }
+
+  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
+  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+    Set<Integer> numbers = new Set<Integer>();
+
+    if (String.isBlank(commaSeparatedNumbers))
+      return numbers;
+
+    for (String entry : commaSeparatedNumbers.split(',')) {
+      if (entry.trim().isNumeric())
+        numbers.add(Integer.valueOf(entry.trim()));
+    }
+
+    return numbers;
   }
 }

@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationMessageServiceTest {
-  // testScenario1: A first message creates the conversation, stores the user message, takes the lock, and the queued job answers it and counts the usage.
+  // testScenario1: A first message creates the conversation, stores the user message, takes the lock, and and the queued job answers it.
   // testScenario2: A second message continues the open conversation named by its Id, and an agent that keeps one conversation per record reuses it for the same record.
   // testScenario3: A conversation Id that is closed, on another agent, another user's or of the wrong type is not continued: a new conversation is started.
   // testScenario4: A conversation at the agent's message cap, and one at its token cap, are closed with the matching reason and the message starts a new conversation.
@@ -90,16 +90,11 @@ private class AIConversationMessageServiceTest {
       WHERE Id = :sent.Id
     ];
     List<AIConversationMessage__c> replies = [
-      SELECT MessageBody__c, TokenCount__c
+      SELECT MessageBody__c, TokenCount__c, InputTokenCount__c
       FROM AIConversationMessage__c
       WHERE
         AIConversation__c = :sent.AIConversation__c
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-    ];
-    AIUsageDaily__c usage = [
-      SELECT MessageCount__c, ConversationCount__c, InputTokens__c
-      FROM AIUsageDaily__c
-      WHERE User__c = :chatUser.Id
     ];
 
     Assert.areEqual(
@@ -114,12 +109,10 @@ private class AIConversationMessageServiceTest {
       'It is the executor\'s answer.'
     );
     Assert.areEqual(
-      1,
-      usage.ConversationCount__c,
-      'The conversation is counted.'
+      10,
+      replies[0].InputTokenCount__c,
+      'The reply carries the executor\'s tokens.'
     );
-    Assert.areEqual(1, usage.MessageCount__c, 'And the AI response.');
-    Assert.areEqual(10, usage.InputTokens__c, 'And its tokens.');
     Assert.areEqual(
       1,
       [
@@ -434,7 +427,6 @@ private class AIConversationMessageServiceTest {
     AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
     uiSettings.IsUserInitiatedChatEnabled__c = false;
     upsert uiSettings;
-    List<String> codes = new List<String>();
     List<String> labels = new List<String>();
 
     System.runAs(chatUser) {
@@ -449,8 +441,7 @@ private class AIConversationMessageServiceTest {
             null
           );
           Assert.fail('This message should have been refused.');
-        } catch (AIMessagingException ex) {
-          codes.add(ex.code);
+        } catch (Exception ex) {
           labels.add(ex.getMessage());
         }
       }
@@ -458,18 +449,13 @@ private class AIConversationMessageServiceTest {
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_NEW_CONVERSATIONS_PAUSED,
-      codes[0],
+      Label.AI_Chat_New_Chats_Paused,
+      labels[0],
       'New chats are paused.'
     );
     Assert.areEqual(
-      Label.AI_Chat_New_Chats_Paused,
-      labels[0],
-      'The text is the Custom Label.'
-    );
-    Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-      codes[1],
+      Label.AI_Error_Message_Empty,
+      labels[1],
       'A blank message is refused first.'
     );
     Assert.areEqual(
@@ -646,7 +632,7 @@ private class AIConversationMessageServiceTest {
       );
     }
     AIConversationLockService.acquireLock(conversations[3].Id);
-    Map<String, String> codeByCase = new Map<String, String>();
+    Map<String, String> messageByCase = new Map<String, String>();
     Map<String, Id> idByCase = new Map<String, Id>{
       'closed' => conversations[0].Id,
       'empty' => conversations[1].Id,
@@ -663,36 +649,36 @@ private class AIConversationMessageServiceTest {
             idByCase.get(key)
           );
           Assert.fail('The ' + key + ' case should have been refused.');
-        } catch (AIMessagingException ex) {
-          codeByCase.put(key, ex.code);
+        } catch (Exception ex) {
+          messageByCase.put(key, ex.getMessage());
         }
       }
       Test.stopTest();
     }
 
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONVERSATION_CLOSED,
-      codeByCase.get('closed'),
+      Label.AI_Error_Conversation_Closed,
+      messageByCase.get('closed'),
       'Closed.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_MESSAGE_EMPTY,
-      codeByCase.get('empty'),
+      Label.AI_Error_Message_Empty,
+      messageByCase.get('empty'),
       'Nothing to retry.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-      codeByCase.get('theirs'),
+      Label.AI_Error_Conversation_Not_Found,
+      messageByCase.get('theirs'),
       'Another user\'s conversation is reported as not found.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONVERSATION_NOT_FOUND,
-      codeByCase.get('badId'),
+      Label.AI_Error_Conversation_Not_Found,
+      messageByCase.get('badId'),
       'An Id of the wrong type is too.'
     );
     Assert.areEqual(
-      AIAssistApplicationConstants.ERROR_CONVERSATION_BUSY,
-      codeByCase.get('busy'),
+      Label.AI_Error_Conversation_Busy,
+      messageByCase.get('busy'),
       'A turn is already running.'
     );
   }
@@ -731,7 +717,7 @@ private class AIConversationMessageServiceTest {
       1,
       true
     )[0];
-    List<String> codes = new List<String>();
+    List<String> messages = new List<String>();
 
     System.runAs(chatUser) {
       Test.startTest();
@@ -744,8 +730,8 @@ private class AIConversationMessageServiceTest {
         try {
           AIConversationMessageService.closeConversation(badId, null);
           Assert.fail('This conversation should not have been closable.');
-        } catch (AIMessagingException ex) {
-          codes.add(ex.code);
+        } catch (Exception ex) {
+          messages.add(ex.getMessage());
           Assert.areEqual(
             Label.AI_Error_Conversation_Not_Found,
             ex.getMessage(),
@@ -784,7 +770,7 @@ private class AIConversationMessageServiceTest {
       byId.get(theirs.Id).Status__c,
       'Theirs is untouched.'
     );
-    Assert.areEqual(3, codes.size(), 'Three refusals.');
+    Assert.areEqual(3, messages.size(), 'Three refusals.');
   }
 
   @IsTest

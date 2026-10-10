@@ -2,9 +2,7 @@
 <ListView xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Active</fullName>
     <columns>NAME</columns>
-    <columns>ObjectType__c</columns>
     <columns>AIModelConfiguration__c</columns>
-    <columns>IsTestModeEnabled__c</columns>
     <columns>ConversationVisibility__c</columns>
     <columns>ConversationRetentionDays__c</columns>
     <columns>LAST_UPDATE</columns>

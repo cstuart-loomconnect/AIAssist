@@ -7,7 +7,7 @@
   >Choose what the retention period should count from.</inlineHelpText>
     <label>Retention Trigger</label>
     <required>false</required>
-    <trackHistory>false</trackHistory>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>

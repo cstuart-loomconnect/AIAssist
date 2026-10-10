@@ -22,11 +22,8 @@ private class AISchemaHelperTest {
   // testScenario2: Field info gives the type and length, and hasField and getFieldLength agree, whatever the case.
   // testScenario3: A blank name, an Id of nothing, an unknown object and a missing field all answer null or false and never throw.
   // testScenario4: Within a transaction an object is described once, however many questions are asked, and an unknown object is not looked up again.
-  // testScenario5: The first transaction stores the answer in the persistent cache, and a later one reads it back with no describe.
-  // testScenario6: A cache that throws on every call, or holds unreadable text, only costs a describe.
-  // testScenario7: clearCache for one object removes it from both levels and leaves the others, and clearCache with no name clears everything seen.
+  // testScenario7: clearCache for one object removes it and leaves the others, and clearCache with no name clears everything seen.
   // testScenario8: isAccessible follows the user: a user with no access to the package objects cannot read an AI object, and is cached for the transaction only.
-  // testScenario9: Cache keys are alphanumeric and distinct for names that differ only by underscores.
 
   @TestSetup
   static void setup() {
@@ -35,42 +32,6 @@ private class AISchemaHelperTest {
     settings.IsExceptionLoggingEnabled__c = true;
     settings.IsPlatformLoggingEnabled__c = true;
     upsert settings;
-  }
-
-  // Stands in for the org cache partition.
-  private class FakeCache implements AISchemaHelper.ICache {
-    public Map<String, String> values = new Map<String, String>();
-    public Boolean isBroken = false;
-    public Integer lastTtl;
-    public String lastKey;
-    public String seed;
-
-    public String get(String key) {
-      if (isBroken)
-        throw new Cache.Org.OrgCacheException('Cache is down');
-      return seed != null ? seed : values.get(key);
-    }
-
-    public void put(String key, String value, Integer ttlSeconds) {
-      if (isBroken)
-        throw new Cache.Org.OrgCacheException('Cache is down');
-      values.put(key, value);
-      lastTtl = ttlSeconds;
-      lastKey = key;
-    }
-
-    public void clear(String key) {
-      if (isBroken)
-        throw new Cache.Org.OrgCacheException('Cache is down');
-      values.remove(key);
-    }
-  }
-
-  private class FakeCacheKeys {
-    public Boolean contains(AISchemaHelper.ICache cache) {
-      return cache instanceof FakeCache &&
-        ((FakeCache) cache).values.containsKey('accessible');
-    }
   }
 
   @IsTest
@@ -151,7 +112,6 @@ private class AISchemaHelperTest {
 
   @IsTest
   static void testScenario4() {
-    AISchemaHelper.persistentCache = new FakeCache();
     Integer before = AISchemaHelper.describeCount;
 
     Test.startTest();
@@ -171,77 +131,24 @@ private class AISchemaHelperTest {
   }
 
   @IsTest
-  static void testScenario5() {
-    FakeCache cache = new FakeCache();
-    AISchemaHelper.persistentCache = cache;
-    AISchemaHelper.getObjectInfo('Lead');
-    Integer describesAfterFirst = AISchemaHelper.describeCount;
-    AISchemaHelper.infoByLowerName.clear();
-
-    Test.startTest();
-    AISchemaHelper.ObjectInfo fromCache = AISchemaHelper.getObjectInfo('Lead');
-    Test.stopTest();
-
-    Assert.areEqual(1, cache.values.size(), 'One entry was persisted.');
-    Assert.areEqual(
-      describesAfterFirst,
-      AISchemaHelper.describeCount,
-      'No describe the second time.'
-    );
-    Assert.areEqual('Lead', fromCache.apiName, 'The same facts.');
-    Assert.isTrue(
-      fromCache.fieldsByLowerName.containsKey('lastname'),
-      'Including the fields.'
-    );
-    Assert.areEqual(
-      AISchemaHelper.SCHEMA_CACHE_TTL_SECONDS,
-      cache.lastTtl,
-      'With the expiry.'
-    );
-  }
-
-  @IsTest
-  static void testScenario6() {
-    FakeCache cache = new FakeCache();
-    cache.isBroken = true;
-    AISchemaHelper.persistentCache = cache;
-    Integer before = AISchemaHelper.describeCount;
-    String label;
-
-    Test.startTest();
-    label = AISchemaHelper.getLabel('Opportunity');
-    AISchemaHelper.clearCache('Opportunity');
-    cache.isBroken = false;
-    cache.values.put(cache.lastKey == null ? 'x' : cache.lastKey, 'not json');
-    AISchemaHelper.infoByLowerName.clear();
-    cache.seed = 'not json';
-    label = AISchemaHelper.getLabel('Opportunity');
-    Test.stopTest();
-
-    Assert.areEqual('Opportunity', label, 'Still answered.');
-    Assert.isTrue(AISchemaHelper.describeCount - before >= 2, 'By describing.');
-  }
-
-  @IsTest
   static void testScenario7() {
-    FakeCache cache = new FakeCache();
-    AISchemaHelper.persistentCache = cache;
     AISchemaHelper.getObjectInfo('Account');
     AISchemaHelper.getObjectInfo('Contact');
 
     Test.startTest();
     AISchemaHelper.clearCache('account');
-    Integer afterOne = cache.values.size();
+    Boolean accountCleared = !AISchemaHelper.infoByLowerName.containsKey(
+      'account'
+    );
     Boolean contactKept = AISchemaHelper.infoByLowerName.containsKey('contact');
     AISchemaHelper.clearCache(null);
     Test.stopTest();
 
-    Assert.areEqual(1, afterOne, 'One entry left in the persistent cache.');
+    Assert.isTrue(accountCleared, 'The named object is cleared.');
     Assert.isTrue(contactKept, 'The other object is kept.');
-    Assert.areEqual(0, cache.values.size(), 'Everything seen is cleared.');
     Assert.isTrue(
       AISchemaHelper.infoByLowerName.isEmpty(),
-      'And the static map.'
+      'Everything seen is cleared when no name is given.'
     );
   }
 
@@ -263,28 +170,5 @@ private class AISchemaHelperTest {
     Assert.isTrue(forAdmin, 'The deploying user can read it.');
     Assert.isFalse(forUser, 'A user with no permission set cannot.');
     Assert.isFalse(blank || unknown, 'Blank and unknown are not accessible.');
-    Assert.isFalse(
-      new FakeCacheKeys().contains(AISchemaHelper.persistentCache),
-      'Nothing user specific is persisted.'
-    );
-  }
-
-  @IsTest
-  static void testScenario9() {
-    FakeCache cache = new FakeCache();
-    AISchemaHelper.persistentCache = cache;
-
-    Test.startTest();
-    AISchemaHelper.getObjectInfo('Account');
-    AISchemaHelper.getObjectInfo('LoomConnect__AIAgent__c');
-    AISchemaHelper.getObjectInfo('LoomConnect__AIConversation__c');
-    Test.stopTest();
-
-    for (String key : cache.values.keySet())
-      Assert.isTrue(
-        Pattern.matches('^[A-Za-z0-9]+$', key),
-        'Platform cache keys must be alphanumeric: ' + key
-      );
-    Assert.areEqual(3, cache.values.size(), 'Three objects, three keys.');
   }
 }

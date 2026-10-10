@@ -80,9 +80,9 @@ public inherited sharing class AIPiiPseudonymizationService {
             ComplianceGroup__r.MasterLabel,
             MaskingRule__r.Strategy__c,
             MaskingRule__r.SubstituteValues__c,
-            MaskingRule__r.Active__c
+            MaskingRule__r.IsActive__c
           FROM AIPiiFieldType__mdt
-          WHERE Active__c = TRUE AND MaskingRule__c != NULL
+          WHERE IsActive__c = TRUE AND MaskingRule__c != NULL
           WITH SYSTEM_MODE
         ]) {
           ruleByFieldType.put(
@@ -109,7 +109,7 @@ public inherited sharing class AIPiiPseudonymizationService {
       if (String.isBlank(fakeValue)) {
         if (
           maskingRule != null &&
-          maskingRule.Active__c &&
+          maskingRule.IsActive__c &&
           maskingRule.Strategy__c ==
           AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST
         ) {

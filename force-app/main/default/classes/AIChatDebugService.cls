@@ -4,14 +4,13 @@ Class Name: AIChatDebugService
 =================================================================
 =================================================================
 
-Description: Everything the chat window shows only to a user with debug mode: the request trace for a reply, the PII
-masking pairs, and the failure detail behind a failed turn. It also restores real values in replies for
+Description: Everything the chat window shows only to a user with debug mode: the request trace for a reply and the failure detail behind a failed turn. It also restores real values in replies for
 display and export, so every place a real PII value is handled lives here.
 
 The caller has already checked that the user has debug mode (or may export) and, through
 AIChatConversationService, that the conversation is the signed-in user's own. Reads are in system mode
 because the User permission set cannot read execution steps, model configurations, PII mappings or
-logs; each is limited to that conversation, message or user. Request and response payloads are only
+logs (PII mappings are read only to restore values in the user's own replies, never returned as pairs); each is limited to that conversation, message or user. Request and response payloads are only
 present when the user had debug mode on at the time (AIExecutionStepRecorder).
 
 =================================================================
@@ -19,6 +18,7 @@ present when the user had debug mode on at the time (AIExecutionStepRecorder).
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development, from the old debug service. Payload fields are the ones the recorder writes.
+2.0          Chandler Stuart          getPiiMappings removed: it returned the real-to-fake pairs to any user with debug mode, which contradicts "Nobody sees PII mappings" (security model principle 4).
 */
 
 public with sharing class AIChatDebugService {
@@ -28,7 +28,6 @@ public with sharing class AIChatDebugService {
     AIChatDataStructure.DebugTrace debugTrace = new AIChatDataStructure.DebugTrace();
     debugTrace.conversationId = reply.AIConversation__c;
     debugTrace.conversationName = reply.AIConversation__r.Name;
-    debugTrace.conversationPublicId = reply.AIConversation__r.PublicId__c;
     debugTrace.replyMessageId = reply.Id;
     debugTrace.replyTokens = reply.TokenCount__c;
 
@@ -53,7 +52,7 @@ public with sharing class AIChatDebugService {
 
     List<AIConversation__c> conversationAgentModels = [
       SELECT
-        AIAgent__r.AIModelConfiguration__r.DeveloperName__c,
+        AIAgent__r.AIModelConfiguration__r.Name,
         AIAgent__r.AIModelConfiguration__r.AIProvider__c,
         AIAgent__r.AIModelConfiguration__r.ModelIdentifier__c
       FROM AIConversation__c
@@ -69,7 +68,7 @@ public with sharing class AIChatDebugService {
     ) {
       AIModelConfiguration__c modelConfiguration = conversationAgentModels[0]
         .AIAgent__r.AIModelConfiguration__r;
-      debugTrace.modelConfiguration = modelConfiguration.DeveloperName__c;
+      debugTrace.modelConfiguration = modelConfiguration.Name;
       debugTrace.provider = modelConfiguration.AIProvider__c;
       debugTrace.model = modelConfiguration.ModelIdentifier__c;
     }
@@ -124,24 +123,6 @@ public with sharing class AIChatDebugService {
     }
 
     return debugTrace;
-  }
-
-  // The conversation's masking pairs (real value to masked value) as pretty-printed JSON, sorted by real value.
-  public static String getPiiMappings(Id conversationId) {
-    Map<String, String> maskedByReal = AIPiiMappingService.getMapping(
-      conversationId
-    );
-    List<String> realValues = new List<String>(maskedByReal.keySet());
-    realValues.sort();
-
-    // Written key by key, because a serialised Map does not keep its order.
-    JSONGenerator generator = JSON.createGenerator(true);
-    generator.writeStartObject();
-    for (String realValue : realValues)
-      generator.writeStringField(realValue, maskedByReal.get(realValue));
-    generator.writeEndObject();
-
-    return generator.getAsString();
   }
 
   // The log reference to quote to an administrator and, with debug mode, the detail recorded on the failed turn's System message.

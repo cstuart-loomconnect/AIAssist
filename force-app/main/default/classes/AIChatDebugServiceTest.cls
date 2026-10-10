@@ -19,7 +19,7 @@ Version      Author                   Description
 @IsTest
 private class AIChatDebugServiceTest {
   // testScenario1: The trace names the model, counts tool calls and masked values, and carries the payloads the recorder saved.
-  // testScenario2: Masking pairs come back as sorted JSON, and an unmasked conversation gives an empty object.
+  // testScenario2: The mapping is only ever handed back as fake value to real value for restoring a reply; an unmasked conversation gives an empty map.
   // testScenario3: Fake values are swapped back longest first, so a longer fake value is replaced whole.
   // testScenario4: The failure detail gives the debug text of this turn's System message only, and nothing without debug mode.
   // testScenario5: The real value map is the masking map reversed.
@@ -106,7 +106,6 @@ private class AIChatDebugServiceTest {
       1,
       true
     )[0];
-    User other = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIConversation__c plain = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       UserInfo.getUserId(),
@@ -120,15 +119,17 @@ private class AIChatDebugServiceTest {
     );
 
     Test.startTest();
-    String pairs = AIChatDebugService.getPiiMappings(conversation.Id);
-    String empty = AIChatDebugService.getPiiMappings(plain.Id);
+    Map<String, String> realByFake = AIChatDebugService.getRealValueByFakeValue(
+      conversation.Id
+    );
+    Map<String, String> empty = AIChatDebugService.getRealValueByFakeValue(
+      plain.Id
+    );
     Test.stopTest();
 
-    Assert.isTrue(
-      pairs.indexOf('Abe') < pairs.indexOf('Zed'),
-      'Sorted by real value.'
-    );
-    Assert.areEqual('{ }', empty, 'Nothing masked.');
+    Assert.areEqual('Zed', realByFake.get('Z2'), 'Fake value to real value.');
+    Assert.areEqual('Abe', realByFake.get('A2'), 'Fake value to real value.');
+    Assert.isTrue(empty.isEmpty(), 'Nothing masked.');
   }
 
   @IsTest

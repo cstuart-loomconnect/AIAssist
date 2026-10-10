@@ -7,7 +7,7 @@
   >Choose how token limits should be enforced. Estimate Token Usage is fastest but approximate. Track Token Usage uses actual usage data from each response and enforces the limit between turns. Pre-Request Usage Check calls a token-count check before sending each request for the most accurate enforcement, at the cost of an extra call per turn.</inlineHelpText>
     <label>Token Tracking Method</label>
     <required>false</required>
-    <trackHistory>false</trackHistory>
+    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>

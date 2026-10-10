@@ -5,19 +5,19 @@ Class Name: AIChatDataStructure
 =================================================================
 
 Description: The response shapes returned to the aiAssistChat component family, and the small pieces shared by
-the chat services (AIChatStateService, AIChatContextService, AIChatCommandService, AIChatUsageService,
+the chat services (AIChatStateService, AIChatContextService, AIChatCommandService,
 AIChatConversationService, AIChatActionService, AIChatFeedbackService, AIChatDebugService). Kept in one
 place so the services can pass the same wrapper types to each other without depending on
 AIChatController.
 
 The shapes are the ones the chat window already reads, so it needs no change. A refusal the window
-should show is an AIMessagingException (a Custom Label and a stable code), not a type of its own.
+should show is an exception whose message is a Custom Label, not a type of its own.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old data structure. The controller exception is replaced by AIMessagingException.
+1.0          Chandler Stuart          Initial development, from the old data structure.
 */
 
 public class AIChatDataStructure {
@@ -30,8 +30,6 @@ public class AIChatDataStructure {
     public UiSettings ui;
     @AuraEnabled
     public UserState user;
-    @AuraEnabled
-    public UsageState usage;
     @AuraEnabled
     public TermsState terms;
     @AuraEnabled
@@ -46,6 +44,11 @@ public class AIChatDataStructure {
     public ConversationView conversation;
     @AuraEnabled
     public ConversationSummary openConversation;
+    // Why the user cannot send a message right now (AIAssistApplicationConstants.CHAT_BLOCKED_*), and what to tell them. Null when they can.
+    @AuraEnabled
+    public String blockedState;
+    @AuraEnabled
+    public String blockedMessage;
   }
 
   public class UiSettings {
@@ -78,25 +81,6 @@ public class AIChatDataStructure {
     public Boolean exportEnabled = false;
     @AuraEnabled
     public Boolean workflowActionsEnabled = false;
-  }
-
-  public class UsageState {
-    @AuraEnabled
-    public Decimal tokensUsed = 0;
-    @AuraEnabled
-    public Decimal tokenLimit;
-    @AuraEnabled
-    public String behavior;
-    @AuraEnabled
-    public Boolean limitReached = false;
-    @AuraEnabled
-    public Boolean blockMessages = false;
-    @AuraEnabled
-    public Boolean blockNewConversations = false;
-    @AuraEnabled
-    public Boolean notifyOnly = false;
-    @AuraEnabled
-    public Integer resetsInMinutes;
   }
 
   public class TermsState {
@@ -203,6 +187,8 @@ public class AIChatDataStructure {
     public String relatedRecordId;
     @AuraEnabled
     public String relatedObjectApiName;
+    @AuraEnabled
+    public String ownerName; // Only set on a conversation someone else started.
   }
 
   public class ChatMessage {
@@ -291,8 +277,6 @@ public class AIChatDataStructure {
     public Boolean isProcessing = false;
     @AuraEnabled
     public String status;
-    @AuraEnabled
-    public UsageState usage;
   }
 
   public class SendRequest {
@@ -304,7 +288,7 @@ public class AIChatDataStructure {
     public String objectApiName;
   }
 
-  // status is SENT, BLOCKED, LIMIT or ERROR; code is the AIMessagingException code behind a refusal, so the window can react to it without reading the text.
+  // status is SENT, BLOCKED, LIMIT or ERROR; code is set for an unknown slash command.
   public class SendResult {
     @AuraEnabled
     public String status;
@@ -318,8 +302,6 @@ public class AIChatDataStructure {
     public Boolean isNewConversation = false;
     @AuraEnabled
     public ChatMessage userMessage;
-    @AuraEnabled
-    public UsageState usage;
   }
 
   public class FailureDetail {
@@ -341,8 +323,6 @@ public class AIChatDataStructure {
     public Id conversationId;
     @AuraEnabled
     public String conversationName;
-    @AuraEnabled
-    public String conversationPublicId;
     @AuraEnabled
     public Id userMessageId;
     @AuraEnabled

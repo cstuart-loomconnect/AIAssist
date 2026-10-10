@@ -68,7 +68,10 @@ public inherited sharing class AIOpenAiResponseHandler implements IAIProviderRes
 
       // Status not in AIAssistSettings__c.AIProviderSuccessStatusCodes__c - expose OpenAI's error, e.g. { "error": { "message": "...", "type": "invalid_request_error", ... } }, falling back to the raw body.
       if (
-        !AIAssistSettingsService.getSuccessStatusCodes()
+        !toIntegerSet(
+            AIAssistSettingsService.getSettings()
+              .AIProviderSuccessStatusCodes__c
+          )
           .contains(openAiHttpResponse.getStatusCode())
       ) {
         String providerErrorDetail = rawResponseBody;
@@ -200,5 +203,20 @@ public inherited sharing class AIOpenAiResponseHandler implements IAIProviderRes
         caughtException
       );
     }
+  }
+
+  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
+  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+    Set<Integer> numbers = new Set<Integer>();
+
+    if (String.isBlank(commaSeparatedNumbers))
+      return numbers;
+
+    for (String entry : commaSeparatedNumbers.split(',')) {
+      if (entry.trim().isNumeric())
+        numbers.add(Integer.valueOf(entry.trim()));
+    }
+
+    return numbers;
   }
 }
