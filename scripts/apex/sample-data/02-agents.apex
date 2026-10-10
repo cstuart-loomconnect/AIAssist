@@ -248,6 +248,7 @@ public class SampleDataLoader {
         DeveloperName__c = 'Sample_Sales_Assistant',
         Description__c = 'Answers questions about accounts, contacts and open opportunities.',
         AIAgentPersona__c = 'A concise, commercially minded sales assistant.',
+        ObjectApiNames__c = 'Account,Contact,Opportunity',
         GreetingMessage__c = 'Hi, I can summarise this account, list open deals or draft a follow-up.',
         AIModelConfiguration__c = firstModelId,
         AccessMode__c = 'All AI Assist Users',
@@ -263,6 +264,7 @@ public class SampleDataLoader {
         DeveloperName__c = 'Sample_Service_Assistant',
         Description__c = 'Helps the service team with cases and customer history.',
         AIAgentPersona__c = 'A calm, precise support specialist.',
+        ObjectApiNames__c = 'Account,Contact,Case',
         GreetingMessage__c = 'Hello. Ask me about this customer or their open cases.',
         AIModelConfiguration__c = firstModelId,
         AccessMode__c = 'Assigned Users Only',
@@ -340,24 +342,6 @@ public class SampleDataLoader {
         )
       );
     save('AIAgentAssignment__c', agentAssignments, false);
-
-    List<AIAgentObject__c> agentObjects = new List<AIAgentObject__c>();
-    Map<Integer, List<String>> objectNamesByAgent = new Map<Integer, List<String>>{
-      0 => new List<String>{ 'Account', 'Contact', 'Opportunity' },
-      1 => new List<String>{ 'Account', 'Contact', 'Case' }
-    };
-    for (Integer agentIndex : objectNamesByAgent.keySet()) {
-      if (agents[agentIndex].Id == null)
-        continue;
-      for (String objectName : objectNamesByAgent.get(agentIndex))
-        agentObjects.add(
-          new AIAgentObject__c(
-            AIAgent__c = agents[agentIndex].Id,
-            ObjectApiName__c = objectName
-          )
-        );
-    }
-    save('AIAgentObject__c', agentObjects, false);
 
     // ---------- Prompt templates: one active per agent, and an inactive earlier draft.
     List<AIPromptTemplate__c> templates = new List<AIPromptTemplate__c>();

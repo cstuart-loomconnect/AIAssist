@@ -10,7 +10,7 @@ Description: Testing utility for AIConversationLockService: one turn per convers
 =================================================================
 Applicable Classes:
 
-AIConversationLockService
+AIConversationLockService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,13 +18,13 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationLockServiceTest {
-  // testScenario1: A free conversation is locked once, a second attempt is told it is busy, and the lock expires after the configured minutes.
-  // testScenario2: An expired lock can be taken again.
-  // testScenario3: Locking a conversation that does not exist, or an Id of the wrong type, is refused with the not found label.
-  // testScenario4: isLocked, extend and release quietly do nothing for a missing conversation or a wrong Id.
-  // testScenario5: extend restarts the full lock time for a retry, and release frees the conversation.
-  // testScenario6: handOff releases the lock when the processed message is the newest, and returns the newer message and keeps the lock when one arrived meanwhile.
-  // testScenario7: Bulk: two hundred conversations are each locked independently, in a limited number of queries and statements.
+  // testScenario1: Lock a free conversation twice -> the first caller gets the lock, the second is told it is busy, and the lock lasts the configured minutes.
+  // testScenario2: Check and lock a conversation whose lock has expired -> it reads as unlocked and can be taken again.
+  // testScenario3: Lock a deleted conversation, a wrong-type Id and a null Id -> each is refused with the not found label.
+  // testScenario4: Check, extend, release and hand off a deleted conversation, a wrong-type Id and a null Id -> nothing is locked and nothing is handed on.
+  // testScenario5: Extend then release a locked conversation -> the extend restarts the full lock time and the release leaves the lock blank.
+  // testScenario6: Hand off after the newest message and after an older one -> the first releases the lock, the second returns the newer message and keeps the lock.
+  // testScenario7: Lock 20 conversations in one transaction -> each is locked independently with one query and one update each.
 
   @TestSetup
   static void setup() {
@@ -37,21 +37,27 @@ private class AIConversationLockServiceTest {
 
   @IsTest
   static void testScenario1() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+    // [1] Create an agent and a conversation
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
-    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
-    );
-    AIConversation__c conversation = conversations[0];
+    )[0];
+
+    // [2] Lock the conversation twice and check whether it is locked
     Boolean first;
     Boolean second;
     Boolean afterLock;
-    Datetime lockedUntil;
 
     Test.startTest();
     first = AIConversationLockService.acquireLock(conversation.Id);
@@ -59,18 +65,21 @@ private class AIConversationLockServiceTest {
     afterLock = AIConversationLockService.isConversationLocked(conversation.Id);
     Test.stopTest();
 
-    lockedUntil = [
+    // [3] Read the lock time
+    Datetime lockedUntil = [
       SELECT ProcessingLockedUntil__c
       FROM AIConversation__c
       WHERE Id = :conversation.Id
     ]
     .ProcessingLockedUntil__c;
-    Assert.isTrue(first, 'The first caller takes the lock.');
+
+    // [4] Check the first caller got the lock and the second did not
+    Assert.isTrue(first, 'The first caller should take the lock.');
     Assert.isFalse(
       second,
-      'The second is told another message is being processed.'
+      'The second caller should be told another message is being processed.'
     );
-    Assert.isTrue(afterLock, 'The conversation reads as locked.');
+    Assert.isTrue(afterLock, 'The conversation should read as locked.');
     Assert.isTrue(
       lockedUntil >
       System.now()
@@ -78,27 +87,34 @@ private class AIConversationLockServiceTest {
           AIAssistSettingsService.getSettings()
             .ProcessingLockMinutes__c.intValue() - 1
         ),
-      'The lock lasts the configured time.'
+      'The lock should last the configured time.'
     );
   }
 
   @IsTest
   static void testScenario2() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+    // [1] Create an agent and a conversation whose lock has expired
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
-    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
-    );
-    AIConversation__c conversation = conversations[0];
+    )[0];
     conversation.ProcessingLockedUntil__c = System.now().addMinutes(-1);
     update conversation;
-    Boolean taken;
+
+    // [2] Check the expired lock, then take the lock again
     Boolean stillLocked;
+    Boolean taken;
 
     Test.startTest();
     stillLocked = AIConversationLockService.isConversationLocked(
@@ -107,19 +123,26 @@ private class AIConversationLockServiceTest {
     taken = AIConversationLockService.acquireLock(conversation.Id);
     Test.stopTest();
 
-    Assert.isFalse(stillLocked, 'A lock in the past is no lock.');
-    Assert.isTrue(taken, 'It can be taken.');
+    // [3] Check the expired lock reads as unlocked and can be taken
+    Assert.isFalse(stillLocked, 'A lock in the past should be no lock.');
+    Assert.isTrue(taken, 'An expired lock should be taken again.');
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create an agent and delete one of its conversations
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      model.Id,
       true
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
     );
@@ -127,40 +150,50 @@ private class AIConversationLockServiceTest {
     delete conversations[0];
     List<String> messages = new List<String>();
 
+    // [2] Try to lock the deleted conversation, a wrong-type Id and a null Id
     Test.startTest();
     for (Id badId : new List<Id>{ deletedId, agent.Id, null }) {
       try {
         AIConversationLockService.acquireLock(badId);
-        Assert.fail('Nothing to lock, so this should have thrown.');
       } catch (AIConversationLockService.AIConversationLockServiceException ex) {
         messages.add(ex.getMessage());
-        Assert.areEqual(
-          Label.AI_Error_Conversation_Not_Found,
-          ex.getMessage(),
-          'The text is the Custom Label.'
-        );
       }
     }
     Test.stopTest();
 
-    Assert.areEqual(3, messages.size(), 'Each bad Id was refused.');
+    // [3] Check each Id is refused with the not found label
+    Assert.areEqual(3, messages.size(), 'Each bad Id should be refused.');
+    Assert.areEqual(
+      new Set<String>{ Label.AI_Error_Conversation_Not_Found },
+      new Set<String>(messages),
+      'The refusal should be the not found Custom Label.'
+    );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create an agent and delete one of its conversations
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      model.Id,
       true
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
     );
     Id deletedId = conversations[0].Id;
     delete conversations[0];
+
+    // [2] Check, extend, release and hand off the deleted conversation, a wrong-type Id and a null Id
     Boolean locked;
+    Id handedOn;
 
     Test.startTest();
     locked =
@@ -171,31 +204,36 @@ private class AIConversationLockServiceTest {
       AIConversationLockService.extendLock(badId);
       AIConversationLockService.releaseLock(badId);
     }
-    Id handedOn = AIConversationLockService.releaseOrHandOffLock(
-      deletedId,
-      null
-    );
+    handedOn = AIConversationLockService.releaseOrHandOffLock(deletedId, null);
     Test.stopTest();
 
-    Assert.isFalse(locked, 'None of them is locked.');
-    Assert.isNull(handedOn, 'Nothing to hand on.');
+    // [3] Check nothing is locked and nothing is handed on
+    Assert.isFalse(locked, 'None of them should be locked.');
+    Assert.isNull(handedOn, 'There should be nothing to hand on.');
   }
 
   @IsTest
   static void testScenario5() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+    // [1] Create an agent and a conversation locked for 30 seconds
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
-    List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
-    );
-    AIConversation__c conversation = conversations[0];
+    )[0];
     conversation.ProcessingLockedUntil__c = System.now().addSeconds(30);
     update conversation;
+
+    // [2] Extend the lock, then release it
     Datetime extended;
     Boolean lockedAfterRelease;
 
@@ -213,6 +251,15 @@ private class AIConversationLockServiceTest {
     );
     Test.stopTest();
 
+    // [3] Read the released lock time
+    Datetime released = [
+      SELECT ProcessingLockedUntil__c
+      FROM AIConversation__c
+      WHERE Id = :conversation.Id
+    ]
+    .ProcessingLockedUntil__c;
+
+    // [4] Check the extend restarted the lock time and the release cleared it
     Assert.isTrue(
       extended >
       System.now()
@@ -220,29 +267,27 @@ private class AIConversationLockServiceTest {
           AIAssistSettingsService.getSettings()
             .ProcessingLockMinutes__c.intValue() - 1
         ),
-      'The lock was reset to its full time.'
+      'The lock should be reset to its full time.'
     );
-    Assert.isFalse(lockedAfterRelease, 'Released.');
-    Assert.isNull(
-      [
-        SELECT ProcessingLockedUntil__c
-        FROM AIConversation__c
-        WHERE Id = :conversation.Id
-      ]
-      .ProcessingLockedUntil__c,
-      'A blank value is unlocked.'
-    );
+    Assert.isFalse(lockedAfterRelease, 'The conversation should be released.');
+    Assert.isNull(released, 'A blank value should mean unlocked.');
   }
 
   @IsTest
   static void testScenario6() {
+    // [1] Create an agent, two conversations with messages, and lock both conversations
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      model.Id,
       true
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
     );
@@ -250,18 +295,22 @@ private class AIConversationLockServiceTest {
     AIConversation__c second = conversations[1];
     List<AIConversationMessage__c> firstMessages = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       10,
       1,
       true
     );
     List<AIConversationMessage__c> secondMessages = AIAssistTestDataFactory.createAIConversationMessages(
       second.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       10,
       2,
       true
     );
     AIConversationLockService.acquireLock(conversation.Id);
     AIConversationLockService.acquireLock(second.Id);
+
+    // [2] Hand off the lock after the newest message and after an older one
     Id nothingWaiting;
     Id waiting;
 
@@ -276,34 +325,54 @@ private class AIConversationLockServiceTest {
     );
     Test.stopTest();
 
-    Assert.isNull(nothingWaiting, 'No newer message, so nothing is handed on.');
+    // [3] Read the lock state of both conversations
+    Boolean firstLocked = AIConversationLockService.isConversationLocked(
+      conversation.Id
+    );
+    Boolean secondLocked = AIConversationLockService.isConversationLocked(
+      second.Id
+    );
+
+    // [4] Check the first lock is released and the second is kept for the waiting message
+    Assert.isNull(
+      nothingWaiting,
+      'With no newer message nothing should be handed on.'
+    );
     Assert.isFalse(
-      AIConversationLockService.isConversationLocked(conversation.Id),
-      'And the conversation is freed.'
+      firstLocked,
+      'The conversation with nothing waiting should be freed.'
     );
     Assert.areEqual(
       secondMessages[1].Id,
       waiting,
-      'The newer message is handed on.'
+      'The newer message should be handed on.'
     );
     Assert.isTrue(
-      AIConversationLockService.isConversationLocked(second.Id),
-      'And the lock is kept for it.'
+      secondLocked,
+      'The lock should be kept for the waiting message.'
     );
   }
 
   @IsTest
   static void testScenario7() {
+    // [1] Create an agent and 200 conversations
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      true
+    )[0];
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
-      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      model.Id,
       true
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
     );
+
+    // [2] Lock 20 conversations in one transaction
     Integer locked = 0;
     Integer queries;
     Integer statements;
@@ -317,17 +386,25 @@ private class AIConversationLockServiceTest {
     statements = Limits.getDmlStatements();
     Test.stopTest();
 
-    Assert.areEqual(20, locked, 'Every free conversation was locked.');
-    Assert.areEqual(20, queries, 'One query per lock, no more.');
-    Assert.areEqual(20, statements, 'And one update.');
+    // [3] Count the locked conversations
+    Integer lockedCount = [
+      SELECT COUNT()
+      FROM AIConversation__c
+      WHERE ProcessingLockedUntil__c != NULL
+    ];
+
+    // [4] Check each lock used one query and one update
+    Assert.areEqual(20, locked, 'Every free conversation should be locked.');
     Assert.areEqual(
       20,
-      [
-        SELECT COUNT()
-        FROM AIConversation__c
-        WHERE ProcessingLockedUntil__c != NULL
-      ],
-      'Only those locked carry a lock.'
+      queries,
+      'There should be one query per lock, no more.'
+    );
+    Assert.areEqual(20, statements, 'There should be one update per lock.');
+    Assert.areEqual(
+      20,
+      lockedCount,
+      'Only the conversations locked should carry a lock.'
     );
   }
 }

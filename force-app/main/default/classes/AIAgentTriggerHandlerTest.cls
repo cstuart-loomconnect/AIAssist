@@ -4,26 +4,26 @@ Class Name: AIAgentTriggerHandlerTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIAgentTrigger and AIAgentTriggerHandler: the retention recalculation batch started when an agent's retention days or retention trigger change.
+Description: Testing utility for the AI Agent Trigger Handler: the retention recalculation batch started when an agent's retention days or retention trigger change.
 
 =================================================================
 =================================================================
 Applicable Classes:
 
-AIAgentTriggerHandler
+AIAgentTrigger: Coverage TBC
+AIAgentTriggerHandler: Coverage TBC
 
-Version      Author                   Description
-1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Developer Name scenarios removed: names are typed by the user, never stamped. Tests the retention recalculation instead.
+Version           Author                   Description
+1.0               Chandler Stuart          Initial development
 */
 
 @IsTest
 private class AIAgentTriggerHandlerTest {
-  // testScenario1: Changing an agent's retention days starts the retention recalculation batch.
-  // testScenario2: Changing an agent's retention trigger starts the retention recalculation batch.
-  // testScenario3: An unrelated change to an agent does not start the batch.
-  // testScenario4: The handler does nothing, and does not throw, for no records.
-  // testScenario5: An unexpected failure inside the handler is logged and never stops the save.
+  // testScenario1: Updating an AIAgent__c's ConversationRetentionDays__c starts the retention recalculation batch.
+  // testScenario2: Updating an AIAgent__c's RetentionTrigger__c starts the retention recalculation batch.
+  // testScenario3: Updating an AIAgent__c without changing its retention settings does not start the batch.
+  // testScenario4: Calling AIAgentTriggerHandler.handleAfterUpdate with null or empty inputs does nothing and logs nothing.
+  // testScenario5: When AIAgentTriggerHandler.isTestCustomExceptionThrown forces an exception, it's caught and logged rather than blocking the save, and no batch is started.
 
   private static final String BATCH_NAME = 'AIConversationRetentionRecalcBatch';
 
@@ -36,7 +36,9 @@ private class AIAgentTriggerHandlerTest {
     upsert settings;
   }
 
-  private static AIAgent__c createAgentWithRetention() {
+  @IsTest
+  static void testScenario1() {
+    // [1] Create an agent with retention settings
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -45,99 +47,178 @@ private class AIAgentTriggerHandlerTest {
     agent.ConversationRetentionDays__c = 30;
     agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CREATED_DATE;
     insert agent;
-    return agent;
-  }
 
-  private static Integer countBatchJobs() {
-    return [
-      SELECT COUNT()
-      FROM AsyncApexJob
-      WHERE ApexClass.Name = :BATCH_NAME
-    ];
-  }
+    // [2] Check that no batch has run yet
+    Assert.areEqual(
+      0,
+      [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :BATCH_NAME],
+      'No batch should run before the retention change.'
+    );
 
-  @IsTest
-  static void testScenario1() {
-    AIAgent__c agent = createAgentWithRetention();
-    Assert.areEqual(0, countBatchJobs(), 'No batch before the change.');
-
+    // [3] Change the retention days and update the agent
     Test.startTest();
     agent.ConversationRetentionDays__c = 60;
     update agent;
     Test.stopTest();
 
-    Assert.areEqual(1, countBatchJobs(), 'The recalculation batch ran once.');
+    // [4] Count the retention batches that ran
+    Integer batchCount = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+
+    // [5] Check that one batch ran
+    Assert.areEqual(
+      1,
+      batchCount,
+      'The retention recalculation batch should run once when ConversationRetentionDays__c changes.'
+    );
   }
 
   @IsTest
   static void testScenario2() {
-    AIAgent__c agent = createAgentWithRetention();
+    // [1] Create an agent with retention settings
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      false
+    )[0];
+    agent.ConversationRetentionDays__c = 30;
+    agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CREATED_DATE;
+    insert agent;
 
+    // [2] Change the retention trigger and update the agent
     Test.startTest();
     agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_LAST_MESSAGE_DATE;
     update agent;
     Test.stopTest();
 
-    Assert.areEqual(1, countBatchJobs(), 'The recalculation batch ran once.');
+    // [3] Count the retention batches that ran
+    Integer batchCount = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+
+    // [4] Check that one batch ran
+    Assert.areEqual(
+      1,
+      batchCount,
+      'The retention recalculation batch should run once when RetentionTrigger__c changes.'
+    );
   }
 
   @IsTest
   static void testScenario3() {
-    AIAgent__c agent = createAgentWithRetention();
+    // [1] Create an agent with retention settings
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      false
+    )[0];
+    agent.ConversationRetentionDays__c = 30;
+    agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CREATED_DATE;
+    insert agent;
 
+    // [2] Change only the agent name and update the agent
     Test.startTest();
     agent.Name = 'A completely new name';
     update agent;
     Test.stopTest();
 
-    Assert.areEqual(0, countBatchJobs(), 'Retention did not change.');
+    // [3] Count the retention batches that ran
+    Integer batchCount = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+
+    // [4] Check that no batch ran
+    Assert.areEqual(
+      0,
+      batchCount,
+      'No batch should run when the retention settings did not change.'
+    );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Call the handler with null and empty inputs
     Test.startTest();
-    try {
-      AIAgentTriggerHandler.handleAfterUpdate(null, null);
-      AIAgentTriggerHandler.handleAfterUpdate(
-        new Map<Id, AIAgent__c>(),
-        new List<AIAgent__c>()
-      );
-    } catch (Exception ex) {
-      Assert.fail('The handler must never throw: ' + ex.getMessage());
-    }
+    AIAgentTriggerHandler.handleAfterUpdate(null, null);
+    AIAgentTriggerHandler.handleAfterUpdate(
+      new Map<Id, AIAgent__c>(),
+      new List<AIAgent__c>()
+    );
     Test.stopTest();
 
-    Assert.areEqual(0, countBatchJobs(), 'No batch.');
+    // [2] Count the batches and platform logs
+    Integer batchCount = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+    Integer platformLogCount = [SELECT COUNT() FROM AIPlatformLog__c];
+
+    // [3] Check that nothing ran and nothing was logged
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIPlatformLog__c],
-      'Nothing to do is not a fault.'
+      batchCount,
+      'No batch should run when there is nothing to process.'
+    );
+    Assert.areEqual(
+      0,
+      platformLogCount,
+      'Nothing to process should not be logged as a fault.'
     );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Force the handler to throw an exception
     AIAgentTriggerHandler.isTestCustomExceptionThrown = true;
 
+    // [2] Create an agent with retention settings
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
+      false
+    )[0];
+    agent.ConversationRetentionDays__c = 30;
+    agent.RetentionTrigger__c = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CREATED_DATE;
+    insert agent;
+
+    // [3] Change the retention days and update the agent
     Test.startTest();
-    try {
-      AIAgentTriggerHandler.handleAfterUpdate(
-        new Map<Id, AIAgent__c>(),
-        new List<AIAgent__c>{ new AIAgent__c() }
-      );
-    } catch (Exception ex) {
-      Assert.fail('The handler must never throw: ' + ex.getMessage());
-    }
+    agent.ConversationRetentionDays__c = 60;
+    update agent;
     Test.stopTest();
 
+    // [4] Count the batches and the matching platform logs
+    Integer batchCount = [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE ApexClass.Name = :BATCH_NAME
+    ];
+    Integer platformLogCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE
+        ClassName__c = 'AIAgentTriggerHandler'
+        AND MethodName__c = 'handleAfterUpdate'
+    ];
+
+    // [5] Check that no batch ran and the exception was logged
+    Assert.areEqual(
+      0,
+      batchCount,
+      'No batch should run when the handler throws.'
+    );
     Assert.areEqual(
       1,
-      [
-        SELECT COUNT()
-        FROM AIPlatformLog__c
-        WHERE ClassName__c = 'AIAgentTriggerHandler'
-      ],
-      'Logged once.'
+      platformLogCount,
+      'The forced exception should be logged to AIPlatformLog__c.'
     );
   }
 }

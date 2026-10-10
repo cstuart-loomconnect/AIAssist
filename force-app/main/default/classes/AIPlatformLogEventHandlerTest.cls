@@ -10,8 +10,8 @@ Description: Testing utility for AIPlatformLogEventHandler: saving published log
 =================================================================
 Applicable Classes:
 
-AIPlatformLogEventHandler
-AIPlatformLogEventTrigger
+AIPlatformLogEventHandler: Coverage TBC
+AIPlatformLogEventTrigger: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -19,11 +19,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIPlatformLogEventHandlerTest {
-  // testScenario1: afterInsert saves every field of an event on the AIPlatformLog__c record it creates.
-  // testScenario2: A bulk of more than two hundred published events reaches the trigger in chunks and every one is saved.
-  // testScenario3: While the application is switched off, or platform logging is, the trigger saves nothing.
-  // testScenario4: A null or empty list of events is ignored.
-  // testScenario5: An unexpected failure inside the handler is logged and never stops the save.
+  // testScenario1: Publishing an event saves every one of its fields on the AIPlatformLog__c record it creates.
+  // testScenario2: Publishing more than two hundred events reaches the trigger in chunks and every one is saved.
+  // testScenario3: While the application is switched off, publishing an event saves nothing.
+  // testScenario4: Calling AIPlatformLogEventHandler.handleAfterInsert with null or empty inputs does nothing.
+  // testScenario5: When AIPlatformLogEventHandler.isTestCustomExceptionThrown forces an exception, it is caught and not logged, and nothing is saved.
 
   @TestSetup
   static void setup() {
@@ -36,10 +36,16 @@ private class AIPlatformLogEventHandlerTest {
 
   @IsTest
   static void testScenario1() {
-    Id relatedRecordId = AIAssistTestDataFactory.createAIAgents(1, true)[0].Id;
+    // [1] Build a log event with every field set
+    Id relatedRecordId = AIAssistTestDataFactory.createAIAgents(
+        1,
+        null,
+        true
+      )[0]
+      .Id;
     Datetime occurredAt = Datetime.now().addMinutes(-5);
 
-    AIPlatformLogEvent__e event = new AIPlatformLogEvent__e(
+    AIPlatformLogEvent__e logEvent = new AIPlatformLogEvent__e(
       ClassName__c = 'SomeClass',
       MethodName__c = 'someMethod',
       OccurredAt__c = occurredAt,
@@ -52,12 +58,12 @@ private class AIPlatformLogEventHandlerTest {
       Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_WARNING
     );
 
+    // [2] Publish the event
     Test.startTest();
-    AIPlatformLogEventHandler.handleAfterInsert(
-      new List<AIPlatformLogEvent__e>{ event }
-    );
+    EventBus.publish(logEvent);
     Test.stopTest();
 
+    // [3] Read the saved log back
     AIPlatformLog__c log = [
       SELECT
         ClassName__c,
@@ -73,82 +79,139 @@ private class AIPlatformLogEventHandlerTest {
       FROM AIPlatformLog__c
     ];
 
-    Assert.areEqual('SomeClass', log.ClassName__c, 'Class name.');
-    Assert.areEqual('someMethod', log.MethodName__c, 'Method name.');
-    Assert.areEqual(occurredAt, log.OccurredAt__c, 'When it happened.');
-    Assert.areEqual(UserInfo.getUserId(), log.User__c, 'The user.');
+    // [4] Check every field was copied onto the log
+    Assert.areEqual(
+      'SomeClass',
+      log.ClassName__c,
+      'The class name should be copied across.'
+    );
+    Assert.areEqual(
+      'someMethod',
+      log.MethodName__c,
+      'The method name should be copied across.'
+    );
+    Assert.areEqual(
+      occurredAt,
+      log.OccurredAt__c,
+      'The time it happened should be copied across.'
+    );
+
+    Assert.areEqual(
+      UserInfo.getUserId(),
+      log.User__c,
+      'The user should be copied across.'
+    );
     Assert.areEqual(
       'System.DmlException',
       log.ExceptionType__c,
-      'Exception type.'
+      'The exception type should be copied across.'
     );
-    Assert.areEqual('Short message', log.ExceptionMessage__c, 'Message.');
-    Assert.areEqual('Stack trace', log.StackTrace__c, 'Stack trace.');
-    Assert.areEqual('Long detail', log.ExceptionLogDetail__c, 'Detail.');
+    Assert.areEqual(
+      'Short message',
+      log.ExceptionMessage__c,
+      'The message should be copied across.'
+    );
+
+    Assert.areEqual(
+      'Stack trace',
+      log.StackTrace__c,
+      'The stack trace should be copied across.'
+    );
+    Assert.areEqual(
+      'Long detail',
+      log.ExceptionLogDetail__c,
+      'The detail should be copied across.'
+    );
+
     Assert.areEqual(
       String.valueOf(relatedRecordId),
       log.RelatedRecordId__c,
-      'Related record.'
+      'The related record should be copied across.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.LOG_SEVERITY_WARNING,
       log.Severity__c,
-      'Severity is copied across.'
+      'The severity should be copied across.'
     );
   }
 
   @IsTest
   static void testScenario2() {
-    List<AIPlatformLogEvent__e> events = new List<AIPlatformLogEvent__e>();
-    for (Integer i = 0; i < 201; i++)
-      events.add(
+    // [1] Build 201 log events
+    List<AIPlatformLogEvent__e> logEvents = new List<AIPlatformLogEvent__e>();
+
+    for (Integer eventIndex = 0; eventIndex < 201; eventIndex++) {
+      logEvents.add(
         new AIPlatformLogEvent__e(
           ClassName__c = 'BulkClass',
-          MethodName__c = 'bulk' + i,
+          MethodName__c = 'bulk' + eventIndex,
           ExceptionType__c = 'Test',
-          ExceptionMessage__c = 'Bulk ' + i,
+          ExceptionMessage__c = 'Bulk ' + eventIndex,
           Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_INFO
         )
       );
+    }
 
+    // [2] Publish the events
     Test.startTest();
-    EventBus.publish(events);
+    EventBus.publish(logEvents);
     Test.stopTest();
 
+    // [3] Count the saved logs
+    Integer logCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE ClassName__c = 'BulkClass'
+    ];
+
+    // [4] Check every event was saved
     Assert.areEqual(
       201,
-      [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = 'BulkClass'],
-      'No event may be dropped because it fell in a later chunk.'
+      logCount,
+      'No event should be dropped because it fell in a later chunk.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Switch the application off
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.IsEnabled__c = false;
     update settings;
+
     AIAssistSettingsService.cachedSettings = null;
 
-    Test.startTest();
-    EventBus.publish(
-      new AIPlatformLogEvent__e(
-        ClassName__c = 'OffClass',
-        MethodName__c = 'off',
-        ExceptionType__c = 'Test',
-        Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_INFO
-      )
+    // [2] Build a log event
+    AIPlatformLogEvent__e logEvent = new AIPlatformLogEvent__e(
+      ClassName__c = 'OffClass',
+      MethodName__c = 'off',
+      ExceptionType__c = 'Test',
+      Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_INFO
     );
+
+    // [3] Publish the event
+    Test.startTest();
+    EventBus.publish(logEvent);
     Test.stopTest();
 
+    // [4] Count the saved logs
+    Integer logCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE ClassName__c = 'OffClass'
+    ];
+
+    // [5] Check nothing was saved
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = 'OffClass'],
-      'A switched-off application saves no log records.'
+      logCount,
+      'A switched-off application should save no log records.'
     );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Call the handler with null and empty input
     Test.startTest();
     AIPlatformLogEventHandler.handleAfterInsert(null);
     AIPlatformLogEventHandler.handleAfterInsert(
@@ -156,31 +219,39 @@ private class AIPlatformLogEventHandlerTest {
     );
     Test.stopTest();
 
-    Assert.areEqual(
-      0,
-      [SELECT COUNT() FROM AIPlatformLog__c],
-      'There was nothing to save.'
-    );
+    // [2] Count the saved logs
+    Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c];
+
+    // [3] Check nothing was saved
+    Assert.areEqual(0, logCount, 'There was nothing to save.');
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Force the handler to throw
     AIPlatformLogEventHandler.isTestCustomExceptionThrown = true;
 
+    // [2] Build a log event
+    AIPlatformLogEvent__e logEvent = new AIPlatformLogEvent__e(
+      ClassName__c = 'FailClass',
+      MethodName__c = 'fail',
+      ExceptionType__c = 'Test',
+      Severity__c = AIAssistApplicationConstants.LOG_SEVERITY_INFO
+    );
+
+    // [3] Publish the event
     Test.startTest();
-    try {
-      AIPlatformLogEventHandler.handleAfterInsert(
-        new List<AIPlatformLogEvent__e>{ new AIPlatformLogEvent__e() }
-      );
-    } catch (Exception ex) {
-      Assert.fail('The handler must never throw: ' + ex.getMessage());
-    }
+    EventBus.publish(logEvent);
     Test.stopTest();
 
+    // [4] Count the saved logs
+    Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c];
+
+    // [5] Check nothing was saved or logged
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIPlatformLog__c],
-      'A failure saving log events is not itself logged, which would loop.'
+      logCount,
+      'A failure saving log events should not save anything, and is not itself logged because that would loop.'
     );
   }
 }

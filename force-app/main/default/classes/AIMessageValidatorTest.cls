@@ -10,7 +10,7 @@ Description: Testing utility for AIMessageValidator: every reason a user can be 
 =================================================================
 Applicable Classes:
 
-AIMessageValidator
+AIMessageValidator: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,15 +18,20 @@ Version      Author                   Description
 
 @IsTest
 private class AIMessageValidatorTest {
-  // testScenario1: An open agent and an acceptable message are allowed, and the context carries the user, the agent and the user's settings so nothing is queried twice.
-  // testScenario2: A switched-off application refuses every message.
-  // testScenario3: Maintenance mode refuses new messages.
-  // testScenario4: A blank or null message is refused, a message over the length limit is refused, and one exactly at the limit is allowed.
-  // testScenario5: A missing, mistyped, deleted or inactive agent is refused, all but the inactive one as plain 'not available' so nothing is revealed about what exists.
-  // testScenario6: An Assigned Users Only agent is closed until the user is assigned, by name or by permission set, while an agent open to all users needs no assignment.
-  // testScenario7: With a terms version configured, a user who never accepted, one who accepted an earlier version and one who accepted the current version are told so, or allowed.
-  // testScenario8: A channel the object model does not define is refused, as is one outside the user's allow-list, while one on the list, or none at all, is allowed.
-  // testScenario9: A chat about a record is allowed for a record the user owns, and refused for a mismatched object name, a record the user cannot see, or an object the agent is not built for.
+  // testScenario1: An open agent and an acceptable message are validated -> the request is allowed and the context carries the user, the agent and the user's settings.
+  // testScenario2: A message is validated while the application is switched off -> it is refused.
+  // testScenario3: A message is validated in maintenance mode -> it is refused.
+  // testScenario4: A blank, null, over-length and exactly-at-the-limit message are validated -> the first three are refused and the last is allowed.
+  // testScenario5: A missing, mistyped, deleted and inactive agent are validated -> all are refused, all but the inactive one as plain 'not available'.
+  // testScenario6: Agents are validated as a user who is and is not assigned -> an Assigned Users Only agent is closed until assigned by name or permission set, and an open agent needs no assignment.
+  // testScenario7: Users who never accepted, accepted an earlier version and accepted the current version are validated -> the first two are refused and the last is allowed.
+  // testScenario8: An undefined channel, a channel outside the allow-list, one on the list and none are validated -> the first two are refused and the last two are allowed.
+  // testScenario9: Chats about a record are validated -> an owned record is allowed and a mismatched object name, an unreadable record and an unsupported object are refused.
+
+  private static final String ALLOWED = 'ALLOWED';
+  private static final String MESSAGE_BODY = 'Hello';
+  private static final String PERMISSION_SET_NAME = 'AIAssistUser';
+  private static final String UNDEFINED_CHANNEL = 'Carrier Pigeon';
 
   @TestSetup
   static void setup() {
@@ -39,101 +44,135 @@ private class AIMessageValidatorTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create a chat user with the permission set, an open agent and the user's settings
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
-      'AIAssistUser'
+      PERMISSION_SET_NAME
     );
+
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
+
     AIMessageValidator.ChatContext context;
 
+    // [2] Validate an acceptable message as the chat user
+    Test.startTest();
     System.runAs(chatUser) {
-      Test.startTest();
       context = AIMessageValidator.validateSendRequest(
         agent.Id,
-        'Hello',
+        MESSAGE_BODY,
         AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
         null,
         null
       );
-      Test.stopTest();
     }
+    Test.stopTest();
 
-    Assert.areEqual(chatUser.Id, context.userId, 'The user.');
-    Assert.areEqual(agent.Id, context.agent.Id, 'The agent.');
-    Assert.isNotNull(context.userSettings, 'And the user\'s settings.');
+    // [3] Check the context carries the user, the agent and the user's settings
+    Assert.areEqual(
+      chatUser.Id,
+      context.userId,
+      'The context should carry the user.'
+    );
+    Assert.areEqual(
+      agent.Id,
+      context.agent.Id,
+      'The context should carry the agent.'
+    );
+    Assert.isNotNull(
+      context.userSettings,
+      'The context should carry the user\'s settings.'
+    );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create an agent and switch the application off
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.IsEnabled__c = false;
     update settings;
     AIAssistSettingsService.cachedSettings = null;
 
+    String outcome;
+
+    // [2] Validate a message and keep the refusal
     Test.startTest();
     try {
       AIMessageValidator.validateSendRequest(
         agent.Id,
-        'Hello',
+        MESSAGE_BODY,
         null,
         null,
         null
       );
-      Assert.fail('A switched-off application should have thrown.');
+      outcome = ALLOWED;
     } catch (AIMessageValidator.AIMessageValidatorException ex) {
-      Assert.areEqual(
-        Label.AI_Error_Application_Inactive,
-        ex.getMessage(),
-        'The text is the Custom Label.'
-      );
+      outcome = ex.getMessage();
     }
     Test.stopTest();
+
+    // [3] Check the message was refused
+    Assert.areEqual(
+      Label.AI_Error_Application_Inactive,
+      outcome,
+      'A switched-off application should refuse with the Custom Label.'
+    );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create an agent and switch maintenance mode on
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
     uiSettings.IsMaintenanceMode__c = true;
     upsert uiSettings;
 
+    String outcome;
+
+    // [2] Validate a message and keep the refusal
     Test.startTest();
     try {
       AIMessageValidator.validateSendRequest(
         agent.Id,
-        'Hello',
+        MESSAGE_BODY,
         null,
         null,
         null
       );
-      Assert.fail('Maintenance mode should have thrown.');
+      outcome = ALLOWED;
     } catch (AIMessageValidator.AIMessageValidatorException ex) {
-      Assert.areEqual(
-        Label.AI_Error_Maintenance_Mode,
-        ex.getMessage(),
-        'The text is the Custom Label.'
-      );
+      outcome = ex.getMessage();
     }
     Test.stopTest();
+
+    // [3] Check the message was refused
+    Assert.areEqual(
+      Label.AI_Error_Maintenance_Mode,
+      outcome,
+      'Maintenance mode should refuse with the Custom Label.'
+    );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create an agent and a message exactly at the length limit
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -141,10 +180,18 @@ private class AIMessageValidatorTest {
     )[0];
     String atTheLimit = 'x'
       .repeat(AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS);
-    List<String> messages = new List<String>();
+    List<String> outcomes = new List<String>();
 
+    // [2] Validate a blank, a null, an over-length and an at-the-limit message
     Test.startTest();
-    for (String body : new List<String>{ '   ', null, atTheLimit + 'x' }) {
+    for (
+      String body : new List<String>{
+        '   ',
+        null,
+        atTheLimit + 'x',
+        atTheLimit
+      }
+    ) {
       try {
         AIMessageValidator.validateSendRequest(
           agent.Id,
@@ -153,33 +200,40 @@ private class AIMessageValidatorTest {
           null,
           null
         );
-        Assert.fail('This message should have been refused.');
+        outcomes.add(ALLOWED);
       } catch (AIMessageValidator.AIMessageValidatorException ex) {
-        messages.add(ex.getMessage());
+        outcomes.add(ex.getMessage());
       }
     }
-
-    AIMessageValidator.ChatContext allowed = AIMessageValidator.validateSendRequest(
-      agent.Id,
-      atTheLimit,
-      null,
-      null,
-      null
-    );
     Test.stopTest();
 
-    Assert.areEqual(Label.AI_Error_Message_Empty, messages[0], 'Blank.');
-    Assert.areEqual(Label.AI_Error_Message_Empty, messages[1], 'Null.');
+    // [3] Check the first three are refused and the last is allowed
+    Assert.areEqual(
+      Label.AI_Error_Message_Empty,
+      outcomes[0],
+      'A blank message should be refused.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Message_Empty,
+      outcomes[1],
+      'A null message should be refused.'
+    );
     Assert.areEqual(
       Label.AI_Error_Message_Too_Long,
-      messages[2],
-      'One over the limit.'
+      outcomes[2],
+      'A message one over the limit should be refused.'
     );
-    Assert.isNotNull(allowed, 'A message exactly at the limit is allowed.');
+
+    Assert.areEqual(
+      ALLOWED,
+      outcomes[3],
+      'A message exactly at the limit should be allowed.'
+    );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Create an inactive agent and a deleted agent
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -189,64 +243,71 @@ private class AIMessageValidatorTest {
       model.Id,
       true
     );
+
     agents[0].IsActive__c = false;
     update agents[0];
+
     Id deletedId = agents[1].Id;
     delete agents[1];
-    Map<Id, String> messageByAgentId = new Map<Id, String>();
 
+    Map<Id, String> outcomeByAgentId = new Map<Id, String>();
+
+    // [2] Validate a message for the inactive agent, the deleted agent, a wrong-type Id and no Id
     Test.startTest();
     for (
-      Id agentId : new List<Id>{ agents[0].Id, deletedId, UserInfo.getUserId() }
+      Id agentId : new List<Id>{
+        agents[0].Id,
+        deletedId,
+        UserInfo.getUserId(),
+        null
+      }
     ) {
       try {
         AIMessageValidator.validateSendRequest(
           agentId,
-          'Hello',
+          MESSAGE_BODY,
           null,
           null,
           null
         );
-        Assert.fail('This agent should have been refused.');
+        outcomeByAgentId.put(agentId, ALLOWED);
       } catch (AIMessageValidator.AIMessageValidatorException ex) {
-        messageByAgentId.put(agentId, ex.getMessage());
+        outcomeByAgentId.put(agentId, ex.getMessage());
       }
-    }
-
-    try {
-      AIMessageValidator.validateSendRequest(null, 'Hello', null, null, null);
-      Assert.fail('No agent should have been refused.');
-    } catch (AIMessageValidator.AIMessageValidatorException ex) {
-      messageByAgentId.put(null, ex.getMessage());
     }
     Test.stopTest();
 
+    // [3] Check all are refused, all but the inactive one as not available
     Assert.areEqual(
       Label.AI_Error_Agent_Inactive,
-      messageByAgentId.get(agents[0].Id),
-      'An inactive agent.'
+      outcomeByAgentId.get(agents[0].Id),
+      'An inactive agent should be refused as inactive.'
+    );
+
+    Assert.areEqual(
+      Label.AI_Error_Agent_Not_Available,
+      outcomeByAgentId.get(deletedId),
+      'A deleted agent should be refused as not available.'
     );
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Available,
-      messageByAgentId.get(deletedId),
-      'A deleted agent.'
+      outcomeByAgentId.get(UserInfo.getUserId()),
+      'An Id of the wrong type should be refused the same way.'
     );
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Available,
-      messageByAgentId.get(UserInfo.getUserId()),
-      'An Id of the wrong type is reported the same way.'
-    );
-    Assert.areEqual(
-      Label.AI_Error_Agent_Not_Available,
-      messageByAgentId.get(null),
-      'No Id at all.'
+      outcomeByAgentId.get(null),
+      'No Id at all should be refused the same way.'
     );
   }
 
   @IsTest
   static void testScenario6() {
+    // [1] Create two users with the permission set
     List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
+    AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
+
+    // [2] Create three Assigned Users Only agents and one open agent
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -256,6 +317,7 @@ private class AIMessageValidatorTest {
       model.Id,
       false
     );
+
     agents[0]
       .AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
     agents[1]
@@ -263,72 +325,85 @@ private class AIMessageValidatorTest {
     agents[2]
       .AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
     insert agents;
+
+    // [3] Assign the second agent to the first user by name and the third agent by permission set
     AIAssistTestDataFactory.createAIAgentAssignments(
       agents[1].Id,
       new List<User>{ users[0] },
+      null,
       true
     );
     AIAssistTestDataFactory.createAIAgentAssignments(
       agents[2].Id,
-      'AIAssistUser',
+      null,
+      PERMISSION_SET_NAME,
       true
     );
-    Map<Id, String> messageByAgentId = new Map<Id, String>();
+    Map<Id, String> outcomeByAgentId = new Map<Id, String>();
 
+    // [4] Validate a message for each agent as the first user
     Test.startTest();
     System.runAs(users[0]) {
       for (AIAgent__c agent : agents) {
         try {
           AIMessageValidator.validateSendRequest(
             agent.Id,
-            'Hello',
+            MESSAGE_BODY,
             null,
             null,
             null
           );
-          messageByAgentId.put(agent.Id, 'ALLOWED');
+          outcomeByAgentId.put(agent.Id, ALLOWED);
         } catch (AIMessageValidator.AIMessageValidatorException ex) {
-          messageByAgentId.put(agent.Id, ex.getMessage());
+          outcomeByAgentId.put(agent.Id, ex.getMessage());
         }
       }
     }
     Test.stopTest();
 
+    // [5] Check the unassigned agent is closed and the others are allowed
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Assigned,
-      messageByAgentId.get(agents[0].Id),
-      'An agent nobody is assigned to is closed.'
+      outcomeByAgentId.get(agents[0].Id),
+      'An agent nobody is assigned to should be closed.'
+    );
+
+    Assert.areEqual(
+      ALLOWED,
+      outcomeByAgentId.get(agents[1].Id),
+      'An agent assigned by name should be allowed.'
     );
     Assert.areEqual(
-      'ALLOWED',
-      messageByAgentId.get(agents[1].Id),
-      'Assigned by name.'
+      ALLOWED,
+      outcomeByAgentId.get(agents[2].Id),
+      'An agent assigned by permission set should be allowed.'
     );
     Assert.areEqual(
-      'ALLOWED',
-      messageByAgentId.get(agents[2].Id),
-      'Assigned by permission set.'
-    );
-    Assert.areEqual(
-      'ALLOWED',
-      messageByAgentId.get(agents[3].Id),
-      'Open to all users.'
+      ALLOWED,
+      outcomeByAgentId.get(agents[3].Id),
+      'An agent open to all users should be allowed.'
     );
   }
 
   @IsTest
   static void testScenario7() {
+    // [1] Create three users with the permission set and an open agent
     List<User> users = AIAssistTestDataFactory.createUsers(3, true);
-    AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
+    AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
+
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
+    // [2] Set the current terms version to v2
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.CurrentTermsVersion__c = 'v2';
     update settings;
     AIAssistSettingsService.cachedSettings = null;
+
+    // [3] Let the second user accept v1 and the third user accept v2
     System.runAs(users[1]) {
       insert AIAssistTestDataFactory.createAITermsAcknowledgments(
         users[1].Id,
@@ -345,74 +420,74 @@ private class AIMessageValidatorTest {
         false
       );
     }
-    List<String> outcomes = new List<String>();
-    List<String> messages = new List<String>();
 
+    List<String> outcomes = new List<String>();
+
+    // [4] Validate a message as each user
     Test.startTest();
     for (User user : users) {
       System.runAs(user) {
         try {
           AIMessageValidator.validateSendRequest(
             agent.Id,
-            'Hello',
+            MESSAGE_BODY,
             null,
             null,
             null
           );
-          outcomes.add('ALLOWED');
+          outcomes.add(ALLOWED);
         } catch (AIMessageValidator.AIMessageValidatorException ex) {
           outcomes.add(ex.getMessage());
-          messages.add(ex.getMessage());
         }
       }
     }
     Test.stopTest();
 
+    // [5] Check the first two users are refused and the last is allowed
     Assert.areEqual(
       Label.AI_Error_Terms_Not_Acknowledged,
       outcomes[0],
-      'Never accepted.'
+      'A user who never accepted should be refused.'
     );
     Assert.areEqual(
       Label.AI_Error_Terms_Version_Changed,
       outcomes[1],
-      'Accepted an earlier version.'
-    );
-    Assert.areEqual('ALLOWED', outcomes[2], 'Accepted the current version.');
-    Assert.areEqual(
-      Label.AI_Error_Terms_Not_Acknowledged,
-      messages[0],
-      'Labelled.'
+      'A user who accepted an earlier version should be refused.'
     );
     Assert.areEqual(
-      Label.AI_Error_Terms_Version_Changed,
-      messages[1],
-      'Labelled.'
+      ALLOWED,
+      outcomes[2],
+      'A user who accepted the current version should be allowed.'
     );
   }
 
   @IsTest
   static void testScenario8() {
+    // [1] Create a user with the permission set, an open agent and a mobile-only channel allow-list
     List<User> users = AIAssistTestDataFactory.createUsers(1, true);
-    AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
+    AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
+
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(
       users[0].Id,
       false
     )[0];
     settings.AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE;
     insert settings;
+
     Map<String, String> outcomeByChannel = new Map<String, String>();
 
+    // [2] Validate a message on an undefined channel, an unlisted channel, a listed channel and no channel
     Test.startTest();
     System.runAs(users[0]) {
       for (
         String channel : new List<String>{
-          'Carrier Pigeon',
+          UNDEFINED_CHANNEL,
           AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
           AIAssistApplicationConstants.CHANNEL_MOBILE,
           ''
@@ -421,12 +496,12 @@ private class AIMessageValidatorTest {
         try {
           AIMessageValidator.validateSendRequest(
             agent.Id,
-            'Hello',
+            MESSAGE_BODY,
             channel,
             null,
             null
           );
-          outcomeByChannel.put(channel, 'ALLOWED');
+          outcomeByChannel.put(channel, ALLOWED);
         } catch (AIMessageValidator.AIMessageValidatorException ex) {
           outcomeByChannel.put(channel, ex.getMessage());
         }
@@ -434,32 +509,36 @@ private class AIMessageValidatorTest {
     }
     Test.stopTest();
 
+    // [3] Check the first two are refused and the last two are allowed
     Assert.areEqual(
       Label.AI_Error_Channel_Not_Allowed,
-      outcomeByChannel.get('Carrier Pigeon'),
-      'An undefined channel would fail on the restricted picklist, so it is refused first.'
+      outcomeByChannel.get(UNDEFINED_CHANNEL),
+      'An undefined channel should be refused before it fails on the restricted picklist.'
     );
     Assert.areEqual(
       Label.AI_Error_Channel_Not_Allowed,
       outcomeByChannel.get(AIAssistApplicationConstants.CHANNEL_UTILITY_BAR),
-      'Outside the allow-list.'
+      'A channel outside the allow-list should be refused.'
     );
+
     Assert.areEqual(
-      'ALLOWED',
+      ALLOWED,
       outcomeByChannel.get(AIAssistApplicationConstants.CHANNEL_MOBILE),
-      'On the allow-list.'
+      'A channel on the allow-list should be allowed.'
     );
     Assert.areEqual(
-      'ALLOWED',
+      ALLOWED,
       outcomeByChannel.get(''),
-      'No channel supplied is unrestricted.'
+      'No channel supplied should be unrestricted.'
     );
   }
 
   @IsTest
   static void testScenario9() {
+    // [1] Create two users with the permission set and two agents, the second built for Contact
     List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-    AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
+    AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
+
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -469,48 +548,59 @@ private class AIMessageValidatorTest {
       model.Id,
       false
     );
+    agents[1].ObjectApiNames__c = 'Contact';
     insert agents;
-    AIAssistTestDataFactory.createAIAgentObjects(
-      agents[1].Id,
-      new List<String>{ 'Contact' },
-      true
-    );
+
+    // [2] Create an account owned by the first user and a conversation owned by the second
     Account ownAccount;
     System.runAs(users[0]) {
       ownAccount = AIAssistTestDataFactory.createAccounts(1, true)[0];
     }
+
     AIConversation__c theirConversation = AIAssistTestDataFactory.createAIConversations(
       agents[0].Id,
       users[1].Id,
       1,
       true
     )[0];
+
     List<String> outcomes = new List<String>();
+
+    // [3] Validate five chats about records as the first user, matching the order of the checks below
+    List<Id> agentIds = new List<Id>{
+      agents[0].Id,
+      agents[0].Id,
+      agents[0].Id,
+      agents[0].Id,
+      agents[1].Id
+    };
+    List<String> objectNames = new List<String>{
+      'Account',
+      null,
+      'Contact',
+      'LoomConnect__AIConversation__c',
+      'Account'
+    };
+    List<Id> recordIds = new List<Id>{
+      ownAccount.Id,
+      ownAccount.Id,
+      ownAccount.Id,
+      theirConversation.Id,
+      ownAccount.Id
+    };
 
     Test.startTest();
     System.runAs(users[0]) {
-      List<List<Object>> attempts = new List<List<Object>>{
-        new List<Object>{ agents[0].Id, 'Account', ownAccount.Id },
-        new List<Object>{ agents[0].Id, null, ownAccount.Id },
-        new List<Object>{ agents[0].Id, 'Contact', ownAccount.Id },
-        new List<Object>{
-          agents[0].Id,
-          'LoomConnect__AIConversation__c',
-          theirConversation.Id
-        },
-        new List<Object>{ agents[1].Id, 'Account', ownAccount.Id }
-      };
-
-      for (List<Object> attempt : attempts) {
+      for (Integer index = 0; index < agentIds.size(); index++) {
         try {
           AIMessageValidator.validateSendRequest(
-            (Id) attempt[0],
-            'Hello',
+            agentIds[index],
+            MESSAGE_BODY,
             null,
-            (String) attempt[1],
-            (Id) attempt[2]
+            objectNames[index],
+            recordIds[index]
           );
-          outcomes.add('ALLOWED');
+          outcomes.add(ALLOWED);
         } catch (AIMessageValidator.AIMessageValidatorException ex) {
           outcomes.add(ex.getMessage());
         }
@@ -518,30 +608,32 @@ private class AIMessageValidatorTest {
     }
     Test.stopTest();
 
+    // [4] Check the owned record is allowed and the mismatched, unreadable and unsupported ones are refused
     Assert.areEqual(
-      'ALLOWED',
+      ALLOWED,
       outcomes[0],
-      'The user can read their own record.'
+      'The user should be able to chat about their own record.'
     );
     Assert.areEqual(
-      'ALLOWED',
+      ALLOWED,
       outcomes[1],
-      'A blank object name is filled in from the Id.'
+      'A blank object name should be filled in from the Id.'
     );
+
     Assert.areEqual(
       Label.AI_Error_Record_Access_Denied,
       outcomes[2],
-      'The object name does not match the Id.'
+      'An object name that does not match the Id should be refused.'
     );
     Assert.areEqual(
       Label.AI_Error_Record_Access_Denied,
       outcomes[3],
-      'Another user\'s private conversation is a record this user cannot see.'
+      'Another user\'s private conversation should be refused as a record this user cannot see.'
     );
     Assert.areEqual(
       Label.AI_Error_Agent_Not_Available,
       outcomes[4],
-      'An agent built for Contact is not offered for an Account.'
+      'An agent built for Contact should not be offered for an Account.'
     );
   }
 }

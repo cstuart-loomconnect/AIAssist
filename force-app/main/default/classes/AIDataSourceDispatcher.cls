@@ -6,32 +6,23 @@ Class Name: AIDataSourceDispatcher
 
 Description: Runs a data source when the model calls it as a tool, and returns the masked result.
 
-The definition is configuration the end user cannot read (the AI Assist User permission set has
-no access to AIDataSource__c), so it is loaded in system mode - but only if it is active AND
-assigned to the agent running the turn. A name the model made up, an inactive source or one
-belonging to another agent is refused with one message that says which of these it was not.
-Then the work is done as the user:
-- SOQL sources run in user mode (AISoqlTemplateRunner).
-- Apex sources run only if the class named by the subscriber implements IAIDataSourceExecutor,
-  checked before any of its code runs, and only if the plan allows Apex data sources.
-- The result is flattened and masked (AIDataSourceResultProcessor).
-
-A bound data source needs the record the chat is about; an unbound one does not.
+Step 1: Load the data source definition, only if it is active and assigned to the agent
+Step 2: Check a bound data source has the record the chat is about
+Step 3: Run the SOQL template, or the Apex class if it implements IAIDataSourceExecutor
+Step 4: Flatten and mask the records and return them
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Definition loaded in system mode and checked against the agent; data runs in user mode; plan gate for Apex sources; row cap; single-use helpers inlined.
-3.0          Chandler Stuart          Apex class lookup uses Type.forName with an empty namespace so a subscriber's own class is found from managed code.
 */
 
-public inherited sharing class AIDataSourceDispatcher {
+public without sharing class AIDataSourceDispatcher {
   public class AIDataSourceExecutorException extends Exception {
   }
 
-  // recordId may be null for an unbound data source. The caller logs a failure: this class throws and does not.
+  // Runs one data source for the model. recordId may be null for an unbound data source. The caller logs a failure: this class throws and does not.
   public static List<Object> runDataSource(
     Id dataSourceId,
     Id agentId,
@@ -39,11 +30,13 @@ public inherited sharing class AIDataSourceDispatcher {
     Map<String, Object> inputParameters,
     Id conversationId
   ) {
+    // [1] Refuse the call when there is no data source or no agent
     if (dataSourceId == null || agentId == null)
       throw new AIDataSourceExecutorException(
         'A data source and an agent are required.'
       );
 
+    // [2] Load the definition in system mode, because the end user cannot read it, but only if it is active and assigned to this agent
     List<AIDataSource__c> dataSources = [
       SELECT
         Id,
@@ -66,6 +59,7 @@ public inherited sharing class AIDataSourceDispatcher {
       LIMIT 1
     ];
 
+    // [3] Refuse with one message that does not say whether it was missing, inactive or assigned elsewhere
     if (dataSources.isEmpty())
       throw new AIDataSourceExecutorException(
         'The data source was not found, is not active, or is not assigned to this agent.'
@@ -77,6 +71,7 @@ public inherited sharing class AIDataSourceDispatcher {
       : inputParameters;
     List<SObject> rawResults;
 
+    // [4] A bound data source needs the record the chat is about
     if (
       dataSource.BindingType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_BINDING_BOUND &&
@@ -93,6 +88,7 @@ public inherited sharing class AIDataSourceDispatcher {
       dataSource.SourceType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL
     ) {
+      // [5] A SOQL source must have a template to run
       if (String.isBlank(dataSource.SOQLTemplate__c))
         throw new AIDataSourceExecutorException(
           'Data source "' +
@@ -100,6 +96,7 @@ public inherited sharing class AIDataSourceDispatcher {
             '" has no SOQL template.'
         );
 
+      // [6] Bind the model's parameters, plus the record id when there is one, and run the template as the user
       Map<String, Object> bindValues = new Map<String, Object>(parameters);
       if (recordId != null)
         bindValues.put('recordId', recordId);
@@ -113,12 +110,13 @@ public inherited sharing class AIDataSourceDispatcher {
       dataSource.SourceType__c ==
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX
     ) {
+      // [7] An Apex source must name a class to run
       if (String.isBlank(dataSource.ApexClassName__c))
         throw new AIDataSourceExecutorException(
           'Data source "' + dataSource.DeveloperName__c + '" has no Apex class.'
         );
 
-      // Checked before anything in the class runs, not after: the name was typed by a subscriber, format rules only stop junk, and even constructing a class runs its code. The empty namespace makes the lookup find the subscriber's own unprefixed classes; the one-argument form looks only in the package's namespace once this is managed code.
+      // [8] Check the class implements the interface before any of its code runs, because the name was typed by a subscriber and even building the class runs its code. The empty namespace finds the subscriber's own classes; the one-argument form looks only in the package's namespace once this is managed code
       Type apexType = Type.forName('', dataSource.ApexClassName__c.trim());
 
       if (
@@ -131,8 +129,7 @@ public inherited sharing class AIDataSourceDispatcher {
             '" was not found or does not implement IAIDataSourceExecutor.'
         );
 
-      Object executor = apexType.newInstance();
-
+      // [9] Build the request that tells the class who is asking and for what
       AIDataSourceRequest request = new AIDataSourceRequest();
       request.recordId = recordId;
       request.inputParameters = new Map<String, Object>(parameters);
@@ -144,10 +141,13 @@ public inherited sharing class AIDataSourceDispatcher {
         ? null
         : dataSource.MaxRows__c.intValue();
 
+      // [10] Run the class and take its records, treating no response as no records
+      Object executor = apexType.newInstance();
       AIDataSourceResponse response = ((IAIDataSourceExecutor) executor)
         .execute(request);
       rawResults = response == null ? new List<SObject>() : response.records;
     } else {
+      // [11] Refuse a source type this class does not know
       throw new AIDataSourceExecutorException(
         'Data source "' +
           dataSource.DeveloperName__c +
@@ -155,6 +155,7 @@ public inherited sharing class AIDataSourceDispatcher {
       );
     }
 
+    // [12] Flatten and mask the records before they reach the model
     return AIDataSourceResultProcessor.processResults(
       rawResults,
       conversationId

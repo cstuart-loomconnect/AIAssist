@@ -10,7 +10,7 @@ Description: Testing utility for AIExecutionStepTracker: the in-memory record of
 =================================================================
 Applicable Classes:
 
-AIExecutionStepTracker
+AIExecutionStepTracker: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,9 +18,9 @@ Version      Author                   Description
 
 @IsTest
 private class AIExecutionStepTrackerTest {
-  // testScenario1: A data source phase and a provider phase each become a timed, typed step, in the order they ended.
-  // testScenario2: Ending a phase that was never started records nothing and returns null.
-  // testScenario3: addMasking flags the step and copies each tally as a masking entry, and ignores a null step or no tallies.
+  // testScenario1: A data source phase and a provider phase are each ended -> each becomes a timed, typed step, in the order they ended.
+  // testScenario2: Ending a phase that was never started -> nothing is recorded and null is returned.
+  // testScenario3: addMaskingTallies is called with a step, a null step and null tallies -> the step is flagged and each tally is copied as a masking entry, and the null calls add nothing.
 
   @TestSetup
   static void setup() {
@@ -33,13 +33,16 @@ private class AIExecutionStepTrackerTest {
 
   @IsTest
   static void testScenario1() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    // [1] Create an agent, a data source and a tracker
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
+
     AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(
       1,
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL,
       'SELECT Id FROM Account',
       true
     )[0];
+
     AIExecutionStepTracker tracker = new AIExecutionStepTracker(
       null,
       null,
@@ -47,13 +50,18 @@ private class AIExecutionStepTrackerTest {
       false
     );
 
+    AIExecutionStepTracker.StepEntry dataSourceStep;
+    AIExecutionStepTracker.StepEntry providerStep;
+
+    // [2] End a data source phase and a provider phase
     Test.startTest();
     tracker.startStep('Reading', dataSource.Id);
-    AIExecutionStepTracker.StepEntry dataSourceStep = tracker.endStep(true);
+    dataSourceStep = tracker.endStep(true);
     tracker.startStep('Thinking', null);
-    AIExecutionStepTracker.StepEntry providerStep = tracker.endStep(false);
+    providerStep = tracker.endStep(false);
     Test.stopTest();
 
+    // [3] Check both are recorded as timed, typed steps
     Assert.areEqual(
       2,
       tracker.steps.size(),
@@ -69,6 +77,7 @@ private class AIExecutionStepTrackerTest {
       dataSourceStep.dataSourceId,
       'It names the data source.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL,
       providerStep.stepType,
@@ -83,23 +92,28 @@ private class AIExecutionStepTrackerTest {
 
   @IsTest
   static void testScenario2() {
+    // [1] Create a tracker
     AIExecutionStepTracker tracker = new AIExecutionStepTracker(
       null,
       null,
       false,
       false
     );
+    AIExecutionStepTracker.StepEntry step;
 
+    // [2] End a phase that was never started
     Test.startTest();
-    AIExecutionStepTracker.StepEntry step = tracker.endStep(true);
+    step = tracker.endStep(true);
     Test.stopTest();
 
+    // [3] Check nothing is recorded and null is returned
     Assert.isNull(step, 'No phase, no step.');
     Assert.isTrue(tracker.steps.isEmpty(), 'Nothing is recorded.');
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create a tracker and end one step
     AIExecutionStepTracker tracker = new AIExecutionStepTracker(
       null,
       null,
@@ -109,6 +123,7 @@ private class AIExecutionStepTrackerTest {
     tracker.startStep('Thinking', null);
     AIExecutionStepTracker.StepEntry step = tracker.endStep(true);
 
+    // [2] Build a masking tally
     AIPiiPseudonymizationService.MaskingTally tally = new AIPiiPseudonymizationService.MaskingTally();
     tally.sourceObject = 'Contact';
     tally.sourceField = 'Email';
@@ -117,6 +132,7 @@ private class AIExecutionStepTrackerTest {
     tally.maskingStrategy = AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST;
     tally.valuesMasked = 3;
 
+    // [3] Add the tally to the step, then add with a null step and null tallies
     Test.startTest();
     tracker.addMaskingTallies(
       step,
@@ -129,6 +145,7 @@ private class AIExecutionStepTrackerTest {
     tracker.addMaskingTallies(step, null);
     Test.stopTest();
 
+    // [4] Check the step is flagged and holds one masking entry
     Assert.isTrue(step.piiMaskingApplied, 'The step is flagged as masked.');
     Assert.areEqual(
       1,

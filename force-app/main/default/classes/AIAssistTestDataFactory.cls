@@ -4,82 +4,41 @@ Class Name: AIAssistTestDataFactory
 =================================================================
 =================================================================
 
-Description: The one place the test suite builds records. Every create method returns the records
-it built and inserts them only when asked, so a test can adjust them first:
+Description: Builds and optionally inserts the records that AI Assist tests need.
 
-    List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(1, false);
-    agents[0].IsActive__c = true;
-    insert agents;
-
-Records are valid against the object model's validation rules (an active model configuration has
-its connection details, an active prompt template has a prompt, and so on). Names are made unique
-with a counter. Developer Names are typed by the user, never stamped, so the factory sets a unique valid one on agents, data sources and workflow actions.
-
-Custom metadata cannot be inserted, so the PII masking rule is built in memory and handed to
-AIPiiPseudonymizationService through its test seam.
-
-Tests that need an end user build one with createUsers and assignPermissionSet, so a test run as
-that user proves the security model rather than the code alone.
+Step 1: A test asks for a number of records, and says whether to insert them
+Step 2: Each method builds the records with the minimum valid values
+Step 3: The records are inserted when asked, then returned
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt for the object model: users without AIAssistUserType__c, usage, assignment, terms and execution step builders, active agents and models that satisfy the validation rules.
-3.0          Chandler Stuart          Builders for agent objects, usage policies and their assignments.
-4.0          Chandler Stuart          Cut down to a basic chat bot: builders for violation rules, violations, usage rows removed.
-5.0          Chandler Stuart          Developer Names are no longer stamped: agents, data sources and workflow actions get a unique one from the factory.
 */
 
 @IsTest
 public class AIAssistTestDataFactory {
-  private static Integer sequence = 0;
-  private static Id standardProfileId;
-
-  // A name unique within the test run.
-  private static String uniqueName(String prefix) {
-    sequence++;
-    return prefix +
-      ' ' +
-      sequence +
-      ' ' +
-      System.Uuid.randomUUID().toString().left(8);
-  }
-
-  // A unique Developer Name (letters, numbers and underscores only), under 64 characters.
-  private static String uniqueDeveloperName(String prefix) {
-    sequence++;
-    return prefix +
-      '_' +
-      sequence +
-      '_' +
-      System.Uuid.randomUUID().toString().left(8);
-  }
-
-  // =============================================================
-  // Users
-  // =============================================================
-
   // Standard users. They hold no AI Assist permission set until assignPermissionSet gives them one.
   public static List<User> createUsers(
     Integer numberOfUsers,
     Boolean shouldDoInsert
   ) {
-    if (standardProfileId == null)
-      standardProfileId = [
-        SELECT Id
-        FROM Profile
-        WHERE Name IN ('Standard User', 'Minimum Access - Salesforce')
-        ORDER BY Name DESC
-        LIMIT 1
-      ]
-      .Id;
-
+    // [1] Find the profile the users will have
     List<User> users = new List<User>();
+    Id profileId = [
+      SELECT Id
+      FROM Profile
+      WHERE Name IN ('Standard User')
+      ORDER BY Name DESC
+      LIMIT 1
+    ]
+    .Id;
 
+    // [2] Build each user with a unique name so they never clash
     for (Integer itemIndex = 0; itemIndex < numberOfUsers; itemIndex++) {
-      String uniqueSuffix = uniqueName('u').remove(' ');
+      String uniqueSuffix =
+        'u' + System.Uuid.randomUUID().toString().remove('-').left(20);
 
       users.add(
         new User(
@@ -92,17 +51,14 @@ public class AIAssistTestDataFactory {
           LocaleSidKey = 'en_US',
           EmailEncodingKey = 'UTF-8',
           LanguageLocaleKey = 'en_US',
-          ProfileId = standardProfileId
+          ProfileId = profileId
         )
       );
     }
 
-    // User is a setup object, so it is inserted in its own context apart from the test's other records.
-    if (shouldDoInsert && !users.isEmpty()) {
-      System.runAs(new User(Id = UserInfo.getUserId())) {
-        insert users;
-      }
-    }
+    // [3] Insert them when asked, and return them
+    if (shouldDoInsert && !users.isEmpty())
+      insertAsSetupUser(users);
 
     return users;
   }
@@ -112,6 +68,7 @@ public class AIAssistTestDataFactory {
     List<User> users,
     String permissionSetName
   ) {
+    // [1] Find the permission set
     Id permissionSetId = [
       SELECT Id
       FROM PermissionSet
@@ -119,44 +76,49 @@ public class AIAssistTestDataFactory {
       LIMIT 1
     ]
     .Id;
-
     List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
-    for (User assignedUser : users)
+
+    // [2] Build one assignment for each user
+    for (User assignedUser : users) {
       assignments.add(
         new PermissionSetAssignment(
           AssigneeId = assignedUser.Id,
           PermissionSetId = permissionSetId
         )
       );
-
-    System.runAs(new User(Id = UserInfo.getUserId())) {
-      insert assignments;
     }
+
+    // [3] Insert the assignments
+    insertAsSetupUser(assignments);
   }
 
+  // Plain accounts with unique names.
   public static List<Account> createAccounts(
     Integer numberOfAccounts,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each account with a unique name
     List<Account> accounts = new List<Account>();
-    for (Integer itemIndex = 0; itemIndex < numberOfAccounts; itemIndex++)
-      accounts.add(new Account(Name = uniqueName('AI Assist Test Account')));
 
+    for (Integer itemIndex = 0; itemIndex < numberOfAccounts; itemIndex++) {
+      accounts.add(
+        new Account(Name = 'AI Assist Test Account ' + uniqueSuffix())
+      );
+    }
+
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !accounts.isEmpty())
       insert accounts;
 
     return accounts;
   }
 
-  // =============================================================
-  // Configuration
-  // =============================================================
-
   // Active, with the connection details the object model requires before a configuration can be active.
   public static List<AIModelConfiguration__c> createAIModelConfigurations(
     Integer numberOfConfigurations,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each configuration with the connection details it needs to be active
     List<AIModelConfiguration__c> configurations = new List<AIModelConfiguration__c>();
 
     for (
@@ -164,7 +126,7 @@ public class AIAssistTestDataFactory {
     ) {
       configurations.add(
         new AIModelConfiguration__c(
-          Name = uniqueName('AI Assist Test Model'),
+          Name = 'AI Assist Test Model ' + uniqueSuffix(),
           AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC,
           ModelIdentifier__c = 'test-model',
           NamedCredential__c = 'Test_Credential',
@@ -174,47 +136,40 @@ public class AIAssistTestDataFactory {
       );
     }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !configurations.isEmpty())
       insert configurations;
 
     return configurations;
   }
 
-  // Inactive, with no model: the state of a new agent. Use the overload for one that can chat.
-  public static List<AIAgent__c> createAIAgents(
-    Integer numberOfAgents,
-    Boolean shouldDoInsert
-  ) {
-    List<AIAgent__c> agents = new List<AIAgent__c>();
-    for (Integer itemIndex = 0; itemIndex < numberOfAgents; itemIndex++)
-      agents.add(
-        new AIAgent__c(
-          Name = uniqueName('AI Assist Test Agent'),
-          DeveloperName__c = uniqueDeveloperName('Agent')
-        )
-      );
-
-    if (shouldDoInsert && !agents.isEmpty())
-      insert agents;
-
-    return agents;
-  }
-
-  // Active agents open to all users, on the given model configuration, tracking the provider's own token counts.
+  // With a model configuration: active, open to all users, tracking the provider's own token counts. Without one (null): inactive with no model, the state of a new agent.
   public static List<AIAgent__c> createAIAgents(
     Integer numberOfAgents,
     Id modelConfigurationId,
     Boolean shouldDoInsert
   ) {
-    List<AIAgent__c> agents = createAIAgents(numberOfAgents, false);
+    // [1] Build each agent with a unique name
+    List<AIAgent__c> agents = new List<AIAgent__c>();
 
-    for (AIAgent__c agent : agents) {
-      agent.AIModelConfiguration__c = modelConfigurationId;
-      agent.IsActive__c = true;
-      agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
-      agent.TokenTrackingMethod__c = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+    for (Integer itemIndex = 0; itemIndex < numberOfAgents; itemIndex++) {
+      AIAgent__c agent = new AIAgent__c(
+        Name = 'AI Assist Test Agent ' + uniqueSuffix(),
+        DeveloperName__c = 'Agent_' + uniqueSuffix()
+      );
+
+      // [2] Make the agent active only when it has a model configuration
+      if (modelConfigurationId != null) {
+        agent.AIModelConfiguration__c = modelConfigurationId;
+        agent.IsActive__c = true;
+        agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+        agent.TokenTrackingMethod__c = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+      }
+
+      agents.add(agent);
     }
 
+    // [3] Insert them when asked, and return them
     if (shouldDoInsert && !agents.isEmpty())
       insert agents;
 
@@ -227,12 +182,13 @@ public class AIAssistTestDataFactory {
     Integer numberOfTemplates,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each template with the prompt it needs to be active
     List<AIPromptTemplate__c> templates = new List<AIPromptTemplate__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfTemplates; itemIndex++) {
       templates.add(
         new AIPromptTemplate__c(
-          Name = uniqueName('AI Assist Test Prompt Template'),
+          Name = 'AI Assist Test Prompt Template ' + uniqueSuffix(),
           AIAgent__c = agentId,
           IsActive__c = true,
           AIPrompt__c = 'Answer briefly.'
@@ -240,6 +196,7 @@ public class AIAssistTestDataFactory {
       );
     }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !templates.isEmpty())
       insert templates;
 
@@ -253,16 +210,18 @@ public class AIAssistTestDataFactory {
     String sourceValue,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each data source with a unique name
     List<AIDataSource__c> dataSources = new List<AIDataSource__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfDataSources; itemIndex++) {
       AIDataSource__c dataSource = new AIDataSource__c(
-        SourceName__c = uniqueName('AI Assist Test Source'),
-        DeveloperName__c = uniqueDeveloperName('Source'),
+        SourceName__c = 'AI Assist Test Source ' + uniqueSuffix(),
+        DeveloperName__c = 'Source_' + uniqueSuffix(),
         SourceType__c = sourceType,
         IsActive__c = true
       );
 
+      // [2] Put the source value in the field that matches the source type
       if (sourceType == AIAssistApplicationConstants.DATA_SOURCE_TYPE_APEX)
         dataSource.ApexClassName__c = sourceValue;
       else
@@ -271,6 +230,7 @@ public class AIAssistTestDataFactory {
       dataSources.add(dataSource);
     }
 
+    // [3] Insert them when asked, and return them
     if (shouldDoInsert && !dataSources.isEmpty())
       insert dataSources;
 
@@ -284,18 +244,20 @@ public class AIAssistTestDataFactory {
     String sourceValue,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each action as read only, with a unique name
     List<AIWorkflowAction__c> actions = new List<AIWorkflowAction__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfActions; itemIndex++) {
       AIWorkflowAction__c workflowAction = new AIWorkflowAction__c(
-        ActionName__c = uniqueName('Action').left(50),
-        DeveloperName__c = uniqueDeveloperName('Action'),
+        ActionName__c = 'Action ' + uniqueSuffix(),
+        DeveloperName__c = 'Action_' + uniqueSuffix(),
         ActionType__c = actionType,
         ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY,
         RequiresConfirmation__c = false,
         IsActive__c = true
       );
 
+      // [2] Put the source value in the field that matches the action type
       if (actionType == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX)
         workflowAction.ApexClassName__c = sourceValue;
       else
@@ -304,6 +266,7 @@ public class AIAssistTestDataFactory {
       actions.add(workflowAction);
     }
 
+    // [3] Insert them when asked, and return them
     if (shouldDoInsert && !actions.isEmpty())
       insert actions;
 
@@ -316,8 +279,10 @@ public class AIAssistTestDataFactory {
     List<AIDataSource__c> dataSources,
     Boolean shouldDoInsert
   ) {
+    // [1] Build one active link for each data source
     List<AIAgentDataSource__c> links = new List<AIAgentDataSource__c>();
-    for (AIDataSource__c dataSource : dataSources)
+
+    for (AIDataSource__c dataSource : dataSources) {
       links.add(
         new AIAgentDataSource__c(
           AIAgent__c = agentId,
@@ -325,20 +290,25 @@ public class AIAssistTestDataFactory {
           IsActive__c = true
         )
       );
+    }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !links.isEmpty())
       insert links;
 
     return links;
   }
 
+  // Links the workflow actions to the agent, active.
   public static List<AIAgentWorkflowAction__c> createAIAgentWorkflowActions(
     Id agentId,
     List<AIWorkflowAction__c> actions,
     Boolean shouldDoInsert
   ) {
+    // [1] Build one active link for each workflow action
     List<AIAgentWorkflowAction__c> links = new List<AIAgentWorkflowAction__c>();
-    for (AIWorkflowAction__c action : actions)
+
+    for (AIWorkflowAction__c action : actions) {
       links.add(
         new AIAgentWorkflowAction__c(
           AIAgent__c = agentId,
@@ -346,83 +316,65 @@ public class AIAssistTestDataFactory {
           IsActive__c = true
         )
       );
+    }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !links.isEmpty())
       insert links;
 
     return links;
   }
 
-  // One active assignment per user.
+  // One active assignment per user, plus one to the permission set (by API name) when given. Either may be null.
   public static List<AIAgentAssignment__c> createAIAgentAssignments(
     Id agentId,
     List<User> users,
+    String permissionSetName,
     Boolean shouldDoInsert
   ) {
     List<AIAgentAssignment__c> assignments = new List<AIAgentAssignment__c>();
 
-    for (User assignedUser : users) {
+    // [1] Build one assignment for each user
+    if (users != null) {
+      for (User assignedUser : users) {
+        assignments.add(
+          new AIAgentAssignment__c(
+            AIAgent__c = agentId,
+            AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER,
+            User__c = assignedUser.Id,
+            IsActive__c = true
+          )
+        );
+      }
+    }
+
+    // [2] Build one assignment for the permission set
+    if (permissionSetName != null) {
       assignments.add(
         new AIAgentAssignment__c(
           AIAgent__c = agentId,
-          AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER,
-          User__c = assignedUser.Id,
+          AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET,
+          PermissionSetName__c = permissionSetName,
           IsActive__c = true
         )
       );
     }
 
+    // [3] Insert them when asked, and return them
     if (shouldDoInsert && !assignments.isEmpty())
       insert assignments;
 
     return assignments;
   }
 
-  // One active assignment to a permission set, by API name.
-  public static List<AIAgentAssignment__c> createAIAgentAssignments(
-    Id agentId,
-    String permissionSetName,
-    Boolean shouldDoInsert
-  ) {
-    List<AIAgentAssignment__c> assignments = new List<AIAgentAssignment__c>{
-      new AIAgentAssignment__c(
-        AIAgent__c = agentId,
-        AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET,
-        PermissionSetName__c = permissionSetName,
-        IsActive__c = true
-      )
-    };
-
-    if (shouldDoInsert)
-      insert assignments;
-
-    return assignments;
-  }
-
-  // =============================================================
-  // Conversations
-  // =============================================================
-
-  // Active conversations owned by the running user.
-  public static List<AIConversation__c> createAIConversations(
-    Id agentId,
-    Integer numberOfConversations,
-    Boolean shouldDoInsert
-  ) {
-    return createAIConversations(
-      agentId,
-      null,
-      numberOfConversations,
-      shouldDoInsert
-    );
-  }
-
+  // Active conversations, owned by ownerId or by the running user when it is null.
   public static List<AIConversation__c> createAIConversations(
     Id agentId,
     Id ownerId,
     Integer numberOfConversations,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each conversation as active
     List<AIConversation__c> conversations = new List<AIConversation__c>();
 
     for (
@@ -433,34 +385,22 @@ public class AIAssistTestDataFactory {
         Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE,
         Channel__c = AIAssistApplicationConstants.CHANNEL_UTILITY_BAR
       );
+
+      // [2] Set the owner only when one is given
       if (ownerId != null)
         conversation.OwnerId = ownerId;
+
       conversations.add(conversation);
     }
 
+    // [3] Insert them when asked, and return them
     if (shouldDoInsert && !conversations.isEmpty())
       insert conversations;
 
     return conversations;
   }
 
-  // User messages.
-  public static List<AIConversationMessage__c> createAIConversationMessages(
-    Id conversationId,
-    Decimal tokenCount,
-    Integer numberOfMessages,
-    Boolean shouldDoInsert
-  ) {
-    return createAIConversationMessages(
-      conversationId,
-      AIAssistApplicationConstants.SENDER_USER,
-      tokenCount,
-      numberOfMessages,
-      shouldDoInsert
-    );
-  }
-
-  // Only the package may write a message from the AI Agent or the System, so those are inserted through AIMessagingDataService, as the package does.
+  // Only AIMessagingDataService may write a message from the AI Agent or the System, so those are inserted through it.
   public static List<AIConversationMessage__c> createAIConversationMessages(
     Id conversationId,
     String sender,
@@ -468,6 +408,7 @@ public class AIAssistTestDataFactory {
     Integer numberOfMessages,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each message
     List<AIConversationMessage__c> messages = new List<AIConversationMessage__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfMessages; itemIndex++) {
@@ -476,17 +417,20 @@ public class AIAssistTestDataFactory {
         Sender__c = sender,
         MessageBody__c = 'Test message ' + itemIndex
       );
-      // Left unset when null: the token count is system-managed, so a user cannot write it, even as null.
+
+      // [2] Leave the token count unset when null: it is system-managed, so a user cannot write it, even as null
       if (tokenCount != null)
         conversationMessage.TokenCount__c = tokenCount;
+
       messages.add(conversationMessage);
     }
 
+    // [3] Insert them when asked: user messages directly, the rest through the messaging service
     if (shouldDoInsert && !messages.isEmpty()) {
       if (sender == AIAssistApplicationConstants.SENDER_USER)
         insert messages;
       else
-        AIMessagingDataService.insertAsPackage(messages);
+        AIMessagingDataService.insertOrThrow(messages);
     }
 
     return messages;
@@ -498,6 +442,7 @@ public class AIAssistTestDataFactory {
     Integer numberOfSteps,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each step in order
     List<AIExecutionStep__c> steps = new List<AIExecutionStep__c>();
 
     for (Integer itemIndex = 0; itemIndex < numberOfSteps; itemIndex++) {
@@ -511,28 +456,42 @@ public class AIAssistTestDataFactory {
       );
     }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !steps.isEmpty())
       insert steps;
 
     return steps;
   }
 
-  // =============================================================
-  // Who may chat, and usage
-  // =============================================================
-
+  // One active settings row for the user.
   public static List<AIUserSettings__c> createAIUserSettings(
     Id userId,
     Boolean shouldDoInsert
   ) {
+    // [1] Build the settings row
     List<AIUserSettings__c> userSettingsRows = new List<AIUserSettings__c>{
       new AIUserSettings__c(User__c = userId, IsActive__c = true)
     };
 
-    if (shouldDoInsert)
+    // [2] Insert it when asked, and return it
+    if (shouldDoInsert && !userSettingsRows.isEmpty())
       insert userSettingsRows;
 
     return userSettingsRows;
+  }
+
+  // The org-level UI settings that switch debug mode and Workflow Actions on or off for every user.
+  public static AIAssistUISettings__c upsertUiSettings(
+    Boolean isDebugModeEnabled,
+    Boolean areWorkflowActionsEnabled
+  ) {
+    // [1] Set the two switches on the org defaults and save them
+    AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
+    uiSettings.IsDebugModeEnabled__c = isDebugModeEnabled;
+    uiSettings.AreWorkflowActionsEnabled__c = areWorkflowActionsEnabled;
+    upsert uiSettings;
+
+    return uiSettings;
   }
 
   // Acknowledgments must be inserted by the user they are for; the object model refuses anyone else, so insert them inside System.runAs(user).
@@ -542,6 +501,7 @@ public class AIAssistTestDataFactory {
     Integer numberOfAcknowledgments,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each acknowledgment
     List<AITermsAcknowledgment__c> acknowledgments = new List<AITermsAcknowledgment__c>();
 
     for (
@@ -556,37 +516,39 @@ public class AIAssistTestDataFactory {
       );
     }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !acknowledgments.isEmpty())
       insert acknowledgments;
 
     return acknowledgments;
   }
 
-  // =============================================================
-  // PII
-  // =============================================================
-
+  // Registries for an object, with unique names.
   public static List<AIPIIRegistry__c> createAIPIIRegistries(
     Integer numberOfRegistries,
     String objectApiName,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each registry with a unique name
     List<AIPIIRegistry__c> registries = new List<AIPIIRegistry__c>();
 
-    for (Integer itemIndex = 0; itemIndex < numberOfRegistries; itemIndex++)
+    for (Integer itemIndex = 0; itemIndex < numberOfRegistries; itemIndex++) {
       registries.add(
         new AIPIIRegistry__c(
-          Name = uniqueName('AI Assist Test PII Registry'),
+          Name = 'AI Assist Test PII Registry ' + uniqueSuffix(),
           ObjectAPIName__c = objectApiName
         )
       );
+    }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !registries.isEmpty())
       insert registries;
 
     return registries;
   }
 
+  // One field record for the registry. It counts as PII only when a field type is given.
   public static List<AIPIIFieldMetadata__c> createAIPIIFieldMetadata(
     Id registryId,
     String objectApiName,
@@ -594,6 +556,7 @@ public class AIAssistTestDataFactory {
     String piiFieldType,
     Boolean shouldDoInsert
   ) {
+    // [1] Build the field record
     List<AIPIIFieldMetadata__c> fieldMetadataRecords = new List<AIPIIFieldMetadata__c>{
       new AIPIIFieldMetadata__c(
         PIIRegistry__c = registryId,
@@ -605,17 +568,20 @@ public class AIAssistTestDataFactory {
       )
     };
 
-    if (shouldDoInsert)
+    // [2] Insert it when asked, and return it
+    if (shouldDoInsert && !fieldMetadataRecords.isEmpty())
       insert fieldMetadataRecords;
 
     return fieldMetadataRecords;
   }
 
+  // One mapping of original values to fake values for the conversation.
   public static List<AIPIIMapping__c> createAIPIIMappings(
     Id conversationId,
     Map<String, String> originalToFakeValues,
     Boolean shouldDoInsert
   ) {
+    // [1] Build the mapping, using an empty map when none is given
     List<AIPIIMapping__c> mappings = new List<AIPIIMapping__c>{
       new AIPIIMapping__c(
         AIConversation__c = conversationId,
@@ -627,7 +593,7 @@ public class AIAssistTestDataFactory {
       )
     };
 
-    // No permission set is granted AIPIIMapping__c (it holds real values next to fake ones), so even a test writes it in system mode.
+    // [2] Insert it in system mode when asked: no permission set is granted AIPIIMapping__c (it holds real values next to fake ones), so even a test writes it that way
     if (shouldDoInsert)
       Database.insert(mappings, true, AccessLevel.SYSTEM_MODE);
 
@@ -640,6 +606,7 @@ public class AIAssistTestDataFactory {
     String substituteValues,
     Boolean isActive
   ) {
+    // [1] Build the rule in memory
     return new AIPiiDataMaskingRule__mdt(
       Strategy__c = strategy,
       SubstituteValues__c = substituteValues,
@@ -647,41 +614,17 @@ public class AIAssistTestDataFactory {
     );
   }
 
-  // =============================================================
-  // Agent objects, usage policies and feedback
-  // =============================================================
-
-  // Adds objects to an agent, one record per object API name.
-  public static List<AIAgentObject__c> createAIAgentObjects(
-    Id agentId,
-    List<String> objectApiNames,
-    Boolean shouldDoInsert
-  ) {
-    List<AIAgentObject__c> agentObjects = new List<AIAgentObject__c>();
-    for (String objectApiName : objectApiNames)
-      agentObjects.add(
-        new AIAgentObject__c(
-          AIAgent__c = agentId,
-          ObjectApiName__c = objectApiName,
-          IsActive__c = true
-        )
-      );
-
-    if (shouldDoInsert && !agentObjects.isEmpty())
-      insert agentObjects;
-
-    return agentObjects;
-  }
-
+  // Helpful feedback on a message.
   public static List<AIFeedback__c> createAIFeedback(
     Id conversationId,
     Id messageId,
     Integer numberOfFeedback,
     Boolean shouldDoInsert
   ) {
+    // [1] Build each feedback record as helpful
     List<AIFeedback__c> feedback = new List<AIFeedback__c>();
 
-    for (Integer itemIndex = 0; itemIndex < numberOfFeedback; itemIndex++)
+    for (Integer itemIndex = 0; itemIndex < numberOfFeedback; itemIndex++) {
       feedback.add(
         new AIFeedback__c(
           AIConversation__c = conversationId,
@@ -689,10 +632,26 @@ public class AIAssistTestDataFactory {
           Rating__c = 'Helpful'
         )
       );
+    }
 
+    // [2] Insert them when asked, and return them
     if (shouldDoInsert && !feedback.isEmpty())
       insert feedback;
 
     return feedback;
+  }
+
+  // A short random text that keeps names unique.
+  private static String uniqueSuffix() {
+    // [1] Use the first part of a random id
+    return System.Uuid.randomUUID().toString().left(8);
+  }
+
+  // User is a setup object, so it is inserted in its own context apart from the test's other records.
+  private static void insertAsSetupUser(List<SObject> records) {
+    // [1] Insert as the running user, in a separate context
+    System.runAs(new User(Id = UserInfo.getUserId())) {
+      insert records;
+    }
   }
 }

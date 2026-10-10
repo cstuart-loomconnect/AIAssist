@@ -10,7 +10,7 @@ Description: Testing utility for AISoqlTemplateRunner: running a data source SOQ
 =================================================================
 Applicable Classes:
 
-AISoqlTemplateRunner
+AISoqlTemplateRunner: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,10 +18,10 @@ Version      Author                   Description
 
 @IsTest
 private class AISoqlTemplateRunnerTest {
-  // testScenario1: A template runs with its bind values and returns the matching records.
-  // testScenario2: A template without a LIMIT gets one, and the result is cut to the cap even if the template has a larger limit of its own.
-  // testScenario3: A blank template returns no records, and a blank cap falls back to a safe default.
-  // testScenario4: A broken template throws rather than returning an empty list, which the model would read as "no records found".
+  // testScenario1: A template is run with its bind values -> the matching records are returned.
+  // testScenario2: A template without a LIMIT, and one with a larger LIMIT, are run with a cap of 10 -> both results are cut to 10.
+  // testScenario3: A blank template and a blank cap are run -> no records for the blank template, and the cap falls back to 20.
+  // testScenario4: A broken template is run -> it throws with the original error as the cause, rather than returning an empty list.
 
   @TestSetup
   static void setup() {
@@ -34,8 +34,10 @@ private class AISoqlTemplateRunnerTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create three accounts
     List<Account> accounts = AIAssistTestDataFactory.createAccounts(3, true);
 
+    // [2] Run a template with a bind value
     Test.startTest();
     List<SObject> rows = AISoqlTemplateRunner.runTemplate(
       'SELECT Id, Name FROM Account WHERE Id = :accountId',
@@ -44,14 +46,17 @@ private class AISoqlTemplateRunnerTest {
     );
     Test.stopTest();
 
+    // [3] Check only the matching account is returned
     Assert.areEqual(1, rows.size(), 'One account matches the bound Id.');
     Assert.areEqual(accounts[0].Id, rows[0].Id, 'It is the right one.');
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create 30 accounts
     AIAssistTestDataFactory.createAccounts(30, true);
 
+    // [2] Run a template with no LIMIT and one with a larger LIMIT, both capped at 10
     Test.startTest();
     List<SObject> unlimited = AISoqlTemplateRunner.runTemplate(
       'SELECT Id FROM Account',
@@ -65,6 +70,7 @@ private class AISoqlTemplateRunnerTest {
     );
     Test.stopTest();
 
+    // [3] Check both results are cut to 10
     Assert.areEqual(
       10,
       unlimited.size(),
@@ -79,8 +85,10 @@ private class AISoqlTemplateRunnerTest {
 
   @IsTest
   static void testScenario3() {
+    // [1] Create 30 accounts
     AIAssistTestDataFactory.createAccounts(30, true);
 
+    // [2] Run a blank template and a template with no cap
     Test.startTest();
     List<SObject> blankTemplate = AISoqlTemplateRunner.runTemplate(
       '',
@@ -94,7 +102,8 @@ private class AISoqlTemplateRunnerTest {
     );
     Test.stopTest();
 
-    Assert.isTrue(blankTemplate.isEmpty(), 'Nothing to run.');
+    // [3] Check the blank template returns nothing and the cap falls back to 20
+    Assert.areEqual(0, blankTemplate.size(), 'Nothing to run.');
     Assert.areEqual(
       20,
       defaultCap.size(),
@@ -104,20 +113,27 @@ private class AISoqlTemplateRunnerTest {
 
   @IsTest
   static void testScenario4() {
+    // [1] Prepare to capture the error
+    String errorMessage;
+    Exception errorCause;
+
+    // [2] Run a broken template
     Test.startTest();
     try {
       AISoqlTemplateRunner.runTemplate('SELECT Nothing FROM Account', null, 10);
-      Assert.fail('A broken template should have thrown.');
     } catch (AISoqlTemplateRunner.AISoqlTemplateRunnerException ex) {
-      Assert.isTrue(
-        ex.getMessage().startsWith('Failed to run SOQL template'),
-        'The error says the template failed.'
-      );
-      Assert.isNotNull(
-        ex.getCause(),
-        'The original error is kept as the cause.'
-      );
+      errorMessage = ex.getMessage();
+      errorCause = ex.getCause();
     }
     Test.stopTest();
+
+    // [3] Check it threw with the original error as the cause
+    Assert.isNotNull(errorMessage, 'A broken template should have thrown.');
+    Assert.areEqual(
+      true,
+      errorMessage.startsWith('Failed to run SOQL template'),
+      'The error says the template failed.'
+    );
+    Assert.isNotNull(errorCause, 'The original error is kept as the cause.');
   }
 }

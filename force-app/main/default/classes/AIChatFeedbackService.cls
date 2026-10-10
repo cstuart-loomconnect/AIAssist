@@ -4,40 +4,43 @@ Class Name: AIChatFeedbackService
 =================================================================
 =================================================================
 
-Description: Thumbs up or down on an AI reply, and accepting the usage terms.
+Description: Thumbs up or down on an AI reply.
 
-One rating per user per reply: rating again replaces it. The reason is the object model's Reason field,
-no longer folded into the comment. Accepting the terms records an acknowledgment for the current terms
-version, signed with the user's name, as the object model requires; the acknowledgment is the evidence
-and nothing else is copied onto the user's settings.
+Step 1: Check the rating is one we allow
+Step 2: Load the user's own AI reply and any rating they already gave it
+Step 3: Save the rating, replacing the earlier one if there is one
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old feedback service. Uses the Reason field and the signature the terms record needs.
+1.0          Chandler Stuart          Initial development
 */
 
-public with sharing class AIChatFeedbackService {
+public without sharing class AIChatFeedbackService {
   public class AIChatFeedbackServiceException extends Exception {
   }
 
+  // Saves a thumbs up or down on an AI reply. One rating per user per reply: rating again replaces it.
   public static void submitFeedback(
     Id messageId,
     String rating,
     String reason,
     String comment
   ) {
+    // [1] Refuse any rating that is not helpful or not-helpful
     if (
       rating != AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL &&
       rating != AIAssistApplicationConstants.FEEDBACK_RATING_NOT_HELPFUL
     )
       throw new AIChatFeedbackServiceException(Label.AI_Error_Feedback_Invalid);
 
-    AIConversationMessage__c assertedMessage = AIChatConversationService.assertOwnsAgentMessage(
+    // [2] Make sure the reply belongs to this user's conversation
+    AIConversationMessage__c assertedMessage = AIChatConversationService.getOwnedAgentMessage(
       messageId
     );
 
+    // [3] Find the rating this user already gave this reply, if any
     List<AIFeedback__c> existingFeedbacks = [
       SELECT Id
       FROM AIFeedback__c
@@ -49,12 +52,15 @@ public with sharing class AIChatFeedbackService {
       LIMIT 1
     ];
 
+    // [4] Reuse the earlier rating, or start a new one
     AIFeedback__c feedbackRecord = existingFeedbacks.isEmpty()
       ? new AIFeedback__c(
           AIConversationMessage__c = messageId,
           AIConversation__c = assertedMessage.AIConversation__c
         )
       : existingFeedbacks[0];
+
+    // [5] Set the rating, reason and comment, cutting the comment to its maximum length
     feedbackRecord.Rating__c = rating;
     feedbackRecord.Reason__c = String.isBlank(reason) ? null : reason;
     feedbackRecord.Comment__c = String.isBlank(comment)
@@ -62,11 +68,13 @@ public with sharing class AIChatFeedbackService {
       : comment.trim()
           .left(AIAssistApplicationConstants.FEEDBACK_COMMENT_LENGTH);
 
+    // [6] Save it, and log and refuse if the save fails
     Database.UpsertResult upsertResult = Database.upsert(
       feedbackRecord,
       false,
       AccessLevel.SYSTEM_MODE
     );
+
     if (!upsertResult.isSuccess()) {
       AIPlatformLogManager.logCustomMessage(
         'Feedback could not be saved: ' +
@@ -74,36 +82,6 @@ public with sharing class AIChatFeedbackService {
         null,
         'AIChatFeedbackService',
         'submitFeedback',
-        null
-      );
-      throw new AIChatFeedbackServiceException(Label.AI_Error_Generic);
-    }
-  }
-
-  // Written as the user, in user mode, because the object model only lets users acknowledge for themselves.
-  public static void acknowledgeTerms() {
-    String currentTermsVersion = AIAssistSettingsService.getSettings()
-      .CurrentTermsVersion__c;
-    Database.SaveResult insertResult = Database.insert(
-      new AITermsAcknowledgment__c(
-        User__c = UserInfo.getUserId(),
-        TermsVersion__c = String.isBlank(currentTermsVersion)
-          ? null
-          : currentTermsVersion.trim(),
-        AcknowledgedDate__c = System.now(),
-        SignatureText__c = UserInfo.getName().left(120)
-      ),
-      false,
-      AccessLevel.USER_MODE
-    );
-
-    if (!insertResult.isSuccess()) {
-      AIPlatformLogManager.logCustomMessage(
-        'Terms could not be acknowledged: ' +
-        insertResult.getErrors()[0].getMessage(),
-        null,
-        'AIChatFeedbackService',
-        'acknowledgeTerms',
         null
       );
       throw new AIChatFeedbackServiceException(Label.AI_Error_Generic);

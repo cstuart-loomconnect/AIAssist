@@ -4,25 +4,21 @@ Class Name: AIUsageLimitService
 =================================================================
 =================================================================
 
-Description: Decides whether a message may be accepted right now. A refusal is an exception with
-a Custom Label and a stable code, checked in this order:
-[1] How fast one user may send: AIAssistSettings__c.MaxMessagesPerUserPerMinute__c.
-[2] The user's concurrent conversations: AIUserSettings__c.MaxConcurrentConversations__c, only for a
-    message that would start a conversation and only when the user's behaviour blocks it.
-[3] The organisation's asynchronous queue has room. It is shared with the org's own queueables, batches
-    and flows, so new turns are refused before ours can crowd theirs out.
+Description: Decides whether a message may be accepted right now. A refusal is an exception with a Custom Label.
 
-Also says whether the cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached,
-so a message waits as Queued until a place is free.
+Step 1: Refuse when the user is sending faster than AIAssistSettings__c.MaxMessagesPerUserPerMinute__c allows
+Step 2: Refuse a new conversation when the user already has AIUserSettings__c.MaxConcurrentConversations__c active and their behaviour blocks it
+Step 3: Refuse when the org's asynchronous queue is full, so new turns cannot crowd out the org's own queueables, batches and flows
+Step 4: Separately, say whether the cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached, so a message waits as Queued
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-TBC          TBC                      TBC
+1.0          Chandler Stuart          Initial development
 */
 
-public inherited sharing class AIUsageLimitService {
+public without sharing class AIUsageLimitService {
   public class AIUsageLimitServiceException extends Exception {
   }
 
@@ -33,14 +29,16 @@ public inherited sharing class AIUsageLimitService {
   @TestVisible
   private static Integer inFlightForTest;
 
+  // Throws an exception carrying a Custom Label when the message may not be accepted right now.
   public static void enforceUsageLimits(
     AIMessageValidator.ChatContext chatContext,
     Boolean isNewConversation
   ) {
+    // [1] Read the user's settings and the org's settings
     AIUserSettings__c userSettings = chatContext.userSettings;
     AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
 
-    // [1]
+    // [2] Refuse when the user has sent too many messages in the last minute
     if (
       settings.MaxMessagesPerUserPerMinute__c != null &&
       settings.MaxMessagesPerUserPerMinute__c >= 1 &&
@@ -49,7 +47,7 @@ public inherited sharing class AIUsageLimitService {
     )
       throw new AIUsageLimitServiceException(Label.AI_Error_Rate_Limited);
 
-    // [2]
+    // [3] Refuse a new conversation when the user has reached their concurrent limit and their behaviour blocks it
     if (
       isNewConversation &&
       userSettings != null &&
@@ -62,7 +60,7 @@ public inherited sharing class AIUsageLimitService {
     )
       throw new AIUsageLimitServiceException(Label.AI_Error_Concurrent_Limit);
 
-    // [3]
+    // [4] Refuse when the shared queue is full
     Integer pendingJobLimit = maxPendingJobsForTest == null
       ? AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS
       : maxPendingJobsForTest;
@@ -72,107 +70,105 @@ public inherited sharing class AIUsageLimitService {
 
   // True when the org-wide cap on messages in flight is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
   public static Boolean isInFlightCapReached() {
+    // [1] Read the cap and how many messages are in flight
     Decimal inFlightCap = AIAssistSettingsService.getSettings()
       .MaxMessagesInFlight__c;
     Integer messagesInFlight = inFlightForTest == null
       ? countQueuedMessageJobs()
       : inFlightForTest;
 
+    // [2] The cap is reached when one is set and the messages in flight have used it up
     return inFlightCap != null &&
       inFlightCap >= 1 &&
       messagesInFlight >= inFlightCap;
   }
 
-  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
-  private static SystemReader systemReader = new SystemReader();
-
+  // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation. It must see every user's records, so the class runs without sharing.
   @TestVisible
   private static Integer countActiveConversations(Id userId) {
-    return systemReader.countActiveConversations(userId);
+    // [1] Start the count and note the time
+    Datetime currentTime = System.now();
+    Integer activeConversations = 0;
+
+    // [2] Go through the user's Active conversations
+    for (AIConversation__c conversation : [
+      SELECT
+        CreatedDate,
+        LastMessageTimestamp__c,
+        AIAgent__r.IdleTimeoutMinutes__c
+      FROM AIConversation__c
+      WHERE
+        OwnerId = :userId
+        AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
+      WITH SYSTEM_MODE
+      ORDER BY LastModifiedDate DESC
+      LIMIT :AIAssistApplicationConstants.MAX_ACTIVE_CONVERSATIONS_COUNTED
+    ]) {
+      // [3] Use the last message time, or the created date when there has been no message
+      Datetime lastActivity = conversation.LastMessageTimestamp__c == null
+        ? conversation.CreatedDate
+        : conversation.LastMessageTimestamp__c;
+
+      // [4] Count it when its agent has no timeout or it is still inside the timeout
+      if (
+        conversation.AIAgent__r?.IdleTimeoutMinutes__c == null ||
+        lastActivity.addMinutes(
+          Integer.valueOf(conversation.AIAgent__r.IdleTimeoutMinutes__c)
+        ) > currentTime
+      )
+        activeConversations++;
+    }
+
+    // [5] Return the count
+    return activeConversations;
   }
 
+  // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
   @TestVisible
   private static Integer countQueuedMessageJobs() {
-    return systemReader.countQueuedMessageJobs();
+    // [1] Look back one day only
+    Datetime oneDayAgo = Datetime.now().addDays(-1);
+
+    // [2] Match this package's class only, because a subscriber may have a class of the same name
+    String packageNamespace = getPackageNamespace();
+
+    // [3] Count the jobs still waiting or running
+    return [
+      SELECT COUNT()
+      FROM AsyncApexJob
+      WHERE
+        ApexClass.Name = 'AIMessageProcessingQueueable'
+        AND ApexClass.NamespacePrefix = :packageNamespace
+        AND JobType = 'Queueable'
+        AND Status IN ('Queued', 'Preparing', 'Processing')
+        AND CreatedDate >= :oneDayAgo
+      WITH SYSTEM_MODE
+    ];
   }
 
+  // Messages the user sent in the last 60 seconds, for the rate limit.
   @TestVisible
   private static Integer countRecentUserMessages(Id userId) {
-    return systemReader.countRecentUserMessages(userId);
+    // [1] Look back 60 seconds only
+    Datetime oneMinuteAgo = System.now().addSeconds(-60);
+
+    // [2] Count the messages the user sent in that time
+    return [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        CreatedById = :userId
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
+        AND CreatedDate >= :oneMinuteAgo
+      WITH SYSTEM_MODE
+    ];
   }
 
-  private without sharing class SystemReader {
-    // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation.
-    public Integer countActiveConversations(Id userId) {
-      Datetime currentTime = System.now();
-      Integer activeConversations = 0;
-
-      for (AIConversation__c conversation : [
-        SELECT
-          CreatedDate,
-          LastMessageTimestamp__c,
-          AIAgent__r.IdleTimeoutMinutes__c
-        FROM AIConversation__c
-        WHERE
-          OwnerId = :userId
-          AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
-        WITH SYSTEM_MODE
-        ORDER BY LastModifiedDate DESC
-        LIMIT :AIAssistApplicationConstants.MAX_ACTIVE_CONVERSATIONS_COUNTED
-      ]) {
-        Datetime lastActivity = conversation.LastMessageTimestamp__c == null
-          ? conversation.CreatedDate
-          : conversation.LastMessageTimestamp__c;
-        if (
-          conversation.AIAgent__r?.IdleTimeoutMinutes__c == null ||
-          lastActivity.addMinutes(
-            Integer.valueOf(conversation.AIAgent__r.IdleTimeoutMinutes__c)
-          ) > currentTime
-        )
-          activeConversations++;
-      }
-
-      return activeConversations;
-    }
-
-    // Turns queued or running in this org right now. The asynchronous queue is shared with the subscriber, so the messaging layer refuses new work before it can crowd theirs out. Bounded to the last day because a job older than that is not pending.
-    public Integer countQueuedMessageJobs() {
-      Datetime oneDayAgo = Datetime.now().addDays(-1);
-      String packageNamespace = getPackageNamespace(); // This package's class only: a subscriber may have a class of the same name.
-
-      return [
-        SELECT COUNT()
-        FROM AsyncApexJob
-        WHERE
-          ApexClass.Name = 'AIMessageProcessingQueueable'
-          AND ApexClass.NamespacePrefix = :packageNamespace
-          AND JobType = 'Queueable'
-          AND Status IN ('Queued', 'Preparing', 'Processing')
-          AND CreatedDate >= :oneDayAgo
-        WITH SYSTEM_MODE
-      ];
-    }
-
-    // Messages the user sent in the last 60 seconds, for the rate limit.
-    public Integer countRecentUserMessages(Id userId) {
-      Datetime oneMinuteAgo = System.now().addSeconds(-60);
-
-      return [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE
-          CreatedById = :userId
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_USER
-          AND CreatedDate >= :oneMinuteAgo
-        WITH SYSTEM_MODE
-      ];
-    }
-
-    // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
-    public String getPackageNamespace() {
-      return AIUsageLimitService.class.getName().contains('.')
-        ? AIUsageLimitService.class.getName().substringBefore('.')
-        : null;
-    }
+  // The namespace this code runs in, as ApexClass.NamespacePrefix holds it. Null when the code is not in a namespace.
+  private static String getPackageNamespace() {
+    // [1] Take the part of the class name before the dot, if there is one
+    return AIUsageLimitService.class.getName().contains('.')
+      ? AIUsageLimitService.class.getName().substringBefore('.')
+      : null;
   }
 }

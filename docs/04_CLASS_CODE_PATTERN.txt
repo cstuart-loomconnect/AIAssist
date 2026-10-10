@@ -1,0 +1,142 @@
+CLASS CODE PATTERN
+==================
+
+Use this to reformat any existing (non-test) Apex class so it follows the house code pattern.
+The behaviour stays exactly the same; only the layout, header, sharing keyword and any
+method names that break rule 6 change.
+For test classes use docs/03_TEST_CLASS_PATTERN.txt instead.
+
+PROMPT TO REUSE
+---------------
+"Rewrite <ClassName>.cls to follow docs/04_CLASS_CODE_PATTERN.txt.
+Keep the same behaviour, change only the code pattern (including renaming any toXxx or
+assertXxx method and its callers)."
+
+REFERENCE EXAMPLE
+-----------------
+force-app/main/default/classes/AIAnthropicMessageResponseHandler.cls
+
+RULES
+-----
+1. Header comment
+   - Class Name, Description, then the version table.
+   - The Description is a short one-line summary, then the high-level workflow as numbered steps:
+     "Step 1: ...", "Step 2: ...", one short plain-English line each, in the order they happen.
+     No long prose, and no detail that belongs in the method comments.
+   - Version table has three columns: Version, Author, Description (no date column).
+   - Remove every existing version row. The table always has exactly one row, never added to:
+     1.0          Chandler Stuart          Initial development
+
+2. Indentation and braces
+   - 4-space indent (no 2-space, no tabs).
+   - Every class is declared without sharing. A class declared "with sharing" or
+     "inherited sharing" is changed to "without sharing", and any inner "SystemReader" class
+     that only existed to run queries without sharing is removed: its methods become private
+     static helpers on the class (the pass-through helpers and the static instance go).
+   - Modifiers and declaration on one line: public without sharing class X implements Y {
+   - Blank line after the class opening brace.
+   - Inner exception class on its own line: public class XException extends Exception {}
+   - Blank line after the opening brace of each method, loop and multi-line if block.
+
+3. Method shape
+   - Blank line after "try {" and before "} catch".
+   - Catch variable is named ex.
+   - Single-statement guards stay on one line: if (x == null) return null;
+   - Do not wrap long conditions, expressions or method signatures over several lines;
+     keep them on one line.
+   - Exception: Map / List literals with several entries go one entry per line,
+     closing with "});" at the opening statement's indent.
+
+4. Comments
+   - Number the steps inside a method: "// [1] What this does".
+     One short plain-English sentence per step, sentence case, no all-caps, no jargon.
+     Say what happens and why, as you would to a colleague who has not read the code.
+     Numbers run in order through the method (including inside nested blocks);
+     a helper restarts at [1].
+   - Rewrite existing comments into this plain style; keep the meaning, drop the jargon.
+   - One blank line between logical blocks (arrange, loop, parse, return).
+   - A method comment sits directly above the method signature.
+
+5. Ordering
+   - Inner classes, then constants and static variables, then @TestVisible flags,
+     then public methods, then private helpers.
+
+6. Method names
+   - Never name a method toXxx (toChatMessage) or assertXxx (assertOwnsConversation).
+   - Start with a verb that says what the caller gets:
+       get     - read something that already exists and return it (getOwnedConversation)
+       build   - assemble a new object from other values (buildConversationSummary)
+       create  - make and save a new record (createConversation)
+       find    - search, and return null when there is no match (findActiveConversation)
+       is/has  - answer true or false (isCommandText)
+       load, save, send, run, record - for the action each one performs
+   - A method that checks something and refuses with an exception is named for what it
+     returns (getOwnedConversation), never for the check (assertOwnsConversation).
+   - When an existing class has a toXxx or assertXxx method, rename it, and every caller and
+     test, as part of the same change. Search the whole repo (classes, tests, docs) for the old name.
+   - A method that turns one thing into another is a build or get: buildChatMessage,
+     buildIntegerSet, getIdOrNull.
+
+7. Do not change
+   - Logic, constants, signatures, or exceptions thrown. The deliberate exceptions are the
+     sharing keyword in rule 2, which is changed to "without sharing", and method names that
+     break rule 6, which are renamed.
+   - If a pasted or older version of the class differs from the file in the repo,
+     keep the repo's behaviour and apply only the layout.
+
+SKELETON
+--------
+/*
+Class Name: X
+
+=================================================================
+=================================================================
+
+Description: One-line summary of what the class does.
+
+Step 1: What happens first
+Step 2: What happens next
+Step 3: What it returns or finishes with
+
+=================================================================
+=================================================================
+
+Version      Author                   Description
+1.0          Chandler Stuart          Initial development
+*/
+
+public without sharing class X {
+
+    public class XException extends Exception {}
+
+    // What the method does.
+    public static Result doThing(Input input) {
+
+        try {
+
+            // [1] Nothing to do - no input
+            if (input == null) return null;
+
+            // [2] Build the body - one entry per field
+            Map<String, Object> body = new Map<String, Object>{
+                KEY_ONE => input.one,
+                KEY_TWO => input.two
+            };
+
+            // [3] Return the result
+            return build(body);
+
+        } catch (Exception ex) {
+            throw new XException('Failed to do the thing: ' + ex.getMessage(), ex);
+        }
+    }
+
+    // What the helper does.
+    private static Result build(Map<String, Object> body) {
+
+        // [1] Create the result
+        Result result = new Result();
+
+        return result;
+    }
+}

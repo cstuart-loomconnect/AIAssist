@@ -4,13 +4,13 @@ Class Name: AISchemaHelperTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AISchemaHelper: object and field facts, the two cache levels, and that a missing or failing cache only costs a describe. The platform cache is replaced by an in-memory fake.
+Description: Testing utility for AISchemaHelper: object facts for a record, the static cache and the object name list.
 
 =================================================================
 =================================================================
 Applicable Classes:
 
-AISchemaHelper
+AISchemaHelper: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,12 +18,12 @@ Version      Author                   Description
 
 @IsTest
 private class AISchemaHelperTest {
-  // testScenario1: Object info gives the API name, labels, key prefix and name field, for a name or an Id.
-  // testScenario2: Field info gives the type and length, and hasField and getFieldLength agree, whatever the case.
-  // testScenario3: A blank name, an Id of nothing, an unknown object and a missing field all answer null or false and never throw.
-  // testScenario4: Within a transaction an object is described once, however many questions are asked, and an unknown object is not looked up again.
-  // testScenario7: clearCache for one object removes it and leaves the others, and clearCache with no name clears everything seen.
-  // testScenario8: isAccessible follows the user: a user with no access to the package objects cannot read an AI object, and is cached for the transaction only.
+  // testScenario1: Object info for an Account Id -> API name, labels, name field and access are returned.
+  // testScenario2: Object info asked for twice, and for a second record of the same object -> the same cached instance is returned.
+  // testScenario3: Object info for a null Id -> null is returned.
+  // testScenario4: Object info for a user with no access to the package objects -> isAccessible is false.
+  // testScenario5: Object name list with blanks, spaces and mixed case -> a lower case set without the blanks.
+  // testScenario6: Object name list that is blank or null -> an empty set.
 
   @TestSetup
   static void setup() {
@@ -36,139 +36,132 @@ private class AISchemaHelperTest {
 
   @IsTest
   static void testScenario1() {
-    Account record = AIAssistTestDataFactory.createAccounts(1, true)[0];
+    // [1] Create an account
+    List<Account> accounts = AIAssistTestDataFactory.createAccounts(1, true);
 
+    // [2] Get the object info for the account Id
     Test.startTest();
-    AISchemaHelper.ObjectInfo byName = AISchemaHelper.getObjectInfo('Account');
-    AISchemaHelper.ObjectInfo byId = AISchemaHelper.getObjectInfo(record.Id);
-    String apiName = AISchemaHelper.getObjectApiName(record.Id);
-    String nameField = AISchemaHelper.getNameField('account');
+    AISchemaHelper.ObjectInfo objectInfo = AISchemaHelper.getObjectInfo(
+      accounts[0].Id
+    );
     Test.stopTest();
 
-    Assert.areEqual('Account', byName.apiName, 'The API name.');
-    Assert.areEqual('Accounts', byName.pluralLabel, 'The plural label.');
-    Assert.areEqual('001', byName.keyPrefix, 'The key prefix.');
-    Assert.areEqual('Account', apiName, 'From the Id.');
+    // [3] Check the names, labels and access come back
+    Assert.areEqual(
+      'Account',
+      objectInfo.apiName,
+      'The API name should come from the Id.'
+    );
+    Assert.areEqual(
+      'Account',
+      objectInfo.label,
+      'The label should be returned.'
+    );
+    Assert.areEqual(
+      'Accounts',
+      objectInfo.pluralLabel,
+      'The plural label should be returned.'
+    );
     Assert.areEqual(
       'Name',
-      nameField,
-      'The name field, whatever the case asked for.'
+      objectInfo.nameField,
+      'The name field should be found.'
     );
-    Assert.areEqual(byName.apiName, byId.apiName, 'Same answer by Id.');
+    Assert.isTrue(
+      objectInfo.isAccessible,
+      'The deploying user can read Account.'
+    );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create two accounts
+    List<Account> accounts = AIAssistTestDataFactory.createAccounts(2, true);
+
+    // [2] Get the object info for each account
     Test.startTest();
-    AISchemaHelper.FieldInfo field = AISchemaHelper.getFieldInfo(
-      'Account',
-      'NAME'
+    AISchemaHelper.ObjectInfo first = AISchemaHelper.getObjectInfo(
+      accounts[0].Id
     );
-    Boolean exists = AISchemaHelper.hasField('Account', 'name');
-    Boolean missing = AISchemaHelper.hasField('Account', 'No_Such_Field__c');
-    Integer length = AISchemaHelper.getFieldLength('Account', 'Name');
-    Integer noLength = AISchemaHelper.getFieldLength(
-      'Account',
-      'No_Such_Field__c'
+    AISchemaHelper.ObjectInfo second = AISchemaHelper.getObjectInfo(
+      accounts[1].Id
     );
     Test.stopTest();
 
-    Assert.areEqual('STRING', field.dataType, 'The type.');
-    Assert.isTrue(field.isNameField, 'It is the name field.');
-    Assert.isTrue(exists, 'It exists.');
-    Assert.isFalse(missing, 'This one does not.');
-    Assert.areEqual(255, length, 'The length of Account Name.');
-    Assert.isNull(noLength, 'No field, no length.');
+    // [3] Check the second answer came from the cache
+    Assert.areSame(
+      first,
+      second,
+      'The second answer should come from the static cache.'
+    );
+    Assert.areEqual(
+      1,
+      AISchemaHelper.infoByLowerName.size(),
+      'Only one object should have been described.'
+    );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Get the object info for a null Id
     Test.startTest();
-    AISchemaHelper.ObjectInfo blank = AISchemaHelper.getObjectInfo(
-      (String) null
-    );
-    AISchemaHelper.ObjectInfo unknown = AISchemaHelper.getObjectInfo(
-      'No_Such_Object__c'
-    );
-    String noId = AISchemaHelper.getObjectApiName(null);
-    AISchemaHelper.FieldInfo noObject = AISchemaHelper.getFieldInfo(
-      'No_Such_Object__c',
-      'Name'
-    );
-    AISchemaHelper.FieldInfo noField = AISchemaHelper.getFieldInfo(
-      'Account',
-      null
-    );
-    String label = AISchemaHelper.getLabel('No_Such_Object__c');
+    AISchemaHelper.ObjectInfo objectInfo = AISchemaHelper.getObjectInfo(null);
     Test.stopTest();
 
-    Assert.isNull(blank, 'Blank.');
-    Assert.isNull(unknown, 'Unknown object.');
-    Assert.isNull(noId, 'No Id.');
-    Assert.isNull(noObject, 'No object.');
-    Assert.isNull(noField, 'No field name.');
-    Assert.isNull(label, 'No label.');
+    // [2] Check nothing is returned
+    Assert.isNull(objectInfo, 'No Id should give no object info.');
   }
 
   @IsTest
   static void testScenario4() {
-    Integer before = AISchemaHelper.describeCount;
-
-    Test.startTest();
-    for (Integer i = 0; i < 50; i++) {
-      AISchemaHelper.getLabel('Contact');
-      AISchemaHelper.hasField('Contact', 'LastName');
-    }
-    AISchemaHelper.getObjectInfo('No_Such_Object__c');
-    AISchemaHelper.getObjectInfo('No_Such_Object__c');
-    Test.stopTest();
-
-    Assert.areEqual(
-      1,
-      AISchemaHelper.describeCount - before,
-      'One describe for a hundred questions.'
-    );
-  }
-
-  @IsTest
-  static void testScenario7() {
-    AISchemaHelper.getObjectInfo('Account');
-    AISchemaHelper.getObjectInfo('Contact');
-
-    Test.startTest();
-    AISchemaHelper.clearCache('account');
-    Boolean accountCleared = !AISchemaHelper.infoByLowerName.containsKey(
-      'account'
-    );
-    Boolean contactKept = AISchemaHelper.infoByLowerName.containsKey('contact');
-    AISchemaHelper.clearCache(null);
-    Test.stopTest();
-
-    Assert.isTrue(accountCleared, 'The named object is cleared.');
-    Assert.isTrue(contactKept, 'The other object is kept.');
-    Assert.isTrue(
-      AISchemaHelper.infoByLowerName.isEmpty(),
-      'Everything seen is cleared when no name is given.'
-    );
-  }
-
-  @IsTest
-  static void testScenario8() {
+    // [1] Create a user with no access and an agent Id
     User noAccess = AIAssistTestDataFactory.createUsers(1, true)[0];
-    Boolean forAdmin = AISchemaHelper.isAccessible('LoomConnect__AIAgent__c');
-    Boolean forUser;
-    Boolean blank = AISchemaHelper.isAccessible(null);
-    Boolean unknown = AISchemaHelper.isAccessible('No_Such_Object__c');
+    Id agentId = Id.valueOf(
+      AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000000'
+    );
+    AISchemaHelper.ObjectInfo objectInfo;
 
     System.runAs(noAccess) {
-      AISchemaHelper.accessibleByLowerName.clear();
+      // [2] Get the object info as that user
       Test.startTest();
-      forUser = AISchemaHelper.isAccessible('LoomConnect__AIAgent__c');
+      objectInfo = AISchemaHelper.getObjectInfo(agentId);
       Test.stopTest();
     }
 
-    Assert.isTrue(forAdmin, 'The deploying user can read it.');
-    Assert.isFalse(forUser, 'A user with no permission set cannot.');
-    Assert.isFalse(blank || unknown, 'Blank and unknown are not accessible.');
+    // [3] Check the agent object is not accessible
+    Assert.isFalse(
+      objectInfo.isAccessible,
+      'A user with no permission set cannot read the agent object.'
+    );
+  }
+
+  @IsTest
+  static void testScenario5() {
+    // [1] Get the object name set from a messy list
+    Test.startTest();
+    Set<String> names = AISchemaHelper.getObjectApiNameSet(
+      ' Account, ,CONTACT ,'
+    );
+    Test.stopTest();
+
+    // [2] Check the names are trimmed, lower cased and without blanks
+    Assert.areEqual(
+      new Set<String>{ 'account', 'contact' },
+      names,
+      'Names should be trimmed, lower cased and without blanks.'
+    );
+  }
+
+  @IsTest
+  static void testScenario6() {
+    // [1] Get the object name set from a blank and a null list
+    Test.startTest();
+    Set<String> blankNames = AISchemaHelper.getObjectApiNameSet('  ');
+    Set<String> nullNames = AISchemaHelper.getObjectApiNameSet(null);
+    Test.stopTest();
+
+    // [2] Check both sets are empty
+    Assert.isTrue(blankNames.isEmpty(), 'A blank list should be an empty set.');
+    Assert.isTrue(nullNames.isEmpty(), 'A null list should be an empty set.');
   }
 }

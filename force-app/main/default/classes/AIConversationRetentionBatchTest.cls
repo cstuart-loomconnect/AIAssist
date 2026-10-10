@@ -10,7 +10,7 @@ Description: Testing utility for AIConversationRetentionBatch: expired conversat
 =================================================================
 Applicable Classes:
 
-AIConversationRetentionBatch
+AIConversationRetentionBatch: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,11 +18,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationRetentionBatchTest {
-  // testScenario1: An expired conversation is deleted together with its messages and its feedback.
-  // testScenario2: A conversation on legal hold is kept however old it is.
-  // testScenario3: The boundary: expiring today is deleted, expiring tomorrow is kept, and no expiry date is kept.
-  // testScenario4: Bulk: 200 expired conversations are deleted in one pass.
-  // testScenario5: Retention still runs while the application is switched off.
+  // testScenario1: An expired conversation is deleted together with its messages and its feedback -> conversation, messages and feedback are all gone.
+  // testScenario2: A conversation on legal hold is kept however old it is -> the conversation still exists.
+  // testScenario3: Expiring today, expiring tomorrow and no expiry date -> today's is deleted, the other two are kept.
+  // testScenario4: 200 expired conversations are processed in one pass -> all are deleted.
+  // testScenario5: The application is switched off and a conversation has expired -> the conversation is still deleted.
 
   @TestSetup
   static void setup() {
@@ -35,6 +35,7 @@ private class AIConversationRetentionBatchTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create an expired conversation with a message and feedback
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -46,11 +47,13 @@ private class AIConversationRetentionBatchTest {
     )[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
     AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       5,
       1,
       true
@@ -64,29 +67,45 @@ private class AIConversationRetentionBatchTest {
     conversation.RetentionExpiryDate__c = Datetime.now().dateGmt().addDays(-1);
     update conversation;
 
+    // [2] Run the retention batch
     Test.startTest();
     Database.executeBatch(new AIConversationRetentionBatch(), 200);
     Test.stopTest();
 
+    // [3] Count the conversation, message and feedback
+    Integer conversationCount = [
+      SELECT COUNT()
+      FROM AIConversation__c
+      WHERE Id = :conversation.Id
+    ];
+    Integer messageCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE Id = :message.Id
+    ];
+    Integer feedbackCount = [SELECT COUNT() FROM AIFeedback__c];
+
+    // [4] Check all three are gone
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIConversation__c WHERE Id = :conversation.Id],
-      'The conversation is gone.'
+      conversationCount,
+      'The expired conversation should be deleted.'
     );
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIConversationMessage__c WHERE Id = :message.Id],
-      'And so are its messages.'
+      messageCount,
+      'The conversation\'s messages should be deleted with it.'
     );
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIFeedback__c],
-      'And so is its feedback, not left behind with a blank conversation.'
+      feedbackCount,
+      'The conversation\'s feedback should be deleted, not left behind with a blank conversation.'
     );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create a conversation on legal hold that is long past its expiry
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -98,6 +117,7 @@ private class AIConversationRetentionBatchTest {
     )[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
@@ -107,19 +127,29 @@ private class AIConversationRetentionBatchTest {
     conversation.IsOnLegalHold__c = true;
     update conversation;
 
+    // [2] Run the retention batch
     Test.startTest();
     Database.executeBatch(new AIConversationRetentionBatch(), 200);
     Test.stopTest();
 
+    // [3] Count the conversation
+    Integer conversationCount = [
+      SELECT COUNT()
+      FROM AIConversation__c
+      WHERE Id = :conversation.Id
+    ];
+
+    // [4] Check the conversation is kept
     Assert.areEqual(
       1,
-      [SELECT COUNT() FROM AIConversation__c WHERE Id = :conversation.Id],
-      'Held, so kept.'
+      conversationCount,
+      'A conversation on legal hold should be kept.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create conversations expiring today, expiring tomorrow and with no expiry date
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -131,6 +161,7 @@ private class AIConversationRetentionBatchTest {
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       3,
       true
     );
@@ -140,29 +171,34 @@ private class AIConversationRetentionBatchTest {
     conversations[2].RetentionExpiryDate__c = null;
     update conversations;
 
+    // [2] Run the retention batch
     Test.startTest();
     Database.executeBatch(new AIConversationRetentionBatch(), 200);
     Test.stopTest();
 
+    // [3] Read the conversations that remain
     Map<Id, AIConversation__c> remaining = new Map<Id, AIConversation__c>(
       [SELECT Id FROM AIConversation__c WHERE Id IN :conversations]
     );
+
+    // [4] Check only the one expiring today is deleted
     Assert.isFalse(
       remaining.containsKey(conversations[0].Id),
-      'Due today: deleted.'
+      'A conversation expiring today should be deleted.'
     );
     Assert.isTrue(
       remaining.containsKey(conversations[1].Id),
-      'Due tomorrow: kept.'
+      'A conversation expiring tomorrow should be kept.'
     );
     Assert.isTrue(
       remaining.containsKey(conversations[2].Id),
-      'No expiry: kept.'
+      'A conversation with no expiry date should be kept.'
     );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create 200 expired conversations
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -174,28 +210,43 @@ private class AIConversationRetentionBatchTest {
     )[0];
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       200,
       true
     );
-    for (AIConversation__c conversation : conversations)
+
+    for (AIConversation__c conversation : conversations) {
       conversation.RetentionExpiryDate__c = Datetime.now()
         .dateGmt()
         .addDays(-1);
+    }
+
     update conversations;
 
+    // [2] Run the retention batch
     Test.startTest();
     Database.executeBatch(new AIConversationRetentionBatch(), 200);
     Test.stopTest();
 
-    Assert.areEqual(0, [SELECT COUNT() FROM AIConversation__c], 'All deleted.');
+    // [3] Count the conversations
+    Integer conversationCount = [SELECT COUNT() FROM AIConversation__c];
+
+    // [4] Check all are deleted
+    Assert.areEqual(
+      0,
+      conversationCount,
+      'All 200 expired conversations should be deleted.'
+    );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Switch the application off, then create an expired conversation
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.IsEnabled__c = false;
     update settings;
     AIAssistSettingsService.cachedSettings = null;
+
     AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       true
@@ -207,20 +258,26 @@ private class AIConversationRetentionBatchTest {
     )[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
     conversation.RetentionExpiryDate__c = Datetime.now().dateGmt().addDays(-1);
     update conversation;
 
+    // [2] Run the retention batch
     Test.startTest();
     Database.executeBatch(new AIConversationRetentionBatch(), 200);
     Test.stopTest();
 
+    // [3] Count the conversations
+    Integer conversationCount = [SELECT COUNT() FROM AIConversation__c];
+
+    // [4] Check the conversation is still deleted
     Assert.areEqual(
       0,
-      [SELECT COUNT() FROM AIConversation__c],
-      'Deleted although the application is off.'
+      conversationCount,
+      'The expired conversation should be deleted although the application is switched off.'
     );
   }
 }
