@@ -4,42 +4,32 @@ Class Name: AIConversationMessageService
 =================================================================
 =================================================================
 
-Description: The entry point for a user sending a message: what the chat UI calls. Never talks to
-the AI provider; that is handed off entirely to the asynchronous job.
+Description: The entry point for a user sending a message: what the chat UI calls. Never talks to the AI provider; that is handed off entirely to the asynchronous job.
 
-Flow:
-[1] AIMessageValidator checks the request: application on, message acceptable, agent active and
-    assigned to the user, terms accepted, channel allowed, related record readable.
-[2] Find an Active conversation to reuse, or start a new one (AIAgent__c.SingleActiveConversationPerRecord__c),
-    closing the existing one first if it hit the agent's per-conversation message or token cap.
-[3] AIUsageLimitService checks the send rate, concurrent conversations and queue room.
-[4] Take the conversation's processing lock, insert the user's message, and enqueue
-    AIMessageProcessingQueueable, but only if the lock was free. If another message is still being
-    processed this one waits, and that job's finalizer starts it.
+Step 1: Check the request is allowed (AIMessageValidator)
+Step 2: Find an Active conversation to reuse, or start a new one, closing an existing one first if it hit the agent's message or token cap
+Step 3: Check the usage limits (AIUsageLimitService)
+Step 4: Take the conversation's processing lock, insert the user's message and enqueue AIMessageProcessingQueueable, only if the lock was free
 
-Also owns retrying the newest message and manually closing a conversation, distinct from the idle
-and retention jobs' automated closing.
+Also owns retrying the newest message, manually closing a conversation (distinct from the idle and retention jobs' automated closing),
+and starting or failing messages held at the cap on messages in flight.
 
-Runs as the user (`with sharing`) and authorises as the user:
-- A conversation is only ever found with a user-mode query, so a user reaches only their own
-  (conversations are Private).
-- Closing is a user-mode update, so only someone who can edit the conversation can close it.
-- A new conversation is created in user mode: only fields the AI Assist User permission set can set.
-- What the user may not write themselves (the message's token estimate and processing status) goes
-  through AIMessagingDataService, after the checks above.
+Authorises as the user even though the class is declared without sharing: a conversation is only ever found or changed with a
+user-mode statement, so a user reaches only their own (conversations are Private) and only fields the AI Assist User
+permission set can set. What the user may not write themselves (the message's token estimate and processing status)
+goes through AIMessagingDataService, after those checks.
 
-Every refusal is an exception whose message is a Custom Label; the UI shows it,
-not its text. An unexpected failure reaches the caller as the generic label and is logged in full.
+Every refusal is an exception whose message is a Custom Label; the UI shows it, not its text. An unexpected failure reaches
+the caller as the generic label and is logged in full.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt for the object model and security model: runs with sharing, validation and limits moved out, outcome handling moved out, usage from AIUsageDaily__c, labels throughout, token accounting follows the agent's tracking method, methods shortened (retryMessage), single-use helpers inlined.
 */
 
-public with sharing class AIConversationMessageService {
+public without sharing class AIConversationMessageService {
   public class AIConversationMessageServiceException extends Exception {
   }
 
@@ -51,6 +41,7 @@ public with sharing class AIConversationMessageService {
     String relatedObjectApiName,
     Id relatedRecordId
   ) {
+    // [1] Send without naming a conversation
     return sendMessage(
       null,
       agentId,
@@ -71,6 +62,7 @@ public with sharing class AIConversationMessageService {
     Id relatedRecordId
   ) {
     try {
+      // [1] Check the request is allowed
       AIMessageValidator.ChatContext chatContext = AIMessageValidator.validateSendRequest(
         agentId,
         messageBody,
@@ -80,7 +72,7 @@ public with sharing class AIConversationMessageService {
       );
       Decimal estimatedTokens = estimateTokenCount(messageBody);
 
-      // Estimates count against the limits only where the agent asked for them: a "track" agent is measured by the provider after the call.
+      // [2] Count the estimate against the limits only where the agent asked for it: a "track" agent is measured by the provider after the call
       Decimal tokensCountedForLimits = chatContext.agent.TokenTrackingMethod__c ==
         AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE ||
         chatContext.agent.TokenTrackingMethod__c ==
@@ -88,7 +80,7 @@ public with sharing class AIConversationMessageService {
         ? estimatedTokens
         : 0;
 
-      // The conversation to continue, found in user mode: by Id when the chat window passed one, otherwise by record when the agent keeps one conversation per record.
+      // [3] Find the conversation to continue in user mode: by Id when the chat window passed one, otherwise by record when the agent keeps one conversation per record
       List<AIConversation__c> candidateConversations = new List<AIConversation__c>();
 
       if (
@@ -128,7 +120,7 @@ public with sharing class AIConversationMessageService {
         ? null
         : candidateConversations[0];
 
-      // A conversation at the agent's message or token cap is closed here, with the matching reason, so the user starts a fresh one instead of being blocked.
+      // [4] Close a conversation at the agent's message or token cap, with the matching reason, so the user starts a fresh one instead of being blocked
       if (conversation != null) {
         Decimal tokensUsed = conversation.ConversationTokenUsage__c == null
           ? 0
@@ -149,10 +141,13 @@ public with sharing class AIConversationMessageService {
             false,
             AccessLevel.USER_MODE
           );
+
+          // A failure is reported as "not found", which reveals nothing about what exists
           if (!messageLimitCloseResult.isSuccess())
             throw new AIConversationMessageServiceException(
               Label.AI_Error_Conversation_Not_Found
-            ); // A failure is reported as "not found", which reveals nothing about what exists.
+            );
+
           conversation = null;
         } else if (
           chatContext.agent.MaxTokensPerConversation__c != null &&
@@ -168,30 +163,33 @@ public with sharing class AIConversationMessageService {
             false,
             AccessLevel.USER_MODE
           );
+
           if (!tokenLimitCloseResult.isSuccess())
             throw new AIConversationMessageServiceException(
               Label.AI_Error_Conversation_Not_Found
             );
+
           conversation = null;
         }
       }
 
+      // [5] Refuse a new conversation while new chats are paused
       Boolean isNewConversation = conversation == null;
 
       if (
         isNewConversation &&
         AIAssistSettingsService.getUiSettings().IsUserInitiatedChatEnabled__c ==
         false
-      ) {
+      )
         throw new AIConversationMessageServiceException(
           Label.AI_Chat_New_Chats_Paused
         );
-      }
 
+      // [6] Check the usage limits
       AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);
 
       if (isNewConversation) {
-        // The new conversation is the user's own, so it is created in user mode: only fields the AI Assist User permission set can set.
+        // [7] Create the new conversation in user mode, as the user's own: only fields the AI Assist User permission set can set
         conversation = new AIConversation__c(
           AIAgent__c = chatContext.agent.Id,
           Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE,
@@ -207,6 +205,7 @@ public with sharing class AIConversationMessageService {
           false,
           AccessLevel.USER_MODE
         );
+
         if (!conversationResult.isSuccess()) {
           AIPlatformLogManager.logCustomMessage(
             'Failed to create conversation: ' +
@@ -218,20 +217,23 @@ public with sharing class AIConversationMessageService {
             'sendMessage',
             null
           );
+
           throw new AIConversationMessageServiceException(
             Label.AI_Error_Generic
           );
         }
       }
 
-      // Locked before the message is inserted, so a job finishing at the same moment either sees this message or finds the lock already released. It cannot miss it.
+      // [8] Take the lock before the message is inserted, so a job finishing at the same moment either sees this message or finds the lock already released
       Boolean shouldStartProcessing = AIConversationLockService.acquireLock(
         conversation.Id
       );
-      // At the org-wide cap on messages in flight the message is kept, Queued, and started when a place is free (startHeldMessage).
+
+      // [9] At the org-wide cap on messages in flight, keep the message Queued and start it when a place is free (startHeldMessage)
       Boolean isHeld =
         shouldStartProcessing && AIUsageLimitService.isInFlightCapReached();
 
+      // [10] Build and insert the user's message
       AIConversationMessage__c userMessage = new AIConversationMessage__c(
         AIConversation__c = conversation.Id,
         Sender__c = AIAssistApplicationConstants.SENDER_USER,
@@ -244,47 +246,47 @@ public with sharing class AIConversationMessageService {
           : null
       );
 
-      AIMessagingDataService.insertAsPackage(new List<SObject>{ userMessage });
+      AIMessagingDataService.insertOrThrow(new List<SObject>{ userMessage });
 
-      // Only when this message took the lock; otherwise it waits and the running job's finalizer starts it.
+      // [11] Start the turn only when this message took the lock; otherwise it waits and the running job's finalizer starts it
       if (isHeld)
-        AIConversationLockService.releaseLock(conversation.Id); // Nothing is working on it yet.
+        AIConversationLockService.releaseLock(conversation.Id);
       else if (shouldStartProcessing)
         System.enqueueJob(
           new AIMessageProcessingQueueable(userMessage.Id, conversation.Id)
         );
 
       return userMessage;
-    } catch (Exception caughtException) {
-      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
-      if (!caughtException.getTypeName().startsWith('System.')) {
-        throw caughtException;
-      }
+    } catch (Exception ex) {
+      // [12] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
+      if (!ex.getTypeName().startsWith('System.'))
+        throw ex;
 
+      // [13] Log anything else here and give the caller the generic label
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIConversationMessageService',
         'sendMessage'
       );
-      {
-        AIPlatformLogManager.logCustomMessage(
-          caughtException.getMessage(),
-          null,
-          'AIConversationMessageService',
-          'sendMessage',
-          null
-        );
-        throw new AIConversationMessageServiceException(
-          Label.AI_Error_Generic,
-          caughtException
-        );
-      }
+      AIPlatformLogManager.logCustomMessage(
+        ex.getMessage(),
+        null,
+        'AIConversationMessageService',
+        'sendMessage',
+        null
+      );
+
+      throw new AIConversationMessageServiceException(
+        Label.AI_Error_Generic,
+        ex
+      );
     }
   }
 
   // Fails every message, whoever sent it, that has waited longer than HELD_MESSAGE_TIMEOUT_MINUTES for a place under the cap on messages in flight, so its sender is offered Try again instead of a wait that never ends: only the sender can start a held message, and they may have closed the window. Returns how many were failed. isRecentOnly looks at the last day alone, which is what a finalizer or a chat window can afford; the maintenance job looks at them all. Never throws.
   public static Integer failExpiredHeldMessages(Boolean isRecentOnly) {
     try {
+      // [1] Work out how long a message may wait
       Datetime heldBefore = System.now()
         .addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES);
       List<AIConversationMessage__c> failedMessages = new List<AIConversationMessage__c>();
@@ -297,7 +299,7 @@ public with sharing class AIConversationMessageService {
           AIAssistApplicationConstants.HELD_MESSAGE_SWEEP_SIZE
         )
       ) {
-        // Read again under the lock: its sender may have started it while this waited.
+        // [2] Skip a message its sender started while this waited for the lock
         if (
           !heldMessage.IsAwaitingCapacity__c ||
           heldMessage.ProcessingStatus__c !=
@@ -305,6 +307,7 @@ public with sharing class AIConversationMessageService {
         )
           continue;
 
+        // [3] Fail the message as the service being busy
         failedMessages.add(
           new AIConversationMessage__c(
             Id = heldMessage.Id,
@@ -316,11 +319,14 @@ public with sharing class AIConversationMessageService {
         conversationIds.add(heldMessage.AIConversation__c);
       }
 
+      // [4] Save the failures, logging any that do not save
       AIMessagingDataService.updateAndLogFailures(
         failedMessages,
         'AIConversationMessageService',
         'failExpiredHeldMessages'
       );
+
+      // [5] Tell each affected conversation its message failed
       for (Id conversationId : conversationIds)
         AIMessageOutcomeService.publishMessageFailure(
           conversationId,
@@ -328,22 +334,27 @@ public with sharing class AIConversationMessageService {
         );
 
       return failedMessages.size();
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [6] Log it and report that nothing was failed
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIConversationMessageService',
         'failExpiredHeldMessages'
       );
+
       return 0;
     }
   }
 
   // Starts the signed-in user's oldest message that is waiting for a place under the cap on messages in flight, if a place is free. True when one was started. A job runs as whoever queues it and reads the conversation in user mode, so a waiting message can only be started by its own sender: from the finalizer of that user's earlier turn, or from their chat window asking for an update. Any user's finalizer or window first fails the messages that have waited too long (failExpiredHeldMessages), which are then no longer started. Never throws.
   public static Boolean startHeldMessage() {
+    // [1] Fail the messages that have waited too long first
     failExpiredHeldMessages(true);
 
     Savepoint beforeStart;
+
     try {
+      // [2] Find the user's oldest message still waiting
       Datetime heldSince = System.now()
         .addMinutes(-AIAssistApplicationConstants.HELD_MESSAGE_TIMEOUT_MINUTES);
       List<AIConversationMessage__c> heldMessages = [
@@ -359,6 +370,7 @@ public with sharing class AIConversationMessageService {
         LIMIT 1
       ];
 
+      // [3] Do nothing when there is none, no job can be queued, the cap is still reached, or the conversation is locked
       if (
         heldMessages.isEmpty() ||
         Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs() ||
@@ -369,11 +381,13 @@ public with sharing class AIConversationMessageService {
       )
         return false;
 
-      // If the job cannot be queued the message goes back to waiting, with no lock left on its conversation. The savepoint is set before the lock is written, so rolling back frees it.
+      // [4] Free the lock and take it again after the savepoint, so that if the job cannot be queued the message goes back to waiting with no lock left on its conversation
       AIConversationLockService.releaseLock(heldMessages[0].AIConversation__c);
       beforeStart = Database.setSavepoint();
       AIConversationLockService.acquireLock(heldMessages[0].AIConversation__c);
-      AIMessagingDataService.updateAsPackage(
+
+      // [5] Stop the message waiting and queue its turn
+      AIMessagingDataService.updateOrThrow(
         new List<SObject>{
           new AIConversationMessage__c(
             Id = heldMessages[0].Id,
@@ -389,14 +403,17 @@ public with sharing class AIConversationMessageService {
       );
 
       return true;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [6] Roll back to the savepoint, log it and report that nothing was started
       if (beforeStart != null)
         Database.rollback(beforeStart);
+
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIConversationMessageService',
         'startHeldMessage'
       );
+
       return false;
     }
   }
@@ -404,7 +421,7 @@ public with sharing class AIConversationMessageService {
   // Re-runs the AI response for the conversation's newest user message: Try again after a failed turn, and Regenerate. Only the newest can be re-run, because the finalizer hands the lock to the newest user message and re-running an older one would answer the newest twice. Returns the message's Id.
   public static Id retryLatestUserMessage(Id conversationId) {
     try {
-      // The user's own conversation, found in user mode so sharing and field-level security apply. Anything else (missing, someone else's, not visible) is "not found".
+      // [1] Refuse a blank or wrong-type Id as not found
       if (
         conversationId == null ||
         conversationId.getSobjectType() != AIConversation__c.SObjectType
@@ -413,6 +430,7 @@ public with sharing class AIConversationMessageService {
           Label.AI_Error_Conversation_Not_Found
         );
 
+      // [2] Find the user's own conversation in user mode, so sharing and field-level security apply
       List<AIConversation__c> ownConversations = [
         SELECT
           Id,
@@ -427,12 +445,15 @@ public with sharing class AIConversationMessageService {
         LIMIT 1
       ];
 
+      // [3] Anything else (missing, someone else's, not visible) is not found
       if (ownConversations.isEmpty())
         throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
+      // [4] Refuse a conversation that is no longer Active
       AIConversation__c conversation = ownConversations[0];
+
       if (
         conversation.Status__c !=
         AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
@@ -441,6 +462,7 @@ public with sharing class AIConversationMessageService {
           Label.AI_Error_Conversation_Closed
         );
 
+      // [5] Find the newest message the user sent
       List<AIConversationMessage__c> newestUserMessages = [
         SELECT Id, MessageBody__c
         FROM AIConversationMessage__c
@@ -457,7 +479,7 @@ public with sharing class AIConversationMessageService {
           Label.AI_Error_Message_Empty
         );
 
-      // A retry spends tokens and reads the record again, so it passes every check a new message does: the agent may have been unassigned or the record shared away since the first attempt.
+      // [6] Pass every check a new message does, as a retry spends tokens and reads the record again: the agent may have been unassigned or the record shared away since the first attempt
       AIMessageValidator.ChatContext chatContext = AIMessageValidator.validateSendRequest(
         conversation.AIAgent__c,
         newestUserMessages[0].MessageBody__c,
@@ -469,12 +491,14 @@ public with sharing class AIConversationMessageService {
       );
       AIUsageLimitService.enforceUsageLimits(chatContext, false);
 
+      // [7] Refuse when another turn is already running
       if (!AIConversationLockService.acquireLock(conversationId))
         throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Busy
         );
 
-      AIMessagingDataService.updateAsPackage(
+      // [8] Queue the message again and clear its failure
+      AIMessagingDataService.updateOrThrow(
         new List<SObject>{
           new AIConversationMessage__c(
             Id = newestUserMessages[0].Id,
@@ -484,6 +508,7 @@ public with sharing class AIConversationMessageService {
         }
       );
 
+      // [9] Start the turn
       System.enqueueJob(
         new AIMessageProcessingQueueable(
           newestUserMessages[0].Id,
@@ -492,37 +517,36 @@ public with sharing class AIConversationMessageService {
       );
 
       return newestUserMessages[0].Id;
-    } catch (Exception caughtException) {
-      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
-      if (!caughtException.getTypeName().startsWith('System.')) {
-        throw caughtException;
-      }
+    } catch (Exception ex) {
+      // [10] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
+      if (!ex.getTypeName().startsWith('System.'))
+        throw ex;
 
+      // [11] Log anything else here and give the caller the generic label
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIConversationMessageService',
         'retryLatestUserMessage'
       );
-      {
-        AIPlatformLogManager.logCustomMessage(
-          caughtException.getMessage(),
-          null,
-          'AIConversationMessageService',
-          'retryLatestUserMessage',
-          null
-        );
-        throw new AIConversationMessageServiceException(
-          Label.AI_Error_Generic,
-          caughtException
-        );
-      }
+      AIPlatformLogManager.logCustomMessage(
+        ex.getMessage(),
+        null,
+        'AIConversationMessageService',
+        'retryLatestUserMessage',
+        null
+      );
+
+      throw new AIConversationMessageServiceException(
+        Label.AI_Error_Generic,
+        ex
+      );
     }
   }
 
   // Manually ends a conversation, distinct from the idle and retention jobs' automated closing. Only someone who can edit the conversation can close it: the update runs in user mode.
   public static void closeConversation(Id conversationId, String closeReason) {
     try {
-      // Not found, or not visible to this user, is reported the same way.
+      // [1] Refuse a blank or wrong-type Id as not found
       if (
         conversationId == null ||
         conversationId.getSobjectType() != AIConversation__c.SObjectType
@@ -531,6 +555,7 @@ public with sharing class AIConversationMessageService {
           Label.AI_Error_Conversation_Not_Found
         );
 
+      // [2] Find the user's own conversation in user mode
       List<AIConversation__c> closableConversations = [
         SELECT
           Id,
@@ -545,11 +570,13 @@ public with sharing class AIConversationMessageService {
         LIMIT 1
       ];
 
+      // [3] Not found, or not visible to this user, is reported the same way
       if (closableConversations.isEmpty())
         throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
 
+      // [4] Close it with the given reason, or the default
       Database.SaveResult closeResult = Database.update(
         new AIConversation__c(
           Id = conversationId,
@@ -566,35 +593,35 @@ public with sharing class AIConversationMessageService {
         throw new AIConversationMessageServiceException(
           Label.AI_Error_Conversation_Not_Found
         );
-    } catch (Exception caughtException) {
-      // A package exception already carries a Custom Label and was logged where it was thrown. Anything else is logged here and the caller gets the generic label.
-      if (!caughtException.getTypeName().startsWith('System.')) {
-        throw caughtException;
-      }
+    } catch (Exception ex) {
+      // [5] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
+      if (!ex.getTypeName().startsWith('System.'))
+        throw ex;
 
+      // [6] Log anything else here and give the caller the generic label
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIConversationMessageService',
         'closeConversation'
       );
-      {
-        AIPlatformLogManager.logCustomMessage(
-          caughtException.getMessage(),
-          null,
-          'AIConversationMessageService',
-          'closeConversation',
-          null
-        );
-        throw new AIConversationMessageServiceException(
-          Label.AI_Error_Generic,
-          caughtException
-        );
-      }
+      AIPlatformLogManager.logCustomMessage(
+        ex.getMessage(),
+        null,
+        'AIConversationMessageService',
+        'closeConversation',
+        null
+      );
+
+      throw new AIConversationMessageServiceException(
+        Label.AI_Error_Generic,
+        ex
+      );
     }
   }
 
   // A rough, cheap estimate (about four characters per token) for the limits; the provider's own count is only known after the callout.
   public static Decimal estimateTokenCount(String text) {
+    // [1] Blank text is nothing; otherwise round up
     return String.isBlank(text)
       ? 0
       : Math.ceil(
@@ -603,41 +630,30 @@ public with sharing class AIConversationMessageService {
         );
   }
 
-  // These queries must see every user's records, not just the running user's, so they run in a class declared without sharing.
-  private static SystemReader systemReader = new SystemReader();
-
+  // Gets the messages still held at the cap on messages in flight that were sent before heldBefore, whoever sent them. heldSince, when given, keeps the query to a range of the CreatedDate index. Locked and read again by the caller's check, so one its sender is starting at this moment is seen as it ends up.
   @TestVisible
   private static List<AIConversationMessage__c> lockExpiredHeldMessages(
     Datetime heldBefore,
     Datetime heldSince,
     Integer maximum
   ) {
-    return systemReader.lockExpiredHeldMessages(heldBefore, heldSince, maximum);
-  }
+    // [1] Start from the given time, or from a date before any message
+    Datetime earliest = heldSince == null
+      ? Datetime.newInstanceGmt(2000, 1, 1)
+      : heldSince;
 
-  private without sharing class SystemReader {
-    // Messages still held at the cap on messages in flight that were sent before heldBefore, whoever sent them. heldSince, when given, keeps the query to a range of the CreatedDate index. Locked and read again by the caller's check, so one its sender is starting at this moment is seen as it ends up.
-    public List<AIConversationMessage__c> lockExpiredHeldMessages(
-      Datetime heldBefore,
-      Datetime heldSince,
-      Integer maximum
-    ) {
-      Datetime earliest = heldSince == null
-        ? Datetime.newInstanceGmt(2000, 1, 1)
-        : heldSince;
-
-      return [
-        SELECT Id, AIConversation__c, IsAwaitingCapacity__c, ProcessingStatus__c
-        FROM AIConversationMessage__c
-        WHERE
-          IsAwaitingCapacity__c = TRUE
-          AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
-          AND CreatedDate < :heldBefore
-          AND CreatedDate >= :earliest
-        WITH SYSTEM_MODE
-        LIMIT :maximum
-        FOR UPDATE
-      ];
-    }
+    // [2] Read and lock the messages of every user, in system mode
+    return [
+      SELECT Id, AIConversation__c, IsAwaitingCapacity__c, ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE
+        IsAwaitingCapacity__c = TRUE
+        AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED
+        AND CreatedDate < :heldBefore
+        AND CreatedDate >= :earliest
+      WITH SYSTEM_MODE
+      LIMIT :maximum
+      FOR UPDATE
+    ];
   }
 }

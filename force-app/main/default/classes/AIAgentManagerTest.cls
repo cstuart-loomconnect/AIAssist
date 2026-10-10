@@ -10,7 +10,7 @@ Description: Testing utility for AIAgentManager: one turn with the AI provider, 
 =================================================================
 Applicable Classes:
 
-AIAgentManager
+AIAgentManager: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -38,14 +38,6 @@ private class AIAgentManagerTest {
     upsert settings;
   }
 
-  private class World {
-    AIModelConfiguration__c model;
-    AIAgent__c agent;
-    AIPromptTemplate__c template;
-    AIConversation__c conversation;
-    List<AIConversationMessage__c> history;
-  }
-
   // Plays back a script of responses and exceptions, one per callout, and remembers what it was sent.
   private class ScriptedMock implements HttpCalloutMock {
     List<Object> script = new List<Object>();
@@ -54,99 +46,56 @@ private class AIAgentManagerTest {
     public HttpResponse respond(HttpRequest request) {
       requests.add(request);
       Object next = script.remove(0);
-      if (next instanceof Exception)
+      if (next instanceof Exception) {
         throw (Exception) next;
+      }
       return (HttpResponse) next;
     }
   }
 
-  private static World createWorld(String provider) {
+  @IsTest
+  static void testScenario1() {
+    // [1] Build an Anthropic model, agent, template, conversation and history
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     settings.CalloutTimeoutMilliseconds__c = 30000;
     update settings;
     AIAssistSettingsService.cachedSettings = null;
 
-    World world = new World();
-    world.model = AIAssistTestDataFactory.createAIModelConfigurations(
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
       false
     )[0];
-    world.model.AIProvider__c = provider;
-    insert world.model;
-    world.agent = AIAssistTestDataFactory.createAIAgents(
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
-      world.model.Id,
+      model.Id,
       true
     )[0];
-    world.template = AIAssistTestDataFactory.createAIPromptTemplates(
-      world.agent.Id,
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
       1,
       false
     )[0];
-    world.template.AIPrompt__c = 'Be brief.';
-    insert world.template;
-    world.conversation = AIAssistTestDataFactory.createAIConversations(
-      world.agent.Id,
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
       1,
       true
     )[0];
-    world.history = AIAssistTestDataFactory.createAIConversationMessages(
-      world.conversation.Id,
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       null,
       1,
       false
     );
 
-    return world;
-  }
-
-  private static HttpResponse response(Integer statusCode, String body) {
-    HttpResponse httpResponse = new HttpResponse();
-    httpResponse.setStatusCode(statusCode);
-    httpResponse.setBody(body);
-
-    return httpResponse;
-  }
-
-  private static String anthropicText(String text) {
-    return '{"content":[{"type":"text","text":' +
-      JSON.serialize(text) +
-      '}],"usage":{"input_tokens":10,"output_tokens":5}}';
-  }
-
-  private static String anthropicToolUse(String id, String toolName) {
-    return '{"content":[{"type":"tool_use","id":"' +
-      id +
-      '","name":"' +
-      toolName +
-      '","input":{}}],"usage":{"input_tokens":4,"output_tokens":2}}';
-  }
-
-  private static AIAgentManager.AgentResult run(
-    World world,
-    List<AIDataSource__c> dataSources,
-    List<AIWorkflowAction__c> actions,
-    Integer attemptNumber,
-    AIExecutionStepTracker trace
-  ) {
-    return AIAgentManager.executeAiMessage(
-      world.agent,
-      world.model,
-      world.template,
-      world.conversation,
-      world.history,
-      dataSources,
-      actions,
-      attemptNumber,
-      trace
-    );
-  }
-
-  @IsTest
-  static void testScenario1() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    );
+    // [2] Offer the agent a workflow action
     AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(
       1,
       AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW,
@@ -154,35 +103,47 @@ private class AIAgentManagerTest {
       true
     )[0];
     AIAssistTestDataFactory.createAIAgentWorkflowActions(
-      world.agent.Id,
+      agent.Id,
       new List<AIWorkflowAction__c>{ action },
       true
     );
     List<AIWorkflowAction__c> actions = AIMessageProcessingQueueable.getAssignedActions(
-      world.agent.Id
+      agent.Id
     );
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        anthropicText(
+
+    // [3] Script a text reply that suggests that action
+    HttpResponse replyResponse = new HttpResponse();
+    replyResponse.setStatusCode(200);
+    replyResponse.setBody(
+      '{"content":[{"type":"text","text":' +
+        JSON.serialize(
           'Here you go.\n{"suggested_workflow_action":"' +
             actions[0].DeveloperName__c +
             '"}'
-        )
-      )
+        ) +
+        '}],"usage":{"input_tokens":10,"output_tokens":5}}'
     );
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(replyResponse);
     Test.setMock(HttpCalloutMock.class, mock);
+
     AIExecutionStepTracker trace = new AIExecutionStepTracker(
-      world.conversation.Id,
+      conversation.Id,
       null,
       false,
       false
     );
+    AIAgentManager.AgentResult result;
 
+    // [4] Run one turn with the provider
     Test.startTest();
-    AIAgentManager.AgentResult result = run(
-      world,
+    result = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
       new List<AIDataSource__c>(),
       actions,
       1,
@@ -190,6 +151,14 @@ private class AIAgentManagerTest {
     );
     Test.stopTest();
 
+    // [5] Read back what was sent to the provider
+    String sentBody = mock.requests[0].getBody();
+    String languageInstruction = String.format(
+      AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
+      new List<String>{ UserInfo.getLanguage() }
+    );
+
+    // [6] Check the reply, the callout and the evidence
     Assert.isTrue(result.isSuccessful, 'The turn succeeded.');
     Assert.areEqual(
       'Here you go.',
@@ -206,6 +175,7 @@ private class AIAgentManagerTest {
     Assert.areEqual(5, result.outputTokens, 'Output tokens.');
     Assert.isNotNull(result.latencyMilliseconds, 'How long the turn took.');
     Assert.isFalse(result.isRetryable, 'A success is never retried.');
+
     Assert.areEqual(1, mock.requests.size(), 'One callout.');
     Assert.areEqual(
       'callout:Test_Credential/v1/messages',
@@ -213,28 +183,19 @@ private class AIAgentManagerTest {
       'The callout is pinned to the model configuration\'s Named Credential.'
     );
     Assert.isTrue(
-      mock.requests[0].getBody().contains('Be brief.'),
+      sentBody.contains('Be brief.'),
       'The prompt template is sent as the system prompt.'
     );
     Assert.isTrue(
-      mock.requests[0]
-        .getBody()
-        .contains(
-          String.format(
-            AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION,
-            new List<String>{ UserInfo.getLanguage() }
-          )
-        ),
+      sentBody.contains(languageInstruction),
       'The model is told to reply in the user\'s language.'
     );
+    Assert.isTrue(sentBody.contains('Test message 0'), 'The history is sent.');
     Assert.isTrue(
-      mock.requests[0].getBody().contains('Test message 0'),
-      'The history is sent.'
-    );
-    Assert.isTrue(
-      mock.requests[0].getBody().contains(actions[0].DeveloperName__c),
+      sentBody.contains(actions[0].DeveloperName__c),
       'The offered workflow action is described to the model.'
     );
+
     Assert.areEqual(1, trace.steps.size(), 'One provider call step.');
     Assert.areEqual(
       AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL,
@@ -255,12 +216,52 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario2() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    // [1] Build an Anthropic model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
+
+    // [2] Relate the conversation to an account
     Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
-    world.conversation.RelatedRecordId__c = String.valueOf(account.Id);
-    update world.conversation;
+    conversation.RelatedRecordId__c = String.valueOf(account.Id);
+    update conversation;
+
+    // [3] Give the agent a data source that reads that account
     AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(
       1,
       AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL,
@@ -269,34 +270,56 @@ private class AIAgentManagerTest {
     )[0];
     dataSource.TargetObject__c = 'Account';
     insert dataSource;
+
     AIAssistTestDataFactory.createAIAgentDataSources(
-      world.agent.Id,
+      agent.Id,
       new List<AIDataSource__c>{ dataSource },
       true
     );
     List<AIDataSource__c> dataSources = AIMessageProcessingQueueable.getAssignedDataSources(
-      world.agent.Id
+      agent.Id
     );
+
     String accountName = [SELECT Name FROM Account WHERE Id = :account.Id].Name;
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        anthropicToolUse('toolu_1', dataSources[0].DeveloperName__c)
-      )
+
+    // [4] Script a tool call followed by a text reply
+    HttpResponse toolResponse = new HttpResponse();
+    toolResponse.setStatusCode(200);
+    toolResponse.setBody(
+      '{"content":[{"type":"tool_use","id":"toolu_1","name":"' +
+        dataSources[0].DeveloperName__c +
+        '","input":{}}],"usage":{"input_tokens":4,"output_tokens":2}}'
     );
-    mock.script.add(response(200, anthropicText('The account is found.')));
+
+    HttpResponse replyResponse = new HttpResponse();
+    replyResponse.setStatusCode(200);
+    replyResponse.setBody(
+      '{"content":[{"type":"text","text":' +
+        JSON.serialize('The account is found.') +
+        '}],"usage":{"input_tokens":10,"output_tokens":5}}'
+    );
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(toolResponse);
+    mock.script.add(replyResponse);
     Test.setMock(HttpCalloutMock.class, mock);
+
     AIExecutionStepTracker trace = new AIExecutionStepTracker(
-      world.conversation.Id,
+      conversation.Id,
       null,
       false,
       false
     );
+    AIAgentManager.AgentResult result;
 
+    // [5] Run one turn with the provider
     Test.startTest();
-    AIAgentManager.AgentResult result = run(
-      world,
+    result = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
       dataSources,
       new List<AIWorkflowAction__c>(),
       1,
@@ -304,20 +327,26 @@ private class AIAgentManagerTest {
     );
     Test.stopTest();
 
+    // [6] Read back what was sent to the provider
+    String firstBody = mock.requests[0].getBody();
+    String secondBody = mock.requests[1].getBody();
+
+    // [7] Check the tool loop and the evidence
     Assert.isTrue(
       result.isSuccessful,
       'The turn succeeded after the tool call.'
     );
+
     Assert.areEqual(2, mock.requests.size(), 'Two provider calls.');
     Assert.isTrue(
-      mock.requests[0].getBody().contains('"tools"'),
+      firstBody.contains('"tools"'),
       'The first request advertises the tool.'
     );
     Assert.isTrue(
-      mock.requests[1].getBody().contains('tool_result') &&
-      mock.requests[1].getBody().contains(accountName),
+      secondBody.contains('tool_result') && secondBody.contains(accountName),
       'The second request carries the data source\'s records back.'
     );
+
     Assert.areEqual(
       3,
       trace.steps.size(),
@@ -333,6 +362,7 @@ private class AIAgentManagerTest {
       trace.steps[1].dataSourceId,
       'It names the data source.'
     );
+
     Assert.areEqual(
       1,
       trace.steps[2].recordsSentCount,
@@ -360,26 +390,75 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario3() {
-    World world = createWorld(AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI);
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        '{"choices":[{"message":{"role":"assistant","content":"Hello from OpenAI"}}],"usage":{"prompt_tokens":8,"completion_tokens":4,"total_tokens":12}}'
-      )
+    // [1] Build an OpenAI model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_OPEN_AI;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
+
+    // [2] Script an OpenAI reply
+    HttpResponse replyResponse = new HttpResponse();
+    replyResponse.setStatusCode(200);
+    replyResponse.setBody(
+      '{"choices":[{"message":{"role":"assistant","content":"Hello from OpenAI"}}],"usage":{"prompt_tokens":8,"completion_tokens":4,"total_tokens":12}}'
+    );
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(replyResponse);
     Test.setMock(HttpCalloutMock.class, mock);
 
+    AIAgentManager.AgentResult result;
+
+    // [3] Run one turn with the provider
     Test.startTest();
-    AIAgentManager.AgentResult result = run(
-      world,
+    result = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
       new List<AIDataSource__c>(),
       new List<AIWorkflowAction__c>(),
       1,
-      new AIExecutionStepTracker(world.conversation.Id, null, false, false)
+      new AIExecutionStepTracker(conversation.Id, null, false, false)
     );
     Test.stopTest();
 
+    // [4] Read back what was sent to the provider
     Map<String, Object> sent = (Map<String, Object>) JSON.deserializeUntyped(
       mock.requests[0].getBody()
     );
@@ -387,10 +466,12 @@ private class AIAgentManagerTest {
       'messages'
     ))[0];
 
+    // [5] Check the parsed reply and the message order
     Assert.isTrue(result.isSuccessful, 'The turn succeeded.');
     Assert.areEqual('Hello from OpenAI', result.replyText, 'The reply.');
     Assert.areEqual(8, result.inputTokens, 'Prompt tokens.');
     Assert.areEqual(4, result.outputTokens, 'Completion tokens.');
+
     Assert.areEqual(
       'system',
       firstMessage.get('role'),
@@ -400,39 +481,125 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario4() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    ); // The settings allow two retries by default: three attempts.
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(response(503, 'Unavailable'));
-    mock.script.add(response(408, 'Request timeout'));
-    mock.script.add(response(503, 'Unavailable'));
-    Test.setMock(HttpCalloutMock.class, mock);
+    // [1] Build an Anthropic model, agent, template, conversation and history, with retryable statuses 408, 429 and 503 (two retries by default: three attempts)
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
     settings.RetryableStatusCodes__c = '408,429,503';
     update settings;
     AIAssistSettingsService.cachedSettings = null;
 
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
+    );
+
+    // [2] Script a 503, a 408 and another 503
+    HttpResponse unavailableOne = new HttpResponse();
+    unavailableOne.setStatusCode(503);
+    unavailableOne.setBody('Unavailable');
+
+    HttpResponse timeoutResponse = new HttpResponse();
+    timeoutResponse.setStatusCode(408);
+    timeoutResponse.setBody('Request timeout');
+
+    HttpResponse unavailableTwo = new HttpResponse();
+    unavailableTwo.setStatusCode(503);
+    unavailableTwo.setBody('Unavailable');
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(unavailableOne);
+    mock.script.add(timeoutResponse);
+    mock.script.add(unavailableTwo);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    AIAgentManager.AgentResult first;
+    AIAgentManager.AgentResult second;
+    AIAgentManager.AgentResult last;
+
+    // [3] Run the first, second and last attempts
     Test.startTest();
-    AIAgentManager.AgentResult first = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult second = run(world, null, null, 2, null);
-    AIAgentManager.AgentResult last = run(world, null, null, 3, null);
+    first = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    second = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      2,
+      null
+    );
+    last = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      3,
+      null
+    );
     Test.stopTest();
 
+    // [4] Check which attempts can be retried and why they failed
     Assert.isTrue(first.isRetryable, 'The first attempt can be retried.');
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR,
       first.failureReason,
       'A 503 is a provider error.'
     );
+
     Assert.isTrue(second.isRetryable, 'The second attempt can be retried.');
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT,
       second.failureReason,
       'A 408 is a timeout.'
     );
+
     Assert.isFalse(last.isRetryable, 'The last attempt cannot be retried.');
     Assert.isFalse(last.isSuccessful, 'And it failed.');
+
     Assert.isTrue(
       first.errorMessage.contains('503'),
       'The detail for the log names the status.'
@@ -441,25 +608,89 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario5() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    // [1] Build an Anthropic model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
+
+    // [2] Script a timed out exception and a tunnel exception
     ScriptedMock mock = new ScriptedMock();
     mock.script.add(new CalloutException('Read timed out'));
     mock.script.add(new CalloutException('Unable to tunnel through proxy'));
     Test.setMock(HttpCalloutMock.class, mock);
 
+    AIAgentManager.AgentResult timedOut;
+    AIAgentManager.AgentResult unreachable;
+
+    // [3] Run two turns
     Test.startTest();
-    AIAgentManager.AgentResult timedOut = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult unreachable = run(world, null, null, 1, null);
+    timedOut = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    unreachable = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
     Test.stopTest();
 
+    // [4] Check each failure is classified and retryable as expected
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT,
       timedOut.failureReason,
       'A timeout.'
     );
     Assert.isTrue(timedOut.isRetryable, 'A callout exception is retried.');
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR,
       unreachable.failureReason,
@@ -473,27 +704,81 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario6() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    // [1] Build an Anthropic model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
+
+    // [2] Script a 400 bad request
+    HttpResponse badRequest = new HttpResponse();
+    badRequest.setStatusCode(400);
+    badRequest.setBody(
+      '{"type":"error","error":{"type":"invalid_request_error","message":"max_tokens is too large"}}'
+    );
+
     ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        400,
-        '{"type":"error","error":{"type":"invalid_request_error","message":"max_tokens is too large"}}'
-      )
-    );
+    mock.script.add(badRequest);
     Test.setMock(HttpCalloutMock.class, mock);
 
+    AIAgentManager.AgentResult result;
+
+    // [3] Run one turn with the provider
     Test.startTest();
-    AIAgentManager.AgentResult result = run(world, null, null, 1, null);
+    result = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
     Test.stopTest();
 
+    // [4] Check the turn failed for good and kept the provider's message
     Assert.isFalse(result.isSuccessful, 'The turn failed.');
     Assert.isFalse(
       result.isRetryable,
       'A bad request will not succeed on retry.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR,
       result.failureReason,
@@ -507,22 +792,66 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario7() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    // [1] Build an Anthropic model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
+
+    // [2] Set a mock that records any callout
     ScriptedMock mock = new ScriptedMock();
     Test.setMock(HttpCalloutMock.class, mock);
 
-    AIModelConfiguration__c noCredential = world.model.clone(true);
+    // [3] Make four badly configured copies of the model
+    AIModelConfiguration__c noCredential = model.clone(true);
     noCredential.NamedCredential__c = null;
-    AIModelConfiguration__c wrongCredential = world.model.clone(true);
+
+    AIModelConfiguration__c wrongCredential = model.clone(true);
     wrongCredential.NamedCredential__c = 'Bad Credential!';
-    AIModelConfiguration__c wrongPath = world.model.clone(true);
+
+    AIModelConfiguration__c wrongPath = model.clone(true);
     wrongPath.ApiPath__c = '/v1/../admin';
-    AIModelConfiguration__c wrongProvider = world.model.clone(true);
+
+    AIModelConfiguration__c wrongProvider = model.clone(true);
     wrongProvider.AIProvider__c = 'Skynet';
+
     List<AIAgentManager.AgentResult> results = new List<AIAgentManager.AgentResult>();
 
+    // [4] Run a turn with each badly configured model
     Test.startTest();
     for (
       AIModelConfiguration__c badModel : new List<AIModelConfiguration__c>{
@@ -534,11 +863,11 @@ private class AIAgentManagerTest {
     ) {
       results.add(
         AIAgentManager.executeAiMessage(
-          world.agent,
+          agent,
           badModel,
-          world.template,
-          world.conversation,
-          world.history,
+          template,
+          conversation,
+          history,
           null,
           null,
           1,
@@ -547,6 +876,13 @@ private class AIAgentManagerTest {
       );
     }
     Test.stopTest();
+
+    // [5] Check every turn failed as a configuration error with no callout
+    Assert.areEqual(
+      4,
+      results.size(),
+      'One result per badly configured model.'
+    );
 
     for (AIAgentManager.AgentResult result : results) {
       Assert.isFalse(
@@ -560,6 +896,7 @@ private class AIAgentManagerTest {
       );
       Assert.isFalse(result.isRetryable, 'And will not fix itself on retry.');
     }
+
     Assert.isTrue(
       mock.requests.isEmpty(),
       'No callout was made to an endpoint that failed its checks.'
@@ -568,35 +905,94 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario8() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    );
+    // [1] Build an Anthropic model, agent, template, conversation and history, allowing one tool call per reply
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
     settings.MaxToolCallsPerIteration__c = 1;
     update settings;
     AIAssistSettingsService.cachedSettings = null;
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(
-      response(
-        200,
-        '{"content":[{"type":"tool_use","id":"t1","name":"made_up_tool","input":{}},{"type":"tool_use","id":"t2","name":"another_tool","input":{}}],"usage":{"input_tokens":4,"output_tokens":2}}'
-      )
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
-    mock.script.add(response(200, anthropicText('I could not look that up.')));
+
+    // [2] Script a reply calling two made up tools, then a text reply
+    HttpResponse toolResponse = new HttpResponse();
+    toolResponse.setStatusCode(200);
+    toolResponse.setBody(
+      '{"content":[{"type":"tool_use","id":"t1","name":"made_up_tool","input":{}},{"type":"tool_use","id":"t2","name":"another_tool","input":{}}],"usage":{"input_tokens":4,"output_tokens":2}}'
+    );
+
+    HttpResponse replyResponse = new HttpResponse();
+    replyResponse.setStatusCode(200);
+    replyResponse.setBody(
+      '{"content":[{"type":"text","text":' +
+        JSON.serialize('I could not look that up.') +
+        '}],"usage":{"input_tokens":10,"output_tokens":5}}'
+    );
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(toolResponse);
+    mock.script.add(replyResponse);
     Test.setMock(HttpCalloutMock.class, mock);
+
     AIExecutionStepTracker trace = new AIExecutionStepTracker(
-      world.conversation.Id,
+      conversation.Id,
       null,
       false,
       false
     );
+    AIAgentManager.AgentResult result;
 
+    // [3] Run one turn with the provider
     Test.startTest();
-    AIAgentManager.AgentResult result = run(world, null, null, 1, trace);
+    result = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      trace
+    );
     Test.stopTest();
 
+    // [4] Read back what the model was told on the second call
     String secondRequest = mock.requests[1].getBody();
 
+    // [5] Check the failures were hidden, the extra call skipped and the turn completed
     Assert.isTrue(result.isSuccessful, 'The turn completes.');
     Assert.isTrue(
       secondRequest.contains('This tool failed to run'),
@@ -610,6 +1006,7 @@ private class AIAgentManagerTest {
       secondRequest.contains('made_up_tool\' was requested'),
       'The real error stays out of what the model is told.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE,
       trace.steps[1].stepType,
@@ -620,21 +1017,100 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario9() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
+    // [1] Build an Anthropic model, agent, template, conversation and history
+    AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
+    update settings;
+    AIAssistSettingsService.cachedSettings = null;
+
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
     );
-    world.agent.MaxToolCallingIterations__c = 1;
-    update world.agent;
+
+    // [2] Allow the agent a single tool calling iteration
+    agent.MaxToolCallingIterations__c = 1;
+    update agent;
+
+    // [3] Script a tool call, then a blank reply
+    HttpResponse toolResponse = new HttpResponse();
+    toolResponse.setStatusCode(200);
+    toolResponse.setBody(
+      '{"content":[{"type":"tool_use","id":"t1","name":"made_up_tool","input":{}}],"usage":{"input_tokens":4,"output_tokens":2}}'
+    );
+
+    HttpResponse blankResponse = new HttpResponse();
+    blankResponse.setStatusCode(200);
+    blankResponse.setBody(
+      '{"content":[{"type":"text","text":' +
+        JSON.serialize('   ') +
+        '}],"usage":{"input_tokens":10,"output_tokens":5}}'
+    );
+
     ScriptedMock mock = new ScriptedMock();
-    mock.script.add(response(200, anthropicToolUse('t1', 'made_up_tool')));
-    mock.script.add(response(200, anthropicText('   ')));
+    mock.script.add(toolResponse);
+    mock.script.add(blankResponse);
     Test.setMock(HttpCalloutMock.class, mock);
 
+    AIAgentManager.AgentResult limited;
+    AIAgentManager.AgentResult empty;
+
+    // [4] Run two turns
     Test.startTest();
-    AIAgentManager.AgentResult limited = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult empty = run(world, null, null, 1, null);
+    limited = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    empty = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
     Test.stopTest();
 
+    // [5] Check the limit and the blank reply both fail the turn
     Assert.isFalse(limited.isSuccessful, 'The turn did not finish.');
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_LIMIT_REACHED,
@@ -646,6 +1122,7 @@ private class AIAgentManagerTest {
       limited.totalTokensUsed,
       'The tokens it spent are reported.'
     );
+
     Assert.isFalse(empty.isSuccessful, 'A blank reply is not a success.');
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR,
@@ -656,53 +1133,167 @@ private class AIAgentManagerTest {
 
   @IsTest
   static void testScenario10() {
-    World world = createWorld(
-      AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC
-    );
-    world.agent.AIAgentPersona__c = 'A patient mortgage adviser.';
-    world.model.ModelIdentifier__c = 'retired-model-1';
-    ScriptedMock mock = new ScriptedMock();
-    mock.script.add(response(200, anthropicText('Hello.')));
-    mock.script.add(
-      response(
-        401,
-        '{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
-      )
-    );
-    mock.script.add(
-      response(
-        404,
-        '{"type":"error","error":{"type":"not_found_error","message":"model: retired-model-1"}}'
-      )
-    );
-    mock.script.add(response(429, '{"error":{"code":"insufficient_quota"}}'));
-    mock.script.add(response(429, '{"error":{"code":"rate_limit_exceeded"}}'));
-    Test.setMock(HttpCalloutMock.class, mock);
+    // [1] Build an Anthropic model, agent, template, conversation and history, listing 401, 404, 429 and 503 as retryable
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+    settings.CalloutTimeoutMilliseconds__c = 30000;
     settings.RetryableStatusCodes__c = '401,404,429,503';
     update settings;
     AIAssistSettingsService.cachedSettings = null;
 
+    AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(
+      1,
+      false
+    )[0];
+    model.AIProvider__c = AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC;
+    insert model;
+
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      model.Id,
+      true
+    )[0];
+    AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(
+      agent.Id,
+      1,
+      false
+    )[0];
+    template.AIPrompt__c = 'Be brief.';
+    insert template;
+
+    AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
+      agent.Id,
+      null,
+      1,
+      true
+    )[0];
+    List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(
+      conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      null,
+      1,
+      false
+    );
+
+    // [2] Give the agent a persona and the model an identifier that will be reported retired
+    agent.AIAgentPersona__c = 'A patient mortgage adviser.';
+    model.ModelIdentifier__c = 'retired-model-1';
+
+    // [3] Script a reply, a 401, a 404, an exhausted quota and rate limiting
+    HttpResponse replyResponse = new HttpResponse();
+    replyResponse.setStatusCode(200);
+    replyResponse.setBody(
+      '{"content":[{"type":"text","text":' +
+        JSON.serialize('Hello.') +
+        '}],"usage":{"input_tokens":10,"output_tokens":5}}'
+    );
+
+    HttpResponse rejectedResponse = new HttpResponse();
+    rejectedResponse.setStatusCode(401);
+    rejectedResponse.setBody(
+      '{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'
+    );
+
+    HttpResponse retiredResponse = new HttpResponse();
+    retiredResponse.setStatusCode(404);
+    retiredResponse.setBody(
+      '{"type":"error","error":{"type":"not_found_error","message":"model: retired-model-1"}}'
+    );
+
+    HttpResponse noQuotaResponse = new HttpResponse();
+    noQuotaResponse.setStatusCode(429);
+    noQuotaResponse.setBody('{"error":{"code":"insufficient_quota"}}');
+
+    HttpResponse rateLimitedResponse = new HttpResponse();
+    rateLimitedResponse.setStatusCode(429);
+    rateLimitedResponse.setBody('{"error":{"code":"rate_limit_exceeded"}}');
+
+    ScriptedMock mock = new ScriptedMock();
+    mock.script.add(replyResponse);
+    mock.script.add(rejectedResponse);
+    mock.script.add(retiredResponse);
+    mock.script.add(noQuotaResponse);
+    mock.script.add(rateLimitedResponse);
+    Test.setMock(HttpCalloutMock.class, mock);
+
+    AIAgentManager.AgentResult reply;
+    AIAgentManager.AgentResult rejected;
+    AIAgentManager.AgentResult retired;
+    AIAgentManager.AgentResult noQuota;
+    AIAgentManager.AgentResult rateLimited;
+
+    // [4] Run five turns
     Test.startTest();
-    AIAgentManager.AgentResult reply = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult rejected = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult retired = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult noQuota = run(world, null, null, 1, null);
-    AIAgentManager.AgentResult rateLimited = run(world, null, null, 1, null);
+    reply = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    rejected = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    retired = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    noQuota = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
+    rateLimited = AIAgentManager.executeAiMessage(
+      agent,
+      model,
+      template,
+      conversation,
+      history,
+      null,
+      null,
+      1,
+      null
+    );
     Test.stopTest();
 
+    // [5] Read back the first request
+    String firstBody = mock.requests[0].getBody();
+
+    // [6] Check the persona, the never retried failures and the retried rate limit
     Assert.isTrue(reply.isSuccessful, 'The first turn replied.');
     Assert.isTrue(
-      mock.requests[0]
-        .getBody()
-        .contains('Persona: A patient mortgage adviser.'),
-      'The persona is in the system prompt: ' + mock.requests[0].getBody()
+      firstBody.contains('Persona: A patient mortgage adviser.'),
+      'The persona is in the system prompt: ' + firstBody
     );
     Assert.isTrue(
-      mock.requests[0].getBody().indexOf('Persona:') <
-      mock.requests[0].getBody().indexOf('Be brief.'),
+      firstBody.indexOf('Persona:') < firstBody.indexOf('Be brief.'),
       'The persona comes before the template.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
       rejected.failureReason,
@@ -713,11 +1304,12 @@ private class AIAgentManagerTest {
       'A rejected credential is not retried.'
     );
     Assert.isTrue(
-      rejected.errorMessage.contains(world.model.NamedCredential__c) &&
-      rejected.errorMessage.contains(world.model.Id),
+      rejected.errorMessage.contains(model.NamedCredential__c) &&
+      rejected.errorMessage.contains(model.Id),
       'The message names the credential and the record to fix: ' +
       rejected.errorMessage
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_MODEL_RETIRED,
       retired.failureReason,
@@ -728,12 +1320,14 @@ private class AIAgentManagerTest {
       retired.errorMessage.contains('retired-model-1'),
       'The message names the model: ' + retired.errorMessage
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED,
       noQuota.failureReason,
       'An exhausted quota is an account problem.'
     );
     Assert.isFalse(noQuota.isRetryable, 'Waiting does not refill a quota.');
+
     Assert.areEqual(
       AIAssistApplicationConstants.FAILURE_REASON_RATE_LIMITED,
       rateLimited.failureReason,

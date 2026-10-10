@@ -4,30 +4,28 @@ Class Name: AIPiiPseudonymizationService
 =================================================================
 =================================================================
 
-Description: Masks personal data before it reaches the model and restores it after, using
-AIPiiFieldRegistry (is this field PII, and of what type), AIPiiDataMaskingRule__mdt (what to
-use instead) and AIPiiMappingService (which fake value stands in for which real one).
+Description: Masks personal data before it reaches the model and restores it after, and keeps the evidence of what it masked.
+
+Step 1: Return a value unchanged when its field is not PII, using AIPiiFieldRegistry
+Step 2: Reuse the stand-in already paired with the value in the conversation, using AIPiiMappingService
+Step 3: Otherwise pick an unused substitute from the field type's AIPiiDataMaskingRule__mdt, or a generic REDACTED value
+Step 4: Remember the pairing and tally what was masked, by object and field
+Step 5: Turn a reply's stand-ins back into real values with restore(), and hand over the tallies with takeTallies()
 
 Only the SubstituteFromList strategy produces a stand-in. Any other strategy, a missing or
 inactive rule, or a list whose every value is already used in the conversation falls back to a
-generic REDACTED-<digits> value and says so in the platform log. Every stand-in is unique within
-a conversation: two real values sharing one fake value could not be restored correctly.
-
-It also keeps the evidence of what it did. For each object and field, a tally of how many
-values were masked, by which strategy, under which compliance group. takeTallies() hands those to
-the caller to attach to the execution step that sent the data, and resets them. Names and counts
-only, never values.
+generic REDACTED-<digits> value and says so in the platform log, once per field type per
+transaction. Every stand-in is unique within a conversation: two real values sharing one fake
+value could not be restored correctly. Tallies hold names and counts only, never values.
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Masking evidence tallies added. Single-use helpers inlined. Compliance group read with the rule.
-3.0          Chandler Stuart          A missing or exhausted masking rule is logged once per field type per transaction, not once per value.
 */
 
-public inherited sharing class AIPiiPseudonymizationService {
+public without sharing class AIPiiPseudonymizationService {
   // What was masked for one object and field since the last takeTallies().
   public class MaskingTally {
     public String sourceObject;
@@ -39,12 +37,16 @@ public inherited sharing class AIPiiPseudonymizationService {
     public String outcome = AIAssistApplicationConstants.MASKING_OUTCOME_MASKED;
   }
 
+  private static Map<String, MaskingTally> tallyByKey = new Map<String, MaskingTally>();
+
+  // A missing rule is reported once per field type per transaction, not once per value masked.
+  private static Set<String> fieldTypesAlreadyLogged = new Set<String>();
+
+  // Tests set these two instead of reading custom metadata, which cannot be inserted.
   @TestVisible
-  private static Map<String, AIPiiDataMaskingRule__mdt> ruleByFieldType; // Tests set these two instead of reading custom metadata, which cannot be inserted.
+  private static Map<String, AIPiiDataMaskingRule__mdt> ruleByFieldType;
   @TestVisible
   private static Map<String, String> complianceGroupByFieldType;
-  private static Map<String, MaskingTally> tallyByKey = new Map<String, MaskingTally>();
-  private static Set<String> fieldTypesAlreadyLogged = new Set<String>(); // A missing rule is reported once per field type per transaction, not once per value masked.
 
   // A field that is not PII comes back unchanged. Otherwise the stand-in already paired with this value in the conversation, or a new one that is remembered. Blank for invalid input.
   public static String pseudonymize(
@@ -54,6 +56,7 @@ public inherited sharing class AIPiiPseudonymizationService {
     String realValue
   ) {
     try {
+      // [1] Refuse invalid input
       if (
         conversationId == null ||
         conversationId.getSobjectType() != AIConversation__c.SObjectType ||
@@ -63,6 +66,7 @@ public inherited sharing class AIPiiPseudonymizationService {
       )
         return '';
 
+      // [2] Return the value unchanged when the field is not PII
       String fieldType = AIPiiFieldRegistry.getFieldType(
         objectApiName,
         fieldApiName
@@ -70,10 +74,11 @@ public inherited sharing class AIPiiPseudonymizationService {
       if (String.isBlank(fieldType))
         return realValue;
 
-      // Masking rules do not change mid-conversation, so they are read once per transaction.
+      // [3] Read the masking rules once per transaction, because they do not change mid-conversation
       if (ruleByFieldType == null) {
         ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>();
         complianceGroupByFieldType = new Map<String, String>();
+
         for (AIPiiFieldType__mdt fieldTypeRule : [
           SELECT
             PIIFieldType__c,
@@ -101,6 +106,7 @@ public inherited sharing class AIPiiPseudonymizationService {
       AIPiiDataMaskingRule__mdt maskingRule = ruleByFieldType.get(fieldType);
       String strategy = maskingRule == null ? null : maskingRule.Strategy__c;
 
+      // [4] Reuse the stand-in already paired with this value in the conversation
       String fakeValue = AIPiiMappingService.getFakeValue(
         conversationId,
         realValue
@@ -113,14 +119,16 @@ public inherited sharing class AIPiiPseudonymizationService {
           maskingRule.Strategy__c ==
           AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST
         ) {
-          // Both sides of every pairing: reusing a fake value, or choosing one that is another record's real value, would make restoring ambiguous.
+          // [5] Collect every value already in use on either side of a pairing, because reusing a fake value, or choosing another record's real value, would make restoring ambiguous
           Map<String, String> fakeByReal = AIPiiMappingService.getMapping(
             conversationId
           );
           Set<String> valuesInUse = new Set<String>(fakeByReal.values());
           valuesInUse.addAll(fakeByReal.keySet());
 
+          // [6] Keep the substitutes from the rule that are not in use
           List<String> candidates = new List<String>();
+
           for (
             String candidate : String.isBlank(maskingRule.SubstituteValues__c)
               ? new List<String>()
@@ -133,6 +141,7 @@ public inherited sharing class AIPiiPseudonymizationService {
               candidates.add(candidate.trim());
           }
 
+          // [7] Pick one at random, or log once that the rule has run out of values
           if (!candidates.isEmpty()) {
             fakeValue = candidates[
               Integer.valueOf(Math.floor(Math.random() * candidates.size()))
@@ -150,6 +159,7 @@ public inherited sharing class AIPiiPseudonymizationService {
             );
           }
         } else if (!fieldTypesAlreadyLogged.contains(fieldType)) {
+          // [8] No usable rule - log it once for this field type
           fieldTypesAlreadyLogged.add(fieldType);
           AIPlatformLogManager.logCustomMessage(
             'No usable Substitute From List masking rule for PII field type "' +
@@ -162,20 +172,24 @@ public inherited sharing class AIPiiPseudonymizationService {
           );
         }
 
+        // [9] Fall back to a REDACTED value with a random suffix, so distinct real values never share one fake value
         if (String.isBlank(fakeValue)) {
-          // A random suffix keeps each fallback unique, so distinct real values never collide on one fake value.
           String digits = '';
+
           for (Integer digitIndex = 0; digitIndex < 10; digitIndex++)
             digits += String.valueOf(
               Integer.valueOf(Math.floor(Math.random() * 10))
             );
+
           fakeValue = 'REDACTED-' + digits;
           strategy = 'Redacted';
         }
 
+        // [10] Remember the pairing
         AIPiiMappingService.addMapping(conversationId, realValue, fakeValue);
       }
 
+      // [11] Count the value in the tally for its object and field
       String tallyKey = objectApiName + '.' + fieldApiName;
       MaskingTally tally = tallyByKey.get(tallyKey);
 
@@ -191,10 +205,11 @@ public inherited sharing class AIPiiPseudonymizationService {
 
       tally.valuesMasked++;
 
+      // [12] Return the stand-in
       return fakeValue;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIPiiPseudonymizationService',
         'pseudonymize'
       );
@@ -216,9 +231,11 @@ public inherited sharing class AIPiiPseudonymizationService {
 
   // Turns a stand-in back into the real value it was generated from, for restoring a reply before the user sees it. A value that is not a known stand-in comes back unchanged.
   public static String restore(Id conversationId, String fakeValue) {
+    // [1] Nothing to restore
     if (String.isBlank(fakeValue))
       return fakeValue;
 
+    // [2] Return the real value, or the value as it came when it is not a known stand-in
     String realValue = AIPiiMappingService.getRealValue(
       conversationId,
       fakeValue
@@ -229,6 +246,7 @@ public inherited sharing class AIPiiPseudonymizationService {
 
   // What has been masked since the last call, one tally per object and field, and clears them. The caller attaches them to the step that sent the data.
   public static List<MaskingTally> takeTallies() {
+    // [1] Hand over the tallies and start again with none
     List<MaskingTally> tallies = tallyByKey.values();
     tallyByKey = new Map<String, MaskingTally>();
 

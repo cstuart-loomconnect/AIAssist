@@ -4,32 +4,28 @@ Class Name: AIOpenAiRequestBuilder
 =================================================================
 =================================================================
 
-Description: IAIProviderRequestBuilder for OpenAI's Chat Completions API - builds the request
-body. Deliberately a separate class from AIOpenAiResponseHandler; building a request and
-handling a response are different jobs. The endpoint path and version header live on
-AIModelConfiguration__c instead of here, since they vary per deployment, not per provider brand.
-Every JSON field name/value this shape depends on is a AIAssistApplicationConstants.OPENAI_* constant -
-adding or changing a provider is a new pair of classes registered in AIProvider, never a change to AIAgentManager.
+Description: Builds the request body for OpenAI's Chat Completions API.
+
+Step 1: Put the system prompt first, as a system-role message, followed by the conversation
+Step 2: Add the required fields (model, max tokens, messages) and the temperature if one is set
+Step 3: Wrap each tool in a function object and stop the model calling tools on the last pass
+Step 4: Return the request body
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-1.1          Chandler Stuart          Removed apiPath/apiVersionHeader* - moved to AIModelConfiguration__c fields.
-1.2          Chandler Stuart          Moved field names to AIAssistApplicationConstants, wrapped in try/catch.
-1.3          Chandler Stuart          Sends tool_choice "none" when Request.allowToolCalls is false.
-1.4          Chandler Stuart          Canonical types moved from AIAgentManager to AIProvider.
 */
 
-public inherited sharing class AIOpenAiRequestBuilder implements IAIProviderRequestBuilder {
+public without sharing class AIOpenAiRequestBuilder implements IAIProviderRequestBuilder {
   public class AIOpenAiRequestBuilderException extends Exception {
   }
 
-  // Builds { model, max_tokens, messages, [temperature], [tools] } - optional keys are omitted entirely when unset, never sent as null.
+  // Builds the OpenAI request body. Optional keys are left out completely when they are not set, never sent as null.
   public Map<String, Object> buildRequestBody(AIProvider.Request request) {
     try {
-      // System prompt goes first as a system-role message (unlike Anthropic, where it is a top-level field)
+      // [1] Put the system prompt first as a system-role message (OpenAI has no top-level system field)
       List<Map<String, Object>> allMessages = new List<Map<String, Object>>();
 
       if (String.isNotBlank(request.systemPromptText)) {
@@ -42,20 +38,21 @@ public inherited sharing class AIOpenAiRequestBuilder implements IAIProviderRequ
 
       allMessages.addAll(request.messages);
 
-      // Required fields - OpenAI rejects a request missing any of these
+      // [2] Add the fields OpenAI rejects the request without
       Map<String, Object> requestBody = new Map<String, Object>{
         AIAssistApplicationConstants.OPENAI_FIELD_MODEL => request.modelIdentifier,
         AIAssistApplicationConstants.OPENAI_FIELD_MAX_TOKENS => request.maxOutputTokens,
         AIAssistApplicationConstants.OPENAI_FIELD_MESSAGES => allMessages
       };
 
+      // [3] Add the temperature only when one is set
       if (request.temperature != null)
         requestBody.put(
           AIAssistApplicationConstants.OPENAI_FIELD_TEMPERATURE,
           request.temperature
         );
 
-      // One { type: "function", function: { name, description, parameters } } entry per tool - OpenAI wraps each tool in a "function" object.
+      // [4] Add the tools, each wrapped in a function object as OpenAI expects
       if (request.tools != null && !request.tools.isEmpty()) {
         List<Object> toolDefinitions = new List<Object>();
 
@@ -79,7 +76,7 @@ public inherited sharing class AIOpenAiRequestBuilder implements IAIProviderRequ
           toolDefinitions
         );
 
-        // Last tool-calling iteration - tools stay listed (OpenAI only accepts tool_choice alongside tools) but the model may not call one.
+        // [5] On the last pass keep the tools listed (OpenAI only accepts tool_choice alongside tools) but tell the model not to call one
         if (request.allowToolCalls == false)
           requestBody.put(
             AIAssistApplicationConstants.OPENAI_FIELD_TOOL_CHOICE,
@@ -87,12 +84,12 @@ public inherited sharing class AIOpenAiRequestBuilder implements IAIProviderRequ
           );
       }
 
+      // [6] Return the finished request body
       return requestBody;
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       throw new AIOpenAiRequestBuilderException(
-        'Failed to build the OpenAI request body: ' +
-        caughtException.getMessage(),
-        caughtException
+        'Failed to build the OpenAI request body: ' + ex.getMessage(),
+        ex
       );
     }
   }

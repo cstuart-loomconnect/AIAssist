@@ -4,26 +4,20 @@ Class Name: AIAssistApplicationConstants
 =================================================================
 =================================================================
 
-Description: Every literal the application compares against or sends: picklist API values of the
-object model, the shapes of the AI providers' requests and responses, error codes, and the guard
-rails that protect the org the package is installed in.
+Description: Every literal the application compares against or sends, kept in one place.
 
-Picklist values here must match the object model exactly. AIAssistApplicationConstantsTest reads
-each picklist back from the org and fails if one of these has drifted, so a renamed picklist
-value is caught by the test run rather than by a user.
-
-User-facing text never lives here: it is a Custom Label (AI_Error_*, AI_Chat_*, AI_Step_*), so it
-translates. The only text here is text sent to a machine - the model, a provider API, a log.
+Step 1: Picklist API values of the object model are listed first, grouped by object and field
+Step 2: Guard rails, provider request and response shapes and chat window values follow
+Step 3: Other classes read these constants and never hold the literals themselves
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Rebuilt for the object model: picklist values corrected, user-facing strings removed, messaging-layer values merged in.
 */
 
-public inherited sharing class AIAssistApplicationConstants {
+public without sharing class AIAssistApplicationConstants {
   // AIConversation__c.Channel__c / AIUserSettings__c.AllowedChannels__c (global value set AIChannel)
   public static final String CHANNEL_MOBILE = 'Mobile';
   public static final String CHANNEL_UTILITY_BAR = 'Utility Bar';
@@ -160,16 +154,7 @@ public inherited sharing class AIAssistApplicationConstants {
   // AIModelConfiguration__c.AIProvider__c
   public static final String AI_PROVIDER_ANTHROPIC = 'Anthropic';
   public static final String AI_PROVIDER_OPEN_AI = 'OpenAI';
-
-  // What AIFeatureService.isFeatureEnabled answers for: the application, then the user.
-  public static final String APP_FEATURE_RUN_ACTIONS = 'RunActions';
-  public static final String APP_FEATURE_DEBUG_MODE = 'DebugMode';
-  public static final String APP_FEATURE_EXPORT = 'ConversationExport';
-  public static final String PERMISSION_DEBUG_MODE = 'AIAssistDebugMode';
-  public static final String PERMISSION_RUN_ACTIONS = 'AIAssistRunActions';
-
-  // Error codes.
-  public static final String ERROR_COMMAND_UNKNOWN = 'COMMAND_UNKNOWN';
+  public static final String AI_PROVIDER_ANTHROPIC_AGENT = 'AnthropicAgent';
 
   // Messaging guard rails. None is a business setting: each keeps one chat from taking an unreasonable share of the heap, CPU, asynchronous queue or token budget of the org the package is installed in.
   public static final Integer MAX_USER_MESSAGE_CHARACTERS = 8000; // The full 131,072 character field is never needed for a chat message.
@@ -184,7 +169,6 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer STEP_SENT_PREVIEW_LENGTH = 255;
   public static final Integer STEP_FIELDS_SENT_LENGTH = 32768;
   public static final Integer STEP_OBJECTS_SENT_LENGTH = 255;
-  public static final Integer EVENT_ERROR_MESSAGE_LENGTH = 255; // AIMessageReadyEvent__e.ErrorMessage__c.
 
   // AIAgentManager - canonical (provider-agnostic) message shape built from AIConversationMessage__c history, before any provider handler reshapes it.
   public static final String CANONICAL_ROLE_KEY = 'role';
@@ -226,7 +210,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final Integer DATA_SOURCE_RESULT_MAX_CHILD_DEPTH = 3;
   public static final String DATA_SOURCE_RESULT_REDACTED_ERROR_VALUE = '***REDACTED-ERROR***';
 
-  // AIAnthropicResponseHandler - field/value names in Anthropic's Messages API response shape.
+  // AIAnthropicMessageResponseHandler - field/value names in Anthropic's Messages API response shape.
   public static final String ANTHROPIC_FIELD_CONTENT = 'content';
   public static final String ANTHROPIC_FIELD_BLOCK_TYPE = 'type';
   public static final String ANTHROPIC_BLOCK_TYPE_TEXT = 'text';
@@ -238,7 +222,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String ANTHROPIC_FIELD_TOOL_USE_INPUT = 'input';
   public static final String ANTHROPIC_FIELD_TOOL_RESULT_ID = 'tool_use_id';
 
-  // AIAnthropicRequestBuilder - field names in Anthropic's Messages API request shape. Tool name reuses ANTHROPIC_FIELD_TOOL_NAME above.
+  // AIAnthropicMessageRequestBuilder - field names in Anthropic's Messages API request shape. Tool name reuses ANTHROPIC_FIELD_TOOL_NAME above.
   public static final String ANTHROPIC_FIELD_MODEL = 'model';
   public static final String ANTHROPIC_FIELD_MAX_TOKENS = 'max_tokens';
   public static final String ANTHROPIC_FIELD_MESSAGES = 'messages';
@@ -270,7 +254,7 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String OPENAI_FIELD_TOOL_CALL_ARGUMENTS = 'arguments';
   public static final String OPENAI_FIELD_TOOL_RESULT_ID = 'tool_call_id';
 
-  // AIAnthropicRequestBuilder / AIOpenAiRequestBuilder - sent on the last tool-calling iteration so the model must answer rather than call another tool.
+  // AIAnthropicMessageRequestBuilder / AIOpenAiRequestBuilder - sent on the last tool-calling iteration so the model must answer rather than call another tool.
   public static final String ANTHROPIC_FIELD_TOOL_CHOICE = 'tool_choice';
   public static final String ANTHROPIC_FIELD_TOOL_CHOICE_TYPE = 'type';
   public static final String ANTHROPIC_TOOL_CHOICE_NONE = 'none';
@@ -310,6 +294,51 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String ANTHROPIC_ROLE_KEY = 'role';
   public static final String ANTHROPIC_ROLE_USER = 'user';
   public static final String ANTHROPIC_ROLE_ASSISTANT = 'assistant';
+
+  // AIAnthropicAgentRequestBuilder / AIAnthropicAgentResponseHandler - names in Anthropic's Managed Agents (Agent API) sessions and events. The agent, its tools and its environment live on Anthropic's side; a turn is a session plus events.
+  public static final String ANTHROPIC_AGENT_VERSION_HEADER_NAME = 'anthropic-version';
+  public static final String ANTHROPIC_AGENT_VERSION_HEADER_VALUE = '2023-06-01';
+  public static final String ANTHROPIC_AGENT_BETA_HEADER_NAME = 'anthropic-beta';
+  public static final String ANTHROPIC_AGENT_BETA_HEADER_VALUE = 'managed-agents-2026-04-01';
+  public static final String ANTHROPIC_AGENT_FIELD_EVENTS = 'events';
+  public static final String ANTHROPIC_AGENT_FIELD_DATA = 'data';
+  public static final String ANTHROPIC_AGENT_FIELD_TYPE = 'type';
+  public static final String ANTHROPIC_AGENT_FIELD_ID = 'id';
+  public static final String ANTHROPIC_AGENT_FIELD_AGENT = 'agent';
+  public static final String ANTHROPIC_AGENT_FIELD_AGENT_TYPE = 'agent';
+  public static final String ANTHROPIC_AGENT_FIELD_ENVIRONMENT_ID = 'environment_id';
+  public static final String ANTHROPIC_AGENT_FIELD_CONTENT = 'content';
+  public static final String ANTHROPIC_AGENT_FIELD_TEXT = 'text';
+  public static final String ANTHROPIC_AGENT_FIELD_TOOL_NAME = 'name';
+  public static final String ANTHROPIC_AGENT_FIELD_TOOL_INPUT = 'input';
+  public static final String ANTHROPIC_AGENT_FIELD_TOOL_USE_ID = 'custom_tool_use_id';
+  public static final String ANTHROPIC_AGENT_FIELD_STOP_REASON = 'stop_reason';
+  public static final String ANTHROPIC_AGENT_FIELD_MODEL_USAGE = 'model_usage';
+  public static final String ANTHROPIC_AGENT_FIELD_ERROR = 'error';
+  public static final String ANTHROPIC_AGENT_FIELD_MESSAGE = 'message';
+  public static final String ANTHROPIC_AGENT_USAGE_INPUT_TOKENS = 'input_tokens';
+  public static final String ANTHROPIC_AGENT_USAGE_OUTPUT_TOKENS = 'output_tokens';
+  public static final String ANTHROPIC_AGENT_USAGE_CACHE_CREATION_TOKENS = 'cache_creation_input_tokens';
+  public static final String ANTHROPIC_AGENT_USAGE_CACHE_READ_TOKENS = 'cache_read_input_tokens';
+  public static final String ANTHROPIC_AGENT_EVENT_USER_MESSAGE = 'user.message';
+  public static final String ANTHROPIC_AGENT_EVENT_SYSTEM_MESSAGE = 'system.message';
+  public static final String ANTHROPIC_AGENT_EVENT_USER_TOOL_RESULT = 'user.custom_tool_result';
+  public static final String ANTHROPIC_AGENT_EVENT_USER_INTERRUPT = 'user.interrupt';
+  public static final String ANTHROPIC_AGENT_EVENT_AGENT_MESSAGE = 'agent.message';
+  public static final String ANTHROPIC_AGENT_EVENT_AGENT_TOOL_USE = 'agent.custom_tool_use';
+  public static final String ANTHROPIC_AGENT_EVENT_STATUS_IDLE = 'session.status_idle';
+  public static final String ANTHROPIC_AGENT_EVENT_STATUS_TERMINATED = 'session.status_terminated';
+  public static final String ANTHROPIC_AGENT_EVENT_SESSION_ERROR = 'session.error';
+  public static final String ANTHROPIC_AGENT_EVENT_MODEL_REQUEST_END = 'span.model_request_end';
+  public static final String ANTHROPIC_AGENT_STOP_REASON_REQUIRES_ACTION = 'requires_action';
+  public static final String ANTHROPIC_AGENT_CONTENT_TYPE_TEXT = 'text';
+  public static final String ANTHROPIC_AGENT_EVENTS_PATH = '/events';
+  public static final Integer ANTHROPIC_AGENT_MAX_CALLOUT_MILLISECONDS = 120000; // Salesforce's own ceiling for one callout.
+  public static final Integer ANTHROPIC_AGENT_MIN_CALLOUT_MILLISECONDS = 2000;
+  public static final String ANTHROPIC_AGENT_TRANSCRIPT_HEADING = 'Conversation so far:';
+  public static final String ANTHROPIC_AGENT_TRANSCRIPT_LATEST = 'Latest user message:';
+  public static final String ANTHROPIC_AGENT_TRANSCRIPT_USER = 'User: ';
+  public static final String ANTHROPIC_AGENT_TRANSCRIPT_ASSISTANT = 'Assistant: ';
   public static final String OPENAI_ROLE_KEY = 'role';
   public static final String OPENAI_ROLE_SYSTEM = 'system';
   public static final String OPENAI_FIELD_USAGE = 'usage';
@@ -365,8 +394,6 @@ public inherited sharing class AIAssistApplicationConstants {
   public static final String CHAT_STATE_TERMS = 'TERMS';
   // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
   public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
-  public static final String CHAT_BLOCKED_BUSY = 'BUSY';
-  public static final String CHAT_BLOCKED_NO_LICENCE = 'NO_LICENCE';
   public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
   public static final String CHAT_BLOCKED_TERMS = 'TERMS';
   public static final String CHAT_SEND_STATUS_SENT = 'SENT';

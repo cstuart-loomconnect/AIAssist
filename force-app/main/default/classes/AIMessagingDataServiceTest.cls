@@ -4,13 +4,13 @@ Class Name: AIMessagingDataServiceTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIMessagingDataService: the package's system-mode writes, the marker that tells the message trigger a write is the package's own.
+Description: Testing utility for AIMessagingDataService: the system-mode writes, and the marker that tells the message trigger a write is trusted.
 
 =================================================================
 =================================================================
 Applicable Classes:
 
-AIMessagingDataService
+AIMessagingDataService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,9 +18,11 @@ Version      Author                   Description
 
 @IsTest
 private class AIMessagingDataServiceTest {
-  // testScenario1: insertRecords and updateRecords write as the package, and the package marker is clear afterwards.
-  // testScenario2: A write that fails throws the generic label with the real reason in detail, for an insert and for an update, and still clears the package marker.
-  // testScenario3: insertQuietly and updateQuietly never throw: a failure is logged and the rest of the batch is still written.
+  // testScenario1: insertOrThrow and updateOrThrow write in system mode (null and empty lists do nothing) -> the AI Agent messages and the update are saved and the trusted-write marker is clear afterwards.
+  // testScenario2: insertOrThrow and updateOrThrow are given records that fail -> each throws the generic label and the trusted-write marker is still cleared.
+  // testScenario3: insertAndLogFailures, updateAndLogFailures are given a batch with one bad record, and a null list -> nothing throws, the good records are saved and the bad one is logged.
+
+  private static final String TEST_CLASS_NAME = 'AIMessagingDataServiceTest';
 
   @TestSetup
   static void setup() {
@@ -33,6 +35,7 @@ private class AIMessagingDataServiceTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create an agent, a conversation and two unsaved AI Agent messages
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -40,6 +43,7 @@ private class AIMessagingDataServiceTest {
     )[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
@@ -51,44 +55,51 @@ private class AIMessagingDataServiceTest {
       false
     );
 
+    // [2] Insert, update, and call both with null and empty lists
     Test.startTest();
-    AIMessagingDataService.insertAsPackage(messages);
+    AIMessagingDataService.insertOrThrow(messages);
     messages[0]
       .ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED;
-    AIMessagingDataService.updateAsPackage(new List<SObject>{ messages[0] });
-    AIMessagingDataService.insertAsPackage(null);
-    AIMessagingDataService.updateAsPackage(new List<SObject>());
+    AIMessagingDataService.updateOrThrow(new List<SObject>{ messages[0] });
+
+    AIMessagingDataService.insertOrThrow(null);
+    AIMessagingDataService.updateOrThrow(new List<SObject>());
     Test.stopTest();
 
+    // [3] Count the saved messages and read the updated one
+    Integer messageCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE
+        AIConversation__c = :conversation.Id
+        AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
+    ];
+    AIConversationMessage__c updatedMessage = [
+      SELECT ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE Id = :messages[0].Id
+    ];
+
+    // [4] Check the writes were saved and the trusted-write marker is clear
     Assert.areEqual(
       2,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE
-          AIConversation__c = :conversation.Id
-          AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ],
-      'The AI Agent messages were written, which only the package may do.'
+      messageCount,
+      'The AI Agent messages were written, which only AIMessagingDataService may do.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
-      [
-        SELECT ProcessingStatus__c
-        FROM AIConversationMessage__c
-        WHERE Id = :messages[0].Id
-      ]
-      .ProcessingStatus__c,
+      updatedMessage.ProcessingStatus__c,
       'The update was written.'
     );
     Assert.isFalse(
-      AIMessagingDataService.isPackageWriting(),
+      AIMessagingDataService.isTrustedWrite(),
       'The marker is clear once the write is done.'
     );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Build a message with no conversation and an agent with an invalid value
     AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(
       null,
       AIAssistApplicationConstants.SENDER_AI_AGENT,
@@ -96,45 +107,49 @@ private class AIMessagingDataServiceTest {
       1,
       false
     )[0];
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
-    agent.ConversationRetentionDays__c = -1;
-    Integer refusals = 0;
 
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
+    agent.ConversationRetentionDays__c = -1;
+
+    String insertMessage;
+    String updateMessage;
+
+    // [2] Insert and update them, catching the exception each throws
     Test.startTest();
+    // The service throws by design here, so the exception is caught to read its message.
     try {
-      AIMessagingDataService.insertAsPackage(new List<SObject>{ orphan });
-      Assert.fail('An insert with no parent conversation should have thrown.');
+      AIMessagingDataService.insertOrThrow(new List<SObject>{ orphan });
     } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
-      Assert.areEqual(
-        Label.AI_Error_Generic,
-        ex.getMessage(),
-        'The user sees only the generic label.'
-      );
-      refusals++;
+      insertMessage = ex.getMessage();
     }
 
     try {
-      AIMessagingDataService.updateAsPackage(new List<SObject>{ agent });
-      Assert.fail('An update the object model refuses should have thrown.');
+      AIMessagingDataService.updateOrThrow(new List<SObject>{ agent });
     } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
-      Assert.areEqual(
-        Label.AI_Error_Generic,
-        ex.getMessage(),
-        'The user sees only the generic label.'
-      );
-      refusals++;
+      updateMessage = ex.getMessage();
     }
     Test.stopTest();
 
-    Assert.areEqual(2, refusals, 'Both the insert and the update failed.');
+    // [3] Check both threw the generic label and the marker is clear
+    Assert.areEqual(
+      Label.AI_Error_Generic,
+      insertMessage,
+      'An insert with no parent conversation should throw, and the user sees only the generic label.'
+    );
+    Assert.areEqual(
+      Label.AI_Error_Generic,
+      updateMessage,
+      'An update the object model refuses should throw, and the user sees only the generic label.'
+    );
     Assert.isFalse(
-      AIMessagingDataService.isPackageWriting(),
+      AIMessagingDataService.isTrustedWrite(),
       'A failed write must not leave the marker set, or a user insert later in the transaction could forge a sender.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create an agent, a conversation and two unsaved System messages
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -142,6 +157,7 @@ private class AIMessagingDataServiceTest {
     )[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
@@ -152,6 +168,8 @@ private class AIMessagingDataServiceTest {
       2,
       false
     );
+
+    // [2] Add a message with no conversation to the batch
     AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(
       null,
       AIAssistApplicationConstants.SENDER_SYSTEM,
@@ -161,45 +179,43 @@ private class AIMessagingDataServiceTest {
     )[0];
     messages.add(orphan);
 
+    // [3] Insert and update with failures logged, then insert a null list
     Test.startTest();
-    try {
-      AIMessagingDataService.insertAndLogFailures(
-        messages,
-        'AIMessagingDataServiceTest',
-        'testScenario3'
-      );
-      AIMessagingDataService.updateAndLogFailures(
-        new List<SObject>{ new AIConversationMessage__c(Id = messages[0].Id) },
-        'AIMessagingDataServiceTest',
-        'testScenario3'
-      );
-      AIMessagingDataService.insertAndLogFailures(
-        null,
-        'AIMessagingDataServiceTest',
-        'testScenario3'
-      );
-    } catch (Exception ex) {
-      Assert.fail('Quiet writes must never throw: ' + ex.getMessage());
-    }
+    AIMessagingDataService.insertAndLogFailures(
+      messages,
+      TEST_CLASS_NAME,
+      'testScenario3'
+    );
+    AIMessagingDataService.updateAndLogFailures(
+      new List<SObject>{ new AIConversationMessage__c(Id = messages[0].Id) },
+      TEST_CLASS_NAME,
+      'testScenario3'
+    );
+    AIMessagingDataService.insertAndLogFailures(
+      null,
+      TEST_CLASS_NAME,
+      'testScenario3'
+    );
     Test.stopTest();
 
+    // [4] Count the saved messages and the platform logs
+    Integer messageCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE AIConversation__c = :conversation.Id
+    ];
+    Integer platformLogCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE ClassName__c = :TEST_CLASS_NAME
+    ];
+
+    // [5] Check the good records were saved and the bad one was logged
     Assert.areEqual(
       2,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE AIConversation__c = :conversation.Id
-      ],
+      messageCount,
       'The records that could be saved were saved.'
     );
-    Assert.areEqual(
-      1,
-      [
-        SELECT COUNT()
-        FROM AIPlatformLog__c
-        WHERE ClassName__c = 'AIMessagingDataServiceTest'
-      ],
-      'The one that could not was logged.'
-    );
+    Assert.areEqual(1, platformLogCount, 'The one that could not was logged.');
   }
 }

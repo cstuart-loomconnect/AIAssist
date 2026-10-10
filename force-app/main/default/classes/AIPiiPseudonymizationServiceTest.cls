@@ -10,7 +10,7 @@ Description: Testing utility for AIPiiPseudonymizationService: masking personal 
 =================================================================
 Applicable Classes:
 
-AIPiiPseudonymizationService
+AIPiiPseudonymizationService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,11 +18,17 @@ Version      Author                   Description
 
 @IsTest
 private class AIPiiPseudonymizationServiceTest {
-  // testScenario1: A field that is not PII comes back unchanged and leaves no evidence.
-  // testScenario2: A PII value is replaced by a substitute from its rule, the same real value always gets the same substitute, and different real values never share one.
-  // testScenario3: When every substitute is used, or the rule is missing or not a substitute list, a unique REDACTED value is used instead and the misconfiguration is logged.
-  // testScenario4: takeTallies returns one tally per object and field with the count of values, the strategy and the compliance group, and clears them.
-  // testScenario5: Invalid input returns blank, and restore returns an unknown value unchanged.
+  // testScenario1: A field that is not PII is pseudonymized -> it comes back unchanged and leaves no evidence.
+  // testScenario2: PII values are pseudonymized -> each is replaced by a substitute from its rule, the same real value always gets the same one, and different real values never share one.
+  // testScenario3: Every substitute is used, or the rule is missing or not a substitute list -> a unique REDACTED value is used instead and the misconfiguration is logged.
+  // testScenario4: takeTallies is called after masking -> it returns one tally per object and field with the count of values, the strategy and the compliance group, and clears them.
+  // testScenario5: Invalid input is pseudonymized and an unknown value is restored -> invalid input returns blank and an unknown value comes back unchanged.
+
+  private static final String CONTACT = 'Contact';
+  private static final String EMAIL = 'Email';
+  private static final String REAL_EMAIL_A = 'a@real.com';
+  private static final String REAL_EMAIL_B = 'b@real.com';
+  private static final String GDPR = 'GDPR';
 
   @TestSetup
   static void setup() {
@@ -35,23 +41,30 @@ private class AIPiiPseudonymizationServiceTest {
 
   @IsTest
   static void testScenario1() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    // [1] Create an agent and a conversation
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
 
+    String result;
+    List<AIPiiPseudonymizationService.MaskingTally> tallies;
+
+    // [2] Pseudonymize a field that is not PII and take the tallies
     Test.startTest();
-    String result = AIPiiPseudonymizationService.pseudonymize(
+    result = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
+      CONTACT,
       'Title',
       'Director'
     );
-    List<AIPiiPseudonymizationService.MaskingTally> tallies = AIPiiPseudonymizationService.takeTallies();
+    tallies = AIPiiPseudonymizationService.takeTallies();
     Test.stopTest();
 
+    // [3] Check the value is unchanged and there is no evidence
     Assert.areEqual(
       'Director',
       result,
@@ -65,24 +78,30 @@ private class AIPiiPseudonymizationServiceTest {
 
   @IsTest
   static void testScenario2() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    // [1] Create an agent and a conversation
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
+
+    // [2] Register the Email field as PII
     AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
       1,
-      'Contact',
+      CONTACT,
       true
     )[0];
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
-      'Email',
+      CONTACT,
+      EMAIL,
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       true
     );
+
+    // [3] Give email a substitute list rule and a compliance group
     AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>{
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => AIAssistTestDataFactory.createAIPiiMaskingRule(
         AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST,
@@ -91,30 +110,42 @@ private class AIPiiPseudonymizationServiceTest {
       )
     };
     AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>{
-      AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => 'GDPR'
+      AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => GDPR
     };
 
+    String first;
+    String again;
+    String second;
+
+    // [4] Pseudonymize the same real value twice and a different one once
     Test.startTest();
-    String first = AIPiiPseudonymizationService.pseudonymize(
+    first = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
-    String again = AIPiiPseudonymizationService.pseudonymize(
+    again = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
-    String second = AIPiiPseudonymizationService.pseudonymize(
+    second = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'b@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_B
     );
     Test.stopTest();
 
+    // [5] Restore the first substitute
+    String restored = AIPiiPseudonymizationService.restore(
+      conversation.Id,
+      first
+    );
+
+    // [6] Check substitutes come from the rule, repeat for the same value and never collide
     Assert.isTrue(
       new Set<String>{ 'one@x.com', 'two@x.com' }.contains(first),
       'The substitute comes from the rule.'
@@ -129,40 +160,47 @@ private class AIPiiPseudonymizationServiceTest {
       second,
       'Two real values never share one substitute, or the reply could not be restored.'
     );
+
     Assert.areEqual(
-      'a@real.com',
-      AIPiiPseudonymizationService.restore(conversation.Id, first),
+      REAL_EMAIL_A,
+      restored,
       'The substitute restores to the real value.'
     );
   }
 
   @IsTest
   static void testScenario3() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    // [1] Create an agent and a conversation
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
+
+    // [2] Register the Email and Phone fields as PII
     AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
       1,
-      'Contact',
+      CONTACT,
       true
     )[0];
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
-      'Email',
+      CONTACT,
+      EMAIL,
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       true
     );
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
+      CONTACT,
       'Phone',
       AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       true
     );
+
+    // [3] Give email a one-item substitute list and phone no rule
     AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>{
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => AIAssistTestDataFactory.createAIPiiMaskingRule(
         AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST,
@@ -172,27 +210,41 @@ private class AIPiiPseudonymizationServiceTest {
     };
     AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>();
 
+    String firstEmail;
+    String secondEmail;
+    String phone;
+
+    // [4] Pseudonymize two emails and a phone number
     Test.startTest();
-    String firstEmail = AIPiiPseudonymizationService.pseudonymize(
+    firstEmail = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
-    String secondEmail = AIPiiPseudonymizationService.pseudonymize(
+    secondEmail = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'b@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_B
     );
-    String phone = AIPiiPseudonymizationService.pseudonymize(
+    phone = AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
+      CONTACT,
       'Phone',
       '555-0100'
     );
     Test.stopTest();
 
+    // [5] Count the misconfiguration logs
+    Integer logCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE
+        ExceptionType__c = :AIAssistApplicationConstants.LOG_TYPE_CUSTOM_MESSAGE
+    ];
+
+    // [6] Check the list is used then redacted, and the missing rule is redacted
     Assert.areEqual(
       'only@x.com',
       firstEmail,
@@ -202,42 +254,45 @@ private class AIPiiPseudonymizationServiceTest {
       secondEmail.startsWith('REDACTED-'),
       'Once the list is used up the value is redacted.'
     );
+
     Assert.isTrue(
       phone.startsWith('REDACTED-'),
       'A field type with no rule is redacted.'
     );
     Assert.areNotEqual(secondEmail, phone, 'Each redacted value is unique.');
+
     Assert.isTrue(
-      [
-        SELECT COUNT()
-        FROM AIPlatformLog__c
-        WHERE
-          ExceptionType__c = :AIAssistApplicationConstants.LOG_TYPE_CUSTOM_MESSAGE
-      ] >= 0,
+      logCount >= 0,
       'The misconfiguration is reported to the log.'
     );
   }
 
   @IsTest
   static void testScenario4() {
-    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, true)[0];
+    // [1] Create an agent and a conversation
+    AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
+      null,
       1,
       true
     )[0];
+
+    // [2] Register the Email field as PII
     AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
       1,
-      'Contact',
+      CONTACT,
       true
     )[0];
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
-      'Email',
+      CONTACT,
+      EMAIL,
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       true
     );
+
+    // [3] Give email a substitute list rule and a compliance group
     AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>{
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => AIAssistTestDataFactory.createAIPiiMaskingRule(
         AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST,
@@ -246,40 +301,43 @@ private class AIPiiPseudonymizationServiceTest {
       )
     };
     AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>{
-      AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => 'GDPR'
+      AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => GDPR
     };
 
+    List<AIPiiPseudonymizationService.MaskingTally> tallies;
+    List<AIPiiPseudonymizationService.MaskingTally> talliesAfter;
+
+    // [4] Pseudonymize two emails, then take the tallies twice
     Test.startTest();
     AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
     AIPiiPseudonymizationService.pseudonymize(
       conversation.Id,
-      'Contact',
-      'Email',
-      'b@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_B
     );
-    List<AIPiiPseudonymizationService.MaskingTally> tallies = AIPiiPseudonymizationService.takeTallies();
-    List<AIPiiPseudonymizationService.MaskingTally> talliesAfter = AIPiiPseudonymizationService.takeTallies();
+
+    tallies = AIPiiPseudonymizationService.takeTallies();
+    talliesAfter = AIPiiPseudonymizationService.takeTallies();
     Test.stopTest();
 
+    // [5] Check one tally holds the count and details, and taking clears it
     Assert.areEqual(1, tallies.size(), 'One tally for the one field.');
     Assert.areEqual(2, tallies[0].valuesMasked, 'Two values masked.');
-    Assert.areEqual('Contact', tallies[0].sourceObject, 'The object.');
-    Assert.areEqual('Email', tallies[0].sourceField, 'The field.');
+
+    Assert.areEqual(CONTACT, tallies[0].sourceObject, 'The object.');
+    Assert.areEqual(EMAIL, tallies[0].sourceField, 'The field.');
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       tallies[0].piiFieldType,
       'The PII type.'
     );
-    Assert.areEqual(
-      'GDPR',
-      tallies[0].complianceGroup,
-      'The compliance group.'
-    );
+    Assert.areEqual(GDPR, tallies[0].complianceGroup, 'The compliance group.');
     Assert.areEqual(
       AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST,
       tallies[0].maskingStrategy,
@@ -290,40 +348,49 @@ private class AIPiiPseudonymizationServiceTest {
       tallies[0].outcome,
       'The outcome.'
     );
+
     Assert.isTrue(talliesAfter.isEmpty(), 'Taking the tallies clears them.');
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Declare what the test reads back
+    String noConversation;
+    String notAConversation;
+    String blankValue;
+    String unknown;
+    String blank;
+
+    // [2] Pseudonymize invalid input and restore an unknown and a blank value
     Test.startTest();
-    String noConversation = AIPiiPseudonymizationService.pseudonymize(
+    noConversation = AIPiiPseudonymizationService.pseudonymize(
       null,
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
-    String notAConversation = AIPiiPseudonymizationService.pseudonymize(
+    notAConversation = AIPiiPseudonymizationService.pseudonymize(
       UserInfo.getUserId(),
-      'Contact',
-      'Email',
-      'a@real.com'
+      CONTACT,
+      EMAIL,
+      REAL_EMAIL_A
     );
-    String blankValue = AIPiiPseudonymizationService.pseudonymize(
+    blankValue = AIPiiPseudonymizationService.pseudonymize(
       UserInfo.getUserId(),
-      'Contact',
-      'Email',
+      CONTACT,
+      EMAIL,
       ''
     );
-    String unknown = AIPiiPseudonymizationService.restore(
-      null,
-      'not-a-fake-value'
-    );
-    String blank = AIPiiPseudonymizationService.restore(null, null);
+
+    unknown = AIPiiPseudonymizationService.restore(null, 'not-a-fake-value');
+    blank = AIPiiPseudonymizationService.restore(null, null);
     Test.stopTest();
 
+    // [3] Check invalid input is blank and unknown values come back unchanged
     Assert.areEqual('', noConversation, 'No conversation, no masking.');
     Assert.areEqual('', notAConversation, 'A non-conversation Id is refused.');
     Assert.areEqual('', blankValue, 'A blank value is refused.');
+
     Assert.areEqual(
       'not-a-fake-value',
       unknown,

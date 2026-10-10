@@ -10,7 +10,7 @@ Description: Testing utility for AIPiiFieldRegistry: which fields are personal d
 =================================================================
 Applicable Classes:
 
-AIPiiFieldRegistry
+AIPiiFieldRegistry: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -23,6 +23,10 @@ private class AIPiiFieldRegistryTest {
   // testScenario3: Blank object or field names return null, false and an empty map without a query.
   // testScenario4: The registry of an object is queried once and cached, however many fields are asked about.
 
+  private static final String CONTACT = 'Contact';
+  private static final String LEAD = 'Lead';
+  private static final String EMAIL = 'Email';
+
   @TestSetup
   static void setup() {
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
@@ -34,105 +38,131 @@ private class AIPiiFieldRegistryTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Create a registry with a PII email field and a not-PII title field
     AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
       1,
-      'Contact',
+      CONTACT,
       true
     )[0];
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
-      'Email',
+      CONTACT,
+      EMAIL,
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       true
     );
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Contact',
+      CONTACT,
       'Title',
       null,
       true
     );
 
+    String emailType;
+    Boolean isEmailPii;
+    Boolean isTitlePii;
+    String unknownType;
+
+    // [2] Look up the types and PII flags of three fields
     Test.startTest();
-    String emailType = AIPiiFieldRegistry.getFieldType('Contact', 'Email');
-    Boolean isEmailPii = AIPiiFieldRegistry.isPii('Contact', 'Email');
-    Boolean isTitlePii = AIPiiFieldRegistry.isPii('Contact', 'Title');
-    String unknownType = AIPiiFieldRegistry.getFieldType(
-      'Contact',
-      'Department'
-    );
+    emailType = AIPiiFieldRegistry.getFieldType(CONTACT, EMAIL);
+    isEmailPii = AIPiiFieldRegistry.isPii(CONTACT, EMAIL);
+
+    isTitlePii = AIPiiFieldRegistry.isPii(CONTACT, 'Title');
+    unknownType = AIPiiFieldRegistry.getFieldType(CONTACT, 'Department');
     Test.stopTest();
 
+    // [3] Check the email is PII and the other two are not
     Assert.areEqual(
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       emailType,
       'A registered PII field returns its type.'
     );
     Assert.isTrue(isEmailPii, 'A registered PII field is PII.');
+
     Assert.isFalse(isTitlePii, 'A field flagged not-PII is not PII.');
     Assert.isNull(unknownType, 'An unregistered field has no type.');
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Declare what the test reads back
+    Boolean isPii;
+    Map<String, String> fieldTypes;
+
+    // [2] Ask about an object that has no registry
     Test.startTest();
-    Boolean isPii = AIPiiFieldRegistry.isPii('Account', 'Phone');
-    Map<String, String> fieldTypes = AIPiiFieldRegistry.getFieldTypes(
-      'Account'
-    );
+    isPii = AIPiiFieldRegistry.isPii('Account', 'Phone');
+    fieldTypes = AIPiiFieldRegistry.getFieldTypes('Account');
     Test.stopTest();
 
+    // [3] Check nothing is PII and the map is empty
     Assert.isFalse(isPii, 'With no registry nothing is PII.');
     Assert.isTrue(fieldTypes.isEmpty(), 'And the map is empty.');
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Note the query count before the calls
     Integer queriesBefore = Limits.getQueries();
+    String fieldType;
+    Boolean isPii;
+    Map<String, String> fieldTypes;
+    Integer queriesUsed;
 
+    // [2] Ask with blank object and field names
     Test.startTest();
-    String type = AIPiiFieldRegistry.getFieldType('', 'Email');
-    Boolean isPii = AIPiiFieldRegistry.isPii('Contact', null);
-    Map<String, String> fieldTypes = AIPiiFieldRegistry.getFieldTypes(null);
-    Integer queriesUsed = Limits.getQueries() - queriesBefore;
+    fieldType = AIPiiFieldRegistry.getFieldType('', EMAIL);
+    isPii = AIPiiFieldRegistry.isPii(CONTACT, null);
+    fieldTypes = AIPiiFieldRegistry.getFieldTypes(null);
+
+    queriesUsed = Limits.getQueries() - queriesBefore;
     Test.stopTest();
 
-    Assert.isNull(type, 'No object, no type.');
+    // [3] Check null, false, an empty map and no queries
+    Assert.isNull(fieldType, 'No object, no type.');
     Assert.isFalse(isPii, 'No field, not PII.');
     Assert.isTrue(fieldTypes.isEmpty(), 'No object, no fields.');
+
     Assert.areEqual(0, queriesUsed, 'Blank input must not cost a query.');
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create a registry with two PII fields for Lead
     AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(
       1,
-      'Lead',
+      LEAD,
       true
     )[0];
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Lead',
-      'Email',
+      LEAD,
+      EMAIL,
       AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL,
       true
     );
     AIAssistTestDataFactory.createAIPIIFieldMetadata(
       registry.Id,
-      'Lead',
+      LEAD,
       'Phone',
       AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE,
       true
     );
-    Integer queriesBefore = Limits.getQueries();
 
+    // [2] Note the query count before the lookups
+    Integer queriesBefore = Limits.getQueries();
+    Integer queriesUsed;
+
+    // [3] Look up fifty fields on the same object
     Test.startTest();
     for (Integer i = 0; i < 50; i++)
-      AIPiiFieldRegistry.isPii('Lead', i < 25 ? 'Email' : 'Phone');
-    Integer queriesUsed = Limits.getQueries() - queriesBefore;
+      AIPiiFieldRegistry.isPii(LEAD, i < 25 ? EMAIL : 'Phone');
+    queriesUsed = Limits.getQueries() - queriesBefore;
     Test.stopTest();
 
+    // [4] Check the registry was queried once
     Assert.areEqual(
       1,
       queriesUsed,

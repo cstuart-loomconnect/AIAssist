@@ -19,6 +19,11 @@
                 <label>Anthropic</label>
             </value>
             <value>
+                <fullName>AnthropicAgent</fullName>
+                <default>false</default>
+                <label>Anthropic Agent API</label>
+            </value>
+            <value>
                 <fullName>OpenAI</fullName>
                 <default>false</default>
                 <label>OpenAI</label>

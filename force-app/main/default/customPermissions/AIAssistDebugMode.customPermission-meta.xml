@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description
-  >Lets the user open the debug trace of their own replies, as Debug Mode Enabled on a usage policy or their user settings does.</description>
-    <isLicensed>false</isLicensed>
-    <label>AI Assist Debug Mode</label>
-</CustomPermission>

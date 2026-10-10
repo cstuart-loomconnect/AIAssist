@@ -4,29 +4,21 @@ Class Name: AIMaintenanceScheduler
 =================================================================
 =================================================================
 
-Description: The package's one scheduled job. It runs the housekeeping: close idle conversations, delete
-expired conversations, and refresh the PII
-registry. Without it retention is never applied and no field is ever registered as personal data.
+Description: The package's one scheduled job, which runs the daily housekeeping.
 
-The post-install script schedules it once, daily, on a first install (scheduleDaily). That is the
-only job the package adds: a subscriber has a limit on scheduled jobs. An administrator can delete
-it or schedule it at another time in Setup > Scheduled Jobs; an upgrade does not put it back. Each
-task is its own batch, so a failure in one does not stop the others. Retention, the reading of the org
-limits and the organisation's usage totals run whether or not the application is switched on: data AI
-Assist already holds must still expire. Only closing idle conversations and the PII registry sync wait
-for the application to be on.
+Step 1: Fail messages left waiting at the cap on messages in flight
+Step 2: Start the retention batch, which runs whether or not the application is on
+Step 3: Start the idle conversation batch, only while the application is on
+Step 4: Dispatch the PII registry syncs that are due, only while the application is on
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development. Replaces the separate schedulable batches with one entry point.
-2.0          Chandler Stuart          scheduleDaily added, called by the post-install script.
-4.0          Chandler Stuart          Retention, the limit reading and the usage totals run even while the application is off; only idle closing and the PII registry sync wait for it to be on.
-5.0          Chandler Stuart          Fails messages left waiting at the cap on messages in flight.
+1.0          Chandler Stuart          Initial development
 */
 
-public inherited sharing class AIMaintenanceScheduler implements Schedulable {
+public without sharing class AIMaintenanceScheduler implements Schedulable {
   public class AIMaintenanceSchedulerException extends Exception {
   }
 
@@ -38,12 +30,13 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
 
   // Schedules the daily run unless a job of this name already exists. Returns the job's Id, or null when it was already scheduled.
   public static Id scheduleDaily() {
-    if (isTestCustomExceptionThrown) {
+    // [1] Throw on purpose when a test asks for it
+    if (isTestCustomExceptionThrown)
       throw new AIMaintenanceSchedulerException(
         'Test exception for AIMaintenanceScheduler.scheduleDaily'
       );
-    }
 
+    // [2] Do nothing when the job is already scheduled
     if (
       [
         SELECT COUNT()
@@ -54,6 +47,7 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
     )
       return null;
 
+    // [3] Schedule the daily run and return the job's Id
     return System.schedule(
       JOB_NAME,
       DAILY_AT_2AM,
@@ -61,40 +55,47 @@ public inherited sharing class AIMaintenanceScheduler implements Schedulable {
     );
   }
 
+  // Runs the housekeeping. A task that cannot start is logged, so one failure does not stop the others.
   public void execute(SchedulableContext context) {
+    // [1] Check whether the application is switched on
     Boolean isEnabled = AIAssistSettingsService.isEnabled();
 
-    AIConversationMessageService.failExpiredHeldMessages(false); // Messages held at the cap that no finalizer or chat window has failed since. Never throws.
+    // [2] Fail messages held at the cap that no finalizer or chat window has failed since (never throws)
+    AIConversationMessageService.failExpiredHeldMessages(false);
 
-    // Retention runs whether or not the application is switched on: switching AI Assist off must not stop the data it already holds from expiring. Each task is its own batch, started on its own, so one failing to start does not stop the others.
+    // [3] Retention always runs, so switching AI Assist off never stops the data it already holds from expiring
     List<Database.Batchable<SObject>> housekeepingBatches = new List<Database.Batchable<SObject>>{
       new AIConversationRetentionBatch()
     };
-    // Closing idle conversations is part of the chat, so it waits for the application to be on.
+
+    // [4] Closing idle conversations is part of the chat, so it waits for the application to be on
     if (isEnabled)
       housekeepingBatches.add(new AIConversationIdleBatch());
 
+    // [5] Start each batch on its own
     for (Database.Batchable<SObject> housekeepingBatch : housekeepingBatches) {
       try {
-        if (isTestCustomExceptionThrown) {
+        // [6] Throw on purpose when a test asks for it
+        if (isTestCustomExceptionThrown)
           throw new AIMaintenanceSchedulerException(
             'Test exception for AIMaintenanceScheduler.execute'
           );
-        }
 
+        // [7] Start the batch
         Database.executeBatch(
           housekeepingBatch,
           AIAssistApplicationConstants.HOUSEKEEPING_BATCH_SIZE
         );
-      } catch (Exception caughtException) {
+      } catch (Exception ex) {
         AIPlatformLogManager.logException(
-          caughtException,
+          ex,
           'AIMaintenanceScheduler',
           'execute'
         );
       }
     }
 
+    // [8] Sync the PII registries that are due, only while the application is on
     if (isEnabled)
       AIPiiRegistrySyncDispatcher.dispatchDueRegistries();
   }

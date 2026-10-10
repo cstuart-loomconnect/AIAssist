@@ -4,30 +4,21 @@ Class Name: AIExecutionStepTracker
 =================================================================
 =================================================================
 
-Description: The in-memory record of one turn: each timed phase (a data source read, a provider
-call), the iteration and attempt counts, and what was sent to the provider. It never touches the
-database; AIExecutionStepRecorder turns it into AIExecutionStep__c and AIPIIMaskingRecord__c
-rows once the reply exists.
+Description: Holds the in-memory record of one turn: each timed phase, the attempt and iteration counts, and what was sent to the provider.
 
-Every phase is recorded, because the steps are audit evidence of what the AI was given and what
-it did, not debugging aids. Only the request and response payloads depend on the user's debug
-mode (captureFullDetail), since they hold customer data.
-
-A step carries what the object model asks to be proved: for a provider call, the provider and
-model, how many records and fields were sent, the object and field names (never values), and
-which fields were masked and how.
-
-If live progress is on, starting a phase also publishes its label for the chat window.
+Step 1: Start timing a phase (a data source read or a provider call)
+Step 2: End the phase and keep it as a typed, timed step
+Step 3: Add what was masked to the step that sent the data
+Step 4: Hand the tracker to AIExecutionStepRecorder, which saves it once the reply exists
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          Every phase recorded, not only data sources. Provider and masking evidence added. endPhase returns the step so the caller can complete it.
 */
 
-public inherited sharing class AIExecutionStepTracker {
+public without sharing class AIExecutionStepTracker {
   // One field that was masked, with how many values.
   public class MaskingEntry {
     public String sourceObject;
@@ -91,15 +82,18 @@ public inherited sharing class AIExecutionStepTracker {
 
   // Starts timing a phase: a data source read (dataSourceId set) or a provider call (dataSourceId null).
   public void startStep(String liveLabel, Id dataSourceId) {
+    // [1] Remember when the phase started and which data source it reads
     phaseStartedAtMillis = System.currentTimeMillis();
     phaseDataSourceId = dataSourceId;
   }
 
-  // Ends the phase started by startPhase and returns its step, so a provider call can be completed with what was sent. Null if no phase was started.
+  // Ends the phase started by startStep and returns its step, so a provider call can be completed with what was sent. Null if no phase was started.
   public StepEntry endStep(Boolean isSuccess) {
+    // [1] Nothing to end when no phase was started
     if (phaseStartedAtMillis == null)
       return null;
 
+    // [2] Build the step: a data source step when the phase named a source, a provider call otherwise
     StepEntry entry = new StepEntry();
     entry.stepType = phaseDataSourceId != null
       ? AIAssistApplicationConstants.STEP_TYPE_DATA_SOURCE
@@ -110,6 +104,7 @@ public inherited sharing class AIExecutionStepTracker {
     entry.isSuccess = isSuccess != false;
     steps.add(entry);
 
+    // [3] Clear the phase so the next one starts fresh
     phaseStartedAtMillis = null;
     phaseDataSourceId = null;
 
@@ -121,11 +116,14 @@ public inherited sharing class AIExecutionStepTracker {
     StepEntry step,
     List<AIPiiPseudonymizationService.MaskingTally> tallies
   ) {
+    // [1] Nothing to record without a step or any tallies
     if (step == null || tallies == null || tallies.isEmpty())
       return;
 
+    // [2] Flag the step as masked
     step.piiMaskingApplied = true;
 
+    // [3] Copy each tally onto the step as a masking entry
     for (AIPiiPseudonymizationService.MaskingTally tally : tallies) {
       MaskingEntry entry = new MaskingEntry();
       entry.sourceObject = tally.sourceObject;

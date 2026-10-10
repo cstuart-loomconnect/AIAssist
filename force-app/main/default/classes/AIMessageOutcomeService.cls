@@ -4,43 +4,22 @@ Class Name: AIMessageOutcomeService
 =================================================================
 =================================================================
 
-Description: What happens when a turn ends, wherever it ended: in AIMessageProcessingQueueable or,
-if the job was killed, in AIMessageProcessingFinalizer. AIAgentManager only makes the callouts and
-returns a result; everything that touches the database or the event bus is here, after the
-transaction's last callout.
+Description: Records what happens when a turn ends, whether it succeeded or failed, after the transaction's last callout.
 
-A successful turn:
-- inserts the AI reply with its token counts, latency, model, and the prompt template and version
-  that produced it;
-- marks the user's message Complete;
-- records the execution evidence (AIExecutionStepRecorder) on the reply;
-- publishes AIMessageReadyEvent__e so the chat window fetches the reply.
-
-A failed turn:
-- records the tokens it still spent, as a System message, so they count towards the conversation's
-  total;
-- marks the user's message Failed with a failure reason;
-- records the execution evidence on the user's message (there is no reply to attach it to);
-- tells the chat window with the Custom Label that matches the reason, never the provider's own
-  error text, which can carry configuration detail or an echo of the prompt.
-
-The detailed error goes to the platform log, never to a record the user can read.
-
-Everything after the answer exists is best effort: a bookkeeping failure is logged and never
-turns a finished answer into an error. The exception is the reply insert itself. Without it the
-turn has not succeeded, so that failure becomes a failed turn.
-
-Token accounting follows AIAgent__c.TokenTrackingMethod__c: Estimate counts the reply by its
-length; Track and Pre-Request use the provider's own count.
+Step 1: Work out whether the turn succeeded from the agent result
+Step 2: On success, save the AI reply with its tokens, latency, model and prompt template, and supersede any earlier reply
+Step 3: Close the user's message, and any older message still waiting, as Complete
+Step 4: On failure, record the tokens spent, mark the messages Failed and log the real error
+Step 5: Record the execution evidence and return the Custom Label the chat window shows
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, split out of AIConversationMessageService.
+1.0          Chandler Stuart          Initial development
 */
 
-public inherited sharing class AIMessageOutcomeService {
+public without sharing class AIMessageOutcomeService {
   // Everything about the turn that is known by the time it ends.
   public class AIResponseContext {
     public Id conversationId;
@@ -55,28 +34,32 @@ public inherited sharing class AIMessageOutcomeService {
     public String tokenTrackingMethod;
   }
 
-  // Records the outcome of one finished turn and tells the chat window. Never throws.
+  // Records the outcome of one finished turn. Never throws: a bookkeeping failure is logged, and a reply that cannot be saved becomes a failed turn.
   public static void recordAiResponseOutcome(
     AIResponseContext responseContext,
     AIAgentManager.AgentResult agentResult,
     AIExecutionStepTracker executionTrace
   ) {
     try {
+      // [1] A successful result is saved as a reply; anything else falls through to the failed turn below
       if (agentResult != null && agentResult.isSuccessful) {
         try {
+          // [2] Work out the token counts, treating a missing figure as zero
           Decimal inputTokens = agentResult.inputTokens == null
             ? 0
             : agentResult.inputTokens;
           Decimal outputTokens = agentResult.outputTokens == null
             ? 0
             : agentResult.outputTokens;
+
+          // [3] A provider that reports only a total still has its tokens counted, as input
           if (
             inputTokens + outputTokens == 0 &&
             agentResult.totalTokensUsed != null
           )
-            inputTokens = agentResult.totalTokensUsed; // A provider that reports only a total still has its tokens counted, as input.
+            inputTokens = agentResult.totalTokensUsed;
 
-          // The model names a workflow action by Id; only a real AIWorkflowAction__c Id is stored, and a bad one is ignored rather than failing the reply.
+          // [4] Keep the suggested workflow action only if it is a real AIWorkflowAction__c Id, and ignore a bad one rather than failing the reply
           Id suggestedActionId = null;
           try {
             if (String.isNotBlank(agentResult.suggestedWorkflowActionId))
@@ -89,14 +72,16 @@ public inherited sharing class AIMessageOutcomeService {
               AIWorkflowAction__c.SObjectType
             )
               suggestedActionId = null;
-          } catch (Exception notAnId) {
+          } catch (Exception ex) {
             suggestedActionId = null;
           }
 
+          // [5] Use the fallback text when the model returned no reply
           agentResult.replyText = String.isBlank(agentResult.replyText)
             ? Label.AI_Chat_Fallback_Default
             : agentResult.replyText;
 
+          // [6] Build the reply, counting its tokens by length when the agent estimates them
           AIConversationMessage__c replyMessage = new AIConversationMessage__c(
             AIConversation__c = responseContext.conversationId,
             Sender__c = AIAssistApplicationConstants.SENDER_AI_AGENT,
@@ -118,11 +103,12 @@ public inherited sharing class AIMessageOutcomeService {
             InReplyTo__c = responseContext.triggeringMessageId
           );
 
-          AIMessagingDataService.insertAsPackage(
+          // [7] Save the reply; if this fails the turn has not succeeded
+          AIMessagingDataService.insertOrThrow(
             new List<SObject>{ replyMessage }
           );
 
-          // Regenerate: an earlier reply to the same message is replaced now that the new one is saved, so a regenerate that failed would have left the old answer standing.
+          // [8] Regenerate: replace an earlier reply to the same message only now the new one is saved, so a regenerate that failed leaves the old answer standing
           if (responseContext.triggeringMessageId != null) {
             List<AIConversationMessage__c> replacedReplies = [
               SELECT Id
@@ -142,6 +128,7 @@ public inherited sharing class AIMessageOutcomeService {
             );
           }
 
+          // [9] Mark the user's message, and any older one still waiting, as Complete
           closeWaitingMessages(
             responseContext,
             AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
@@ -149,6 +136,7 @@ public inherited sharing class AIMessageOutcomeService {
             'recordAiResponseOutcome'
           );
 
+          // [10] Record the execution evidence on the reply
           AIExecutionStepRecorder.recordExecutionSteps(
             replyMessage.Id,
             executionTrace,
@@ -156,34 +144,18 @@ public inherited sharing class AIMessageOutcomeService {
             responseContext.modelIdentifier
           );
 
-          // Published and checked: a refused publish would leave the chat window waiting for a reply that never announces itself.
-          Database.SaveResult replyPublishResult = EventBus.publish(
-            new AIMessageReadyEvent__e(
-              AIConversationId__c = responseContext.conversationId,
-              AIConversationMessageId__c = replyMessage.Id,
-              IsSuccess__c = true
-            )
-          );
-          if (!replyPublishResult.isSuccess())
-            AIPlatformLogManager.logCustomMessage(
-              'AIMessageReadyEvent__e was not published.',
-              replyPublishResult.getErrors()[0].getMessage(),
-              'AIMessageOutcomeService',
-              'recordResult',
-              null
-            );
           return;
-        } catch (Exception replyException) {
-          // Without the reply record the turn has not succeeded: it becomes a failed turn, with the cause in the log.
+        } catch (Exception ex) {
+          // [11] Without the reply record the turn has not succeeded, so log the cause and treat it as a failed turn
           AIPlatformLogManager.logException(
-            replyException,
+            ex,
             'AIMessageOutcomeService',
             'recordAiResponseOutcome'
           );
           fail(
             responseContext,
             AIAssistApplicationConstants.FAILURE_REASON_OTHER,
-            replyException.getMessage(),
+            ex.getMessage(),
             agentResult,
             executionTrace
           );
@@ -191,6 +163,7 @@ public inherited sharing class AIMessageOutcomeService {
         }
       }
 
+      // [12] The agent failed (or returned nothing), so record a failed turn with its reason
       fail(
         responseContext,
         agentResult == null || String.isBlank(agentResult.failureReason)
@@ -200,12 +173,13 @@ public inherited sharing class AIMessageOutcomeService {
         agentResult,
         executionTrace
       );
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [13] The bookkeeping itself threw, so log it and still tell the window the turn failed
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIMessageOutcomeService',
         'recordAiResponseOutcome'
-      ); // The bookkeeping itself threw. Still release the chat window.
+      );
       publishMessageFailure(
         responseContext == null ? null : responseContext.conversationId,
         AIAssistApplicationConstants.FAILURE_REASON_OTHER
@@ -213,7 +187,7 @@ public inherited sharing class AIMessageOutcomeService {
     }
   }
 
-  // A job that died before it could report: an uncatchable governor limit, a stale lock, or a data source write the job rolled back on purpose. Never throws.
+  // Records a turn whose job died before it could report: an uncatchable governor limit, a stale lock, or a data source write the job rolled back on purpose. Never throws.
   public static void recordAiResponseFailure(
     AIResponseContext responseContext,
     Decimal tokensSpent,
@@ -221,13 +195,16 @@ public inherited sharing class AIMessageOutcomeService {
     String failureReason
   ) {
     try {
+      // [1] Build a result that carries only the tokens spent, treating a missing figure as zero
       AIAgentManager.AgentResult agentResult = new AIAgentManager.AgentResult();
       agentResult.totalTokensUsed = tokensSpent == null ? 0 : tokensSpent;
 
+      // [2] Record the failed turn
       fail(responseContext, failureReason, detail, agentResult, null);
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
+      // [3] The bookkeeping itself threw, so log it and still tell the window the turn failed
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIMessageOutcomeService',
         'recordAiResponseFailure'
       );
@@ -238,13 +215,15 @@ public inherited sharing class AIMessageOutcomeService {
     }
   }
 
-  // Tells the chat window a turn failed, with the Custom Label that matches the reason, and returns the text it sent. Safe to show: a label, never provider or configuration detail. Never throws.
+  // Returns the Custom Label that matches the reason a turn failed. Safe to show: a label, never provider or configuration detail. Never throws.
   public static String publishMessageFailure(
     Id conversationId,
     String failureReason
   ) {
+    // [1] Start with the generic label, used for any reason not matched below
     String userMessage = Label.AI_Error_Generic;
 
+    // [2] Pick the label that matches the failure reason
     if (failureReason == AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT)
       userMessage = Label.AI_Error_Provider_Timeout;
     else if (
@@ -294,39 +273,11 @@ public inherited sharing class AIMessageOutcomeService {
     )
       userMessage = Label.AI_Error_Service_Busy;
 
-    try {
-      if (conversationId != null) {
-        // Published and checked: a refused publish would leave the chat window waiting.
-        Database.SaveResult failurePublishResult = EventBus.publish(
-          new AIMessageReadyEvent__e(
-            AIConversationId__c = conversationId,
-            IsSuccess__c = false,
-            ErrorMessage__c = userMessage.left(
-              AIAssistApplicationConstants.EVENT_ERROR_MESSAGE_LENGTH
-            )
-          )
-        );
-        if (!failurePublishResult.isSuccess())
-          AIPlatformLogManager.logCustomMessage(
-            'AIMessageReadyEvent__e was not published.',
-            failurePublishResult.getErrors()[0].getMessage(),
-            'AIMessageOutcomeService',
-            'notifyFailure',
-            null
-          );
-      }
-    } catch (Exception caughtException) {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIMessageOutcomeService',
-        'publishMessageFailure'
-      );
-    }
-
+    // [3] Return the label
     return userMessage;
   }
 
-  // Records a failed turn: the log, the tokens it spent, the user's message, the evidence, the usage, and the chat window.
+  // Records a failed turn: the log, the tokens it spent, the user's message, the evidence and the label for the window.
   private static void fail(
     AIResponseContext responseContext,
     String failureReason,
@@ -334,11 +285,12 @@ public inherited sharing class AIMessageOutcomeService {
     AIAgentManager.AgentResult agentResult,
     AIExecutionStepTracker executionTrace
   ) {
+    // [1] Fall back to Other when no reason was given
     String reason = String.isBlank(failureReason)
       ? AIAssistApplicationConstants.FAILURE_REASON_OTHER
       : failureReason;
 
-    // The real error is for administrators, in the platform log; never on a record the user reads.
+    // [2] Log the real error for administrators, never on a record the user can read
     AIPlatformLogManager.logCustomMessage(
       'AI responseContext failed: ' + reason,
       detail,
@@ -347,12 +299,13 @@ public inherited sharing class AIMessageOutcomeService {
       responseContext.triggeringMessageId
     );
 
+    // [3] Work out the tokens the failed turn spent
     Decimal tokensSpent = agentResult == null ||
       agentResult.totalTokensUsed == null
       ? 0
       : agentResult.totalTokensUsed;
 
-    // The tokens a failed turn spent still count towards the conversation's total. A System message is never sent to the model or shown in the chat.
+    // [4] Keep the spent tokens counting towards the conversation's total, using a System message that is never sent to the model or shown in the chat
     if (responseContext.conversationId != null && tokensSpent > 0) {
       AIMessagingDataService.insertAndLogFailures(
         new List<SObject>{
@@ -370,6 +323,7 @@ public inherited sharing class AIMessageOutcomeService {
       );
     }
 
+    // [5] Mark the user's message, and any older one still waiting, as Failed
     closeWaitingMessages(
       responseContext,
       AIAssistApplicationConstants.PROCESSING_STATUS_FAILED,
@@ -377,6 +331,7 @@ public inherited sharing class AIMessageOutcomeService {
       'fail'
     );
 
+    // [6] Record the execution evidence on the user's message, as there is no reply to attach it to
     AIExecutionStepRecorder.recordExecutionSteps(
       responseContext.triggeringMessageId,
       executionTrace,
@@ -384,10 +339,11 @@ public inherited sharing class AIMessageOutcomeService {
       responseContext.modelIdentifier
     );
 
+    // [7] Get the label for the window
     publishMessageFailure(responseContext.conversationId, reason);
   }
 
-  // Ends the turn's message, and with it every user message in the conversation still Queued that was sent at or before it. Only the newest waiting message is answered (the finalizer hands the lock to the newest), so an older one sent while a reply was being prepared would otherwise stay Queued for ever. Bookkeeping: a failure is logged, never thrown.
+  // Ends the turn's message, and with it every user message in the conversation still Queued that was sent at or before it. Only the newest waiting message is answered, so an older one would otherwise stay Queued for ever. A failure is logged, never thrown.
   private static void closeWaitingMessages(
     AIResponseContext responseContext,
     String processingStatus,
@@ -395,10 +351,11 @@ public inherited sharing class AIMessageOutcomeService {
     String methodName
   ) {
     try {
+      // [1] Nothing to close when the turn has no message
       if (responseContext.triggeringMessageId == null)
         return;
 
-      // "At or before" by time and, within the same second, by Id: the order the history is read in.
+      // [2] Find the turn's message and the user messages still Queued in the conversation
       List<AIConversationMessage__c> endedMessages = new List<AIConversationMessage__c>();
       Datetime triggeredAt;
       List<AIConversationMessage__c> candidates = [
@@ -411,10 +368,14 @@ public inherited sharing class AIMessageOutcomeService {
           AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED)
         WITH SYSTEM_MODE
       ];
+
+      // [3] Note when the turn's own message was sent
       for (AIConversationMessage__c candidate : candidates) {
         if (candidate.Id == responseContext.triggeringMessageId)
           triggeredAt = candidate.CreatedDate;
       }
+
+      // [4] Close the turn's message and every one sent at or before it, by time and, within the same second, by Id
       for (AIConversationMessage__c candidate : candidates) {
         if (
           candidate.Id == responseContext.triggeringMessageId ||
@@ -422,7 +383,7 @@ public inherited sharing class AIMessageOutcomeService {
           (candidate.CreatedDate < triggeredAt ||
           (candidate.CreatedDate == triggeredAt &&
           candidate.Id < responseContext.triggeringMessageId)))
-        )
+        ) {
           endedMessages.add(
             new AIConversationMessage__c(
               Id = candidate.Id,
@@ -431,16 +392,18 @@ public inherited sharing class AIMessageOutcomeService {
               IsAwaitingCapacity__c = false
             )
           );
+        }
       }
 
+      // [5] Save the new status
       AIMessagingDataService.updateAndLogFailures(
         endedMessages,
         'AIMessageOutcomeService',
         methodName
       );
-    } catch (Exception caughtException) {
+    } catch (Exception ex) {
       AIPlatformLogManager.logException(
-        caughtException,
+        ex,
         'AIMessageOutcomeService',
         methodName
       );

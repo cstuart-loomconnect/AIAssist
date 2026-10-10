@@ -4,31 +4,26 @@ Class Name: AIChatController
 =================================================================
 =================================================================
 
-Description: The Apex controller behind the AI Assist chat window. Every @AuraEnabled method is one round trip the
-window makes; the logic is in the chat services, so this class only translates between what the window
-asks for and what it is shown.
+Description: The Apex controller behind the AI Assist chat window.
 
-Sending and processing a message belongs to AIConversationMessageService. A refusal the window should
-render in place (limits, paused, not assigned, terms) comes back as a SendResult whose status is
-SENT, BLOCKED, LIMIT or ERROR, the exception's own message is a Custom Label, with
-the code itself and the Custom Label to show. Anything unexpected is logged once and the window gets
-the generic label; provider, configuration and class names never reach it.
-
-Every method that touches a conversation or reply first proves the signed-in user owns it
-(AIChatConversationService). Settings are read fresh on each call so a change shows on the next one.
+Step 1: Open the window: build the chat context, up to the first state that stops it
+Step 2: Send a message: turn a slash command into its hidden instructions, then hand the message to AIConversationMessageService
+Step 3: Read and change conversations: earlier messages, updates, history, open, resume, retry and close
+Step 4: Run, decline, give feedback on or debug a reply, and export a conversation, each after proving the user owns it
+Step 5: Turn an expected refusal into its Custom Label, and log anything unexpected once and show the generic label
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
-1.0          Chandler Stuart          Initial development, from the old controller. Codes instead of message text, Custom Labels throughout, IsEnabled__c, the suggested action runs through the workflow dispatcher with its plan, user and assignment gates, and a decline records that the user cancelled.
-2.0          Chandler Stuart          getPiiMappings removed (security model principle 4). Reading a conversation (earlier messages, update, open) is allowed to a user the visibility rules reach; every write, export and action stays with the starter. getSharedConversationHistory added.
+1.0          Chandler Stuart          Initial development
 */
 
-public with sharing class AIChatController {
+public without sharing class AIChatController {
   public class AIChatControllerException extends Exception {
   }
 
+  // Opens the window: the chat context, plus why the user cannot send right now, if they cannot.
   @AuraEnabled
   public static AIChatDataStructure.ChatContext getChatContext(
     String recordId,
@@ -37,113 +32,53 @@ public with sharing class AIChatController {
     String agentKey
   ) {
     try {
+      // [1] Build everything the window needs to open
       AIChatDataStructure.ChatContext context = buildChatContext(
         recordId,
         objectApiName,
         channel,
         agentKey
       );
-      // Why the user cannot send right now, if they cannot, and the plan-cap warning: named for the window rather than left for it to work out.
+
+      // [2] Name why the user cannot send right now, and the plan-cap warning, for the window rather than leaving it to work them out
       AIChatStateService.setBlockedState(context);
 
+      // [3] Return the context
       return context;
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getChatContext');
-    }
-  }
-
-  // Everything the window needs to open, up to the first state that stops it.
-  private static AIChatDataStructure.ChatContext buildChatContext(
-    String recordId,
-    String objectApiName,
-    String channel,
-    String agentKey
-  ) {
-    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
-    context.channel = channel;
-
-    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
-    AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-    AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
-
-    context.ui = AIChatStateService.buildUiSettings(uiSettings);
-    context.user = AIChatStateService.buildUserState(userSettings);
-
-    // Switched off, or switched on in another org (a copied sandbox).
-    if (!AIAssistSettingsService.isEnabled()) {
-      context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
-      return context;
-    }
-    if (uiSettings.IsMaintenanceMode__c == true) {
-      context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
-      return context;
-    }
-    if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
-      context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
-      return context;
-    }
-
-    context.terms = AIChatStateService.buildTermsState(appSettings);
-    if (context.terms.required) {
-      context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
-      return context;
-    }
-
-    context.record = AIChatContextService.buildRecordContext(
-      recordId,
-      objectApiName
-    );
-    context.agents = AIChatContextService.getAvailableAgents(
-      context.record.objectApiName
-    );
-    context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
-
-    if (context.agent == null) {
-      context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
-      return context;
-    }
-
-    context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
-    context.commands = AIChatCommandService.getAvailableCommands(
-      context.agent.id,
-      context.record
-    );
-
-    AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
-      context.agent.id,
-      context.record.recordId
-    );
-
-    if (activeConversation != null) {
-      context.openConversation = AIChatConversationService.toConversationSummary(
-        activeConversation
-      );
-      if (
-        context.agent.loadTrigger !=
-        AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
-      )
-        context.conversation = AIChatConversationService.buildConversationView(
-          activeConversation.Id,
-          context.ui.messagePageSize,
-          context.user,
-          context.ui
+    } catch (Exception ex) {
+      // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getChatContext'
         );
-    }
 
-    return context;
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
+    }
   }
 
+  // The page of messages before the one the window already shows.
   @AuraEnabled
   public static AIChatDataStructure.MessagePage getEarlierMessages(
     Id conversationId,
     Id beforeMessageId
   ) {
     try {
-      AIConversationVisibilityService.assertCanView(conversationId);
+      // [1] Check the user may view the conversation
+      AIConversationVisibilityService.getViewableConversation(conversationId);
+
+      // [2] Read the window's settings
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
 
+      // [3] Return the page of earlier messages
       return AIChatConversationService.loadMessagePage(
         conversationId,
         beforeMessageId,
@@ -151,35 +86,52 @@ public with sharing class AIChatController {
         AIChatStateService.buildUserState(AIChatStateService.getUserSettings()),
         uiSettings
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getEarlierMessages');
+    } catch (Exception ex) {
+      // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getEarlierMessages'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
-  // Called when AIMessageReadyEvent__e arrives, or by the polling fallback: every displayable message newer than afterMessageId, and whether a reply is still being worked on.
+  // Called by the window's polling: every displayable message newer than afterMessageId, and whether a reply is still being worked on.
   @AuraEnabled
   public static AIChatDataStructure.ConversationUpdate getConversationUpdate(
     Id conversationId,
     Id afterMessageId
   ) {
     try {
-      AIConversation__c conversation = AIConversationVisibilityService.assertCanView(
+      // [1] Check the user may view the conversation
+      AIConversation__c conversation = AIConversationVisibilityService.getViewableConversation(
         conversationId
       );
       AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
 
-      // A message of this user's held at the cap on messages in flight is started from here once a place is free: only its sender can start it.
+      // [2] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it
       if (
         AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null &&
         AIConversationMessageService.startHeldMessage()
       )
         conversation.ProcessingLockedUntil__c = System.now().addMinutes(1);
 
+      // [3] Report the conversation's status and whether a reply is still being worked on
       AIChatDataStructure.ConversationUpdate conversationUpdate = new AIChatDataStructure.ConversationUpdate();
       conversationUpdate.status = conversation.Status__c;
       conversationUpdate.isProcessing =
         conversation.ProcessingLockedUntil__c != null &&
         conversation.ProcessingLockedUntil__c > System.now();
+
+      // [4] Add the messages newer than the last one the window has
       conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(
         conversationId,
         afterMessageId,
@@ -188,9 +140,24 @@ public with sharing class AIChatController {
           AIAssistSettingsService.getUiSettings()
         )
       );
+
+      // [5] Return the update
       return conversationUpdate;
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getConversationUpdate');
+    } catch (Exception ex) {
+      // [6] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getConversationUpdate'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -198,6 +165,7 @@ public with sharing class AIChatController {
   @AuraEnabled
   public static AIChatDataStructure.SendResult sendMessage(String requestJson) {
     try {
+      // [1] Read the request and trim the text the user typed
       AIChatDataStructure.SendRequest request = (AIChatDataStructure.SendRequest) JSON.deserialize(
         requestJson,
         AIChatDataStructure.SendRequest.class
@@ -207,19 +175,21 @@ public with sharing class AIChatController {
       String messageBody = trimmedText;
 
       if (AIChatCommandService.isCommandText(trimmedText)) {
+        // [2] Find the slash command the user typed
         AIChatCommand__mdt command = AIChatCommandService.findCommand(
           AIChatCommandService.getCommandToken(trimmedText),
           request.agentId,
           request.objectApiName
         );
 
+        // [3] Refuse a command that is unknown or not available to this user
         if (command == null) {
           result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-          result.code = AIAssistApplicationConstants.ERROR_COMMAND_UNKNOWN;
           result.message = Label.AI_Error_Command_Unknown;
           return result;
         }
 
+        // [4] Add the command's hidden instructions after what the user typed
         if (String.isNotBlank(command.PromptText__c))
           messageBody =
             trimmedText +
@@ -228,6 +198,7 @@ public with sharing class AIChatController {
       }
 
       try {
+        // [5] Send the message and report it back to the window
         AIConversationMessage__c sentMessage = AIConversationMessageService.sendMessage(
           request.conversationId,
           request.agentId,
@@ -241,24 +212,39 @@ public with sharing class AIChatController {
         result.conversationId = sentMessage.AIConversation__c;
         result.isNewConversation =
           request.conversationId != sentMessage.AIConversation__c;
-        result.userMessage = AIChatConversationService.toChatMessage(
+        result.userMessage = AIChatConversationService.buildChatMessage(
           sentMessage,
           new Map<Id, AIWorkflowAction__c>(),
           null,
           null
         );
-      } catch (Exception sendException) {
-        // A package exception's message is always a Custom Label. Anything else goes to the outer handler, which logs it and shows the generic label.
-        if (sendException.getTypeName().startsWith('System.')) {
-          throw sendException;
-        }
+      } catch (Exception ex) {
+        // [6] Pass on an unexpected failure, because a package exception's message is always a Custom Label and anything else goes to the outer handler, which logs it and shows the generic label
+        if (ex.getTypeName().startsWith('System.'))
+          throw ex;
+
+        // [7] Show the refusal in place
         result.status = AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR;
-        result.message = sendException.getMessage();
+        result.message = ex.getMessage();
       }
 
+      // [8] Return the result
       return result;
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'sendMessage');
+    } catch (Exception ex) {
+      // [9] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'sendMessage'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -266,44 +252,95 @@ public with sharing class AIChatController {
   @AuraEnabled
   public static void retryLatestMessage(Id conversationId) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      // [1] Check the user owns the conversation
+      AIChatConversationService.getOwnedConversation(conversationId);
+
+      // [2] Send the latest user message again
       AIConversationMessageService.retryLatestUserMessage(conversationId);
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'retryLatestMessage');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'retryLatestMessage'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Closes the conversation at the user's request.
   @AuraEnabled
   public static void closeConversation(Id conversationId) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      // [1] Check the user owns the conversation
+      AIChatConversationService.getOwnedConversation(conversationId);
+
+      // [2] Close it, recording that the user closed it
       AIConversationMessageService.closeConversation(
         conversationId,
         AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'closeConversation');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'closeConversation'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Opens a conversation the user may view, with its latest messages.
   @AuraEnabled
   public static AIChatDataStructure.ConversationView openConversation(
     Id conversationId
   ) {
     try {
-      AIConversationVisibilityService.assertCanView(conversationId);
+      // [1] Check the user may view the conversation
+      AIConversationVisibilityService.getViewableConversation(conversationId);
+
+      // [2] Read the window's settings
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
 
+      // [3] Return the conversation with its latest messages
       return AIChatConversationService.buildConversationView(
         conversationId,
         uiSettings.messagePageSize,
         AIChatStateService.buildUserState(AIChatStateService.getUserSettings()),
         uiSettings
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'openConversation');
+    } catch (Exception ex) {
+      // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'openConversation'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -313,25 +350,56 @@ public with sharing class AIChatController {
     Id conversationId
   ) {
     try {
+      // [1] Reopen the conversation, which the service refuses unless its agent allows resuming
       AIChatConversationService.resumeConversation(conversationId);
+
+      // [2] Return the reopened conversation
       return openConversation(conversationId);
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'resumeConversation');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'resumeConversation'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // The user's own past conversations, for this record only or for all records.
   @AuraEnabled
   public static List<AIChatDataStructure.ConversationSummary> getConversationHistory(
     String recordId,
     Boolean onlyThisRecord
   ) {
     try {
+      // [1] Return the user's conversation history
       return AIChatConversationService.getConversationHistory(
         recordId,
         onlyThisRecord
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getConversationHistory');
+    } catch (Exception ex) {
+      // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getConversationHistory'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -339,12 +407,27 @@ public with sharing class AIChatController {
   @AuraEnabled
   public static List<AIChatDataStructure.ConversationSummary> getSharedConversationHistory() {
     try {
+      // [1] Return the shared conversation history
       return AIChatConversationService.getSharedConversationHistory();
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getSharedConversationHistory');
+    } catch (Exception ex) {
+      // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getSharedConversationHistory'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Records the user's rating of a reply, when the window has feedback switched on.
   @AuraEnabled
   public static void submitFeedback(
     Id messageId,
@@ -353,6 +436,7 @@ public with sharing class AIChatController {
     String comment
   ) {
     try {
+      // [1] Refuse when feedback is switched off
       if (
         !AIChatStateService.buildUiSettings(
             AIAssistSettingsService.getUiSettings()
@@ -361,18 +445,47 @@ public with sharing class AIChatController {
       )
         throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
+      // [2] Save the feedback
       AIChatFeedbackService.submitFeedback(messageId, rating, reason, comment);
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'submitFeedback');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'submitFeedback'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Records that the user accepted the terms.
   @AuraEnabled
   public static void acknowledgeTerms() {
     try {
-      AIChatFeedbackService.acknowledgeTerms();
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'acknowledgeTerms');
+      // [1] Save the acknowledgment
+      AIChatTermsService.acknowledgeTerms();
+    } catch (Exception ex) {
+      // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'acknowledgeTerms'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -383,6 +496,7 @@ public with sharing class AIChatController {
     String inputsJson
   ) {
     try {
+      // [1] Refuse when inline actions are switched off
       AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(
         AIAssistSettingsService.getUiSettings()
       );
@@ -391,13 +505,27 @@ public with sharing class AIChatController {
           Label.AI_Error_Action_Not_Permitted
         );
 
+      // [2] Run the action on the reply the user owns, as confirmed
       return AIChatActionService.runSuggestedAction(
-        AIChatConversationService.assertOwnsAgentMessage(messageId),
+        AIChatConversationService.getOwnedAgentMessage(messageId),
         inputsJson,
         true
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'runSuggestedAction');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'runSuggestedAction'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
@@ -405,93 +533,230 @@ public with sharing class AIChatController {
   @AuraEnabled
   public static void declineSuggestedAction(Id messageId) {
     try {
-      AIConversationMessage__c suggestingMessage = AIChatConversationService.assertOwnsAgentMessage(
+      // [1] Check the user owns the reply that suggested the action
+      AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(
         messageId
       );
+
+      // [2] Record that the action was offered and declined
       AIWorkflowActionDispatcher.recordDeclinedAction(
         suggestingMessage.SuggestedWorkflowAction__c,
         suggestingMessage.AIConversation__r.AIAgent__c,
         suggestingMessage.Id,
-        AIChatDataStructure.toIdOrNull(
+        AIChatDataStructure.getIdOrNull(
           suggestingMessage.AIConversation__r.RelatedRecordId__c
         )
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'declineSuggestedAction');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'declineSuggestedAction'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // The debug trace of a reply, only for a user with debug mode on.
   @AuraEnabled
   public static AIChatDataStructure.DebugTrace getDebugTrace(Id messageId) {
     try {
+      // [1] Refuse when the user does not have debug mode
       if (
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .debugMode
       )
         throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
+      // [2] Return the trace of the reply the user owns
       return AIChatDebugService.getDebugTrace(
-        AIChatConversationService.assertOwnsAgentMessage(messageId)
+        AIChatConversationService.getOwnedAgentMessage(messageId)
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getDebugTrace');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getDebugTrace'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Why a conversation failed, with more detail for a user with debug mode on.
   @AuraEnabled
   public static AIChatDataStructure.FailureDetail getFailureDetail(
     Id conversationId
   ) {
     try {
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      // [1] Check the user owns the conversation
+      AIChatConversationService.getOwnedConversation(conversationId);
 
+      // [2] Return the failure detail, with more for a user with debug mode on
       return AIChatDebugService.getFailureDetail(
         conversationId,
         AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .debugMode
       );
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'getFailureDetail');
+    } catch (Exception ex) {
+      // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'getFailureDetail'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
+  // Exports the conversation, only for a user with export switched on.
   @AuraEnabled
   public static String exportConversation(Id conversationId) {
     try {
+      // [1] Refuse when export is switched off for the user
       if (
         !AIChatStateService.buildUserState(AIChatStateService.getUserSettings())
           .exportEnabled
       )
         throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
-      AIChatConversationService.assertOwnsConversation(conversationId);
+      // [2] Check the user owns the conversation
+      AIChatConversationService.getOwnedConversation(conversationId);
 
+      // [3] Return the export
       return AIChatConversationService.exportConversation(conversationId);
-    } catch (Exception caughtException) {
-      throw toAura(caughtException, 'exportConversation');
+    } catch (Exception ex) {
+      // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+      String errorText = Label.AI_Error_Generic;
+      if (!ex.getTypeName().startsWith('System.'))
+        errorText = ex.getMessage();
+      else
+        AIPlatformLogManager.logException(
+          ex,
+          'AIChatController',
+          'exportConversation'
+        );
+
+      AuraHandledException auraException = new AuraHandledException(errorText);
+      auraException.setMessage(errorText);
+      throw auraException;
     }
   }
 
-  // A refusal's text is already a Custom Label and is shown as it is. Anything else is logged once and the window gets the generic label.
-  private static AuraHandledException toAura(
-    Exception caughtException,
-    String methodName
+  // Everything the window needs to open, up to the first state that stops it.
+  private static AIChatDataStructure.ChatContext buildChatContext(
+    String recordId,
+    String objectApiName,
+    String channel,
+    String agentKey
   ) {
-    String errorText = Label.AI_Error_Generic;
+    // [1] Start the context and read the settings
+    AIChatDataStructure.ChatContext context = new AIChatDataStructure.ChatContext();
+    context.channel = channel;
 
-    if (!caughtException.getTypeName().startsWith('System.')) {
-      errorText = caughtException.getMessage();
-    } else {
-      AIPlatformLogManager.logException(
-        caughtException,
-        'AIChatController',
-        methodName
-      );
+    AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
+    AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
+    AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+
+    context.ui = AIChatStateService.buildUiSettings(uiSettings);
+    context.user = AIChatStateService.buildUserState(userSettings);
+
+    // [2] Stop when chat is switched off, or switched on in another org (a copied sandbox)
+    if (!AIAssistSettingsService.isEnabled()) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_INACTIVE;
+      return context;
     }
 
-    AuraHandledException auraException = new AuraHandledException(errorText);
-    auraException.setMessage(errorText);
+    // [3] Stop when chat is in maintenance mode
+    if (uiSettings.IsMaintenanceMode__c == true) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_MAINTENANCE;
+      return context;
+    }
 
-    return auraException;
+    // [4] Stop when the user's settings do not allow this channel
+    if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
+      return context;
+    }
+
+    // [5] Stop when the user must accept the terms first
+    context.terms = AIChatStateService.buildTermsState(appSettings);
+
+    if (context.terms.required) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_TERMS;
+      return context;
+    }
+
+    // [6] Add the record and the agents offered for it, and pick the agent to open with
+    context.record = AIChatContextService.buildRecordContext(
+      recordId,
+      objectApiName
+    );
+    context.agents = AIChatContextService.getAvailableAgents(
+      context.record.objectApiName
+    );
+    context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
+
+    // [7] Stop when no agent is offered
+    if (context.agent == null) {
+      context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
+      return context;
+    }
+
+    // [8] The window is ready: add the slash commands the user can use
+    context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
+    context.commands = AIChatCommandService.getAvailableCommands(
+      context.agent.id,
+      context.record
+    );
+
+    // [9] Open the active conversation for this agent and record, if there is one
+    AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(
+      context.agent.id,
+      context.record.recordId
+    );
+
+    if (activeConversation != null) {
+      context.openConversation = AIChatConversationService.buildConversationSummary(
+        activeConversation
+      );
+
+      // [10] Load its messages unless the agent loads them only when the user asks
+      if (
+        context.agent.loadTrigger !=
+        AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY
+      )
+        context.conversation = AIChatConversationService.buildConversationView(
+          activeConversation.Id,
+          context.ui.messagePageSize,
+          context.user,
+          context.ui
+        );
+    }
+
+    // [11] Return the context
+    return context;
   }
 }

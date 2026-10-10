@@ -1,0 +1,131 @@
+TEST CLASS CODE PATTERN
+=======================
+
+Use this to rewrite any existing test class so it follows the house code pattern.
+The scenarios and functionality stay the same; only the format changes.
+
+PROMPT TO REUSE
+---------------
+"Rewrite <ClassName>Test.cls to follow docs/03_TEST_CLASS_PATTERN.txt.
+Keep the same scenarios and behaviour, change only the code pattern."
+
+REFERENCE EXAMPLE
+-----------------
+force-app/main/default/classes/AIAgentTriggerHandlerTest.cls
+
+RULES
+-----
+1. Header comment
+   - Class Name, Description, then Applicable Classes with a coverage line each
+     (e.g. "AIAgentTriggerHandler: Coverage TBC").
+   - Version table has three columns: Version, Author, Description (no date column).
+   - Remove every existing version row. The table always has exactly one row, never added to:
+     1.0          Chandler Stuart          Initial development
+
+2. Declarations (annotation and keywords on the same line, 4-space indent)
+   - @IsTest private class XTest {
+   - @TestSetup static void setup() {
+   - @IsTest static void testScenario1() {
+   Blank line after the class opening brace.
+
+3. Scenario list
+   - Directly under the class brace, one comment line per test:
+     // testScenarioN: <what is done> -> <what is expected>.
+   - Method names are testScenario1, testScenario2, ... matching the list.
+
+4. TestSetup
+   - Upsert AIAssistSettings__c org defaults with IsEnabled__c,
+     IsExceptionLoggingEnabled__c and IsPlatformLoggingEnabled__c all true.
+   - (IsApplicationActive__c does not exist in this repo; use IsEnabled__c.)
+
+5. Test body order
+   - Arrange: build data (use AIAssistTestDataFactory), insert.
+   - Optional pre-assert on starting state.
+   - Act: only the action under test, inside an indented block:
+         Test.startTest();
+             <action>
+         Test.stopTest();
+   - Query results into local variables AFTER Test.stopTest().
+   - Assert last, each with a descriptive message.
+   - Number the steps with "// [1] What this does", as in docs/04_CLASS_CODE_PATTERN.txt:
+     one short plain-English sentence per step, sentence case, numbers run in order through
+     the test body and restart at [1] in every test method. Typical steps: [1] arrange,
+     [2] act, [3] query results, [4] assert. Split a step when it is doing two things.
+     Replace the bare "// arrange", "// act", "// assert" markers with these numbered steps.
+
+6. Asserts
+   - Use Assert.areEqual / isNull / isNotNull. Always include a message.
+   - No try/catch or Assert.fail wrappers; handlers catch their own exceptions.
+
+7. Exception scenario
+   - Set the handler's @TestVisible flag (e.g. isTestCustomExceptionThrown = true)
+     before the action.
+   - Assert the business effect did NOT happen.
+   - Assert exactly one AIPlatformLog__c row with the expected ClassName__c and
+     MethodName__c.
+
+8. No private helpers
+   - A test class has NO private methods and no private helper or data-holder classes
+     (no createWorld, run, send, canView, "World" style wrappers). Every test method is
+     self-contained and reads top to bottom: if two tests need the same setup, repeat the
+     lines in each test, or put reusable data creation in AIAssistTestDataFactory.
+   - The only members besides @TestSetup and @IsTest methods are private static final constants.
+   - The one exception is an inner class that must exist to implement an interface the
+     platform calls (HttpCalloutMock, Schedulable, Queueable stubs and the like). Keep it
+     as small as possible, put it directly under the constants, and give it no helper methods
+     beyond the interface methods. Prefer AIAssistTestProviderMock when it already fits.
+
+9. Style
+   - Prefer going through the real trigger (insert/update) over calling handlers
+     directly; call handlers directly only for null / empty input scenarios.
+   - Shared strings live in private static final constants at the top of the class.
+
+SKELETON
+--------
+/*
+Class Name: XTest
+
+=================================================================
+=================================================================
+
+Description: Testing utility for ...
+
+=================================================================
+=================================================================
+Applicable Classes:
+
+X: Coverage TBC
+
+Version      Author                   Description
+1.0          Chandler Stuart          Initial development
+*/
+
+@IsTest private class XTest {
+
+    // testScenario1: ...
+    // testScenario2: ...
+
+    @TestSetup static void setup() {
+
+        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+        settings.IsEnabled__c = true;
+        settings.IsExceptionLoggingEnabled__c = true;
+        settings.IsPlatformLoggingEnabled__c = true;
+        upsert settings;
+    }
+
+    @IsTest static void testScenario1() {
+
+        // [1] Build the data the scenario needs
+
+        // [2] Run the action under test
+        Test.startTest();
+            // act
+        Test.stopTest();
+
+        // [3] Read the results back
+
+        // [4] Check the outcome
+        Assert.areEqual(expected, actual, 'Message.');
+    }
+}

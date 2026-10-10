@@ -10,7 +10,7 @@ Description: Testing utility for AIChatCommandService: which slash commands a us
 =================================================================
 Applicable Classes:
 
-AIChatCommandService
+AIChatCommandService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -34,41 +34,64 @@ private class AIChatCommandServiceTest {
 
   @IsTest
   static void testScenario1() {
+    // [1] Build a command message with hidden instructions
     String body =
       '/summarise now' +
       AIAssistApplicationConstants.CHAT_COMMAND_PROMPT_SEPARATOR +
       'Summarise the record.';
 
+    // [2] Run the command text checks
+    Boolean isCommand;
+    Boolean notCommand;
+    String token;
+    String shown;
+    String blank;
+
     Test.startTest();
-    Boolean isCommand = AIChatCommandService.isCommandText('/summarise now');
-    Boolean notCommand =
+    isCommand = AIChatCommandService.isCommandText('/summarise now');
+    notCommand =
       AIChatCommandService.isCommandText('hello /summarise') ||
       AIChatCommandService.isCommandText('/') ||
       AIChatCommandService.isCommandText(null);
-    String token = AIChatCommandService.getCommandToken('  /summarise now');
-    String shown = AIChatCommandService.getDisplayText(body);
-    String blank = AIChatCommandService.getDisplayText(null);
+    token = AIChatCommandService.getCommandToken('  /summarise now');
+    shown = AIChatCommandService.getDisplayText(body);
+    blank = AIChatCommandService.getDisplayText(null);
     Test.stopTest();
 
-    Assert.isTrue(isCommand, 'A command.');
-    Assert.isFalse(notCommand, 'Not commands.');
-    Assert.areEqual('/summarise', token, 'The token.');
+    // [3] Check the command text results
+    Assert.isTrue(
+      isCommand,
+      'A slash command should be recognised as command text.'
+    );
+    Assert.isFalse(
+      notCommand,
+      'Text that is not a slash command should not be recognised.'
+    );
+
+    Assert.areEqual(
+      '/summarise',
+      token,
+      'The token should be the first word of the command.'
+    );
     Assert.areEqual(
       '/summarise now',
       shown,
-      'Hidden instructions are cut off.'
+      'The hidden instructions should be cut off the display text.'
     );
-    Assert.areEqual('', blank, 'Blank.');
+    Assert.areEqual('', blank, 'A null message should show as blank.');
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create an agent
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
-    List<AIChatCommand__mdt> commands = new List<AIChatCommand__mdt>{
+
+    // [2] Supply the commands in memory
+    AIChatCommandService.testCommands = new List<AIChatCommand__mdt>{
       new AIChatCommand__mdt(
         Command__c = '/b',
         IsActive__c = true,
@@ -92,17 +115,24 @@ private class AIChatCommandServiceTest {
         AgentDeveloperName__c = 'Someone_Else'
       )
     };
-    AIChatCommandService.testCommands = commands;
+
+    // [3] Set the record context to an Account
     AIChatDataStructure.RecordContext record = new AIChatDataStructure.RecordContext();
     record.objectApiName = 'Account';
 
+    // [4] Get the available commands
+    List<AIChatDataStructure.CommandOption> options;
+
     Test.startTest();
-    List<AIChatDataStructure.CommandOption> options = AIChatCommandService.getAvailableCommands(
-      agent.Id,
-      record
-    );
+    options = AIChatCommandService.getAvailableCommands(agent.Id, record);
     Test.stopTest();
 
+    // [5] Check only the matching commands are offered, in order
+    Assert.areEqual(
+      3,
+      options.size(),
+      'Inactive, other object and other agent commands should be left out.'
+    );
     Assert.areEqual(
       new List<String>{ '/a', '/b', '/z' },
       new List<String>{
@@ -110,51 +140,63 @@ private class AIChatCommandServiceTest {
         options[1].command,
         options[2].command
       },
-      'In order.'
-    );
-    Assert.areEqual(
-      3,
-      options.size(),
-      'Inactive, other object and other agent are left out.'
+      'The commands should be in display order, with a blank display order last.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Check availability for each user level
+    Boolean adminOnlyForUser;
+    Boolean adminOnlyForAdmin;
+    Boolean superForSuper;
+    Boolean superForUser;
+    Boolean openToAll;
+
     Test.startTest();
-    Boolean adminOnlyForUser = AIChatCommandService.isAvailableTo(
+    adminOnlyForUser = AIChatCommandService.isAvailableTo(
       AIAssistApplicationConstants.CHAT_COMMAND_AVAILABLE_TO_ADMINS_ONLY,
       AIAssistApplicationConstants.USER_LEVEL_USER
     );
-    Boolean adminOnlyForAdmin = AIChatCommandService.isAvailableTo(
+    adminOnlyForAdmin = AIChatCommandService.isAvailableTo(
       AIAssistApplicationConstants.CHAT_COMMAND_AVAILABLE_TO_ADMINS_ONLY,
       AIAssistApplicationConstants.USER_LEVEL_ADMIN
     );
-    Boolean superForSuper = AIChatCommandService.isAvailableTo(
+    superForSuper = AIChatCommandService.isAvailableTo(
       AIAssistApplicationConstants.CHAT_COMMAND_AVAILABLE_TO_SUPER_USERS_AND_ADMINS,
       AIAssistApplicationConstants.USER_LEVEL_SUPER_USER
     );
-    Boolean superForUser = AIChatCommandService.isAvailableTo(
+    superForUser = AIChatCommandService.isAvailableTo(
       AIAssistApplicationConstants.CHAT_COMMAND_AVAILABLE_TO_SUPER_USERS_AND_ADMINS,
       AIAssistApplicationConstants.USER_LEVEL_USER
     );
-    Boolean openToAll = AIChatCommandService.isAvailableTo(
+    openToAll = AIChatCommandService.isAvailableTo(
       null,
       AIAssistApplicationConstants.USER_LEVEL_USER
     );
     Test.stopTest();
 
-    Assert.isFalse(adminOnlyForUser || superForUser, 'Refused.');
-    Assert.isTrue(adminOnlyForAdmin && superForSuper && openToAll, 'Allowed.');
+    // [2] Check which levels are allowed
+    Assert.isFalse(
+      adminOnlyForUser || superForUser,
+      'A plain user should be refused admin and super user commands.'
+    );
+    Assert.isTrue(
+      adminOnlyForAdmin && superForSuper && openToAll,
+      'An admin, a super user and a command open to all should be allowed.'
+    );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create an agent
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
+    // [2] Supply the commands in memory
     AIChatCommandService.testCommands = new List<AIChatCommand__mdt>{
       new AIChatCommand__mdt(
         Command__c = '/open',
@@ -167,7 +209,11 @@ private class AIChatCommandServiceTest {
         AvailableTo__c = AIAssistApplicationConstants.CHAT_COMMAND_AVAILABLE_TO_ADMINS_ONLY
       )
     };
+
+    // [3] Create a plain user
     User plainUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+    // [4] Find each command as the plain user
     AIChatCommand__mdt found;
     AIChatCommand__mdt hidden;
 
@@ -178,7 +224,15 @@ private class AIChatCommandServiceTest {
       Test.stopTest();
     }
 
-    Assert.areEqual('Do it.', found.PromptText__c, 'Found.');
-    Assert.isNull(hidden, 'An admin command is not available to a plain user.');
+    // [5] Check only the open command is found
+    Assert.areEqual(
+      'Do it.',
+      found.PromptText__c,
+      'A command open to everyone should be found.'
+    );
+    Assert.isNull(
+      hidden,
+      'An admin command should not be found for a plain user.'
+    );
   }
 }

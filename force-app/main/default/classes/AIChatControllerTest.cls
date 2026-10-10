@@ -10,7 +10,7 @@ Description: Testing utility for AIChatController: the window's round trips, how
 =================================================================
 Applicable Classes:
 
-AIChatController
+AIChatController: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -37,20 +37,9 @@ private class AIChatControllerTest {
     upsert settings;
   }
 
-  private class AnsweringExecutor implements AIMessageProcessingQueueable.IAIResponseExecutor {
-    public AIAgentManager.AgentResult execute(
-      AIMessageProcessingQueueable.AIResponseRequest request
-    ) {
-      AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-      result.isSuccessful = true;
-      result.replyText = 'Fake reply';
-      result.totalTokensUsed = 15;
-      return result;
-    }
-  }
-
   @IsTest
   static void testScenario1() {
+    // [1] Create an agent open to all users
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -59,8 +48,11 @@ private class AIChatControllerTest {
     agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     update agent;
 
+    // [2] Get the chat context
+    AIChatDataStructure.ChatContext context;
+
     Test.startTest();
-    AIChatDataStructure.ChatContext context = AIChatController.getChatContext(
+    context = AIChatController.getChatContext(
       null,
       null,
       AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
@@ -68,37 +60,51 @@ private class AIChatControllerTest {
     );
     Test.stopTest();
 
+    // [3] Check the context is ready and offers the agent
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_STATE_READY,
       context.state,
-      'Ready.'
+      'The context should be ready.'
     );
-    Assert.areEqual(agent.Id, context.agent.id, 'The agent.');
-    Assert.isNull(context.openConversation, 'No conversation yet.');
+    Assert.areEqual(
+      agent.Id,
+      context.agent.id,
+      'The context should offer the agent.'
+    );
+    Assert.isNull(
+      context.openConversation,
+      'There should be no open conversation yet.'
+    );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Load the settings rows
     List<String> states = new List<String>();
     AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
     AIAssistUISettings__c ui = AIAssistUISettings__c.getOrgDefaults();
 
+    // [2] Get the chat context after each change to the settings
     Test.startTest();
     states.add(AIChatController.getChatContext(null, null, null, null).state);
+
     settings.CurrentTermsVersion__c = 'v1';
     update settings;
     AIAssistSettingsService.cachedSettings = null;
     states.add(AIChatController.getChatContext(null, null, null, null).state);
+
     settings.CurrentTermsVersion__c = null;
     ui.IsMaintenanceMode__c = true;
     upsert ui;
     states.add(AIChatController.getChatContext(null, null, null, null).state);
+
     settings.IsEnabled__c = false;
     update settings;
     AIAssistSettingsService.cachedSettings = null;
     states.add(AIChatController.getChatContext(null, null, null, null).state);
     Test.stopTest();
 
+    // [3] Check each early stop gives its own state
     Assert.areEqual(
       new List<String>{
         AIAssistApplicationConstants.CHAT_STATE_NO_AGENT,
@@ -107,12 +113,13 @@ private class AIChatControllerTest {
         AIAssistApplicationConstants.CHAT_STATE_INACTIVE
       },
       states,
-      'Each state.'
+      'Each early stop should give its own state.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create an agent open to all users and install the answering provider mock
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -120,7 +127,10 @@ private class AIChatControllerTest {
     )[0];
     agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     update agent;
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+    // [2] Send a message
     AIChatDataStructure.SendResult result;
 
     Test.startTest();
@@ -135,26 +145,34 @@ private class AIChatControllerTest {
     );
     Test.stopTest();
 
+    // [3] Count the AI replies
+    Integer replyCount = [
+      SELECT COUNT()
+      FROM AIConversationMessage__c
+      WHERE Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
+    ];
+
+    // [4] Check the message was sent and answered
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_SENT,
       result.status,
-      'Sent.'
+      'The message should be sent.'
     );
-    Assert.isTrue(result.isNewConversation, 'A new conversation.');
-    Assert.areEqual('Hello', result.userMessage.displayText, 'The message.');
+    Assert.isTrue(
+      result.isNewConversation,
+      'The message should start a new conversation.'
+    );
     Assert.areEqual(
-      1,
-      [
-        SELECT COUNT()
-        FROM AIConversationMessage__c
-        WHERE Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
-      ],
-      'And the job answered.'
+      'Hello',
+      result.userMessage.displayText,
+      'The window should get the message text.'
     );
+    Assert.areEqual(1, replyCount, 'The job should have answered.');
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create an agent open to all users
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -162,6 +180,8 @@ private class AIChatControllerTest {
     )[0];
     agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     update agent;
+
+    // [2] Limit the user's concurrent conversations and fill the limit
     AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(
       UserInfo.getUserId(),
       false
@@ -169,12 +189,15 @@ private class AIChatControllerTest {
     settings.MaxConcurrentConversations__c = 1;
     settings.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES;
     insert settings;
+
     AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       UserInfo.getUserId(),
       1,
       true
     );
+
+    // [3] Create an inactive agent
     AIAgent__c inactive = AIAssistTestDataFactory.createAIAgents(
       1,
       agent.AIModelConfiguration__c,
@@ -183,48 +206,57 @@ private class AIChatControllerTest {
     inactive.IsActive__c = false;
     insert inactive;
 
+    // [4] Send a message over the limit, to the inactive agent and with blank text
+    AIChatDataStructure.SendResult limited;
+    AIChatDataStructure.SendResult blocked;
+    AIChatDataStructure.SendResult empty;
+
     Test.startTest();
-    AIChatDataStructure.SendResult limited = AIChatController.sendMessage(
+    limited = AIChatController.sendMessage(
       JSON.serialize(
         new Map<String, Object>{ 'agentId' => agent.Id, 'text' => 'Hello' }
       )
     );
-    AIChatDataStructure.SendResult blocked = AIChatController.sendMessage(
+    blocked = AIChatController.sendMessage(
       JSON.serialize(
         new Map<String, Object>{ 'agentId' => inactive.Id, 'text' => 'Hello' }
       )
     );
-    AIChatDataStructure.SendResult empty = AIChatController.sendMessage(
+    empty = AIChatController.sendMessage(
       JSON.serialize(
         new Map<String, Object>{ 'agentId' => agent.Id, 'text' => '   ' }
       )
     );
     Test.stopTest();
 
+    // [5] Check each refusal comes back as an error
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       limited.status,
-      'A limit is an error status.'
+      'A limit should come back as an error status.'
     );
     Assert.areEqual(
       Label.AI_Error_Concurrent_Limit,
       limited.message,
-      'The text is the Custom Label.'
+      'The limit text should be the Custom Label.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       blocked.status,
-      'Blocked is an error status.'
+      'An inactive agent should come back as an error status.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       empty.status,
-      'A bad message.'
+      'A blank message should come back as an error status.'
     );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Create an agent open to all users and install the answering provider mock
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -232,7 +264,10 @@ private class AIChatControllerTest {
     )[0];
     agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     update agent;
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+    // [2] Supply a slash command in memory
     AIChatCommandService.testCommands = new List<AIChatCommand__mdt>{
       new AIChatCommand__mdt(
         Command__c = '/sum',
@@ -240,6 +275,8 @@ private class AIChatControllerTest {
         PromptText__c = 'Summarise.'
       )
     };
+
+    // [3] Send an unknown command and a known command
     AIChatDataStructure.SendResult unknown;
     AIChatDataStructure.SendResult known;
 
@@ -256,35 +293,44 @@ private class AIChatControllerTest {
     );
     Test.stopTest();
 
+    // [4] Read the stored user message body
+    String storedBody = [
+      SELECT MessageBody__c
+      FROM AIConversationMessage__c
+      WHERE Sender__c = :AIAssistApplicationConstants.SENDER_USER
+    ]
+    .MessageBody__c;
+
+    // [5] Check the unknown command is refused and the known one is sent
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR,
       unknown.status,
-      'Not a command here.'
+      'An unknown command should be refused.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CHAT_SEND_STATUS_SENT,
       known.status,
-      'Sent.'
+      'A known command should be sent.'
     );
-    Assert.isTrue(known.userMessage.isCommand, 'Shown as a command.');
     Assert.isTrue(
-      [
-          SELECT MessageBody__c
-          FROM AIConversationMessage__c
-          WHERE Sender__c = :AIAssistApplicationConstants.SENDER_USER
-        ]
-        .MessageBody__c.contains('Summarise.'),
-      'The hidden instructions are stored.'
+      known.userMessage.isCommand,
+      'The message should be shown as a command.'
+    );
+    Assert.isTrue(
+      storedBody.contains('Summarise.'),
+      'The hidden instructions should be stored.'
     );
   }
 
   @IsTest
   static void testScenario6() {
+    // [1] Create an agent, the user's conversation and message, and another user's conversation
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
       true
     )[0];
+
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       UserInfo.getUserId(),
@@ -292,8 +338,10 @@ private class AIChatControllerTest {
       true
     )[0];
     User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversationMessage__c message = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       1,
       1,
       true
@@ -304,52 +352,74 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
+
+    // [2] Open, update, page, list, try another user's conversation, then close
     String shown;
+    AIChatDataStructure.ConversationView view;
+    AIChatDataStructure.ConversationUpdate update1;
+    AIChatDataStructure.MessagePage earlier;
+    List<AIChatDataStructure.ConversationSummary> history;
 
     Test.startTest();
-    AIChatDataStructure.ConversationView view = AIChatController.openConversation(
-      conversation.Id
-    );
-    AIChatDataStructure.ConversationUpdate update1 = AIChatController.getConversationUpdate(
-      conversation.Id,
-      null
-    );
-    AIChatDataStructure.MessagePage earlier = AIChatController.getEarlierMessages(
-      conversation.Id,
-      message.Id
-    );
-    List<AIChatDataStructure.ConversationSummary> history = AIChatController.getConversationHistory(
-      null,
-      false
-    );
+    view = AIChatController.openConversation(conversation.Id);
+    update1 = AIChatController.getConversationUpdate(conversation.Id, null);
+    earlier = AIChatController.getEarlierMessages(conversation.Id, message.Id);
+    history = AIChatController.getConversationHistory(null, false);
+
     try {
       AIChatController.openConversation(theirs.Id);
-      Assert.fail('Not theirs.');
     } catch (AuraHandledException ex) {
       shown = ex.getMessage();
     }
+
     AIChatController.closeConversation(conversation.Id);
     Test.stopTest();
 
-    Assert.areEqual(1, view.messages.size(), 'The message.');
-    Assert.areEqual(1, update1.messages.size(), 'The update.');
-    Assert.isTrue(earlier.messages.isEmpty(), 'Nothing earlier.');
-    Assert.areEqual(1, history.size(), 'Only the user\'s own.');
+    // [3] Read the closed conversation status
+    String closedStatus = [
+      SELECT Status__c
+      FROM AIConversation__c
+      WHERE Id = :conversation.Id
+    ]
+    .Status__c;
+
+    // [4] Check each result
+    Assert.areEqual(
+      1,
+      view.messages.size(),
+      'The opened conversation should show its message.'
+    );
+    Assert.areEqual(
+      1,
+      update1.messages.size(),
+      'The update should carry the message.'
+    );
+    Assert.isTrue(
+      earlier.messages.isEmpty(),
+      'There should be no earlier messages.'
+    );
+    Assert.areEqual(
+      1,
+      history.size(),
+      'The history should hold only the user\'s own conversation.'
+    );
+
     Assert.areEqual(
       Label.AI_Error_Conversation_Not_Found,
       shown,
-      'The text is the Custom Label.'
+      'Another user\'s conversation should give the not found Custom Label.'
     );
+
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED,
-      [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id]
-      .Status__c,
-      'Closed.'
+      closedStatus,
+      'The conversation should be closed.'
     );
   }
 
   @IsTest
   static void testScenario7() {
+    // [1] Create an agent, a conversation, another user and an AI reply
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -361,7 +431,9 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
+
     User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+
     AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
       AIAssistApplicationConstants.SENDER_AI_AGENT,
@@ -369,52 +441,55 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
-    // The user running the tests may hold the custom permissions; this scenario is about a user who does not.
-    AIFeatureService.permissionForTest.put(
-      AIAssistApplicationConstants.PERMISSION_DEBUG_MODE,
-      false
-    );
-    AIFeatureService.permissionForTest.put(
-      AIAssistApplicationConstants.PERMISSION_RUN_ACTIONS,
-      false
-    );
+
+    // [2] Request the debug trace without the setting, then enable it and use the debug, export and failure views
     String shown;
+    AIChatDataStructure.DebugTrace trace;
+    String exported;
+    AIChatDataStructure.FailureDetail detail;
 
     Test.startTest();
     try {
       AIChatController.getDebugTrace(reply.Id);
-      Assert.fail('Debug is off.');
     } catch (AuraHandledException ex) {
       shown = ex.getMessage();
     }
+
     AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(
       UserInfo.getUserId(),
       false
     )[0];
-    settings.DebugModeEnabled__c = true;
+    AIAssistTestDataFactory.upsertUiSettings(true, false);
     settings.ConversationExportEnabled__c = true;
     insert settings;
-    AIChatDataStructure.DebugTrace trace = AIChatController.getDebugTrace(
-      reply.Id
-    );
-    String exported = AIChatController.exportConversation(conversation.Id);
-    AIChatDataStructure.FailureDetail detail = AIChatController.getFailureDetail(
-      conversation.Id
-    );
+
+    trace = AIChatController.getDebugTrace(reply.Id);
+    exported = AIChatController.exportConversation(conversation.Id);
+    detail = AIChatController.getFailureDetail(conversation.Id);
     Test.stopTest();
 
+    // [3] Check the refusal and the results
     Assert.areEqual(
       Label.AI_Error_Not_Authorised,
       shown,
-      'The text is the Custom Label.'
+      'The refusal should be the not authorised Custom Label.'
     );
-    Assert.areEqual(reply.Id, trace.replyMessageId, 'The trace.');
-    Assert.isTrue(exported.contains('Test message'), 'The transcript.');
-    Assert.isNotNull(detail, 'The failure detail.');
+
+    Assert.areEqual(
+      reply.Id,
+      trace.replyMessageId,
+      'The trace should be for the reply.'
+    );
+    Assert.isTrue(
+      exported.contains('Test message'),
+      'The export should hold the transcript.'
+    );
+    Assert.isNotNull(detail, 'The failure detail should be returned.');
   }
 
   @IsTest
   static void testScenario8() {
+    // [1] Create an agent, a conversation, another user, the answering provider mock and messages
     AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(
       1,
       AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id,
@@ -426,8 +501,11 @@ private class AIChatControllerTest {
       1,
       true
     )[0];
+
     User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
     AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
       AIAssistApplicationConstants.SENDER_AI_AGENT,
@@ -437,16 +515,22 @@ private class AIChatControllerTest {
     )[0];
     AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       1,
       1,
       true
     );
+
     agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
     update agent;
+
+    // [2] Set the current terms version
     AIAssistSettings__c terms = AIAssistSettings__c.getOrgDefaults();
     terms.CurrentTermsVersion__c = 'v1';
     update terms;
     AIAssistSettingsService.cachedSettings = null;
+
+    // [3] Submit feedback, acknowledge the terms, retry, then switch feedback off and submit again
     String shown;
 
     Test.startTest();
@@ -458,9 +542,11 @@ private class AIChatControllerTest {
     );
     AIChatController.acknowledgeTerms();
     AIChatController.retryLatestMessage(conversation.Id);
+
     AIAssistUISettings__c ui = AIAssistUISettings__c.getOrgDefaults();
     ui.IsFeedbackEnabled__c = false;
     upsert ui;
+
     try {
       AIChatController.submitFeedback(
         reply.Id,
@@ -468,51 +554,58 @@ private class AIChatControllerTest {
         null,
         null
       );
-      Assert.fail('Feedback is off.');
     } catch (AuraHandledException ex) {
       shown = ex.getMessage();
     }
     Test.stopTest();
 
-    Assert.areEqual(1, [SELECT COUNT() FROM AIFeedback__c], 'One rating.');
+    // [4] Count the feedback and terms acknowledgments
+    Integer feedbackCount = [SELECT COUNT() FROM AIFeedback__c];
+    Integer acknowledgmentCount = [
+      SELECT COUNT()
+      FROM AITermsAcknowledgment__c
+    ];
+
+    // [5] Check the saved rows and the refusal
+    Assert.areEqual(1, feedbackCount, 'One rating should be saved.');
     Assert.areEqual(
       1,
-      [SELECT COUNT() FROM AITermsAcknowledgment__c],
-      'Terms acknowledged.'
+      acknowledgmentCount,
+      'The terms should be acknowledged.'
     );
     Assert.areEqual(
       Label.AI_Error_Not_Authorised,
       shown,
-      'The text is the Custom Label.'
+      'The refusal should be the not authorised Custom Label.'
     );
   }
 
   @IsTest
   static void testScenario9() {
+    // [1] Send a message that is not valid JSON
     String shown;
 
     Test.startTest();
     try {
       AIChatController.sendMessage('not json');
-      Assert.fail('Bad request.');
     } catch (AuraHandledException ex) {
       shown = ex.getMessage();
     }
     Test.stopTest();
 
+    // [2] Count the platform logs for the controller
+    Integer logCount = [
+      SELECT COUNT()
+      FROM AIPlatformLog__c
+      WHERE ClassName__c = 'AIChatController'
+    ];
+
+    // [3] Check the generic label was shown and the failure logged
     Assert.areEqual(
       Label.AI_Error_Generic,
       shown,
-      'Nothing internal is shown.'
+      'Only the generic label should be shown.'
     );
-    Assert.areEqual(
-      1,
-      [
-        SELECT COUNT()
-        FROM AIPlatformLog__c
-        WHERE ClassName__c = 'AIChatController'
-      ],
-      'Logged once.'
-    );
+    Assert.areEqual(1, logCount, 'The failure should be logged once.');
   }
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AreWorkflowActionsEnabled__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Lets users run Workflow Actions suggested in the chat. Set at user, profile or organisation level.</description>
+    <inlineHelpText
+  >Tick to let users run Workflow Actions from the chat.</inlineHelpText>
+    <label>Workflow Actions Enabled</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

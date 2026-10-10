@@ -1,47 +1,49 @@
 /*
-Class Name: AIAnthropicResponseHandler
+Class Name: AIAnthropicMessageResponseHandler
 
 =================================================================
 =================================================================
 
-Description: IAIProviderResponseHandler for Anthropic's Messages API - parses a response and
-shapes providerMessages. Deliberately a separate class from AIAnthropicRequestBuilder; handling
-a response and building a request are different jobs. Every field name/value this shape depends
-on is a AIAssistApplicationConstants.ANTHROPIC_* constant - adding or changing
-a provider is a new pair of classes registered in AIProvider, never a change to AIAgentManager.
+Description: Reads Anthropic's Messages API response and adds it to the conversation.
+
+Step 1: If tools were run last time, add their results to the conversation
+Step 2: Stop if there is no response to read
+Step 3: Throw an error if Anthropic says the call failed
+Step 4: Read the text and tool calls from the reply
+Step 5: Work out the token usage
+Step 6: Add the reply to the conversation and return the answer
 
 =================================================================
 =================================================================
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-1.1          Chandler Stuart          Wrapped handleResponse in a single try/catch - wraps unexpected failures in AIAnthropicResponseHandlerException; logging left to the caller.
-1.2          Chandler Stuart          Canonical types moved from AIAgentManager to AIProvider.
 */
 
-public inherited sharing class AIAnthropicResponseHandler implements IAIProviderResponseHandler {
-  public class AIAnthropicResponseHandlerException extends Exception {
+public without sharing class AIAnthropicMessageResponseHandler implements IAIProviderResponseHandler {
+  public class AIAnthropicMessageResponseHandlerException extends Exception {
   }
 
-  // previousToolCalls non-null: batches every tool result from the prior iteration into one user-role message. anthropicHttpResponse non-null: parses it and appends the assistant's content array as-is.
+  // Reads the reply from Anthropic and adds it to the conversation. If tools were run last time, it also adds their results to the conversation first.
   public AIProvider.Response handleResponse(
     List<Map<String, Object>> providerMessages,
     HttpResponse anthropicHttpResponse,
     List<AIProvider.ToolCall> previousToolCalls,
-    List<Object> previousToolResults
+    List<Object> previousToolResults,
+    AIProvider.Request request
   ) {
     try {
-      // Tool results - Anthropic expects every result from one assistant turn in a single user-role message, one tool_result block per tool_use id.
+      // [1] If tools were run last time, send their results back to Anthropic
       if (previousToolCalls != null) {
         if (
           previousToolResults == null ||
           previousToolResults.size() != previousToolCalls.size()
         )
-          throw new AIAnthropicResponseHandlerException(
+          throw new AIAnthropicMessageResponseHandlerException(
             'Tool result count does not match tool call count - every tool_use block needs exactly one tool_result.'
           );
 
-        // One tool_result block per tool call - tool_use_id echoes the tool_use block's id so Anthropic can pair each output with its request.
+        // [2] Make one result entry for each tool that ran, tagged with that tool's id so Anthropic knows which is which
         List<Object> toolResultBlocks = new List<Object>();
 
         for (
@@ -63,7 +65,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
           );
         }
 
-        // Tool results go back as a user-role message (Anthropic has no separate "tool" role, unlike OpenAI) - all blocks in one message, never split across several.
+        // [3] Add all the results to the conversation as a single user message
         providerMessages.add(
           new Map<String, Object>{
             AIAssistApplicationConstants.ANTHROPIC_ROLE_KEY => AIAssistApplicationConstants.ANTHROPIC_ROLE_USER,
@@ -72,14 +74,15 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
         );
       }
 
+      // [4] If there is no reply to read, stop here
       if (anthropicHttpResponse == null)
         return null;
 
       String rawResponseBody = anthropicHttpResponse.getBody();
 
-      // Status not in AIAssistSettings__c.AIProviderSuccessStatusCodes__c - expose Anthropic's error, e.g. { "type": "error", "error": { "type": "invalid_request_error", "message": "..." } }, falling back to the raw body.
+      // [5] If Anthropic says the call failed, throw an error with its message (or the raw reply if it has none)
       if (
-        !toIntegerSet(
+        !buildIntegerSet(
             AIAssistSettingsService.getSettings()
               .AIProviderSuccessStatusCodes__c
           )
@@ -103,13 +106,14 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
             .get(AIAssistApplicationConstants.ANTHROPIC_FIELD_ERROR_TYPE);
           Object providerErrorMessage = ((Map<String, Object>) errorDetails)
             .get(AIAssistApplicationConstants.ANTHROPIC_FIELD_ERROR_MESSAGE);
+
           if (providerErrorMessage != null)
             providerErrorDetail =
               (providerErrorType == null ? '' : providerErrorType + ' - ') +
               providerErrorMessage;
         }
 
-        throw new AIAnthropicResponseHandlerException(
+        throw new AIAnthropicMessageResponseHandlerException(
           'AI provider returned HTTP ' +
             anthropicHttpResponse.getStatusCode() +
             ': ' +
@@ -117,7 +121,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
         );
       }
 
-      // Parse the successful response body
+      // [6] The call worked, so read the reply
       Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(
         rawResponseBody
       );
@@ -131,7 +135,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
       AIProvider.Response agentResponse = new AIProvider.Response();
       List<String> responseTextLines = new List<String>();
 
-      // Text blocks become the reply text, tool_use blocks become tool calls - any other block type is ignored here
+      // [7] Go through the reply: text goes into the answer, tool requests go into the list of tool calls, anything else is skipped
       for (Object contentBlockObject : contentBlocks) {
         Map<String, Object> contentBlock = (Map<String, Object>) contentBlockObject;
         String contentBlockType = (String) contentBlock.get(
@@ -173,7 +177,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
 
       agentResponse.textContent = String.join(responseTextLines, '\n');
 
-      // Total tokens = input tokens + output tokens (missing values count as 0)
+      // [8] Work out how many tokens were used (anything missing counts as 0)
       Map<String, Object> tokenUsage = (Map<String, Object>) responseBody.get(
         AIAssistApplicationConstants.ANTHROPIC_FIELD_USAGE
       );
@@ -192,7 +196,7 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
           agentResponse.inputTokens + agentResponse.outputTokens;
       }
 
-      // Add the assistant's reply to the conversation exactly as Anthropic returned it, so the next request includes it
+      // [9] Add Anthropic's reply to the conversation so the next request includes it
       providerMessages.add(
         new Map<String, Object>{
           AIAssistApplicationConstants.ANTHROPIC_ROLE_KEY => AIAssistApplicationConstants.ANTHROPIC_ROLE_ASSISTANT,
@@ -200,21 +204,21 @@ public inherited sharing class AIAnthropicResponseHandler implements IAIProvider
         }
       );
 
+      // [10] Hand back the answer and any tool calls
       return agentResponse;
-    } catch (Exception caughtException) {
-      // Not logged here - AIAgentManager.executeAiMessage handles and logs it, so it's logged exactly once. This handler's own exceptions (count mismatch, provider HTTP error) already carry a user-facing message and are rethrown as-is; anything unexpected (malformed JSON, bad cast) is wrapped with the original as its cause.
-      if (caughtException instanceof AIAnthropicResponseHandlerException)
-        throw caughtException;
-      throw new AIAnthropicResponseHandlerException(
-        'Failed to handle the Anthropic response: ' +
-        caughtException.getMessage(),
-        caughtException
+    } catch (Exception ex) {
+      // [11] Anything that goes wrong ends up here. Not logged here because AIAgentManager logs it, so it is only logged once. Our own errors are passed on as they are; anything else is wrapped with a clear message.
+      if (ex instanceof AIAnthropicMessageResponseHandlerException)
+        throw ex;
+      throw new AIAnthropicMessageResponseHandlerException(
+        'Failed to handle the Anthropic response: ' + ex.getMessage(),
+        ex
       );
     }
   }
 
-  // A comma separated setting such as "200,201" as a set of numbers. Entries that are not numbers are skipped.
-  private static Set<Integer> toIntegerSet(String commaSeparatedNumbers) {
+  // Turns a setting like "200,201" into a set of numbers. Anything that is not a number is skipped.
+  private static Set<Integer> buildIntegerSet(String commaSeparatedNumbers) {
     Set<Integer> numbers = new Set<Integer>();
 
     if (String.isBlank(commaSeparatedNumbers))

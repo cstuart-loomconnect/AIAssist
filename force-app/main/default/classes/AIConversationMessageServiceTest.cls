@@ -10,7 +10,7 @@ Description: Testing utility for AIConversationMessageService: sending, continui
 =================================================================
 Applicable Classes:
 
-AIConversationMessageService
+AIConversationMessageService: Coverage TBC
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
@@ -18,16 +18,16 @@ Version      Author                   Description
 
 @IsTest
 private class AIConversationMessageServiceTest {
-  // testScenario1: A first message creates the conversation, stores the user message, takes the lock, and and the queued job answers it.
-  // testScenario2: A second message continues the open conversation named by its Id, and an agent that keeps one conversation per record reuses it for the same record.
-  // testScenario3: A conversation Id that is closed, on another agent, another user's or of the wrong type is not continued: a new conversation is started.
-  // testScenario4: A conversation at the agent's message cap, and one at its token cap, are closed with the matching reason and the message starts a new conversation.
-  // testScenario5: When new chats are paused a new conversation is refused with its label, and a bad request is refused with the validator's label, with nothing stored.
-  // testScenario6: A message sent while another is being processed is stored and waits: it does not start a second job, and the first job hands over to it.
-  // testScenario7: retryMessage re-queues the newest user message, clears its failure and the queued job answers it.
-  // testScenario8: retryMessage refuses a closed conversation, one with no user message, another user's, a bad Id, and one that is busy.
-  // testScenario9: closeConversation closes the user's own conversation with the given reason, or the default, and reports another user's, a missing one and a bad Id as not found.
-  // testScenario10: estimateTokens is zero for blank text, rounds up, and is exact on a multiple of the characters-per-token estimate.
+  // testScenario1: Send a first message -> the conversation is created, the user message is stored and locked, and the queued job answers it.
+  // testScenario2: Send a second message by conversation Id, then by record on a one-conversation-per-record agent -> the open conversation is continued and found again.
+  // testScenario3: Send with a closed, other-agent, another user's and wrong-type conversation Id -> none is continued and a new conversation is started.
+  // testScenario4: Send to a conversation at the agent's message cap and one at its token cap -> each is closed with the matching reason and the message starts a new conversation.
+  // testScenario5: Send with new chats paused and with a blank message -> each is refused with its label and nothing is stored.
+  // testScenario6: Send while another message is being processed -> the message is stored and waits without starting a second job.
+  // testScenario7: Retry the newest user message after a failure -> it is re-queued, its failure is cleared and the queued job answers it.
+  // testScenario8: Retry a closed conversation, one with no user message, another user's, a wrong-type Id and a busy one -> each is refused with its label.
+  // testScenario9: Close the user's own conversations with a given and the default reason, and another user's, a wrong-type and a null Id -> own ones close and the rest are reported as not found.
+  // testScenario10: Estimate tokens for blank, exact, one-over and longest text -> blank is zero, an exact multiple is exact and anything over rounds up.
 
   @TestSetup
   static void setup() {
@@ -38,23 +38,9 @@ private class AIConversationMessageServiceTest {
     upsert settings;
   }
 
-  // The AI Agent Manager replaced, so the messaging layer is tested on its own behaviour: it answers every turn successfully.
-  private class AnsweringExecutor implements AIMessageProcessingQueueable.IAIResponseExecutor {
-    public AIAgentManager.AgentResult execute(
-      AIMessageProcessingQueueable.AIResponseRequest request
-    ) {
-      AIAgentManager.AgentResult result = new AIAgentManager.AgentResult();
-      result.isSuccessful = true;
-      result.replyText = 'Fake reply';
-      result.inputTokens = 10;
-      result.outputTokens = 5;
-      result.totalTokensUsed = 15;
-      return result;
-    }
-  }
-
   @IsTest
   static void testScenario1() {
+    // [1] Create a chat user and an agent
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -69,9 +55,10 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     AIConversationMessage__c sent;
 
+    // [2] Send a first message as the chat user
     System.runAs(chatUser) {
       Test.startTest();
       sent = AIConversationMessageService.sendMessage(
@@ -84,6 +71,7 @@ private class AIConversationMessageServiceTest {
       Test.stopTest();
     }
 
+    // [3] Read back the stored message, the replies and the active conversations
     AIConversationMessage__c userMessage = [
       SELECT ProcessingStatus__c, AIConversation__c
       FROM AIConversationMessage__c
@@ -96,38 +84,41 @@ private class AIConversationMessageServiceTest {
         AIConversation__c = :sent.AIConversation__c
         AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT
     ];
+    Integer activeCount = [
+      SELECT COUNT()
+      FROM AIConversation__c
+      WHERE
+        OwnerId = :chatUser.Id
+        AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
+    ];
 
+    // [4] Check the message was answered in one active conversation
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
       userMessage.ProcessingStatus__c,
-      'The answered message is Complete.'
+      'The answered message should be Complete.'
     );
-    Assert.areEqual(1, replies.size(), 'One reply.');
+    Assert.areEqual(1, replies.size(), 'There should be one reply.');
     Assert.areEqual(
       'Fake reply',
       replies[0].MessageBody__c,
-      'It is the executor\'s answer.'
+      'The reply should be the provider\'s answer.'
     );
     Assert.areEqual(
       10,
       replies[0].InputTokenCount__c,
-      'The reply carries the executor\'s tokens.'
+      'The reply should carry the executor\'s tokens.'
     );
     Assert.areEqual(
       1,
-      [
-        SELECT COUNT()
-        FROM AIConversation__c
-        WHERE
-          OwnerId = :chatUser.Id
-          AND Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE
-      ],
-      'The user owns one Active conversation.'
+      activeCount,
+      'The user should own one Active conversation.'
     );
   }
 
   @IsTest
   static void testScenario2() {
+    // [1] Create a chat user and an agent that allows one conversation per record
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -142,9 +133,11 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     agent.SingleActiveConversationPerRecord__c = true;
     update agent;
+
+    // [2] Create an account and an open conversation for it as the chat user
     Account record;
     AIConversation__c conversation;
     System.runAs(chatUser) {
@@ -159,6 +152,8 @@ private class AIConversationMessageServiceTest {
       conversation.RelatedRecordId__c = String.valueOf(record.Id);
       insert conversation;
     }
+
+    // [3] Send a second message by conversation Id and then by record
     AIConversationMessage__c byId;
     AIConversationMessage__c byRecord;
 
@@ -182,25 +177,34 @@ private class AIConversationMessageServiceTest {
       Test.stopTest();
     }
 
+    // [4] Count the user's conversations
+    Integer conversationCount = [
+      SELECT COUNT()
+      FROM AIConversation__c
+      WHERE OwnerId = :chatUser.Id
+    ];
+
+    // [5] Check the open conversation was continued and no second one was created
     Assert.areEqual(
       conversation.Id,
       byId.AIConversation__c,
-      'The open conversation is continued by Id.'
+      'The open conversation should be continued by Id.'
     );
     Assert.areEqual(
       conversation.Id,
       byRecord.AIConversation__c,
-      'And found again by record.'
+      'The open conversation should be found again by record.'
     );
     Assert.areEqual(
       1,
-      [SELECT COUNT() FROM AIConversation__c WHERE OwnerId = :chatUser.Id],
-      'No second conversation was created.'
+      conversationCount,
+      'No second conversation should be created.'
     );
   }
 
   @IsTest
   static void testScenario3() {
+    // [1] Create two chat users and an agent each
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -215,17 +219,24 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     User otherUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ otherUser },
       'AIAssistUser'
     );
-    AIAgent__c otherAgent = AIAssistTestDataFactory.createAIAgents(
+    AIModelConfiguration__c otherModel = AIAssistTestDataFactory.createAIModelConfigurations(
       1,
-      model.Id,
       true
     )[0];
+    AIAgent__c otherAgent = AIAssistTestDataFactory.createAIAgents(
+      1,
+      otherModel.Id,
+      true
+    )[0];
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+    // [2] Create a closed, other-agent and another user's conversation
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
@@ -245,6 +256,8 @@ private class AIConversationMessageServiceTest {
       1,
       true
     )[0];
+
+    // [3] Send a message to each unusable conversation Id as the chat user
     Set<Id> startedIds = new Set<Id>();
 
     System.runAs(chatUser) {
@@ -296,20 +309,22 @@ private class AIConversationMessageServiceTest {
       Test.stopTest();
     }
 
+    // [4] Check none of those conversations was used
     Assert.isFalse(
       startedIds.contains(conversations[0].Id) ||
         startedIds.contains(conversations[1].Id) ||
         startedIds.contains(theirs.Id),
-      'None of those conversations was used.'
+      'None of those conversations should have been used.'
     );
     Assert.isFalse(
       startedIds.isEmpty(),
-      'Messages were stored in conversations of the user\'s own.'
+      'Messages should be stored in conversations of the user\'s own.'
     );
   }
 
   @IsTest
   static void testScenario4() {
+    // [1] Create a chat user and an agent
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -324,10 +339,12 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
+
+    // [2] Create an agent with a message cap and one with a token cap
     List<AIAgent__c> capped = AIAssistTestDataFactory.createAIAgents(
       2,
-      model.Id,
+      agent.AIModelConfiguration__c,
       false
     );
     capped[0].MaxMessagesPerConversation__c = 2;
@@ -335,6 +352,8 @@ private class AIConversationMessageServiceTest {
     capped[1]
       .TokenTrackingMethod__c = AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE;
     insert capped;
+
+    // [3] Fill a conversation for each cap
     AIConversation__c full = AIAssistTestDataFactory.createAIConversations(
       capped[0].Id,
       chatUser.Id,
@@ -347,13 +366,22 @@ private class AIConversationMessageServiceTest {
       1,
       true
     )[0];
-    AIAssistTestDataFactory.createAIConversationMessages(full.Id, 1, 2, true);
+    AIAssistTestDataFactory.createAIConversationMessages(
+      full.Id,
+      AIAssistApplicationConstants.SENDER_USER,
+      1,
+      2,
+      true
+    );
     AIAssistTestDataFactory.createAIConversationMessages(
       heavy.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       100,
       1,
       true
     );
+
+    // [4] Send a message to each full conversation as the chat user
     AIConversationMessage__c afterMessageCap;
     AIConversationMessage__c afterTokenCap;
 
@@ -378,6 +406,7 @@ private class AIConversationMessageServiceTest {
       Test.stopTest();
     }
 
+    // [5] Read back the two capped conversations
     Map<Id, AIConversation__c> byId = new Map<Id, AIConversation__c>(
       [
         SELECT Status__c, ConversationCloseReason__c
@@ -385,30 +414,33 @@ private class AIConversationMessageServiceTest {
         WHERE Id IN :new Set<Id>{ full.Id, heavy.Id }
       ]
     );
+
+    // [6] Check each was closed with its reason and a new conversation was started
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_MESSAGE_LIMIT_REACHED,
       byId.get(full.Id).ConversationCloseReason__c,
-      'Closed at the message cap.'
+      'The conversation should be closed at the message cap.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_TOKEN_LIMIT_REACHED,
       byId.get(heavy.Id).ConversationCloseReason__c,
-      'Closed at the token cap.'
+      'The conversation should be closed at the token cap.'
     );
     Assert.areNotEqual(
       full.Id,
       afterMessageCap.AIConversation__c,
-      'A new conversation was started.'
+      'A new conversation should be started after the message cap.'
     );
     Assert.areNotEqual(
       heavy.Id,
       afterTokenCap.AIConversation__c,
-      'And another.'
+      'A new conversation should be started after the token cap.'
     );
   }
 
   @IsTest
   static void testScenario5() {
+    // [1] Create a chat user and an agent, and pause new chats
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -423,10 +455,12 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
     uiSettings.IsUserInitiatedChatEnabled__c = false;
     upsert uiSettings;
+
+    // [2] Send a normal and a blank message as the chat user
     List<String> labels = new List<String>();
 
     System.runAs(chatUser) {
@@ -440,33 +474,34 @@ private class AIConversationMessageServiceTest {
             null,
             null
           );
-          Assert.fail('This message should have been refused.');
-        } catch (Exception ex) {
+        } catch (AIConversationMessageService.AIConversationMessageServiceException ex) {
           labels.add(ex.getMessage());
         }
       }
       Test.stopTest();
     }
 
+    // [3] Count the stored messages
+    Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c];
+
+    // [4] Check both were refused and nothing was stored
+    Assert.areEqual(2, labels.size(), 'Both messages should be refused.');
     Assert.areEqual(
       Label.AI_Chat_New_Chats_Paused,
       labels[0],
-      'New chats are paused.'
+      'A new chat should be refused while new chats are paused.'
     );
     Assert.areEqual(
       Label.AI_Error_Message_Empty,
       labels[1],
-      'A blank message is refused first.'
+      'A blank message should be refused first.'
     );
-    Assert.areEqual(
-      0,
-      [SELECT COUNT() FROM AIConversationMessage__c],
-      'Nothing was stored.'
-    );
+    Assert.areEqual(0, messageCount, 'Nothing should be stored.');
   }
 
   @IsTest
   static void testScenario6() {
+    // [1] Create a chat user, an agent and a locked conversation
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -481,7 +516,7 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
@@ -489,7 +524,10 @@ private class AIConversationMessageServiceTest {
       true
     )[0];
     AIConversationLockService.acquireLock(conversation.Id);
+
+    // [2] Send a message to the locked conversation as the chat user
     AIConversationMessage__c waiting;
+    Integer jobsQueued;
 
     System.runAs(chatUser) {
       Test.startTest();
@@ -501,33 +539,40 @@ private class AIConversationMessageServiceTest {
         null,
         null
       );
-      Integer jobsQueued = Limits.getQueueableJobs();
-      Assert.areEqual(
-        0,
-        jobsQueued,
-        'The conversation was locked, so no job was started for it.'
-      );
+      jobsQueued = Limits.getQueueableJobs();
       Test.stopTest();
     }
 
+    // [3] Read back the stored message and the lock state
+    AIConversationMessage__c stored = [
+      SELECT ProcessingStatus__c
+      FROM AIConversationMessage__c
+      WHERE Id = :waiting.Id
+    ];
+    Boolean isLocked = AIConversationLockService.isConversationLocked(
+      conversation.Id
+    );
+
+    // [4] Check the message waits with no job started
+    Assert.areEqual(
+      0,
+      jobsQueued,
+      'The conversation was locked, so no job should have been started for it.'
+    );
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED,
-      [
-        SELECT ProcessingStatus__c
-        FROM AIConversationMessage__c
-        WHERE Id = :waiting.Id
-      ]
-      .ProcessingStatus__c,
-      'The message waits as Queued.'
+      stored.ProcessingStatus__c,
+      'The message should wait as Queued.'
     );
     Assert.isTrue(
-      AIConversationLockService.isConversationLocked(conversation.Id),
-      'The lock is still held by whoever took it.'
+      isLocked,
+      'The lock should still be held by whoever took it.'
     );
   }
 
   @IsTest
   static void testScenario7() {
+    // [1] Create a chat user, an agent and a conversation with a failed user message
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -542,16 +587,16 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
       1,
       true
     )[0];
-    AIConversationMessage__c failed;
-    failed = AIAssistTestDataFactory.createAIConversationMessages(
+    AIConversationMessage__c failed = AIAssistTestDataFactory.createAIConversationMessages(
       conversation.Id,
+      AIAssistApplicationConstants.SENDER_USER,
       null,
       1,
       false
@@ -559,6 +604,8 @@ private class AIConversationMessageServiceTest {
     failed.ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED;
     failed.FailureReason__c = AIAssistApplicationConstants.FAILURE_REASON_TIMEOUT;
     insert failed;
+
+    // [2] Retry the newest user message as the chat user
     Id retried;
 
     System.runAs(chatUser) {
@@ -569,22 +616,30 @@ private class AIConversationMessageServiceTest {
       Test.stopTest();
     }
 
+    // [3] Read back the retried message
     AIConversationMessage__c after = [
       SELECT ProcessingStatus__c, FailureReason__c
       FROM AIConversationMessage__c
       WHERE Id = :failed.Id
     ];
-    Assert.areEqual(failed.Id, retried, 'It is the newest user message.');
+
+    // [4] Check the message was retried, answered and its failure cleared
+    Assert.areEqual(
+      failed.Id,
+      retried,
+      'The newest user message should be retried.'
+    );
     Assert.areEqual(
       AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE,
       after.ProcessingStatus__c,
-      'The retry was answered.'
+      'The retry should be answered.'
     );
-    Assert.isNull(after.FailureReason__c, 'And the old failure is cleared.');
+    Assert.isNull(after.FailureReason__c, 'The old failure should be cleared.');
   }
 
   @IsTest
   static void testScenario8() {
+    // [1] Create two chat users and an agent
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -599,12 +654,14 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     User otherUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ otherUser },
       'AIAssistUser'
     );
+
+    // [2] Create four conversations for the chat user and one for the other user
     List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(
       agent.Id,
       chatUser.Id,
@@ -623,15 +680,20 @@ private class AIConversationMessageServiceTest {
       1,
       true
     )[0];
+
+    // [3] Give the last conversation a user message and lock it
     System.runAs(chatUser) {
       insert AIAssistTestDataFactory.createAIConversationMessages(
         conversations[3].Id,
+        AIAssistApplicationConstants.SENDER_USER,
         null,
         1,
         false
       );
     }
     AIConversationLockService.acquireLock(conversations[3].Id);
+
+    // [4] Retry each case as the chat user
     Map<String, String> messageByCase = new Map<String, String>();
     Map<String, Id> idByCase = new Map<String, Id>{
       'closed' => conversations[0].Id,
@@ -648,43 +710,45 @@ private class AIConversationMessageServiceTest {
           AIConversationMessageService.retryLatestUserMessage(
             idByCase.get(key)
           );
-          Assert.fail('The ' + key + ' case should have been refused.');
-        } catch (Exception ex) {
+        } catch (AIConversationMessageService.AIConversationMessageServiceException ex) {
           messageByCase.put(key, ex.getMessage());
         }
       }
       Test.stopTest();
     }
 
+    // [5] Check every case was refused with its label
+    Assert.areEqual(5, messageByCase.size(), 'Every case should be refused.');
     Assert.areEqual(
       Label.AI_Error_Conversation_Closed,
       messageByCase.get('closed'),
-      'Closed.'
+      'A closed conversation should be refused as closed.'
     );
     Assert.areEqual(
       Label.AI_Error_Message_Empty,
       messageByCase.get('empty'),
-      'Nothing to retry.'
+      'A conversation with nothing to retry should be refused as empty.'
     );
     Assert.areEqual(
       Label.AI_Error_Conversation_Not_Found,
       messageByCase.get('theirs'),
-      'Another user\'s conversation is reported as not found.'
+      'Another user\'s conversation should be reported as not found.'
     );
     Assert.areEqual(
       Label.AI_Error_Conversation_Not_Found,
       messageByCase.get('badId'),
-      'An Id of the wrong type is too.'
+      'An Id of the wrong type should be reported as not found.'
     );
     Assert.areEqual(
       Label.AI_Error_Conversation_Busy,
       messageByCase.get('busy'),
-      'A turn is already running.'
+      'A conversation with a turn already running should be reported as busy.'
     );
   }
 
   @IsTest
   static void testScenario9() {
+    // [1] Create two chat users, an agent and their conversations
     User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ chatUser },
@@ -699,7 +763,7 @@ private class AIConversationMessageServiceTest {
       model.Id,
       true
     )[0];
-    AIMessageProcessingQueueable.aiResponseExecutor = new AnsweringExecutor();
+    AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
     User otherUser = AIAssistTestDataFactory.createUsers(1, true)[0];
     AIAssistTestDataFactory.assignPermissionSet(
       new List<User>{ otherUser },
@@ -717,6 +781,8 @@ private class AIConversationMessageServiceTest {
       1,
       true
     )[0];
+
+    // [2] Close the user's own conversations and try to close others as the chat user
     List<String> messages = new List<String>();
 
     System.runAs(chatUser) {
@@ -729,19 +795,14 @@ private class AIConversationMessageServiceTest {
       for (Id badId : new List<Id>{ theirs.Id, agent.Id, null }) {
         try {
           AIConversationMessageService.closeConversation(badId, null);
-          Assert.fail('This conversation should not have been closable.');
-        } catch (Exception ex) {
+        } catch (AIConversationMessageService.AIConversationMessageServiceException ex) {
           messages.add(ex.getMessage());
-          Assert.areEqual(
-            Label.AI_Error_Conversation_Not_Found,
-            ex.getMessage(),
-            'The text is the Custom Label.'
-          );
         }
       }
       Test.stopTest();
     }
 
+    // [3] Read back all the conversations
     Map<Id, AIConversation__c> byId = new Map<Id, AIConversation__c>(
       [
         SELECT
@@ -751,31 +812,41 @@ private class AIConversationMessageServiceTest {
         FROM AIConversation__c
       ]
     );
+
+    // [4] Check own conversations closed and the rest were refused as not found
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED,
       byId.get(mine[0].Id).ConversationCloseReason__c,
-      'The default reason.'
+      'The default reason should be used.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_SYSTEM_OVERRIDE,
       byId.get(mine[1].Id).ConversationCloseReason__c,
-      'The given reason.'
+      'The given reason should be used.'
     );
     Assert.isNotNull(
       byId.get(mine[0].Id).ConversationClosedTimestamp__c,
-      'The close time was stamped by the trigger.'
+      'The close time should be stamped by the trigger.'
     );
     Assert.areEqual(
       AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE,
       byId.get(theirs.Id).Status__c,
-      'Theirs is untouched.'
+      'Another user\'s conversation should be untouched.'
     );
-    Assert.areEqual(3, messages.size(), 'Three refusals.');
+    Assert.areEqual(3, messages.size(), 'There should be three refusals.');
+    Assert.areEqual(
+      new Set<String>{ Label.AI_Error_Conversation_Not_Found },
+      new Set<String>(messages),
+      'Each refusal should be the not found Custom Label.'
+    );
   }
 
   @IsTest
   static void testScenario10() {
+    // [1] Work out the characters per token
     Integer perToken = AIAssistApplicationConstants.CHARACTERS_PER_TOKEN_ESTIMATE;
+
+    // [2] Estimate tokens for blank, exact, one-over and longest text
     Decimal blank;
     Decimal exact;
     Decimal rounded;
@@ -796,16 +867,17 @@ private class AIConversationMessageServiceTest {
     );
     Test.stopTest();
 
-    Assert.areEqual(0, blank, 'Blank is nothing.');
-    Assert.areEqual(3, exact, 'An exact multiple.');
-    Assert.areEqual(4, rounded, 'One over rounds up.');
+    // [3] Check blank is zero, exact is exact and anything over rounds up
+    Assert.areEqual(0, blank, 'Blank text should be nothing.');
+    Assert.areEqual(3, exact, 'An exact multiple should be exact.');
+    Assert.areEqual(4, rounded, 'One character over should round up.');
     Assert.areEqual(
       Math.ceil(
         AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS /
         (Decimal) perToken
       ),
       huge,
-      'The longest allowed message.'
+      'The longest allowed message should round up.'
     );
   }
 }
