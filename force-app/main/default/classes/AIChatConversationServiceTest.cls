@@ -37,314 +37,350 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Create an agent, the user's conversation, another user's conversation and two messages
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 1, true)[0];
+        System.runAs(superUser) {
+            // [1] Create an agent, the user's conversation, another user's conversation and two messages
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
 
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
-        AIConversationMessage__c userMessage = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 5, 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 1, true)[0];
 
-        // [2] Get the user's own conversation and reply, then try each bad Id
-        List<String> messages = new List<String>();
-        Id ownId;
-        Id replyId;
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIConversationMessage__c userMessage = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 5, 1, true)[0];
 
-        Test.startTest();
-            ownId = AIChatConversationService.getOwnedConversation(conversation.Id).Id;
-            replyId = AIChatConversationService.getOwnedAgentMessage(reply.Id).Id;
+            // [2] Get the user's own conversation and reply, then try each bad Id
+            List<String> messages = new List<String>();
+            Id ownId;
+            Id replyId;
 
-            for (Id bad : new List<Id>{ theirs.Id, agent.Id, null }) {
+            Test.startTest();
+                ownId = AIChatConversationService.getOwnedConversation(conversation.Id).Id;
+                replyId = AIChatConversationService.getOwnedAgentMessage(reply.Id).Id;
+
+                for (Id bad : new List<Id>{ theirs.Id, agent.Id, null }) {
+                    try {
+                        AIChatConversationService.getOwnedConversation(bad);
+                    } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+                        messages.add(ex.getMessage());
+                    }
+                }
+
                 try {
-                    AIChatConversationService.getOwnedConversation(bad);
+                    AIChatConversationService.getOwnedAgentMessage(userMessage.Id);
                 } catch (AIChatConversationService.AIChatConversationServiceException ex) {
                     messages.add(ex.getMessage());
                 }
-            }
+            Test.stopTest();
 
-            try {
-                AIChatConversationService.getOwnedAgentMessage(userMessage.Id);
-            } catch (AIChatConversationService.AIChatConversationServiceException ex) {
-                messages.add(ex.getMessage());
-            }
-        Test.stopTest();
+            // [3] Check the own records are returned and the bad Ids are refused
+            Assert.areEqual(conversation.Id, ownId, 'The user\'s own conversation should be returned.');
+            Assert.areEqual(reply.Id, replyId, 'The user\'s own reply should be returned.');
 
-        // [3] Check the own records are returned and the bad Ids are refused
-        Assert.areEqual(conversation.Id, ownId, 'The user\'s own conversation should be returned.');
-        Assert.areEqual(reply.Id, replyId, 'The user\'s own reply should be returned.');
-
-        Assert.areEqual(4, messages.size(), 'Each of the four bad Ids should be refused.');
-        for (String refusal : messages)
-        Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusal, 'Each refusal should be the not found Custom Label.');
+            Assert.areEqual(4, messages.size(), 'Each of the four bad Ids should be refused.');
+            for (String refusal : messages)
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusal, 'Each refusal should be the not found Custom Label.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Create an agent, an active conversation and another user
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Create a closed conversation
-        AIConversation__c closed = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
-        closed.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
-        closed.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
-        closed.ConversationClosedTimestamp__c = System.now();
-        insert closed;
+        System.runAs(superUser) {
+            // [1] Create an agent, an active conversation and another user
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-        // [3] Find the active conversation for the agent and for a wrong agent Id
-        AIConversation__c found;
-        AIConversation__c none;
+            // [2] Create a closed conversation
+            AIConversation__c closed = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            closed.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
+            closed.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
+            closed.ConversationClosedTimestamp__c = System.now();
+            insert closed;
 
-        Test.startTest();
-            found = AIChatConversationService.findActiveConversation(agent.Id, null);
-            none = AIChatConversationService.findActiveConversation(UserInfo.getUserId(), null);
-        Test.stopTest();
+            // [3] Find the active conversation for the agent and for a wrong agent Id
+            AIConversation__c found;
+            AIConversation__c none;
 
-        // [4] Check only the active conversation is found
-        Assert.areEqual(conversation.Id, found.Id, 'The active conversation should be found, not the closed one.');
-        Assert.isNull(none, 'No conversation should be found for a wrong agent Id.');
+            Test.startTest();
+                found = AIChatConversationService.findActiveConversation(agent.Id, null);
+                none = AIChatConversationService.findActiveConversation(UserInfo.getUserId(), null);
+            Test.stopTest();
+
+            // [4] Check only the active conversation is found
+            Assert.areEqual(conversation.Id, found.Id, 'The active conversation should be found, not the closed one.');
+            Assert.isNull(none, 'No conversation should be found for a wrong agent Id.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Create an agent, a conversation and another user
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Set a message page size of 3
-        AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
-        AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
-        ui.messagePageSize = 3;
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and another user
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-        // [3] Create user messages and System messages
-        List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 5, true);
-        AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_SYSTEM, 9, 2, true);
+            // [2] Set a message page size of 3
+            AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
+            AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
+            ui.messagePageSize = 3;
 
-        // [4] Build the view and load the earlier page
-        AIChatDataStructure.ConversationView view;
-        AIChatDataStructure.MessagePage older;
+            // [3] Create user messages and System messages
+            List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 5, true);
+            AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_SYSTEM, 9, 2, true);
 
-        Test.startTest();
-            view = AIChatConversationService.buildConversationView(conversation.Id, 3, user, ui);
-            older = AIChatConversationService.loadMessagePage(conversation.Id, view.messages[0].id, 3, user, ui);
-        Test.stopTest();
+            // [4] Build the view and load the earlier page
+            AIChatDataStructure.ConversationView view;
+            AIChatDataStructure.MessagePage older;
 
-        // [5] Check the view and the earlier page
-        Assert.areEqual('Test message 0', view.title, 'The view should be named after the first user message.');
-        Assert.areEqual(3, view.messages.size(), 'The view should hold one page of messages.');
-        Assert.isTrue(view.hasMoreMessages, 'The view should say there are more messages to load.');
-        Assert.areEqual(messages[4].Id, view.messages[2].id, 'The newest message should come last.');
+            Test.startTest();
+                view = AIChatConversationService.buildConversationView(conversation.Id, 3, user, ui);
+                older = AIChatConversationService.loadMessagePage(conversation.Id, view.messages[0].id, 3, user, ui);
+            Test.stopTest();
 
-        Assert.areEqual(2, older.messages.size(), 'The earlier page should hold the rest, without the System messages.');
-        Assert.isFalse(older.hasMore, 'The earlier page should say there is nothing more.');
+            // [5] Check the view and the earlier page
+            Assert.areEqual('Test message 0', view.title, 'The view should be named after the first user message.');
+            Assert.areEqual(3, view.messages.size(), 'The view should hold one page of messages.');
+            Assert.isTrue(view.hasMoreMessages, 'The view should say there are more messages to load.');
+            Assert.areEqual(messages[4].Id, view.messages[2].id, 'The newest message should come last.');
+
+            Assert.areEqual(2, older.messages.size(), 'The earlier page should hold the rest, without the System messages.');
+            Assert.isFalse(older.hasMore, 'The earlier page should say there is nothing more.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Create an agent, a conversation and another user
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Create four user messages
-        AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
-        AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
-        List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 4, true);
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and another user
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-        // [3] Load the messages after a boundary and with no boundary
-        List<AIChatDataStructure.ChatMessage> after;
-        List<AIChatDataStructure.ChatMessage> all;
+            // [2] Create four user messages
+            AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
+            AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
+            List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 4, true);
 
-        Test.startTest();
-            after = AIChatConversationService.loadMessagesAfter(conversation.Id, messages[1].Id, user, ui);
-            all = AIChatConversationService.loadMessagesAfter(conversation.Id, null, user, ui);
-        Test.stopTest();
+            // [3] Load the messages after a boundary and with no boundary
+            List<AIChatDataStructure.ChatMessage> after;
+            List<AIChatDataStructure.ChatMessage> all;
 
-        // [4] Check the messages returned
-        Assert.areEqual(2, after.size(), 'Only the two newer messages should be returned.');
-        Assert.areEqual(4, all.size(), 'All the messages should be returned when there is no boundary.');
+            Test.startTest();
+                after = AIChatConversationService.loadMessagesAfter(conversation.Id, messages[1].Id, user, ui);
+                all = AIChatConversationService.loadMessagesAfter(conversation.Id, null, user, ui);
+            Test.stopTest();
+
+            // [4] Check the messages returned
+            Assert.areEqual(2, after.size(), 'Only the two newer messages should be returned.');
+            Assert.areEqual(4, all.size(), 'All the messages should be returned when there is no boundary.');
+        }
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Create an agent, a conversation and another user
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Map a real value to a fake value for the conversation
-        AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
-        AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
-        AIAssistTestDataFactory.createAIPIIMappings(conversation.Id, new Map<String, String>{ 'Jane Smith' => 'Mary Jones' }, true);
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and another user
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-        // [3] Create an AI reply that holds the fake value
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, false)[0];
-        reply.MessageBody__c = 'Hello Mary Jones';
-        AIMessagingDataService.insertOrThrow(new List<SObject>{ reply });
+            // [2] Map a real value to a fake value for the conversation
+            AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
+            AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
+            AIAssistTestDataFactory.createAIPIIMappings(conversation.Id, new Map<String, String>{ 'Jane Smith' => 'Mary Jones' }, true);
 
-        // [4] Build the view and export the conversation
-        String exported;
-        AIChatDataStructure.ConversationView view;
+            // [3] Create an AI reply that holds the fake value
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, false)[0];
+            reply.MessageBody__c = 'Hello Mary Jones';
+            AIMessagingDataService.insertOrThrow(new List<SObject>{ reply });
 
-        Test.startTest();
-            view = AIChatConversationService.buildConversationView(conversation.Id, 10, user, ui);
-            exported = AIChatConversationService.exportConversation(conversation.Id);
-        Test.stopTest();
+            // [4] Build the view and export the conversation
+            String exported;
+            AIChatDataStructure.ConversationView view;
 
-        // [5] Read the stored reply text
-        String storedBody = [SELECT MessageBody__c FROM AIConversationMessage__c WHERE Id = :reply.Id].MessageBody__c;
+            Test.startTest();
+                view = AIChatConversationService.buildConversationView(conversation.Id, 10, user, ui);
+                exported = AIChatConversationService.exportConversation(conversation.Id);
+            Test.stopTest();
 
-        // [6] Check the real value is shown and the stored text is unchanged
-        Assert.areEqual('Hello Jane Smith', view.messages[0].displayText, 'The window should show the real value.');
-        Assert.isTrue(exported.contains('Hello Jane Smith'), 'The export should hold the real value.');
-        Assert.areEqual('Hello Mary Jones', storedBody, 'The stored text should be unchanged.');
+            // [5] Read the stored reply text
+            String storedBody = [SELECT MessageBody__c FROM AIConversationMessage__c WHERE Id = :reply.Id].MessageBody__c;
+
+            // [6] Check the real value is shown and the stored text is unchanged
+            Assert.areEqual('Hello Jane Smith', view.messages[0].displayText, 'The window should show the real value.');
+            Assert.isTrue(exported.contains('Hello Jane Smith'), 'The export should hold the real value.');
+            Assert.areEqual('Hello Mary Jones', storedBody, 'The stored text should be unchanged.');
+        }
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Create an agent, the user's conversation, another user and their conversations
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 2, true);
+        System.runAs(superUser) {
+            // [1] Create an agent, the user's conversation, another user and their conversations
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
 
-        // [2] Create a conversation about an account
-        AIConversation__c about = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 2, true);
 
-        Account record = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            // [2] Create a conversation about an account
+            AIConversation__c about = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
 
-        about.RelatedRecordId__c = String.valueOf(record.Id);
-        about.RelatedObjectAPIName__c = 'Account';
-        insert about;
+            Account record = AIAssistTestDataFactory.createAccounts(1, true)[0];
 
-        // [3] Get the history for all conversations and for the record
-        List<AIChatDataStructure.ConversationSummary> all;
-        List<AIChatDataStructure.ConversationSummary> forRecord;
+            about.RelatedRecordId__c = String.valueOf(record.Id);
+            about.RelatedObjectAPIName__c = 'Account';
+            insert about;
 
-        Test.startTest();
-            all = AIChatConversationService.getConversationHistory(null, false);
-            forRecord = AIChatConversationService.getConversationHistory(String.valueOf(record.Id), true);
-        Test.stopTest();
+            // [3] Get the history for all conversations and for the record
+            List<AIChatDataStructure.ConversationSummary> all;
+            List<AIChatDataStructure.ConversationSummary> forRecord;
 
-        // [4] Check the history lists
-        Assert.areEqual(2, all.size(), 'The history should hold only the user\'s own conversations.');
-        Assert.areEqual(1, forRecord.size(), 'One conversation should be about the record.');
-        Assert.areEqual(about.Id, forRecord[0].id, 'It should be the conversation about the record.');
+            Test.startTest();
+                all = AIChatConversationService.getConversationHistory(null, false);
+                forRecord = AIChatConversationService.getConversationHistory(String.valueOf(record.Id), true);
+            Test.stopTest();
+
+            // [4] Check the history lists
+            Assert.areEqual(2, all.size(), 'The history should hold only the user\'s own conversations.');
+            Assert.areEqual(1, forRecord.size(), 'One conversation should be about the record.');
+            Assert.areEqual(about.Id, forRecord[0].id, 'It should be the conversation about the record.');
+        }
     }
 
     @IsTest static void testScenario7() {
 
-        // [1] Create one agent that allows resume and one that does not
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        agent.AllowConversationResume__c = true;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c noResume = AIAssistTestDataFactory.createAIAgents(1, agent.AIModelConfiguration__c, true)[0];
+        System.runAs(superUser) {
+            // [1] Create one agent that allows resume and one that does not
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AllowConversationResume__c = true;
+            update agent;
 
-        // [2] Create a closed conversation for each agent
-        List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false);
-        conversations.addAll(AIAssistTestDataFactory.createAIConversations(noResume.Id, UserInfo.getUserId(), 1, false));
+            AIAgent__c noResume = AIAssistTestDataFactory.createAIAgents(1, agent.AIModelConfiguration__c, true)[0];
 
-        for (AIConversation__c each : conversations) {
-            each.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
-            each.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
-            each.ConversationClosedTimestamp__c = System.now();
-        }
-        insert conversations;
+            // [2] Create a closed conversation for each agent
+            List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false);
+            conversations.addAll(AIAssistTestDataFactory.createAIConversations(noResume.Id, UserInfo.getUserId(), 1, false));
 
-        // [3] Resume both conversations
-        String shown;
-
-        Test.startTest();
-            AIChatConversationService.resumeConversation(conversations[0].Id);
-            try {
-                AIChatConversationService.resumeConversation(conversations[1].Id);
-            } catch (AIChatConversationService.AIChatConversationServiceException ex) {
-                shown = ex.getMessage();
+            for (AIConversation__c each : conversations) {
+                each.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
+                each.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
+                each.ConversationClosedTimestamp__c = System.now();
             }
-        Test.stopTest();
+            insert conversations;
 
-        // [4] Read the reopened conversation status
-        String reopenedStatus = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversations[0].Id].Status__c;
+            // [3] Resume both conversations
+            String shown;
 
-        // [5] Check the first is reopened and the second is refused
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, reopenedStatus, 'The conversation should be reopened.');
-        Assert.areEqual(Label.AI_Error_Conversation_Closed, shown, 'The refusal should be the closed Custom Label.');
+            Test.startTest();
+                AIChatConversationService.resumeConversation(conversations[0].Id);
+                try {
+                    AIChatConversationService.resumeConversation(conversations[1].Id);
+                } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+                    shown = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [4] Read the reopened conversation status
+            String reopenedStatus = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversations[0].Id].Status__c;
+
+            // [5] Check the first is reopened and the second is refused
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, reopenedStatus, 'The conversation should be reopened.');
+            Assert.areEqual(Label.AI_Error_Conversation_Closed, shown, 'The refusal should be the closed Custom Label.');
+        }
     }
 
     @IsTest static void testScenario8() {
 
-        // [1] Create an agent that allows resume
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        agent.AllowConversationResume__c = true;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Limit the user's concurrent conversations and fill the limit
-        AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(UserInfo.getUserId(), false)[0];
-        settings.MaxConcurrentConversations__c = 1;
-        insert settings;
+        System.runAs(superUser) {
+            // [1] Create an agent that allows resume
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AllowConversationResume__c = true;
+            update agent;
 
-        AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true);
+            // [2] Limit the user's concurrent conversations and fill the limit
+            AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(UserInfo.getUserId(), false)[0];
+            settings.MaxConcurrentConversations__c = 1;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert settings; }
 
-        // [3] Create a closed conversation
-        AIConversation__c closed = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
-        closed.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
-        closed.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
-        closed.ConversationClosedTimestamp__c = System.now();
-        insert closed;
+            AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true);
 
-        // [4] Try to resume the closed conversation
-        String shown;
+            // [3] Create a closed conversation
+            AIConversation__c closed = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            closed.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
+            closed.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
+            closed.ConversationClosedTimestamp__c = System.now();
+            insert closed;
 
-        Test.startTest();
-            try {
-                AIChatConversationService.resumeConversation(closed.Id);
-            } catch (AIChatConversationService.AIChatConversationServiceException ex) {
-                shown = ex.getMessage();
-            }
-        Test.stopTest();
+            // [4] Try to resume the closed conversation
+            String shown;
 
-        // [5] Check the refusal
-        Assert.areEqual(Label.AI_Error_Concurrent_Limit, shown, 'The refusal should be the concurrent limit Custom Label.');
+            Test.startTest();
+                try {
+                    AIChatConversationService.resumeConversation(closed.Id);
+                } catch (AIChatConversationService.AIChatConversationServiceException ex) {
+                    shown = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [5] Check the refusal
+            Assert.areEqual(Label.AI_Error_Concurrent_Limit, shown, 'The refusal should be the concurrent limit Custom Label.');
+        }
     }
 
     @IsTest static void testScenario9() {
 
-        // [1] Create an agent, a conversation, another user and a data source
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation, another user and a data source
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
 
-        AIDataSource__c source = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
-        String sourceName = [SELECT DeveloperName__c FROM AIDataSource__c WHERE Id = :source.Id].DeveloperName__c;
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-        // [2] Build an execution step of each type
-        AIChatDataStructure.ExecutionStep provider;
-        AIChatDataStructure.ExecutionStep masking;
-        AIChatDataStructure.ExecutionStep anyOther;
-        AIChatDataStructure.ExecutionStep detail;
+            AIDataSource__c source = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
+            String sourceName = [SELECT DeveloperName__c FROM AIDataSource__c WHERE Id = :source.Id].DeveloperName__c;
 
-        Test.startTest();
-            provider = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, Status__c = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, StepOrder__c = 2, DurationMilliseconds__c = 40));
-            masking = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PII_MASKING));
-            anyOther = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_OTHER));
-            detail = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepDetail__c = 'Custom'));
-        Test.stopTest();
+            // [2] Build an execution step of each type
+            AIChatDataStructure.ExecutionStep provider;
+            AIChatDataStructure.ExecutionStep masking;
+            AIChatDataStructure.ExecutionStep anyOther;
+            AIChatDataStructure.ExecutionStep detail;
 
-        // [3] Check each step label
-        Assert.areEqual(Label.AI_Step_Calling_Model, provider.label, 'A provider call should get the calling model label.');
-        Assert.isTrue(provider.isSuccess && provider.durationMs == 40 && provider.stepOrder == 2, 'The step should carry its success, time and order.');
+            Test.startTest();
+                provider = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, Status__c = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, StepOrder__c = 2, DurationMilliseconds__c = 40));
+                masking = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_PII_MASKING));
+                anyOther = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepType__c = AIAssistApplicationConstants.STEP_TYPE_OTHER));
+                detail = AIChatConversationService.buildExecutionStep(new AIExecutionStep__c(StepDetail__c = 'Custom'));
+            Test.stopTest();
 
-        Assert.areEqual(Label.AI_Step_Protecting_Data, masking.label, 'PII masking should get the protecting data label.');
+            // [3] Check each step label
+            Assert.areEqual(Label.AI_Step_Calling_Model, provider.label, 'A provider call should get the calling model label.');
+            Assert.isTrue(provider.isSuccess && provider.durationMs == 40 && provider.stepOrder == 2, 'The step should carry its success, time and order.');
 
-        Assert.areEqual(Label.AI_Step_Finalising, anyOther.label, 'Any other step type should get the finalising label.');
+            Assert.areEqual(Label.AI_Step_Protecting_Data, masking.label, 'PII masking should get the protecting data label.');
 
-        Assert.areEqual('Custom', detail.label, 'The stored step detail should win over the label.');
+            Assert.areEqual(Label.AI_Step_Finalising, anyOther.label, 'Any other step type should get the finalising label.');
+
+            Assert.areEqual('Custom', detail.label, 'The stored step detail should win over the label.');
+        }
     }
 }

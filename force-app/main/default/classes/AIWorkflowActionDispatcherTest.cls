@@ -90,750 +90,814 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        action.InputSchema__c = '{"type":"object","properties":{"x":{"type":"string"}}}';
-        update action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            action.InputSchema__c = '{"type":"object","properties":{"x":{"type":"string"}}}';
+            update action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        Object output;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'x' => 'hello' }, false);
-            Test.stopTest();
+            Object output;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'x' => 'hello' }, false);
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            AIExecutionStep__c step = [SELECT StepType__c, Status__c, AIWorkflowAction__c, RequiredConfirmation__c, DurationMilliseconds__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+
+            // [4] Check the outcome
+            Assert.areEqual('echo:hello', output, 'The action\'s output.');
+
+            Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.StepType__c, 'A Workflow Action step.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.Status__c, 'Success.');
+            Assert.areEqual(action.Id, step.AIWorkflowAction__c, 'The action.');
+            Assert.isFalse(step.RequiredConfirmation__c, 'It did not need confirmation.');
         }
-
-        // [3] Read the results back
-        AIExecutionStep__c step = [SELECT StepType__c, Status__c, AIWorkflowAction__c, RequiredConfirmation__c, DurationMilliseconds__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
-
-        // [4] Check the outcome
-        Assert.areEqual('echo:hello', output, 'The action\'s output.');
-
-        Assert.areEqual(AIAssistApplicationConstants.STEP_TYPE_WORKFLOW_ACTION, step.StepType__c, 'A Workflow Action step.');
-        Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, step.Status__c, 'Success.');
-        Assert.areEqual(action.Id, step.AIWorkflowAction__c, 'The action.');
-        Assert.isFalse(step.RequiredConfirmation__c, 'It did not need confirmation.');
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        AIAssistTestDataFactory.upsertUiSettings(false);
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        List<String> codes = new List<String>();
+            AIAssistTestDataFactory.upsertUiSettings(false);
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
+            List<String> codes = new List<String>();
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        codes.add(ex.getMessage());
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Remove the user's settings and run the action again
+            delete userSettings;
+            System.runAs(chatUser) {
                 try {
                     AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
                 } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
                     codes.add(ex.getMessage());
                 }
-            Test.stopTest();
-        }
-
-        // [3] Remove the user's settings and run the action again
-        delete userSettings;
-        System.runAs(chatUser) {
-            try {
-                AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
-            } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                codes.add(ex.getMessage());
             }
-        }
 
-        // [4] Check the outcome
-        Assert.areEqual(new List<String>{
-            Label.AI_Error_Action_Not_Permitted,
-            Label.AI_Error_Action_Not_Permitted
-        }, codes, 'Refused both times.');
+            // [4] Check the outcome
+            Assert.areEqual(new List<String>{
+                Label.AI_Error_Action_Not_Permitted,
+                Label.AI_Error_Action_Not_Permitted
+            }, codes, 'Refused both times.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        AIWorkflowAction__c unassigned = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        AIWorkflowAction__c inactive = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ inactive }, true);
-        inactive.IsActive__c = false;
-        update inactive;
+            AIWorkflowAction__c unassigned = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
 
-        List<String> codes = new List<String>();
+            AIWorkflowAction__c inactive = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ inactive }, true);
+            inactive.IsActive__c = false;
+            update inactive;
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                for (Id actionId : new List<Id>{ unassigned.Id, inactive.Id, agent.Id, null }) {
-                    try {
-                        AIWorkflowActionDispatcher.runWorkflowAction(actionId, agent.Id, reply.Id, null, null, false);
-                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                        codes.add(ex.getMessage());
+            List<String> codes = new List<String>();
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    for (Id actionId : new List<Id>{ unassigned.Id, inactive.Id, agent.Id, null }) {
+                        try {
+                            AIWorkflowActionDispatcher.runWorkflowAction(actionId, agent.Id, reply.Id, null, null, false);
+                        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                            codes.add(ex.getMessage());
+                        }
                     }
-                }
-            Test.stopTest();
-        }
+                Test.stopTest();
+            }
 
-        // [3] Check the outcome
-        for (String code : codes) {
-            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, code, 'Not permitted, whatever the reason.');
+            // [3] Check the outcome
+            for (String code : codes) {
+                Assert.areEqual(Label.AI_Error_Action_Not_Permitted, code, 'Not permitted, whatever the reason.');
+            }
+            Assert.areEqual(4, codes.size(), 'All four were refused.');
         }
-        Assert.areEqual(4, codes.size(), 'All four were refused.');
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
-        action.RequiresConfirmation__c = true;
-        action.ConfirmationMessage__c = 'This changes data. Are you sure?';
-        action.InputSchema__c = '{"properties":{"x":{}}}';
-        update action;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        String code;
-        Object output;
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
+            action.RequiresConfirmation__c = true;
+            action.ConfirmationMessage__c = 'This changes data. Are you sure?';
+            action.InputSchema__c = '{"properties":{"x":{}}}';
+            update action;
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    code = ex.getMessage();
-                }
+            String code;
+            Object output;
 
-                output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'x' => 'ok' }, true);
-            Test.stopTest();
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        code = ex.getMessage();
+                    }
+
+                    output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'x' => 'ok' }, true);
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            List<AIExecutionStep__c> steps = [SELECT Status__c, RequiredConfirmation__c, ConfirmedBy__c, ConfirmedDate__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id ORDER BY StepOrder__c];
+
+            // [4] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Confirmation_Required, code, 'The text is the Custom Label.');
+            Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
+
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].Status__c, 'The first attempt is evidence too.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].Status__c, 'The second succeeded.');
+
+            Assert.isTrue(steps[1].RequiredConfirmation__c, 'It required confirmation.');
+            Assert.areEqual(chatUser.Id, steps[1].ConfirmedBy__c, 'Who confirmed.');
+            Assert.isNotNull(steps[1].ConfirmedDate__c, 'And when.');
         }
-
-        // [3] Read the results back
-        List<AIExecutionStep__c> steps = [SELECT Status__c, RequiredConfirmation__c, ConfirmedBy__c, ConfirmedDate__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id ORDER BY StepOrder__c];
-
-        // [4] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Confirmation_Required, code, 'The text is the Custom Label.');
-        Assert.areEqual('echo:ok', output, 'Ran once confirmed.');
-
-        Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED, steps[0].Status__c, 'The first attempt is evidence too.');
-        Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, steps[1].Status__c, 'The second succeeded.');
-
-        Assert.isTrue(steps[1].RequiredConfirmation__c, 'It required confirmation.');
-        Assert.areEqual(chatUser.Id, steps[1].ConfirmedBy__c, 'Who confirmed.');
-        Assert.isNotNull(steps[1].ConfirmedDate__c, 'And when.');
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(3, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.NotAnExecutor', false);
-        actions[1].ApexClassName__c = 'AIWorkflowActionDispatcherTest.NoSuchClass';
-        actions[2].ApexClassName__c = 'AIWorkflowActionDispatcherTest.ThrowingExecutor';
-        insert actions;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, actions, true);
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        List<String> shown = new List<String>();
+            List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(3, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.NotAnExecutor', false);
+            actions[1].ApexClassName__c = 'AIWorkflowActionDispatcherTest.NoSuchClass';
+            actions[2].ApexClassName__c = 'AIWorkflowActionDispatcherTest.ThrowingExecutor';
+            insert actions;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, actions, true);
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                for (AIWorkflowAction__c each : actions) {
-                    try {
-                        AIWorkflowActionDispatcher.runWorkflowAction(each.Id, agent.Id, reply.Id, null, null, false);
-                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                        shown.add(ex.getMessage());
+            List<String> shown = new List<String>();
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    for (AIWorkflowAction__c each : actions) {
+                        try {
+                            AIWorkflowActionDispatcher.runWorkflowAction(each.Id, agent.Id, reply.Id, null, null, false);
+                        } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                            shown.add(ex.getMessage());
+                        }
                     }
-                }
-            Test.stopTest();
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            Integer failedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED];
+
+            // [4] Check the outcome
+            Assert.areEqual(3, shown.size(), 'Every one of the three was refused.');
+
+            for (String text : shown) {
+                Assert.areEqual(Label.AI_Error_Action_Failed, text, 'Only the label is shown: nothing about classes or errors.');
+            }
+            Assert.areEqual(3, failedSteps, 'A Failed step each.');
         }
-
-        // [3] Read the results back
-        Integer failedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_FAILED];
-
-        // [4] Check the outcome
-        Assert.areEqual(3, shown.size(), 'Every one of the three was refused.');
-
-        for (String text : shown) {
-            Assert.areEqual(Label.AI_Error_Action_Failed, text, 'Only the label is shown: nothing about classes or errors.');
-        }
-        Assert.areEqual(3, failedSteps, 'A Failed step each.');
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', true);
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, actions, true);
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        String code;
+            List<AIWorkflowAction__c> actions = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', true);
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, actions, true);
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(actions[0].Id, agent.Id, reply.Id, conversation.Id, null, false);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    code = ex.getMessage();
-                }
-            Test.stopTest();
+            String code;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(actions[0].Id, agent.Id, reply.Id, conversation.Id, null, false);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        code = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            Integer targetSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND TargetRecordId__c = :String.valueOf(conversation.Id)];
+
+            // [4] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
+            Assert.areEqual(1, targetSteps, 'The target record is on the step.');
         }
-
-        // [3] Read the results back
-        Integer targetSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND TargetRecordId__c = :String.valueOf(conversation.Id)];
-
-        // [4] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Action Failed.');
-        Assert.areEqual(1, targetSteps, 'The target record is on the step.');
     }
 
     @IsTest static void testScenario7() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                AIWorkflowActionDispatcher.recordDeclinedAction(action.Id, agent.Id, reply.Id, null);
-                AIWorkflowActionDispatcher.recordDeclinedAction(action.Id, agent.Id, null, null);
-                AIWorkflowActionDispatcher.recordDeclinedAction(null, agent.Id, reply.Id, null);
-            Test.stopTest();
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    AIWorkflowActionDispatcher.recordDeclinedAction(action.Id, agent.Id, reply.Id, null);
+                    AIWorkflowActionDispatcher.recordDeclinedAction(action.Id, agent.Id, null, null);
+                    AIWorkflowActionDispatcher.recordDeclinedAction(null, agent.Id, reply.Id, null);
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            List<AIExecutionStep__c> steps = [SELECT Status__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
+
+            // [4] Check the outcome
+            Assert.areEqual(1, steps.size(), 'Only the real cancellation.');
+            Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].Status__c, 'Cancelled.');
         }
-
-        // [3] Read the results back
-        List<AIExecutionStep__c> steps = [SELECT Status__c FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id];
-
-        // [4] Check the outcome
-        Assert.areEqual(1, steps.size(), 'Only the real cancellation.');
-        Assert.areEqual(AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, steps[0].Status__c, 'Cancelled.');
     }
 
     @IsTest static void testScenario8() {
 
-        // [1] Build the data the scenario needs
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.IsEnabled__c = false;
-        update settings;
-        AIAssistSettingsService.cachedSettings = null;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.IsEnabled__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+            AIAssistSettingsService.cachedSettings = null;
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        String code;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    code = ex.getMessage();
-                }
-            Test.stopTest();
+            String code;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, false);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        code = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Check the outcome
+            Assert.areEqual(Label.AI_Error_Application_Inactive, code, 'Application inactive.');
         }
-
-        // [3] Check the outcome
-        Assert.areEqual(Label.AI_Error_Application_Inactive, code, 'Application inactive.');
     }
 
     @IsTest static void testScenario9() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.KeysExecutor', true)[0];
-        action.InputSchema__c = '{"type":"object","properties":{"a":{"type":"string"}}}';
-        update action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.KeysExecutor', true)[0];
+            action.InputSchema__c = '{"type":"object","properties":{"a":{"type":"string"}}}';
+            update action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        Map<String, Object> submitted = new Map<String, Object>{
-            'a' => '1',
-            'b' => '2',
-            'recordId' => '001000000000000AAA'
-        };
-        Object declared;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                declared = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, submitted, true);
-            Test.stopTest();
+            Map<String, Object> submitted = new Map<String, Object>{
+                'a' => '1',
+                'b' => '2',
+                'recordId' => '001000000000000AAA'
+            };
+            Object declared;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    declared = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, submitted, true);
+                Test.stopTest();
+            }
+
+            // [3] Filter the inputs directly for the malformed, blank and empty cases
+            Map<String, Object> noneDeclared = AIWorkflowActionDispatcher.filterDeclaredInputs('{ not json', submitted, action.Id);
+            Map<String, Object> blankSchema = AIWorkflowActionDispatcher.filterDeclaredInputs(null, submitted, action.Id);
+            Map<String, Object> noInputs = AIWorkflowActionDispatcher.filterDeclaredInputs('{"properties":{"a":{}}}', null, action.Id);
+
+            // [4] Check the outcome
+            Assert.areEqual('a', declared, 'Only the declared key reaches the action.');
+            Assert.isTrue(noneDeclared.isEmpty(), 'A malformed schema declares nothing.');
+            Assert.isTrue(blankSchema.isEmpty(), 'A blank schema declares nothing.');
+            Assert.isTrue(noInputs.isEmpty(), 'No inputs, none passed.');
         }
-
-        // [3] Filter the inputs directly for the malformed, blank and empty cases
-        Map<String, Object> noneDeclared = AIWorkflowActionDispatcher.filterDeclaredInputs('{ not json', submitted, action.Id);
-        Map<String, Object> blankSchema = AIWorkflowActionDispatcher.filterDeclaredInputs(null, submitted, action.Id);
-        Map<String, Object> noInputs = AIWorkflowActionDispatcher.filterDeclaredInputs('{"properties":{"a":{}}}', null, action.Id);
-
-        // [4] Check the outcome
-        Assert.areEqual('a', declared, 'Only the declared key reaches the action.');
-        Assert.isTrue(noneDeclared.isEmpty(), 'A malformed schema declares nothing.');
-        Assert.isTrue(blankSchema.isEmpty(), 'A blank schema declares nothing.');
-        Assert.isTrue(noInputs.isEmpty(), 'No inputs, none passed.');
     }
 
     @IsTest static void testScenario10() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
-        action.InputSchema__c = '{"properties":{"x":{}}}';
-        update action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
+            action.InputSchema__c = '{"properties":{"x":{}}}';
+            update action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
-        update agent;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        Map<String, Object> inputs = new Map<String, Object>{ 'x' => 'a' };
-        String removed;
-        String inactive;
-        Object output;
+            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
+            update agent;
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
+            Map<String, Object> inputs = new Map<String, Object>{ 'x' => 'a' };
+            String removed;
+            String inactive;
+            Object output;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        removed = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Assign the user to the agent again and run the action
+            AIAssistTestDataFactory.createAIAgentAssignments(agent.Id, new List<User>{ chatUser }, null, true);
+
+            System.runAs(chatUser) {
+                output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
+            }
+            // [4] Deactivate the agent and run the action again
+            agent.IsActive__c = false;
+            update agent;
+
+            System.runAs(chatUser) {
                 try {
                     AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
                 } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    removed = ex.getMessage();
+                    inactive = ex.getMessage();
                 }
-            Test.stopTest();
-        }
-
-        // [3] Assign the user to the agent again and run the action
-        AIAssistTestDataFactory.createAIAgentAssignments(agent.Id, new List<User>{ chatUser }, null, true);
-
-        System.runAs(chatUser) {
-            output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
-        }
-        // [4] Deactivate the agent and run the action again
-        agent.IsActive__c = false;
-        update agent;
-
-        System.runAs(chatUser) {
-            try {
-                AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
-            } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                inactive = ex.getMessage();
             }
-        }
 
-        // [5] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Not_Permitted, removed, 'A user the agent does not admit cannot run its action.');
-        Assert.areEqual('echo:a', output, 'Once assigned again it runs.');
-        Assert.areEqual(Label.AI_Error_Action_Not_Permitted, inactive, 'An inactive agent runs nothing.');
+            // [5] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, removed, 'A user the agent does not admit cannot run its action.');
+            Assert.areEqual('echo:a', output, 'Once assigned again it runs.');
+            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, inactive, 'An inactive agent runs nothing.');
+        }
     }
 
     @IsTest static void testScenario11() {
 
-        // [1] Build the data the scenario needs
-        User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.ContextExecutor', true)[0];
-        action.InputSchema__c = '{"properties":{}}';
-        update action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.ContextExecutor', true)[0];
+            action.InputSchema__c = '{"properties":{}}';
+            update action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        Object output;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, true);
-            Test.stopTest();
+            Object output;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, null, true);
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            AIWorkflowAction__c saved = [SELECT DeveloperName__c FROM AIWorkflowAction__c WHERE Id = :action.Id];
+
+            // [4] Check the outcome
+            Assert.areEqual(saved.DeveloperName__c + '|' + agent.Id + '|' + chatUser.Id + '|' + conversation.Id + '|true', output, 'The request carries who, what and where.');
         }
-
-        // [3] Read the results back
-        AIWorkflowAction__c saved = [SELECT DeveloperName__c FROM AIWorkflowAction__c WHERE Id = :action.Id];
-
-        // [4] Check the outcome
-        Assert.areEqual(saved.DeveloperName__c + '|' + agent.Id + '|' + chatUser.Id + '|' + conversation.Id + '|true', output, 'The request carries who, what and where.');
     }
 
     @IsTest static void testScenario12() {
 
-        // [1] Build the data the scenario needs
-        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = users[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            List<User> users = AIAssistTestDataFactory.createUsers(2, true);
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = users[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
-        action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
-        action.RequiresConfirmation__c = false;
-        insert action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
+            action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
+            action.RequiresConfirmation__c = false;
+            insert action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        String withoutAccess;
-        String withAccess;
-        Integer blockedSteps;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'targetId' => othersConversation.Id }, true);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    withoutAccess = ex.getMessage();
-                }
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{
-                        'targetId' => String.valueOf(conversation.Id)
-                    }, true);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    withAccess = ex.getMessage();
-                }
-            Test.stopTest();
+            String withoutAccess;
+            String withAccess;
+            Integer blockedSteps;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'targetId' => othersConversation.Id }, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        withoutAccess = ex.getMessage();
+                    }
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{
+                            'targetId' => String.valueOf(conversation.Id)
+                        }, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        withAccess = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Read the results back
+            blockedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED];
+
+            // [4] Check the outcome
+            Assert.areEqual(1, blockedSteps, 'The refusal is recorded as Blocked.');
+            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, withoutAccess, 'A record the user cannot read is not handed to a Flow.');
+            Assert.areEqual(Label.AI_Error_Action_Failed, withAccess, 'The user\'s own record passes the check; only the missing Flow fails.');
         }
-
-        // [3] Read the results back
-        blockedSteps = [SELECT COUNT() FROM AIExecutionStep__c WHERE AIConversationMessage__c = :reply.Id AND Status__c = :AIAssistApplicationConstants.EXECUTION_STEP_STATUS_BLOCKED];
-
-        // [4] Check the outcome
-        Assert.areEqual(1, blockedSteps, 'The refusal is recorded as Blocked.');
-        Assert.areEqual(Label.AI_Error_Action_Not_Permitted, withoutAccess, 'A record the user cannot read is not handed to a Flow.');
-        Assert.areEqual(Label.AI_Error_Action_Failed, withAccess, 'The user\'s own record passes the check; only the missing Flow fails.');
     }
 
     @IsTest static void testScenario13() {
 
-        // [1] Build the data the scenario needs
-        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = users[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            List<User> users = AIAssistTestDataFactory.createUsers(2, true);
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = users[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
-        action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
-        action.RequiresConfirmation__c = true;
-        action.ConfirmationMessage__c = 'Change this record?';
-        insert action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
+            action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_WRITE;
+            action.RequiresConfirmation__c = true;
+            action.ConfirmationMessage__c = 'Change this record?';
+            insert action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        // The User permission set reads agents and cannot edit them.
-        Map<String, Object> inputs = new Map<String, Object>{
-            'targetId' => agent.Id
-        };
-        String asWrite;
-        String asReadOnly;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
+            // The User permission set reads agents and cannot edit them.
+            Map<String, Object> inputs = new Map<String, Object>{
+                'targetId' => agent.Id
+            };
+            String asWrite;
+            String asReadOnly;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        asWrite = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Make the action Read Only and run it again
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
+            update action;
+
+            System.runAs(chatUser) {
                 try {
                     AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
                 } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    asWrite = ex.getMessage();
+                    asReadOnly = ex.getMessage();
                 }
-            Test.stopTest();
-        }
-
-        // [3] Make the action Read Only and run it again
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
-        update action;
-
-        System.runAs(chatUser) {
-            try {
-                AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, inputs, true);
-            } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                asReadOnly = ex.getMessage();
             }
-        }
 
-        // [4] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Not_Permitted, asWrite, 'A Write action needs edit access to the record.');
-        Assert.areEqual(Label.AI_Error_Action_Failed, asReadOnly, 'Read access is enough for a Read Only action.');
+            // [4] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, asWrite, 'A Write action needs edit access to the record.');
+            Assert.areEqual(Label.AI_Error_Action_Failed, asReadOnly, 'Read access is enough for a Read Only action.');
+        }
     }
 
     @IsTest static void testScenario14() {
 
-        // [1] Build the data the scenario needs
-        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = users[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            List<User> users = AIAssistTestDataFactory.createUsers(2, true);
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = users[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
-        action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
-        action.RequiresConfirmation__c = false;
-        insert action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
+            action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
+            action.RequiresConfirmation__c = false;
+            insert action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        String code;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, othersConversation.Id, null, true);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    code = ex.getMessage();
-                }
-            Test.stopTest();
+            String code;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, othersConversation.Id, null, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        code = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Not_Permitted, code, 'The conversation\'s record is checked like any other.');
         }
-
-        // [3] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Not_Permitted, code, 'The conversation\'s record is checked like any other.');
     }
 
     @IsTest static void testScenario15() {
 
-        // [1] Build the data the scenario needs
-        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = users[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            List<User> users = AIAssistTestDataFactory.createUsers(2, true);
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = users[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.RecordExecutor', false)[0];
-        action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
-        action.RequiresConfirmation__c = false;
-        insert action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.RecordExecutor', false)[0];
+            action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
+            action.RequiresConfirmation__c = false;
+            insert action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        Object output;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, conversation.Id, new Map<String, Object>{
-                    'recordId' => othersConversation.Id,
-                    'RecordID' => othersConversation.Id,
-                    'targetId' => 'kept'
-                }, true);
-            Test.stopTest();
+            Object output;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    output = AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, conversation.Id, new Map<String, Object>{
+                        'recordId' => othersConversation.Id,
+                        'RecordID' => othersConversation.Id,
+                        'targetId' => 'kept'
+                    }, true);
+                Test.stopTest();
+            }
+
+            // [3] Check the outcome
+            Assert.areEqual(conversation.Id + '|targetId', output, 'The record is the server\'s, and the browser\'s recordId never reaches the action.');
         }
-
-        // [3] Check the outcome
-        Assert.areEqual(conversation.Id + '|targetId', output, 'The record is the server\'s, and the browser\'s recordId never reaches the action.');
     }
 
     @IsTest static void testScenario16() {
 
-        // [1] Build the data the scenario needs
-        List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        User chatUser = users[0];
-        AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
+            List<User> users = AIAssistTestDataFactory.createUsers(2, true);
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            User chatUser = users[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
-        AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
-        AIAssistTestDataFactory.upsertUiSettings(true);
-        insert userSettings;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-        AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
-        action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
-        action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
-        action.RequiresConfirmation__c = false;
-        insert action;
-        AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
+            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            AIAssistTestDataFactory.upsertUiSettings(true);
+            insert userSettings;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
-        AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
-        AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+            AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_FLOW, 'No_Such_Flow', false)[0];
+            action.InputSchema__c = '{"properties":{"targetId":{"type":"string"},"recordId":{"type":"string"}}}';
+            action.ExecutionType__c = AIAssistApplicationConstants.WORKFLOW_EXECUTION_READ_ONLY;
+            action.RequiresConfirmation__c = false;
+            insert action;
+            AIAssistTestDataFactory.createAIAgentWorkflowActions(agent.Id, new List<AIWorkflowAction__c>{ action }, true);
 
-        String code;
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIConversation__c othersConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, users[1].Id, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
 
-        // [2] Run the action under test as the user
-        System.runAs(chatUser) {
-            Test.startTest();
-                try {
-                    AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'targetId' => 'Call the customer back' }, true);
-                } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
-                    code = ex.getMessage();
-                }
-            Test.stopTest();
+            String code;
+
+            // [2] Run the action under test as the user
+            System.runAs(chatUser) {
+                Test.startTest();
+                    try {
+                        AIWorkflowActionDispatcher.runWorkflowAction(action.Id, agent.Id, reply.Id, null, new Map<String, Object>{ 'targetId' => 'Call the customer back' }, true);
+                    } catch (AIWorkflowActionDispatcher.AIWorkflowActionDispatcherException ex) {
+                        code = ex.getMessage();
+                    }
+                Test.stopTest();
+            }
+
+            // [3] Check the outcome
+            Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Plain text is passed on; only the missing Flow fails.');
         }
-
-        // [3] Check the outcome
-        Assert.areEqual(Label.AI_Error_Action_Failed, code, 'Plain text is passed on; only the missing Flow fails.');
     }
 }

@@ -35,191 +35,219 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Create an agent with a 30 minute timeout and a conversation idle for two hours
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 30;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
-        conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
-        update conversation;
+        System.runAs(superUser) {
+            // [1] Create an agent with a 30 minute timeout and a conversation idle for two hours
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 30;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+            conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
+            update conversation;
 
-        // [3] Read the conversation back
-        AIConversation__c closed = [SELECT Status__c, ConversationCloseReason__c, ConversationClosedTimestamp__c FROM AIConversation__c WHERE Id = :conversation.Id];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check it is closed with the idle timeout reason
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED, closed.Status__c, 'The idle conversation should be closed.');
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_IDLE_TIMEOUT, closed.ConversationCloseReason__c, 'The close reason should be the idle timeout.');
-        Assert.isNotNull(closed.ConversationClosedTimestamp__c, 'The close time should be set.');
+            // [3] Read the conversation back
+            AIConversation__c closed = [SELECT Status__c, ConversationCloseReason__c, ConversationClosedTimestamp__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+            // [4] Check it is closed with the idle timeout reason
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED, closed.Status__c, 'The idle conversation should be closed.');
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_IDLE_TIMEOUT, closed.ConversationCloseReason__c, 'The close reason should be the idle timeout.');
+            Assert.isNotNull(closed.ConversationClosedTimestamp__c, 'The close time should be set.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Create a recent conversation, a locked conversation and one for an agent with no timeout
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        AIAgent__c noTimeoutAgent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        noTimeoutAgent.IdleTimeoutMinutes__c = null;
-        agent.IdleTimeoutMinutes__c = 30;
-        update new List<AIAgent__c>{ agent, noTimeoutAgent };
+        System.runAs(superUser) {
+            // [1] Create a recent conversation, a locked conversation and one for an agent with no timeout
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            AIAgent__c noTimeoutAgent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
 
-        List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 3, false);
-        conversations[2].AIAgent__c = noTimeoutAgent.Id;
-        insert conversations;
+            noTimeoutAgent.IdleTimeoutMinutes__c = null;
+            agent.IdleTimeoutMinutes__c = 30;
+            update new List<AIAgent__c>{ agent, noTimeoutAgent };
 
-        conversations[0].LastMessageTimestamp__c = System.now().addMinutes(-10);
+            List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 3, false);
+            conversations[2].AIAgent__c = noTimeoutAgent.Id;
+            insert conversations;
 
-        conversations[1].LastMessageTimestamp__c = System.now().addMinutes(-120);
-        conversations[1].ProcessingLockedUntil__c = System.now().addMinutes(5);
+            conversations[0].LastMessageTimestamp__c = System.now().addMinutes(-10);
 
-        conversations[2].LastMessageTimestamp__c = System.now().addMinutes(-120);
-        update conversations;
+            conversations[1].LastMessageTimestamp__c = System.now().addMinutes(-120);
+            conversations[1].ProcessingLockedUntil__c = System.now().addMinutes(5);
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            conversations[2].LastMessageTimestamp__c = System.now().addMinutes(-120);
+            update conversations;
 
-        // [3] Count the active conversations
-        Integer activeCount = [SELECT COUNT() FROM AIConversation__c WHERE Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check none is closed
-        Assert.areEqual(3, activeCount, 'None should be closed: one is recent, one is mid-reply, one has no timeout.');
+            // [3] Count the active conversations
+            Integer activeCount = [SELECT COUNT() FROM AIConversation__c WHERE Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE];
+
+            // [4] Check none is closed
+            Assert.areEqual(3, activeCount, 'None should be closed: one is recent, one is mid-reply, one has no timeout.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Create an agent with a one day timeout and a new conversation
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 1440;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+        System.runAs(superUser) {
+            // [1] Create an agent with a one day timeout and a new conversation
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 1440;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
 
-        // [3] Read the conversation back
-        AIConversation__c result = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check it stays open
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, result.Status__c, 'A conversation created just now should not be idle for a day.');
+            // [3] Read the conversation back
+            AIConversation__c result = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+            // [4] Check it stays open
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, result.Status__c, 'A conversation created just now should not be idle for a day.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Create an agent with a 60 minute timeout and conversations idle for 59 and 61 minutes
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 60;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 2, true);
-        conversations[0].LastMessageTimestamp__c = System.now().addMinutes(-59);
-        conversations[1].LastMessageTimestamp__c = System.now().addMinutes(-61);
-        update conversations;
+        System.runAs(superUser) {
+            // [1] Create an agent with a 60 minute timeout and conversations idle for 59 and 61 minutes
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 60;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 2, true);
+            conversations[0].LastMessageTimestamp__c = System.now().addMinutes(-59);
+            conversations[1].LastMessageTimestamp__c = System.now().addMinutes(-61);
+            update conversations;
 
-        // [3] Read the conversations back
-        Map<Id, AIConversation__c> byId = new Map<Id, AIConversation__c>([SELECT Status__c FROM AIConversation__c WHERE Id IN :conversations]);
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check only the one past the timeout is closed
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, byId.get(conversations[0].Id).Status__c, 'A conversation inside the timeout should stay open.');
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED, byId.get(conversations[1].Id).Status__c, 'A conversation past the timeout should be closed.');
+            // [3] Read the conversations back
+            Map<Id, AIConversation__c> byId = new Map<Id, AIConversation__c>([SELECT Status__c FROM AIConversation__c WHERE Id IN :conversations]);
+
+            // [4] Check only the one past the timeout is closed
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, byId.get(conversations[0].Id).Status__c, 'A conversation inside the timeout should stay open.');
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED, byId.get(conversations[1].Id).Status__c, 'A conversation past the timeout should be closed.');
+        }
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Create an agent and a conversation the user already closed
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 30;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
-        conversation.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
-        conversation.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
-        conversation.ConversationClosedTimestamp__c = System.now().addDays(-1);
-        conversation.LastMessageTimestamp__c = System.now().addDays(-2);
-        update conversation;
+        System.runAs(superUser) {
+            // [1] Create an agent and a conversation the user already closed
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 30;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+            conversation.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
+            conversation.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
+            conversation.ConversationClosedTimestamp__c = System.now().addDays(-1);
+            conversation.LastMessageTimestamp__c = System.now().addDays(-2);
+            update conversation;
 
-        // [3] Read the conversation back
-        AIConversation__c result = [SELECT ConversationCloseReason__c FROM AIConversation__c WHERE Id = :conversation.Id];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check the original close reason stands
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED, result.ConversationCloseReason__c, 'The original close reason should stand.');
+            // [3] Read the conversation back
+            AIConversation__c result = [SELECT ConversationCloseReason__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+            // [4] Check the original close reason stands
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED, result.ConversationCloseReason__c, 'The original close reason should stand.');
+        }
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Create an agent and 200 idle conversations
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 30;
-        update agent;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 200, true);
-        for (AIConversation__c conversation : conversations)
-            conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
-        update conversations;
+        System.runAs(superUser) {
+            // [1] Create an agent and 200 idle conversations
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 30;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 200, true);
+            for (AIConversation__c conversation : conversations)
+                conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
+            update conversations;
 
-        // [3] Count the closed conversations
-        Integer closedCount = [SELECT COUNT() FROM AIConversation__c WHERE Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED AND ConversationCloseReason__c = :AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_IDLE_TIMEOUT];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check all 200 are closed
-        Assert.areEqual(200, closedCount, 'All 200 idle conversations should be closed.');
+            // [3] Count the closed conversations
+            Integer closedCount = [SELECT COUNT() FROM AIConversation__c WHERE Status__c = :AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED AND ConversationCloseReason__c = :AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_IDLE_TIMEOUT];
+
+            // [4] Check all 200 are closed
+            Assert.areEqual(200, closedCount, 'All 200 idle conversations should be closed.');
+        }
     }
 
     @IsTest static void testScenario7() {
 
-        // [1] Switch the application off, then create an agent and an idle conversation
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.IsEnabled__c = false;
-        update settings;
-        AIAssistSettingsService.cachedSettings = null;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
-        agent.IdleTimeoutMinutes__c = 30;
-        update agent;
+        System.runAs(superUser) {
+            // [1] Switch the application off, then create an agent and an idle conversation
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.IsEnabled__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+            AIAssistSettingsService.cachedSettings = null;
 
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
-        conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
-        update conversation;
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            agent.IdleTimeoutMinutes__c = 30;
+            update agent;
 
-        // [2] Run the idle batch
-        Test.startTest();
-            Database.executeBatch(new AIConversationIdleBatch(), 200);
-        Test.stopTest();
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+            conversation.LastMessageTimestamp__c = System.now().addMinutes(-120);
+            update conversation;
 
-        // [3] Read the conversation back
-        AIConversation__c result = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id];
+            // [2] Run the idle batch
+            Test.startTest();
+                Database.executeBatch(new AIConversationIdleBatch(), 200);
+            Test.stopTest();
 
-        // [4] Check the conversation is left alone
-        Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, result.Status__c, 'The conversation should be left alone while the application is off.');
+            // [3] Read the conversation back
+            AIConversation__c result = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id];
+
+            // [4] Check the conversation is left alone
+            Assert.areEqual(AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE, result.Status__c, 'The conversation should be left alone while the application is off.');
+        }
     }
 }

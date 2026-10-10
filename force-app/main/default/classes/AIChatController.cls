@@ -540,6 +540,7 @@ public without sharing class AIChatController {
 
         context.ui = AIChatStateService.buildUiSettings(uiSettings);
         context.user = AIChatStateService.buildUserState(userSettings);
+        context.ui.newChatsDisabled = context.user.newChatsDisabled;
 
         // [2] Stop when chat is switched off, or switched on in another org (a copied sandbox)
         if (!AIAssistSettingsService.isEnabled()) {

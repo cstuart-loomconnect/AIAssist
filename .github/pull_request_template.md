@@ -6,4 +6,4 @@
 - [ ] API names follow the naming conventions in CONTRIBUTING.md
 - [ ] Apex changes have tests and callouts are mocked
 - [ ] New objects and fields are covered by a permission set
-- [ ] Nothing hardcodes the `LoomConnect__` namespace outside of package metadata
+- [ ] Nothing hardcodes a namespace prefix

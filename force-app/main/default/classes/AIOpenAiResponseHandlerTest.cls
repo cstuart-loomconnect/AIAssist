@@ -45,203 +45,227 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Build an empty conversation and a text response
-        List<Map<String, Object>> messages = new List<Map<String, Object>>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        HttpResponse response = new HttpResponse();
-        response.setStatusCode(200);
-        response.setBody(TEXT_RESPONSE_BODY);
+        System.runAs(superUser) {
+            // [1] Build an empty conversation and a text response
+            List<Map<String, Object>> messages = new List<Map<String, Object>>();
 
-        AIProvider.Response result;
+            HttpResponse response = new HttpResponse();
+            response.setStatusCode(200);
+            response.setBody(TEXT_RESPONSE_BODY);
 
-        // [2] Handle the response
-        Test.startTest();
-            result = new AIOpenAiResponseHandler().handleResponse(messages, response, null, null, null);
-        Test.stopTest();
+            AIProvider.Response result;
 
-        // [3] Check the text, tokens and appended assistant message
-        Assert.areEqual('Hello', result.textContent, 'The reply text should be returned.');
-        Assert.areEqual(10, result.inputTokens, 'The prompt tokens should be the input.');
-        Assert.areEqual(5, result.outputTokens, 'The completion tokens should be the output.');
+            // [2] Handle the response
+            Test.startTest();
+                result = new AIOpenAiResponseHandler().handleResponse(messages, response, null, null, null);
+            Test.stopTest();
 
-        Assert.areEqual(15, result.totalTokens, 'The total should be the one OpenAI reports.');
-        Assert.areEqual(1, messages.size(), 'The assistant message should be appended to the conversation.');
+            // [3] Check the text, tokens and appended assistant message
+            Assert.areEqual('Hello', result.textContent, 'The reply text should be returned.');
+            Assert.areEqual(10, result.inputTokens, 'The prompt tokens should be the input.');
+            Assert.areEqual(5, result.outputTokens, 'The completion tokens should be the output.');
+
+            Assert.areEqual(15, result.totalTokens, 'The total should be the one OpenAI reports.');
+            Assert.areEqual(1, messages.size(), 'The assistant message should be appended to the conversation.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Build an empty conversation and a response with tool calls and null content
-        List<Map<String, Object>> messages = new List<Map<String, Object>>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        HttpResponse response = new HttpResponse();
-        response.setStatusCode(200);
-        response.setBody(TOOL_RESPONSE_BODY);
+        System.runAs(superUser) {
+            // [1] Build an empty conversation and a response with tool calls and null content
+            List<Map<String, Object>> messages = new List<Map<String, Object>>();
 
-        AIProvider.Response result;
+            HttpResponse response = new HttpResponse();
+            response.setStatusCode(200);
+            response.setBody(TOOL_RESPONSE_BODY);
 
-        // [2] Handle the response
-        Test.startTest();
-            result = new AIOpenAiResponseHandler().handleResponse(messages, response, null, null, null);
-        Test.stopTest();
+            AIProvider.Response result;
 
-        // [3] Check the tool calls, blank text and token counts
-        Assert.areEqual(2, result.toolCalls.size(), 'Both tool calls should be returned.');
-        Assert.areEqual('c1', result.toolCalls[0].id, 'The id should be kept so the result can be paired.');
-        Assert.areEqual(TOOL_NAME, result.toolCalls[0].name, 'The tool name should be kept.');
-        Assert.areEqual('x', result.toolCalls[0].arguments.get('q'), 'The argument string should be deserialised.');
-        Assert.isTrue(result.toolCalls[1].arguments.isEmpty(), 'A blank argument string should mean no arguments.');
+            // [2] Handle the response
+            Test.startTest();
+                result = new AIOpenAiResponseHandler().handleResponse(messages, response, null, null, null);
+            Test.stopTest();
 
-        Assert.areEqual('', result.textContent, 'Null content should become blank text.');
+            // [3] Check the tool calls, blank text and token counts
+            Assert.areEqual(2, result.toolCalls.size(), 'Both tool calls should be returned.');
+            Assert.areEqual('c1', result.toolCalls[0].id, 'The id should be kept so the result can be paired.');
+            Assert.areEqual(TOOL_NAME, result.toolCalls[0].name, 'The tool name should be kept.');
+            Assert.areEqual('x', result.toolCalls[0].arguments.get('q'), 'The argument string should be deserialised.');
+            Assert.isTrue(result.toolCalls[1].arguments.isEmpty(), 'A blank argument string should mean no arguments.');
 
-        Assert.areEqual(9, result.totalTokens, 'The total tokens should be read from usage.');
-        Assert.areEqual(0, result.inputTokens, 'With no prompt tokens reported the input should be zero.');
+            Assert.areEqual('', result.textContent, 'Null content should become blank text.');
+
+            Assert.areEqual(9, result.totalTokens, 'The total tokens should be read from usage.');
+            Assert.areEqual(0, result.inputTokens, 'With no prompt tokens reported the input should be zero.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Build an empty conversation, two tool calls and their results
-        List<Map<String, Object>> messages = new List<Map<String, Object>>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.ToolCall firstCall = new AIProvider.ToolCall();
-        firstCall.id = 'c1';
-        firstCall.name = TOOL_NAME;
-        firstCall.arguments = new Map<String, Object>();
+        System.runAs(superUser) {
+            // [1] Build an empty conversation, two tool calls and their results
+            List<Map<String, Object>> messages = new List<Map<String, Object>>();
 
-        AIProvider.ToolCall secondCall = new AIProvider.ToolCall();
-        secondCall.id = 'c2';
-        secondCall.name = TOOL_NAME;
-        secondCall.arguments = new Map<String, Object>();
+            AIProvider.ToolCall firstCall = new AIProvider.ToolCall();
+            firstCall.id = 'c1';
+            firstCall.name = TOOL_NAME;
+            firstCall.arguments = new Map<String, Object>();
 
-        List<AIProvider.ToolCall> calls = new List<AIProvider.ToolCall>{
-            firstCall,
-            secondCall
-        };
-        List<Object> toolResults = new List<Object>{
-            'first',
-            'second'
-        };
+            AIProvider.ToolCall secondCall = new AIProvider.ToolCall();
+            secondCall.id = 'c2';
+            secondCall.name = TOOL_NAME;
+            secondCall.arguments = new Map<String, Object>();
 
-        AIProvider.Response result;
+            List<AIProvider.ToolCall> calls = new List<AIProvider.ToolCall>{
+                firstCall,
+                secondCall
+            };
+            List<Object> toolResults = new List<Object>{
+                'first',
+                'second'
+            };
 
-        // [2] Handle the tool results with no response
-        Test.startTest();
-            result = new AIOpenAiResponseHandler().handleResponse(messages, null, calls, toolResults, null);
-        Test.stopTest();
+            AIProvider.Response result;
 
-        // [3] Check one tool message was added per call
-        Assert.isNull(result, 'With no response there should be nothing to parse.');
+            // [2] Handle the tool results with no response
+            Test.startTest();
+                result = new AIOpenAiResponseHandler().handleResponse(messages, null, calls, toolResults, null);
+            Test.stopTest();
 
-        Assert.areEqual(2, messages.size(), 'OpenAI wants a message per tool call, not one batch.');
-        Assert.areEqual(ROLE_TOOL, messages[0].get('role'), 'Each message should have the tool role.');
-        Assert.areEqual('c2', messages[1].get('tool_call_id'), 'Each message should name the call it answers.');
-        Assert.areEqual('second', messages[1].get('content'), 'Each message should carry its result.');
+            // [3] Check one tool message was added per call
+            Assert.isNull(result, 'With no response there should be nothing to parse.');
+
+            Assert.areEqual(2, messages.size(), 'OpenAI wants a message per tool call, not one batch.');
+            Assert.areEqual(ROLE_TOOL, messages[0].get('role'), 'Each message should have the tool role.');
+            Assert.areEqual('c2', messages[1].get('tool_call_id'), 'Each message should name the call it answers.');
+            Assert.areEqual('second', messages[1].get('content'), 'Each message should carry its result.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Build one tool call and prepare to catch the adapter exception
-        AIProvider.ToolCall toolCall = new AIProvider.ToolCall();
-        toolCall.id = 'c1';
-        toolCall.name = TOOL_NAME;
-        toolCall.arguments = new Map<String, Object>();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        List<AIProvider.ToolCall> calls = new List<AIProvider.ToolCall>{ toolCall };
+        System.runAs(superUser) {
+            // [1] Build one tool call and prepare to catch the adapter exception
+            AIProvider.ToolCall toolCall = new AIProvider.ToolCall();
+            toolCall.id = 'c1';
+            toolCall.name = TOOL_NAME;
+            toolCall.arguments = new Map<String, Object>();
 
-        AIOpenAiResponseHandler.AIOpenAiResponseHandlerException thrownException;
+            List<AIProvider.ToolCall> calls = new List<AIProvider.ToolCall>{ toolCall };
 
-        // [2] Handle one tool call with null tool results
-        Test.startTest();
-            try {
+            AIOpenAiResponseHandler.AIOpenAiResponseHandlerException thrownException;
 
-                new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), null, calls, null, null);
+            // [2] Handle one tool call with null tool results
+            Test.startTest();
+                try {
 
-            } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
+                    new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), null, calls, null, null);
 
-                thrownException = ex;
-            }
-        Test.stopTest();
+                } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
 
-        // [3] Check the mismatch was refused
-        Assert.isNotNull(thrownException, 'A result count mismatch should throw the adapter exception.');
-        Assert.isTrue(thrownException.getMessage().contains('does not match'), 'The error should say the counts differ.');
+                    thrownException = ex;
+                }
+            Test.stopTest();
+
+            // [3] Check the mismatch was refused
+            Assert.isNotNull(thrownException, 'A result count mismatch should throw the adapter exception.');
+            Assert.isTrue(thrownException.getMessage().contains('does not match'), 'The error should say the counts differ.');
+        }
     }
 
     @IsTest static void testScenario5() {
 
-        // [1] Build a JSON error, a raw error, a no-choices and a no-message response
-        HttpResponse jsonErrorResponse = new HttpResponse();
-        jsonErrorResponse.setStatusCode(429);
-        jsonErrorResponse.setBody(JSON_ERROR_BODY);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        HttpResponse rawErrorResponse = new HttpResponse();
-        rawErrorResponse.setStatusCode(500);
-        rawErrorResponse.setBody(RAW_ERROR_BODY);
+        System.runAs(superUser) {
+            // [1] Build a JSON error, a raw error, a no-choices and a no-message response
+            HttpResponse jsonErrorResponse = new HttpResponse();
+            jsonErrorResponse.setStatusCode(429);
+            jsonErrorResponse.setBody(JSON_ERROR_BODY);
 
-        HttpResponse noChoicesResponse = new HttpResponse();
-        noChoicesResponse.setStatusCode(200);
-        noChoicesResponse.setBody(NO_CHOICES_BODY);
+            HttpResponse rawErrorResponse = new HttpResponse();
+            rawErrorResponse.setStatusCode(500);
+            rawErrorResponse.setBody(RAW_ERROR_BODY);
 
-        HttpResponse noMessageResponse = new HttpResponse();
-        noMessageResponse.setStatusCode(200);
-        noMessageResponse.setBody(NO_MESSAGE_BODY);
+            HttpResponse noChoicesResponse = new HttpResponse();
+            noChoicesResponse.setStatusCode(200);
+            noChoicesResponse.setBody(NO_CHOICES_BODY);
 
-        List<HttpResponse> failedResponses = new List<HttpResponse>{
-            jsonErrorResponse,
-            rawErrorResponse,
-            noChoicesResponse,
-            noMessageResponse
-        };
-        List<String> errorMessages = new List<String>();
+            HttpResponse noMessageResponse = new HttpResponse();
+            noMessageResponse.setStatusCode(200);
+            noMessageResponse.setBody(NO_MESSAGE_BODY);
 
-        // [2] Handle each failed response
-        Test.startTest();
-            for (HttpResponse response : failedResponses) {
+            List<HttpResponse> failedResponses = new List<HttpResponse>{
+                jsonErrorResponse,
+                rawErrorResponse,
+                noChoicesResponse,
+                noMessageResponse
+            };
+            List<String> errorMessages = new List<String>();
 
-                try {
+            // [2] Handle each failed response
+            Test.startTest();
+                for (HttpResponse response : failedResponses) {
 
-                    new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), response, null, null, null);
+                    try {
 
-                } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
+                        new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), response, null, null, null);
 
-                    errorMessages.add(ex.getMessage());
+                    } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
+
+                        errorMessages.add(ex.getMessage());
+                    }
                 }
-            }
-        Test.stopTest();
+            Test.stopTest();
 
-        // [3] Check each failure threw with the right message
-        Assert.areEqual(4, errorMessages.size(), 'Every one of these responses should throw.');
+            // [3] Check each failure threw with the right message
+            Assert.areEqual(4, errorMessages.size(), 'Every one of these responses should throw.');
 
-        Assert.areEqual('AI provider returned HTTP 429: rate_limit_exceeded - Slow down', errorMessages[0], 'The provider\'s error type and message should be used.');
-        Assert.areEqual('AI provider returned HTTP 500: Server error', errorMessages[1], 'The raw body should be used when it is not JSON.');
+            Assert.areEqual('AI provider returned HTTP 429: rate_limit_exceeded - Slow down', errorMessages[0], 'The provider\'s error type and message should be used.');
+            Assert.areEqual('AI provider returned HTTP 500: Server error', errorMessages[1], 'The raw body should be used when it is not JSON.');
 
-        Assert.isTrue(errorMessages[2].contains('no choices'), 'A response with no choices should be refused.');
-        Assert.isTrue(errorMessages[3].contains('no message'), 'A choice with no message should be refused.');
+            Assert.isTrue(errorMessages[2].contains('no choices'), 'A response with no choices should be refused.');
+            Assert.isTrue(errorMessages[3].contains('no message'), 'A choice with no message should be refused.');
+        }
     }
 
     @IsTest static void testScenario6() {
 
-        // [1] Build a malformed response and prepare to catch the adapter exception
-        HttpResponse malformed = new HttpResponse();
-        malformed.setStatusCode(200);
-        malformed.setBody(MALFORMED_BODY);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIOpenAiResponseHandler.AIOpenAiResponseHandlerException thrownException;
+        System.runAs(superUser) {
+            // [1] Build a malformed response and prepare to catch the adapter exception
+            HttpResponse malformed = new HttpResponse();
+            malformed.setStatusCode(200);
+            malformed.setBody(MALFORMED_BODY);
 
-        // [2] Handle the malformed response
-        Test.startTest();
-            try {
+            AIOpenAiResponseHandler.AIOpenAiResponseHandlerException thrownException;
 
-                new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), malformed, null, null, null);
+            // [2] Handle the malformed response
+            Test.startTest();
+                try {
 
-            } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
+                    new AIOpenAiResponseHandler().handleResponse(new List<Map<String, Object>>(), malformed, null, null, null);
 
-                thrownException = ex;
-            }
-        Test.stopTest();
+                } catch (AIOpenAiResponseHandler.AIOpenAiResponseHandlerException ex) {
 
-        // [3] Check the adapter exception was thrown with the original as its cause
-        Assert.isNotNull(thrownException, 'A malformed body should throw the adapter exception.');
-        Assert.isTrue(thrownException.getMessage().startsWith(WRAPPED_ERROR_PREFIX), 'The error should name the adapter.');
-        Assert.isNotNull(thrownException.getCause(), 'The original error should be kept as the cause.');
+                    thrownException = ex;
+                }
+            Test.stopTest();
+
+            // [3] Check the adapter exception was thrown with the original as its cause
+            Assert.isNotNull(thrownException, 'A malformed body should throw the adapter exception.');
+            Assert.isTrue(thrownException.getMessage().startsWith(WRAPPED_ERROR_PREFIX), 'The error should name the adapter.');
+            Assert.isNotNull(thrownException.getCause(), 'The original error should be kept as the cause.');
+        }
     }
 }

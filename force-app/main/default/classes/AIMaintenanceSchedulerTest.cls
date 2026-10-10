@@ -36,76 +36,92 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Run the scheduler
-        Test.startTest();
-            new AIMaintenanceScheduler().execute(null);
-        Test.stopTest();
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Count the batch jobs that started
-        Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
-        Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
+        System.runAs(superUser) {
+            // [1] Run the scheduler
+            Test.startTest();
+                new AIMaintenanceScheduler().execute(null);
+            Test.stopTest();
 
-        // [3] Check each batch ran once
-        Assert.areEqual(1, idleBatchCount, 'The idle batch should run once.');
-        Assert.areEqual(1, retentionBatchCount, 'The retention batch should run once.');
+            // [2] Count the batch jobs that started
+            Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
+            Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
+
+            // [3] Check each batch ran once
+            Assert.areEqual(1, idleBatchCount, 'The idle batch should run once.');
+            Assert.areEqual(1, retentionBatchCount, 'The retention batch should run once.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        Id jobId;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [1] Schedule the job through the platform scheduler
-        Test.startTest();
-            jobId = System.schedule(TEST_JOB_NAME, '0 0 3 * * ?', new AIMaintenanceScheduler());
-        Test.stopTest();
+        System.runAs(superUser) {
+            Id jobId;
 
-        // [2] Count the scheduled jobs with the given name
-        Integer scheduledCount = [SELECT COUNT() FROM CronTrigger WHERE Id = :jobId AND CronJobDetail.Name = :TEST_JOB_NAME];
+            // [1] Schedule the job through the platform scheduler
+            Test.startTest();
+                jobId = System.schedule(TEST_JOB_NAME, '0 0 3 * * ?', new AIMaintenanceScheduler());
+            Test.stopTest();
 
-        // [3] Check the job is scheduled once
-        Assert.areEqual(1, scheduledCount, 'The job should be scheduled once under the given name.');
+            // [2] Count the scheduled jobs with the given name
+            Integer scheduledCount = [SELECT COUNT() FROM CronTrigger WHERE Id = :jobId AND CronJobDetail.Name = :TEST_JOB_NAME];
+
+            // [3] Check the job is scheduled once
+            Assert.areEqual(1, scheduledCount, 'The job should be scheduled once under the given name.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Switch the application off
-        AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-        settings.IsEnabled__c = false;
-        update settings;
-        AIAssistSettingsService.cachedSettings = null;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Run the scheduler
-        Test.startTest();
-            new AIMaintenanceScheduler().execute(null);
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Switch the application off
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.IsEnabled__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+            AIAssistSettingsService.cachedSettings = null;
 
-        // [3] Count the batch jobs that started
-        Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
-        Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
+            // [2] Run the scheduler
+            Test.startTest();
+                new AIMaintenanceScheduler().execute(null);
+            Test.stopTest();
 
-        // [4] Check retention ran and idle closing did not
-        Assert.areEqual(0, idleBatchCount, 'Idle closing should wait for the application to be on.');
-        Assert.areEqual(1, retentionBatchCount, 'Retention should still run while the application is off.');
+            // [3] Count the batch jobs that started
+            Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
+            Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
+
+            // [4] Check retention ran and idle closing did not
+            Assert.areEqual(0, idleBatchCount, 'Idle closing should wait for the application to be on.');
+            Assert.areEqual(1, retentionBatchCount, 'Retention should still run while the application is off.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Force the scheduler to throw when starting a batch
-        AIMaintenanceScheduler.isTestCustomExceptionThrown = true;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Run the scheduler
-        Test.startTest();
-            new AIMaintenanceScheduler().execute(null);
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Force the scheduler to throw when starting a batch
+            AIMaintenanceScheduler.isTestCustomExceptionThrown = true;
 
-        // [3] Count the batch jobs and the platform logs
-        Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
-        Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
-        Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = 'AIMaintenanceScheduler' AND MethodName__c = 'execute'];
+            // [2] Run the scheduler
+            Test.startTest();
+                new AIMaintenanceScheduler().execute(null);
+            Test.stopTest();
 
-        // [4] Check no batch started and one log was written for each
-        Assert.areEqual(0, idleBatchCount, 'The idle batch should not start when the exception is forced.');
-        Assert.areEqual(0, retentionBatchCount, 'The retention batch should not start when the exception is forced.');
-        Assert.areEqual(2, logCount, 'One log should be written for each batch that could not start.');
+            // [3] Count the batch jobs and the platform logs
+            Integer idleBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :IDLE_BATCH_NAME];
+            Integer retentionBatchCount = [SELECT COUNT() FROM AsyncApexJob WHERE ApexClass.Name = :RETENTION_BATCH_NAME];
+            Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = 'AIMaintenanceScheduler' AND MethodName__c = 'execute'];
+
+            // [4] Check no batch started and one log was written for each
+            Assert.areEqual(0, idleBatchCount, 'The idle batch should not start when the exception is forced.');
+            Assert.areEqual(0, retentionBatchCount, 'The retention batch should not start when the exception is forced.');
+            Assert.areEqual(2, logCount, 'One log should be written for each batch that could not start.');
+        }
     }
 }

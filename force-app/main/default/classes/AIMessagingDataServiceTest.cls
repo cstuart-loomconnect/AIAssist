@@ -33,94 +33,106 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Create an agent, a conversation and two unsaved AI Agent messages
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
-        List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 7, 2, false);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Insert, update, and call both with null and empty lists
-        Test.startTest();
-            AIMessagingDataService.insertOrThrow(messages);
-            messages[0].ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED;
-            AIMessagingDataService.updateOrThrow(new List<SObject>{ messages[0] });
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and two unsaved AI Agent messages
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+            List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 7, 2, false);
 
-            AIMessagingDataService.insertOrThrow(null);
-            AIMessagingDataService.updateOrThrow(new List<SObject>());
-        Test.stopTest();
+            // [2] Insert, update, and call both with null and empty lists
+            Test.startTest();
+                AIMessagingDataService.insertOrThrow(messages);
+                messages[0].ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_FAILED;
+                AIMessagingDataService.updateOrThrow(new List<SObject>{ messages[0] });
 
-        // [3] Count the saved messages and read the updated one
-        Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
-        AIConversationMessage__c updatedMessage = [SELECT ProcessingStatus__c FROM AIConversationMessage__c WHERE Id = :messages[0].Id];
+                AIMessagingDataService.insertOrThrow(null);
+                AIMessagingDataService.updateOrThrow(new List<SObject>());
+            Test.stopTest();
 
-        // [4] Check the writes were saved and the trusted-write marker is clear
-        Assert.areEqual(2, messageCount, 'The AI Agent messages were written, which only AIMessagingDataService may do.');
-        Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, updatedMessage.ProcessingStatus__c, 'The update was written.');
-        Assert.isFalse(AIMessagingDataService.isTrustedWrite(), 'The marker is clear once the write is done.');
+            // [3] Count the saved messages and read the updated one
+            Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Sender__c = :AIAssistApplicationConstants.SENDER_AI_AGENT];
+            AIConversationMessage__c updatedMessage = [SELECT ProcessingStatus__c FROM AIConversationMessage__c WHERE Id = :messages[0].Id];
+
+            // [4] Check the writes were saved and the trusted-write marker is clear
+            Assert.areEqual(2, messageCount, 'The AI Agent messages were written, which only AIMessagingDataService may do.');
+            Assert.areEqual(AIAssistApplicationConstants.PROCESSING_STATUS_FAILED, updatedMessage.ProcessingStatus__c, 'The update was written.');
+            Assert.isFalse(AIMessagingDataService.isTrustedWrite(), 'The marker is clear once the write is done.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Build a message with no conversation and an agent with an invalid value
-        AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(null, AIAssistApplicationConstants.SENDER_AI_AGENT, 1, 1, false)[0];
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
-        agent.ConversationRetentionDays__c = -1;
+        System.runAs(superUser) {
+            // [1] Build a message with no conversation and an agent with an invalid value
+            AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(null, AIAssistApplicationConstants.SENDER_AI_AGENT, 1, 1, false)[0];
 
-        String insertMessage;
-        String updateMessage;
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, null, true)[0];
+            agent.ConversationRetentionDays__c = -1;
 
-        // [2] Insert and update them, catching the exception each throws
-        Test.startTest();
-            // The service throws by design here, so the exception is caught to read its message.
-            try {
+            String insertMessage;
+            String updateMessage;
 
-                AIMessagingDataService.insertOrThrow(new List<SObject>{ orphan });
+            // [2] Insert and update them, catching the exception each throws
+            Test.startTest();
+                // The service throws by design here, so the exception is caught to read its message.
+                try {
 
-            } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
+                    AIMessagingDataService.insertOrThrow(new List<SObject>{ orphan });
 
-                insertMessage = ex.getMessage();
-            }
+                } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
 
-            try {
+                    insertMessage = ex.getMessage();
+                }
 
-                AIMessagingDataService.updateOrThrow(new List<SObject>{ agent });
+                try {
 
-            } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
+                    AIMessagingDataService.updateOrThrow(new List<SObject>{ agent });
 
-                updateMessage = ex.getMessage();
-            }
-        Test.stopTest();
+                } catch (AIMessagingDataService.AIMessagingDataServiceException ex) {
 
-        // [3] Check both threw the generic label and the marker is clear
-        Assert.areEqual(Label.AI_Error_Generic, insertMessage, 'An insert with no parent conversation should throw, and the user sees only the generic label.');
-        Assert.areEqual(Label.AI_Error_Generic, updateMessage, 'An update the object model refuses should throw, and the user sees only the generic label.');
-        Assert.isFalse(AIMessagingDataService.isTrustedWrite(), 'A failed write must not leave the marker set, or a user insert later in the transaction could forge a sender.');
+                    updateMessage = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [3] Check both threw the generic label and the marker is clear
+            Assert.areEqual(Label.AI_Error_Generic, insertMessage, 'An insert with no parent conversation should throw, and the user sees only the generic label.');
+            Assert.areEqual(Label.AI_Error_Generic, updateMessage, 'An update the object model refuses should throw, and the user sees only the generic label.');
+            Assert.isFalse(AIMessagingDataService.isTrustedWrite(), 'A failed write must not leave the marker set, or a user insert later in the transaction could forge a sender.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Create an agent, a conversation and two unsaved System messages
-        AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-        AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
-        List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_SYSTEM, 3, 2, false);
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Add a message with no conversation to the batch
-        AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(null, AIAssistApplicationConstants.SENDER_SYSTEM, 3, 1, false)[0];
-        messages.add(orphan);
+        System.runAs(superUser) {
+            // [1] Create an agent, a conversation and two unsaved System messages
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
+            List<AIConversationMessage__c> messages = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_SYSTEM, 3, 2, false);
 
-        // [3] Insert and update with failures logged, then insert a null list
-        Test.startTest();
-            AIMessagingDataService.insertAndLogFailures(messages, TEST_CLASS_NAME, 'testScenario3');
-            AIMessagingDataService.updateAndLogFailures(new List<SObject>{ new AIConversationMessage__c(Id = messages[0].Id) }, TEST_CLASS_NAME, 'testScenario3');
-            AIMessagingDataService.insertAndLogFailures(null, TEST_CLASS_NAME, 'testScenario3');
-        Test.stopTest();
+            // [2] Add a message with no conversation to the batch
+            AIConversationMessage__c orphan = AIAssistTestDataFactory.createAIConversationMessages(null, AIAssistApplicationConstants.SENDER_SYSTEM, 3, 1, false)[0];
+            messages.add(orphan);
 
-        // [4] Count the saved messages and the platform logs
-        Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id];
-        Integer platformLogCount = [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = :TEST_CLASS_NAME];
+            // [3] Insert and update with failures logged, then insert a null list
+            Test.startTest();
+                AIMessagingDataService.insertAndLogFailures(messages, TEST_CLASS_NAME, 'testScenario3');
+                AIMessagingDataService.updateAndLogFailures(new List<SObject>{ new AIConversationMessage__c(Id = messages[0].Id) }, TEST_CLASS_NAME, 'testScenario3');
+                AIMessagingDataService.insertAndLogFailures(null, TEST_CLASS_NAME, 'testScenario3');
+            Test.stopTest();
 
-        // [5] Check the good records were saved and the bad one was logged
-        Assert.areEqual(2, messageCount, 'The records that could be saved were saved.');
-        Assert.areEqual(1, platformLogCount, 'The one that could not was logged.');
+            // [4] Count the saved messages and the platform logs
+            Integer messageCount = [SELECT COUNT() FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id];
+            Integer platformLogCount = [SELECT COUNT() FROM AIPlatformLog__c WHERE ClassName__c = :TEST_CLASS_NAME];
+
+            // [5] Check the good records were saved and the bad one was logged
+            Assert.areEqual(2, messageCount, 'The records that could be saved were saved.');
+            Assert.areEqual(1, platformLogCount, 'The one that could not was logged.');
+        }
     }
 }

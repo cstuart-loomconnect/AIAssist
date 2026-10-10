@@ -51,7 +51,7 @@ public without sharing class AIAssistTestProviderMock implements HttpCalloutMock
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
         settings.CalloutTimeoutMilliseconds__c = 30000;
         settings.RetryableStatusCodes__c = '503';
-        upsert settings;
+        System.runAs(AIAssistTestDataFactory.getSetupUser()) { upsert settings; }
         AIAssistSettingsService.cachedSettings = null;
 
         // [3] Register the mock for the callouts

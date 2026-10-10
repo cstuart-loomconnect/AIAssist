@@ -38,6 +38,13 @@ RULES
    - (IsApplicationActive__c does not exist in this repo; use IsEnabled__c.)
 
 5. Test body order
+   - Every test method starts with
+         User superUser = AIAssistTestDataFactory.createSuperUser();
+     followed by System.runAs(superUser) { ... } around the rest of the body, so the test
+     runs as a real user holding the AIAssistSuperUser permission set (read, create, edit and
+     delete on everything AI Assist) instead of as the running admin. That permission set must
+     always cover every object and field in the repo; add new ones to it when you add them.
+     Tests that also run as another user nest System.runAs(thatUser) inside it.
    - Arrange: build data (use AIAssistTestDataFactory), insert.
    - Optional pre-assert on starting state.
    - Act: only the action under test, inside an indented block:
@@ -128,16 +135,20 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Build the data the scenario needs
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Run the action under test
-        Test.startTest();
-            // act
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Build the data the scenario needs
 
-        // [3] Read the results back
+            // [2] Run the action under test
+            Test.startTest();
+                // act
+            Test.stopTest();
 
-        // [4] Check the outcome
-        Assert.areEqual(expected, actual, 'Message.');
+            // [3] Read the results back
+
+            // [4] Check the outcome
+            Assert.areEqual(expected, actual, 'Message.');
+        }
     }
 }

@@ -1,6 +1,6 @@
 # AIAssist
 
-AIAssist is a Salesforce managed package (namespace `LoomConnect`) developed with Salesforce DX and intended for distribution on the AppExchange.
+AIAssist is a Salesforce package developed with Salesforce DX and intended for distribution on the AppExchange.
 
 ## Salesforce DX Project
 

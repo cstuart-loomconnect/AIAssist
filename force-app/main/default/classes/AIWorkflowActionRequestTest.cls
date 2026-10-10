@@ -29,27 +29,31 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Prepare the request and the count to capture
-        AIWorkflowActionRequest request;
-        Integer inputsAtStart;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Build the request and set its values
-        Test.startTest();
-            request = new AIWorkflowActionRequest();
-            inputsAtStart = request.inputParameters.size();
+        System.runAs(superUser) {
+            // [1] Prepare the request and the count to capture
+            AIWorkflowActionRequest request;
+            Integer inputsAtStart;
 
-            request.recordId = UserInfo.getUserId();
-            request.userId = UserInfo.getUserId();
-            request.actionName = 'Example';
-            request.inputParameters.put('x', 1);
-        Test.stopTest();
+            // [2] Build the request and set its values
+            Test.startTest();
+                request = new AIWorkflowActionRequest();
+                inputsAtStart = request.inputParameters.size();
 
-        // [3] Check the input map started empty and every value was kept
-        Assert.areEqual(0, inputsAtStart, 'The input map is never null.');
+                request.recordId = UserInfo.getUserId();
+                request.userId = UserInfo.getUserId();
+                request.actionName = 'Example';
+                request.inputParameters.put('x', 1);
+            Test.stopTest();
 
-        Assert.areEqual(UserInfo.getUserId(), request.recordId, 'Record kept.');
-        Assert.areEqual(UserInfo.getUserId(), request.userId, 'User kept.');
-        Assert.areEqual('Example', request.actionName, 'Name kept.');
-        Assert.areEqual(1, request.inputParameters.get('x'), 'Input kept.');
+            // [3] Check the input map started empty and every value was kept
+            Assert.areEqual(0, inputsAtStart, 'The input map is never null.');
+
+            Assert.areEqual(UserInfo.getUserId(), request.recordId, 'Record kept.');
+            Assert.areEqual(UserInfo.getUserId(), request.userId, 'User kept.');
+            Assert.areEqual('Example', request.actionName, 'Name kept.');
+            Assert.areEqual(1, request.inputParameters.get('x'), 'Input kept.');
+        }
     }
 }

@@ -39,131 +39,147 @@ Version      Author                   Description
 
     @IsTest static void testScenario1() {
 
-        // [1] Build a request with only the required fields
-        AIProvider.Request request = new AIProvider.Request();
-        request.modelIdentifier = MODEL_IDENTIFIER;
-        request.maxOutputTokens = MAX_OUTPUT_TOKENS;
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
-        };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        Map<String, Object> body;
+        System.runAs(superUser) {
+            // [1] Build a request with only the required fields
+            AIProvider.Request request = new AIProvider.Request();
+            request.modelIdentifier = MODEL_IDENTIFIER;
+            request.maxOutputTokens = MAX_OUTPUT_TOKENS;
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
+            };
 
-        // [2] Build the request body
-        Test.startTest();
-            body = new AIAnthropicMessageRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Check the body holds the required fields and omits the optional ones
-        Assert.areEqual(MODEL_IDENTIFIER, body.get('model'), 'The model should be sent.');
-        Assert.areEqual(MAX_OUTPUT_TOKENS, body.get('max_tokens'), 'The output cap should be sent.');
-        Assert.areEqual(request.messages, body.get('messages'), 'The messages should be sent unchanged.');
+            // [2] Build the request body
+            Test.startTest();
+                body = new AIAnthropicMessageRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        Assert.isFalse(body.containsKey('temperature'), 'No temperature is set, so none should be sent.');
-        Assert.isFalse(body.containsKey('system'), 'No system prompt is set, so none should be sent.');
-        Assert.isFalse(body.containsKey('tools'), 'No tools are set, so none should be sent.');
+            // [3] Check the body holds the required fields and omits the optional ones
+            Assert.areEqual(MODEL_IDENTIFIER, body.get('model'), 'The model should be sent.');
+            Assert.areEqual(MAX_OUTPUT_TOKENS, body.get('max_tokens'), 'The output cap should be sent.');
+            Assert.areEqual(request.messages, body.get('messages'), 'The messages should be sent unchanged.');
+
+            Assert.isFalse(body.containsKey('temperature'), 'No temperature is set, so none should be sent.');
+            Assert.isFalse(body.containsKey('system'), 'No system prompt is set, so none should be sent.');
+            Assert.isFalse(body.containsKey('tools'), 'No tools are set, so none should be sent.');
+        }
     }
 
     @IsTest static void testScenario2() {
 
-        // [1] Build a request with a temperature and a system prompt
-        AIProvider.Request request = new AIProvider.Request();
-        request.modelIdentifier = MODEL_IDENTIFIER;
-        request.maxOutputTokens = MAX_OUTPUT_TOKENS;
-        request.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
-        };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        request.temperature = 0.4;
-        request.systemPromptText = SYSTEM_PROMPT;
+        System.runAs(superUser) {
+            // [1] Build a request with a temperature and a system prompt
+            AIProvider.Request request = new AIProvider.Request();
+            request.modelIdentifier = MODEL_IDENTIFIER;
+            request.maxOutputTokens = MAX_OUTPUT_TOKENS;
+            request.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
+            };
 
-        Map<String, Object> body;
+            request.temperature = 0.4;
+            request.systemPromptText = SYSTEM_PROMPT;
 
-        // [2] Build the request body
-        Test.startTest();
-            body = new AIAnthropicMessageRequestBuilder().buildRequestBody(request);
-        Test.stopTest();
+            Map<String, Object> body;
 
-        // [3] Count the messages that were sent
-        Integer messageCount = ((List<Object>) body.get('messages')).size();
+            // [2] Build the request body
+            Test.startTest();
+                body = new AIAnthropicMessageRequestBuilder().buildRequestBody(request);
+            Test.stopTest();
 
-        // [4] Check the temperature and system prompt are top-level fields
-        Assert.areEqual(0.4, body.get('temperature'), 'The temperature should be sent.');
-        Assert.areEqual(SYSTEM_PROMPT, body.get('system'), 'The system prompt should be a top-level field on Anthropic.');
-        Assert.areEqual(1, messageCount, 'The system prompt should not be added as a message.');
+            // [3] Count the messages that were sent
+            Integer messageCount = ((List<Object>) body.get('messages')).size();
+
+            // [4] Check the temperature and system prompt are top-level fields
+            Assert.areEqual(0.4, body.get('temperature'), 'The temperature should be sent.');
+            Assert.areEqual(SYSTEM_PROMPT, body.get('system'), 'The system prompt should be a top-level field on Anthropic.');
+            Assert.areEqual(1, messageCount, 'The system prompt should not be added as a message.');
+        }
     }
 
     @IsTest static void testScenario3() {
 
-        // [1] Build a tool definition for each of the two requests
-        AIProvider.ToolDefinition allowedTool = new AIProvider.ToolDefinition();
-        allowedTool.name = TOOL_NAME;
-        allowedTool.description = TOOL_DESCRIPTION;
-        allowedTool.inputSchema = new Map<String, Object>{ 'type' => 'object' };
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        AIProvider.ToolDefinition forbiddenTool = new AIProvider.ToolDefinition();
-        forbiddenTool.name = TOOL_NAME;
-        forbiddenTool.description = TOOL_DESCRIPTION;
-        forbiddenTool.inputSchema = new Map<String, Object>{ 'type' => 'object' };
+        System.runAs(superUser) {
+            // [1] Build a tool definition for each of the two requests
+            AIProvider.ToolDefinition allowedTool = new AIProvider.ToolDefinition();
+            allowedTool.name = TOOL_NAME;
+            allowedTool.description = TOOL_DESCRIPTION;
+            allowedTool.inputSchema = new Map<String, Object>{ 'type' => 'object' };
 
-        // [2] Build one request that allows tool calls and one that does not
-        AIProvider.Request allowed = new AIProvider.Request();
-        allowed.modelIdentifier = MODEL_IDENTIFIER;
-        allowed.maxOutputTokens = MAX_OUTPUT_TOKENS;
-        allowed.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
-        };
-        allowed.tools = new List<AIProvider.ToolDefinition>{ allowedTool };
+            AIProvider.ToolDefinition forbiddenTool = new AIProvider.ToolDefinition();
+            forbiddenTool.name = TOOL_NAME;
+            forbiddenTool.description = TOOL_DESCRIPTION;
+            forbiddenTool.inputSchema = new Map<String, Object>{ 'type' => 'object' };
 
-        AIProvider.Request forbidden = new AIProvider.Request();
-        forbidden.modelIdentifier = MODEL_IDENTIFIER;
-        forbidden.maxOutputTokens = MAX_OUTPUT_TOKENS;
-        forbidden.messages = new List<Map<String, Object>>{
-            new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
-        };
-        forbidden.tools = new List<AIProvider.ToolDefinition>{ forbiddenTool };
-        forbidden.allowToolCalls = false;
+            // [2] Build one request that allows tool calls and one that does not
+            AIProvider.Request allowed = new AIProvider.Request();
+            allowed.modelIdentifier = MODEL_IDENTIFIER;
+            allowed.maxOutputTokens = MAX_OUTPUT_TOKENS;
+            allowed.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
+            };
+            allowed.tools = new List<AIProvider.ToolDefinition>{ allowedTool };
 
-        Map<String, Object> allowedBody;
-        Map<String, Object> forbiddenBody;
+            AIProvider.Request forbidden = new AIProvider.Request();
+            forbidden.modelIdentifier = MODEL_IDENTIFIER;
+            forbidden.maxOutputTokens = MAX_OUTPUT_TOKENS;
+            forbidden.messages = new List<Map<String, Object>>{
+                new Map<String, Object>{ 'role' => 'user', 'content' => 'Hello' }
+            };
+            forbidden.tools = new List<AIProvider.ToolDefinition>{ forbiddenTool };
+            forbidden.allowToolCalls = false;
 
-        // [3] Build both request bodies
-        Test.startTest();
-            allowedBody = new AIAnthropicMessageRequestBuilder().buildRequestBody(allowed);
-            forbiddenBody = new AIAnthropicMessageRequestBuilder().buildRequestBody(forbidden);
-        Test.stopTest();
+            Map<String, Object> allowedBody;
+            Map<String, Object> forbiddenBody;
 
-        // [4] Read the tool and the tool choice back out of the bodies
-        Map<String, Object> tool = (Map<String, Object>) ((List<Object>) allowedBody.get('tools'))[0];
-        Map<String, Object> toolChoice = (Map<String, Object>) forbiddenBody.get('tool_choice');
+            // [3] Build both request bodies
+            Test.startTest();
+                allowedBody = new AIAnthropicMessageRequestBuilder().buildRequestBody(allowed);
+                forbiddenBody = new AIAnthropicMessageRequestBuilder().buildRequestBody(forbidden);
+            Test.stopTest();
 
-        // [5] Check the tool shape and when tool_choice is added
-        Assert.areEqual(TOOL_NAME, tool.get('name'), 'The tool name should be sent.');
-        Assert.areEqual(TOOL_DESCRIPTION, tool.get('description'), 'The tool description should be sent.');
-        Assert.isNotNull(tool.get('input_schema'), 'The input schema should be sent flat, with no function wrapper.');
+            // [4] Read the tool and the tool choice back out of the bodies
+            Map<String, Object> tool = (Map<String, Object>) ((List<Object>) allowedBody.get('tools'))[0];
+            Map<String, Object> toolChoice = (Map<String, Object>) forbiddenBody.get('tool_choice');
 
-        Assert.isFalse(allowedBody.containsKey('tool_choice'), 'Tool calls are allowed, so nothing should be restricted.');
-        Assert.areEqual('none', toolChoice.get('type'), 'On the last iteration the model should not be allowed to call a tool.');
-        Assert.isNotNull(forbiddenBody.get('tools'), 'The tools should stay listed, or Anthropic rejects a conversation that already contains tool calls.');
+            // [5] Check the tool shape and when tool_choice is added
+            Assert.areEqual(TOOL_NAME, tool.get('name'), 'The tool name should be sent.');
+            Assert.areEqual(TOOL_DESCRIPTION, tool.get('description'), 'The tool description should be sent.');
+            Assert.isNotNull(tool.get('input_schema'), 'The input schema should be sent flat, with no function wrapper.');
+
+            Assert.isFalse(allowedBody.containsKey('tool_choice'), 'Tool calls are allowed, so nothing should be restricted.');
+            Assert.areEqual('none', toolChoice.get('type'), 'On the last iteration the model should not be allowed to call a tool.');
+            Assert.isNotNull(forbiddenBody.get('tools'), 'The tools should stay listed, or Anthropic rejects a conversation that already contains tool calls.');
+        }
     }
 
     @IsTest static void testScenario4() {
 
-        // [1] Prepare to catch the adapter exception
-        AIAnthropicMessageRequestBuilder.AIAnthropicMessageRequestBuilderException thrownException;
+        User superUser = AIAssistTestDataFactory.createSuperUser();
 
-        // [2] Build a request body from null
-        Test.startTest();
-            try {
-                new AIAnthropicMessageRequestBuilder().buildRequestBody(null);
-            } catch (AIAnthropicMessageRequestBuilder.AIAnthropicMessageRequestBuilderException ex) {
-                thrownException = ex;
-            }
-        Test.stopTest();
+        System.runAs(superUser) {
+            // [1] Prepare to catch the adapter exception
+            AIAnthropicMessageRequestBuilder.AIAnthropicMessageRequestBuilderException thrownException;
 
-        // [3] Check the adapter exception was thrown with the original as its cause
-        Assert.isNotNull(thrownException, 'A null request should throw the adapter exception.');
-        Assert.isTrue(thrownException.getMessage().startsWith(ERROR_PREFIX), 'The error should name the adapter.');
-        Assert.isNotNull(thrownException.getCause(), 'The original error should be kept as the cause.');
+            // [2] Build a request body from null
+            Test.startTest();
+                try {
+                    new AIAnthropicMessageRequestBuilder().buildRequestBody(null);
+                } catch (AIAnthropicMessageRequestBuilder.AIAnthropicMessageRequestBuilderException ex) {
+                    thrownException = ex;
+                }
+            Test.stopTest();
+
+            // [3] Check the adapter exception was thrown with the original as its cause
+            Assert.isNotNull(thrownException, 'A null request should throw the adapter exception.');
+            Assert.isTrue(thrownException.getMessage().startsWith(ERROR_PREFIX), 'The error should name the adapter.');
+            Assert.isNotNull(thrownException.getCause(), 'The original error should be kept as the cause.');
+        }
     }
 }
