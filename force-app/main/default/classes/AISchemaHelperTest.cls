@@ -96,7 +96,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a user with no access and an agent Id
             User noAccess = AIAssistTestDataFactory.createUsers(1, true)[0];
-            Id agentId = Id.valueOf(AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000000');
+            Id agentId = Id.valueOf(AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000000');
             AISchemaHelper.ObjectInfo objectInfo;
 
             System.runAs(noAccess) {
