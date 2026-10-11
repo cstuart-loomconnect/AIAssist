@@ -1,0 +1,63 @@
+/* Monospace font for ids, clocks and code. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+/* The three pulsing dots shown beside the heading and the typing label. */
+.aia-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.aia-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--aia-accent);
+  animation: aia-pulse 1.2s ease-in-out infinite;
+}
+.aia-dots span:nth-child(2) {
+  background: var(--aia-accent-mid);
+  animation-delay: 0.15s;
+}
+.aia-dots span:nth-child(3) {
+  background: var(--aia-accent-border);
+  animation-delay: 0.3s;
+}
+/* The pulse each dot repeats: fade down, then fade up and lift slightly. */
+@keyframes aia-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+/* Keeps the dots still for people who have asked their device to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  .aia-dots span {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Makes the icon on the active step turn round. SLDS has no utility class that spins an icon. */
+.aia-spin {
+  animation: aia-spin 1s linear infinite;
+}
+
+/* The turning movement used by aia-spin: one full rotation. */
+@keyframes aia-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Stops the icon turning for people who have asked their device to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  .aia-spin {
+    animation: none;
+  }
+}
