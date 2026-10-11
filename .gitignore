@@ -50,3 +50,6 @@ $RECYCLE.BIN/
 # Org-default metadata that shows up in source tracking but is not part of the package
 **/digitalExperiences/**
 **/profiles/**
+
+# Local-only scenario script
+scripts/apex/usage-limit-banner-scenario.apex
