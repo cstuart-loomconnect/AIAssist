@@ -25,6 +25,7 @@ export const VARIANT_MAINTENANCE = "maintenance";
 // The icon shown for each variant that uses a lightning-icon.
 export const ICONS = {
   channel: "utility:ban",
+  noaccess: "utility:lock",
   noagent: "utility:info",
   space: "utility:expand_alt",
   error: "utility:error"

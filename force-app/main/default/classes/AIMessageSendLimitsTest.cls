@@ -41,6 +41,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -91,6 +93,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -159,6 +163,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -215,6 +221,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -267,6 +275,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -352,6 +362,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access and an agent
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];

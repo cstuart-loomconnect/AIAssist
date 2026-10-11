@@ -23,6 +23,8 @@ Version      Author                   Description
     // testScenario3: Check a channel with no row, no channel, a listed channel and an unlisted channel -> allowed unless the channel is not on the list.
     // testScenario4: Build the terms state unsigned, signed and with no version configured -> required only while the configured version is unsigned.
     // testScenario5: Set the blocked state for a ready user, inactive app, no agent and terms to accept -> each is named with its message and a ready user is not blocked.
+    // testScenario6: A user with a row and a policy, a row only, neither, and a policy only -> full use, read only, none and full use, with each refusal using its label.
+    // testScenario7: Set the blocked state for a user with no access and one with no policy -> each is named with its message.
 
     @TestSetup static void setup() {
 
@@ -211,6 +213,89 @@ Version      Author                   Description
             Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED, notAssigned.blockedState, 'A user with no agent should be blocked as not assigned.');
 
             Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_TERMS, termsContext.blockedState, 'A user with terms to accept should be blocked.');
+        }
+    }
+
+    @IsTest static void testScenario6() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Find the user's own settings row, and note the access with the row and the default policy
+            AIUserSettings__c userRow = [SELECT Id, IsActive__c FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
+            String withBoth;
+            String withRowOnly;
+            String withNeither;
+            String withPolicyOnly;
+            String noPolicyRefusal;
+            String noAccessRefusal;
+
+            Test.startTest();
+                withBoth = AIChatStateService.getAccessLevel();
+
+                // [2] With the policies off the row alone gives read only: reading is allowed, sending is refused
+                AIAssistTestDataFactory.deactivateUsagePolicies();
+                withRowOnly = AIChatStateService.getAccessLevel();
+                AIChatStateService.requireAccess();
+
+                try {
+                    AIChatStateService.requireSendAccess();
+                } catch (AIChatStateService.AIChatStateServiceException ex) {
+                    noPolicyRefusal = ex.getMessage();
+                }
+
+                // [3] With the row off as well the user has no access: reading and sending are both refused
+                userRow.IsActive__c = false;
+                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
+                withNeither = AIChatStateService.getAccessLevel();
+
+                try {
+                    AIChatStateService.requireAccess();
+                } catch (AIChatStateService.AIChatStateServiceException ex) {
+                    noAccessRefusal = ex.getMessage();
+                }
+
+                // [4] A policy assigned to the user gives full use without the row
+                AIAssistTestDataFactory.createAIUsagePolicyForUser(superUser.Id, null, null, null, null);
+                withPolicyOnly = AIChatStateService.getAccessLevel();
+            Test.stopTest();
+
+            // [5] Check each outcome
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withBoth, 'A row and a policy should give full use.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY, withRowOnly, 'A row alone should give read only.');
+            Assert.areEqual(Label.AI_Error_No_Policy, noPolicyRefusal, 'Sending without a policy should be refused with the no policy label.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_NONE, withNeither, 'No row and no policy should give none.');
+            Assert.areEqual(Label.AI_Error_No_Access, noAccessRefusal, 'Reading with neither should be refused with the no access label.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withPolicyOnly, 'A policy alone should give full use.');
+        }
+    }
+
+    @IsTest static void testScenario7() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Build a context for a user with no access, and one who may read but not send
+            AIChatDataStructure.ChatContext noAccess = new AIChatDataStructure.ChatContext();
+            noAccess.state = AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS;
+
+            AIChatDataStructure.ChatContext noPolicy = new AIChatDataStructure.ChatContext();
+            noPolicy.state = AIAssistApplicationConstants.CHAT_STATE_READY;
+            noPolicy.user = new AIChatDataStructure.UserState();
+            noPolicy.user.canSend = false;
+
+            // [2] Set the blocked state
+            Test.startTest();
+                AIChatStateService.setBlockedState(noAccess);
+                AIChatStateService.setBlockedState(noPolicy);
+            Test.stopTest();
+
+            // [3] Check each is named with its message
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_ACCESS, noAccess.blockedState, 'A user with no access should be blocked as such.');
+            Assert.areEqual(Label.AI_Error_No_Access, noAccess.blockedMessage, 'The no access state should carry its message.');
+
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_POLICY, noPolicy.blockedState, 'A user who may not send should be blocked as having no policy.');
+            Assert.areEqual(Label.AI_Chat_Blocked_No_Policy, noPolicy.blockedMessage, 'The no policy state should carry its message.');
         }
     }
 }

@@ -391,10 +391,17 @@ public without sharing class AIAssistApplicationConstants {
     public static final String CHAT_STATE_CHANNEL_DISABLED = 'CHANNEL_DISABLED';
     public static final String CHAT_STATE_NO_AGENT = 'NO_AGENT';
     public static final String CHAT_STATE_TERMS = 'TERMS';
+    public static final String CHAT_STATE_NO_ACCESS = 'NO_ACCESS';
     // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
     public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
     public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
     public static final String CHAT_BLOCKED_TERMS = 'TERMS';
+    public static final String CHAT_BLOCKED_NO_ACCESS = 'NO_ACCESS';
+    public static final String CHAT_BLOCKED_NO_POLICY = 'NO_POLICY';
+    // What a user may do with AI Assist: a usage policy gives full use, an AI User Setting alone gives read only, neither gives none.
+    public static final String ACCESS_LEVEL_FULL = 'FULL';
+    public static final String ACCESS_LEVEL_READ_ONLY = 'READ_ONLY';
+    public static final String ACCESS_LEVEL_NONE = 'NONE';
     public static final String CHAT_SEND_STATUS_SENT = 'SENT';
     public static final String CHAT_SEND_STATUS_ERROR = 'ERROR';
     public static final Integer CHAT_HISTORY_MAX_CONVERSATIONS = 50;

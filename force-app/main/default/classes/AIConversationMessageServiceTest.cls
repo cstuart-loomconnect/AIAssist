@@ -44,6 +44,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user and an agent
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -78,6 +79,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user and an agent that allows one conversation per record
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -124,6 +126,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two chat users and an agent each
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -170,6 +173,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user and an agent
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -259,6 +263,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user, an agent and a locked conversation
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -295,6 +300,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user, an agent and a conversation with a failed user message
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -331,6 +337,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two chat users and an agent
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -393,6 +400,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two chat users, an agent and their conversations
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
@@ -468,6 +476,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a chat user, an agent and two templates, the first of which is the default
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];

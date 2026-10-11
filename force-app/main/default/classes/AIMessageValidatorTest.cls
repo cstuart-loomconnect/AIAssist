@@ -27,6 +27,8 @@ Version      Author                   Description
     // testScenario7: Users who never accepted, accepted an earlier version and accepted the current version are validated -> the first two are refused and the last is allowed.
     // testScenario8: An undefined channel, a channel outside the allow-list, one on the list and none are validated -> the first two are refused and the last two are allowed.
     // testScenario9: Chats about a record are validated -> an owned record is allowed and a mismatched object name, an unreadable record and an unsupported object are refused.
+    // testScenario10: A message from a user with no active settings row and no policy -> it is refused with the no access label.
+    // testScenario11: A message from a user with a settings row but no policy -> it is refused with the no policy label.
 
     private static final String ALLOWED = 'ALLOWED';
     private static final String MESSAGE_BODY = 'Hello';
@@ -229,6 +231,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with the permission set
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             // [2] Create three Assigned Users Only agents and one open agent
@@ -280,6 +284,9 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create three users with the permission set and an open agent
             List<User> users = AIAssistTestDataFactory.createUsers(3, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[2].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -385,6 +392,8 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with the permission set and two agents, the second built for Contact
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
+            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
@@ -451,6 +460,65 @@ Version      Author                   Description
             Assert.areEqual(Label.AI_Error_Record_Access_Denied, outcomes[2], 'An object name that does not match the Id should be refused.');
             Assert.areEqual(Label.AI_Error_Record_Access_Denied, outcomes[3], 'Another user\'s private conversation should be refused as a record this user cannot see.');
             Assert.areEqual(Label.AI_Error_Agent_Not_Available, outcomes[4], 'An agent built for Contact should not be offered for an Account.');
+        }
+    }
+
+    @IsTest static void testScenario10() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create an open agent and switch the user's settings row off, leaving no policy
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+            update agent;
+
+            AIUserSettings__c userRow = [SELECT Id FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
+            userRow.IsActive__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+
+            String refusal;
+
+            // [2] Validate a message
+            Test.startTest();
+                try {
+                    AIMessageValidator.validateSendRequest(agent.Id, 'Hello', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+                } catch (AIMessageValidator.AIMessageValidatorException ex) {
+                    refusal = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [3] Check the message was refused with the no access label
+            Assert.areEqual(Label.AI_Error_No_Access, refusal, 'A user with no row and no policy should be refused.');
+        }
+    }
+
+    @IsTest static void testScenario11() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create an open agent and switch the policies off, leaving the user's settings row
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+            update agent;
+
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+
+            String refusal;
+
+            // [2] Validate a message
+            Test.startTest();
+                try {
+                    AIMessageValidator.validateSendRequest(agent.Id, 'Hello', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+                } catch (AIMessageValidator.AIMessageValidatorException ex) {
+                    refusal = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [3] Check the message was refused with the no policy label
+            Assert.areEqual(Label.AI_Error_No_Policy, refusal, 'A user with a settings row but no policy should be refused.');
         }
     }
 }

@@ -19,3 +19,13 @@ CONTRIBUTING.md
 # prettier-plugin-apex re-wraps calls and changes indentation, so never run it on Apex.
 **/*.cls
 **/*.trigger
+
+# Components that follow docs/05_LWC_CODE_PATTERN.txt keep their JavaScript hand-formatted (one-line imports and calls,
+# blank lines after opening braces). Prettier would re-wrap them, so it is not run on those files.
+force-app/main/default/lwc/aiChatWorkingIndicator/*.js
+force-app/main/default/lwc/aiChatTerms/*.js
+force-app/main/default/lwc/aiChatSuggestedAction/*.js
+force-app/main/default/lwc/aiChatStatePanel/*.js
+force-app/main/default/lwc/aiChatScreenFlowModal/*.js
+force-app/main/default/lwc/aiChatNewChatsPaused/*.js
+force-app/main/default/lwc/aiAssistChat/*.js

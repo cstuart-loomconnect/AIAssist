@@ -29,6 +29,8 @@ Version      Author                   Description
     // testScenario9: An unexpected failure gives the window only the generic label and is logged.
     // testScenario10: A slash command names a prompt template of the agent -> the message is sent and stores that template for the turn.
     // testScenario11: A slash command names a template that is inactive or does not exist -> the command is refused with the label and nothing is stored.
+    // testScenario12: A user with no active settings row and no policy -> the window stops with no access, a send is refused in place and history is refused with the label.
+    // testScenario13: A user with a settings row but no policy -> the window opens and reads, and send, retry and resume are refused with the no policy label.
 
     @TestSetup static void setup() {
 
@@ -290,11 +292,11 @@ Version      Author                   Description
                     shown = ex.getMessage();
                 }
 
-                AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(UserInfo.getUserId(), false)[0];
+                AIUserSettings__c settings = AIAssistTestDataFactory.getAIUserSettings(UserInfo.getUserId());
                 AIAssistTestDataFactory.upsertUiSettings(false);
                 settings.DebugModeEnabled__c = true;
                 settings.ConversationExportEnabled__c = true;
-                System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert settings; }
+                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
 
                 trace = AIChatController.getDebugTrace(reply.Id);
                 exported = AIChatController.exportConversation(conversation.Id);
@@ -470,6 +472,109 @@ Version      Author                   Description
             Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR, missing.status, 'A command for a missing template should be refused.');
             Assert.areEqual(Label.AI_Error_Prompt_Template_Unavailable, missing.message, 'The refusal should be the Custom Label.');
             Assert.areEqual(0, messageCount, 'Nothing should be stored for a refused command.');
+        }
+    }
+
+    @IsTest static void testScenario12() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create an open agent and switch the user's own settings row off, leaving no policy
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+            update agent;
+
+            AIUserSettings__c userRow = [SELECT Id FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
+            userRow.IsActive__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+
+            AIChatDataStructure.ChatContext context;
+            AIChatDataStructure.SendResult sendResult;
+            String historyRefusal;
+
+            // [2] Open the window, send a message and ask for history
+            Test.startTest();
+                context = AIChatController.getChatContext(null, null, null, null);
+
+                sendResult = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{
+                    'agentId' => agent.Id,
+                    'text' => 'Hello',
+                    'channel' => AIAssistApplicationConstants.CHANNEL_UTILITY_BAR
+                }));
+
+                try {
+                    AIChatController.getConversationHistory(null, false);
+                } catch (AuraHandledException ex) {
+                    historyRefusal = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [3] Check the window stops with no access, nothing is sent and history is refused
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS, context.state, 'The window should stop with no access.');
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_ACCESS, context.blockedState, 'The user should be named as blocked for no access.');
+            Assert.isNull(context.agent, 'No agent should be offered.');
+
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR, sendResult.status, 'The send should be refused in place.');
+            Assert.areEqual(Label.AI_Error_No_Access, sendResult.message, 'The send refusal should be the no access label.');
+            Assert.areEqual(0, [SELECT COUNT() FROM AIConversationMessage__c], 'No message should have been saved.');
+
+            Assert.areEqual(Label.AI_Error_No_Access, historyRefusal, 'History should be refused with the no access label.');
+        }
+    }
+
+    @IsTest static void testScenario13() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create an open agent and a conversation, then switch the policies off so the user has a settings row only
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+            update agent;
+
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+
+            AIChatDataStructure.ChatContext context;
+            AIChatDataStructure.SendResult sendResult;
+            AIChatDataStructure.ConversationView opened;
+            String retryRefusal;
+            String resumeRefusal;
+
+            // [2] Open the window, read, send, retry and resume
+            Test.startTest();
+                context = AIChatController.getChatContext(null, null, null, null);
+                opened = AIChatController.openConversation(conversation.Id);
+
+                sendResult = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{ 'agentId' => agent.Id, 'text' => 'Hello', 'channel' => AIAssistApplicationConstants.CHANNEL_UTILITY_BAR }));
+
+                try {
+                    AIChatController.retryLatestMessage(conversation.Id);
+                } catch (AuraHandledException ex) {
+                    retryRefusal = ex.getMessage();
+                }
+
+                try {
+                    AIChatController.resumeConversation(conversation.Id);
+                } catch (AuraHandledException ex) {
+                    resumeRefusal = ex.getMessage();
+                }
+            Test.stopTest();
+
+            // [3] Check the window opens and reads, and everything that sends is refused with the no policy label
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_STATE_READY, context.state, 'The window should open for a user with a settings row.');
+            Assert.isFalse(context.user.canSend, 'The user should not be able to send.');
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_POLICY, context.blockedState, 'The user should be named as blocked for no policy.');
+            Assert.areEqual(Label.AI_Chat_Blocked_No_Policy, context.blockedMessage, 'The message box should say sending is off.');
+            Assert.isNotNull(opened, 'The conversation should still open for reading.');
+
+            Assert.areEqual(AIAssistApplicationConstants.CHAT_SEND_STATUS_ERROR, sendResult.status, 'The send should be refused in place.');
+            Assert.areEqual(Label.AI_Error_No_Policy, sendResult.message, 'The send refusal should be the no policy label.');
+            Assert.areEqual(Label.AI_Error_No_Policy, retryRefusal, 'A retry should be refused with the no policy label.');
+            Assert.areEqual(Label.AI_Error_No_Policy, resumeRefusal, 'Resuming should be refused with the no policy label.');
+            Assert.areEqual(0, [SELECT COUNT() FROM AIConversationMessage__c], 'No message should have been saved.');
         }
     }
 }

@@ -53,48 +53,54 @@ public without sharing class AIMessageValidator {
         // [2] Refuse when the application is in maintenance mode
         if (AIAssistSettingsService.getUiSettings().IsMaintenanceMode__c == true) throw new AIMessageValidatorException(Label.AI_Error_Maintenance_Mode);
 
-        // [3] Refuse a message with no text
+        // [3] Refuse a user who may not send: no AI User Setting and no AI Usage Policy, or a setting with no policy. Nothing about the request is looked at first
+        String accessLevel = AIChatStateService.getAccessLevel();
+
+        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_NONE) throw new AIMessageValidatorException(Label.AI_Error_No_Access);
+        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY) throw new AIMessageValidatorException(Label.AI_Error_No_Policy);
+
+        // [4] Refuse a message with no text
         if (String.isBlank(messageBody)) throw new AIMessageValidatorException(Label.AI_Error_Message_Empty);
 
-        // [4] Refuse a message over the limit, which is the administrator's maximum when it is set and lower than the fixed one
+        // [5] Refuse a message over the limit, which is the administrator's maximum when it is set and lower than the fixed one
         Decimal configuredLength = AIAssistSettingsService.getSettings().MaxMessageLength__c;
         if (messageBody.length() > (configuredLength != null && configuredLength >= 1 && configuredLength < AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS ? configuredLength.intValue() : AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS)) throw new AIMessageValidatorException(Label.AI_Error_Message_Too_Long);
 
-        // [5] Start the context with the running user
+        // [6] Start the context with the running user
         ChatContext chatContext = new ChatContext();
         chatContext.userId = UserInfo.getUserId();
 
-        // [6] Refuse a missing agent, or an Id that is not an agent, as "not available" so nothing is revealed about what exists
+        // [7] Refuse a missing agent, or an Id that is not an agent, as "not available" so nothing is revealed about what exists
         if (agentId == null || agentId.getSobjectType() != AIAgent__c.SObjectType) throw new AIMessageValidatorException(Label.AI_Error_Agent_Not_Available);
 
-        // [7] Load the agent and refuse one that was not found
+        // [8] Load the agent and refuse one that was not found
         chatContext.agent = getAgent(agentId);
 
         if (chatContext.agent == null) throw new AIMessageValidatorException(Label.AI_Error_Agent_Not_Available);
 
-        // [8] Refuse an agent that is switched off
+        // [9] Refuse an agent that is switched off
         if (chatContext.agent.IsActive__c != true) throw new AIMessageValidatorException(Label.AI_Error_Agent_Inactive);
 
-        // [9] Refuse a user the agent does not admit. The default is Assigned Users Only, so an agent nobody is assigned to is closed to everyone
+        // [10] Refuse a user the agent does not admit. The default is Assigned Users Only, so an agent nobody is assigned to is closed to everyone
         if (!isUserAllowedOnAgent(chatContext.agent, chatContext.userId)) {
 
             throw new AIMessageValidatorException(Label.AI_Error_Agent_Not_Assigned);
         }
 
-        // [10] Find out whether the user has accepted the current usage terms
+        // [11] Find out whether the user has accepted the current usage terms
         String termsStatus = getTermsAcceptanceStatus(chatContext.userId, AIAssistSettingsService.getSettings().CurrentTermsVersion__c);
 
-        // [11] Refuse a user who accepted an earlier version of the terms, or none at all
+        // [12] Refuse a user who accepted an earlier version of the terms, or none at all
         if (termsStatus == TERMS_OUTDATED) throw new AIMessageValidatorException(Label.AI_Error_Terms_Version_Changed);
         if (termsStatus == TERMS_NONE) throw new AIMessageValidatorException(Label.AI_Error_Terms_Not_Acknowledged);
 
-        // [12] Load the user's settings. No settings row means unrestricted
+        // [13] Load the user's settings and limits, which the access check above has shown exist
         chatContext.userSettings = AIUsagePolicyService.getUserSettings(chatContext.userId);
         chatContext.usageLimits = AIUsagePolicyService.getUsageLimits(chatContext.userId);
 
         if (String.isNotBlank(channel)) {
 
-            // [13] Refuse a channel the object model does not define, rather than failing later on the restricted picklist
+            // [14] Refuse a channel the object model does not define, rather than failing later on the restricted picklist
             Set<String> definedChannels = new Set<String>();
 
             for (Schema.PicklistEntry channelEntry : AIConversation__c.Channel__c.getDescribe().getPicklistValues()) {
@@ -104,7 +110,7 @@ public without sharing class AIMessageValidator {
 
             if (!definedChannels.contains(channel)) throw new AIMessageValidatorException(Label.AI_Error_Channel_Not_Allowed);
 
-            // [14] Refuse a channel outside the user's allow-list. No allow-list means unrestricted
+            // [15] Refuse a channel outside the user's allow-list. No allow-list means unrestricted
             if (chatContext.userSettings != null && String.isNotBlank(chatContext.userSettings.AllowedChannels__c) && !new Set<String>(chatContext.userSettings.AllowedChannels__c.split(AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR)).contains(channel)) {
 
                 throw new AIMessageValidatorException(Label.AI_Error_Channel_Not_Allowed);
@@ -113,7 +119,7 @@ public without sharing class AIMessageValidator {
 
         if (relatedRecordId != null) {
 
-            // [15] A chat about a record must name the object the Id belongs to, so the pair stored on the conversation can be trusted
+            // [16] A chat about a record must name the object the Id belongs to, so the pair stored on the conversation can be trusted
             Schema.DescribeSObjectResult relatedRecordType = relatedRecordId.getSobjectType().getDescribe();
 
             if (String.isNotBlank(relatedObjectApiName) && !relatedObjectApiName.equalsIgnoreCase(relatedRecordType.getName()) && !relatedObjectApiName.equalsIgnoreCase(relatedRecordType.getLocalName())) {
@@ -121,13 +127,13 @@ public without sharing class AIMessageValidator {
                 throw new AIMessageValidatorException(Label.AI_Error_Record_Access_Denied);
             }
 
-            // [16] Refuse an agent built for another kind of record. An agent with no objects added to it is general
+            // [17] Refuse an agent built for another kind of record. An agent with no objects added to it is general
             if (!agentSupportsObject(chatContext.agent.Id, relatedRecordType.getName(), relatedRecordType.getLocalName())) {
 
                 throw new AIMessageValidatorException(Label.AI_Error_Agent_Not_Available);
             }
 
-            // [17] Refuse a record the user cannot read, as otherwise the conversation and its data sources could be pointed at someone else's data. UserRecordAccess answers with the user's real sharing, hierarchy and permissions
+            // [18] Refuse a record the user cannot read, as otherwise the conversation and its data sources could be pointed at someone else's data. UserRecordAccess answers with the user's real sharing, hierarchy and permissions
             List<UserRecordAccess> recordAccess = relatedRecordType.isAccessible() ? [SELECT RecordId, HasReadAccess FROM UserRecordAccess WHERE UserId = :chatContext.userId AND RecordId = :relatedRecordId WITH SYSTEM_MODE] : new List<UserRecordAccess>();
 
             if (recordAccess.isEmpty() || recordAccess[0].HasReadAccess != true) {
@@ -136,7 +142,7 @@ public without sharing class AIMessageValidator {
             }
         }
 
-        // [18] Return what the checks learned
+        // [19] Return what the checks learned
         return chatContext;
     }
 

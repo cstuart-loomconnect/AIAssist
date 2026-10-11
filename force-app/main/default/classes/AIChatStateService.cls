@@ -10,6 +10,7 @@ Step 1: Build the UI settings from the org's UI settings record
 Step 2: Build what this user may do (debug, export, new chats, Workflow Actions) from their own settings and the UI settings
 Step 3: Check the channel is allowed and whether the terms have to be accepted
 Step 4: Name the one reason the user cannot send a message right now, if there is one
+Step 5: Say what the user may do (read with an active AI User Setting or an active AI Usage Policy, send only with a policy), and refuse a request from a user who may not
 
 The user's own AIUserSettings__c row is read in system mode (AIUsagePolicyService.getUserSettings), because the
 User permission set cannot read it; only the signed-in user's row is ever asked for.
@@ -22,6 +23,8 @@ Version      Author                   Description
 */
 
 public without sharing class AIChatStateService {
+
+    public class AIChatStateServiceException extends Exception {}
 
     // Builds the UI settings the chat window uses, with a sensible default for anything left blank.
     public static AIChatDataStructure.UiSettings buildUiSettings(AIAssistUISettings__c uiSettings) {
@@ -92,7 +95,7 @@ public without sharing class AIChatStateService {
         return termsState;
     }
 
-    // Fills in why the user cannot send a message right now. One reason is given, the first that applies, most fundamental first: the application, the terms, then the agent assignment. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
+    // Fills in why the user cannot send a message right now. One reason is given, the first that applies, most fundamental first: the application, access, the terms, the agent assignment, then having no usage policy. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
     public static void setBlockedState(AIChatDataStructure.ChatContext context) {
 
         // [1] Read the application settings
@@ -103,6 +106,10 @@ public without sharing class AIChatStateService {
 
             context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_INACTIVE;
             context.blockedMessage = Label.AI_Error_Application_Inactive;
+        } else if (context.state == AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS) {
+
+            context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_ACCESS;
+            context.blockedMessage = Label.AI_Error_No_Access;
         } else if (context.terms != null && context.terms.required) {
 
             context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_TERMS;
@@ -110,7 +117,49 @@ public without sharing class AIChatStateService {
 
             context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED;
             context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
+        } else if (context.user != null && context.user.canSend == false) {
+
+            context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_POLICY;
+            context.blockedMessage = Label.AI_Chat_Blocked_No_Policy;
         }
+    }
+
+    // What the signed-in user may do with AI Assist: full use with an active AI Usage Policy, read only with just an active AI User Setting, none with neither.
+    public static String getAccessLevel() {
+
+        // [1] Ask the policy service
+        return AIUsagePolicyService.getAccessLevel(UserInfo.getUserId());
+    }
+
+    // True when the signed-in user may open and read in the window: they have an active AI User Setting or an active AI Usage Policy.
+    public static Boolean hasAccess() {
+
+        // [1] Anything but none may read
+        return getAccessLevel() != AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
+    }
+
+    // Stops a request from a user who may not use the window at all, with a Custom Label the window shows as it is.
+    public static void requireAccess() {
+
+        // [1] Refuse the user who has neither an active AI User Setting nor an active AI Usage Policy
+        if (!hasAccess()) throw new AIChatStateServiceException(Label.AI_Error_No_Access);
+    }
+
+    // Stops a request that sends or starts AI work from a user who may not send: none may not use the window, and read only may not send.
+    public static void requireSendAccess() {
+
+        // [1] Refuse by what the user may do
+        refuseUnlessMaySend(getAccessLevel());
+    }
+
+    // Throws the label that fits an access level that may not send; does nothing for full use.
+    public static void refuseUnlessMaySend(String accessLevel) {
+
+        // [1] No setting and no policy
+        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_NONE) throw new AIChatStateServiceException(Label.AI_Error_No_Access);
+
+        // [2] A setting but no policy
+        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY) throw new AIChatStateServiceException(Label.AI_Error_No_Policy);
     }
 
     // Gets the signed-in user's own settings row, or null when they have none.

@@ -11,6 +11,7 @@ Step 2: Take the user's own values first, where they have set any
 Step 3: Fill the rest from the policies: strictest limits, widest capabilities
 Step 4: Return an AIUserSettings__c that is never saved, or null when there is no row and no policy
 Step 5: Return the usage limits as an AIUsagePolicy__c that is never saved, or null when no policy applies
+Step 6: Say what the user may do at all (full use with a policy, read only with just a settings row, none with neither)
 
 Rules:
 [1] The user's own row is an override only. A behavior, channel list or visibility scope left blank
@@ -48,6 +49,21 @@ public without sharing class AIUsagePolicyService {
 
         // [3] Combine the row with the policies that apply to the user
         return resolve(userSettingsRows.isEmpty() ? null : userSettingsRows[0], getUsagePoliciesForUser(userId));
+    }
+
+    // What the user may do with AI Assist. A usage policy that applies to them gives full use. Without one, an active AI User Setting gives read only. With neither they have none.
+    public static String getAccessLevel(Id userId) {
+
+        // [1] Nothing to look up without a user
+        if (userId == null) return AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
+
+        // [2] A policy that applies to the user, assigned or by default, gives full use
+        if (!getUsagePoliciesForUser(userId).isEmpty()) return AIAssistApplicationConstants.ACCESS_LEVEL_FULL;
+
+        // [3] Without a policy, an active settings row gives read only, and without that they have none
+        Boolean hasActiveRow = [SELECT COUNT() FROM AIUserSettings__c WHERE User__c = :userId AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 1] > 0;
+
+        return hasActiveRow ? AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY : AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
     }
 
     // Combines a user's own row and their policies into what they are allowed. The answer is never saved.

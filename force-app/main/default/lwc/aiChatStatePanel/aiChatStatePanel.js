@@ -25,7 +25,7 @@ import { VARIANT_INACTIVE, VARIANT_MAINTENANCE, ICONS, ICON_DEFAULT } from "./ai
 export default class AiChatStatePanel extends LightningElement {
 
   // Values passed in by the parent component
-  @api variant; // 'inactive' | 'maintenance' | 'channel' | 'noagent' | 'space' | 'error'
+  @api variant; // 'inactive' | 'maintenance' | 'channel' | 'noaccess' | 'noagent' | 'space' | 'error'
   @api heading; // The large line of text
   @api body; // The text under the heading
   @api actionLabel; // Text on the button; no button shows when this is empty

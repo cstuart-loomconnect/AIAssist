@@ -20,7 +20,7 @@ Version      Author                   Description
 @IsTest
 public without sharing class AIAssistTestDataFactory {
 
-    // Standard users. They hold no AI Assist permission set until assignPermissionSet gives them one.
+    // Standard users. They hold no AI Assist permission set until assignPermissionSet gives them one. 
     public static List<User> createUsers(Integer numberOfUsers, Boolean shouldDoInsert) {
 
         // [1] Find the profile the users will have
@@ -58,14 +58,18 @@ public without sharing class AIAssistTestDataFactory {
         insertAsSetupUser(assignments);
     }
 
-    // A standard user holding the AIAssistSuperUser permission set, which grants read, create, edit and delete on everything AI Assist. Every test runs as this user with System.runAs.
+    // A standard user holding the AIAssistSuperUser permission set, with an active AIUserSettings__c row and an active default AIUsagePolicy__c, which grants read, create, edit and delete on everything AI Assist. Every test runs as this user with System.runAs.
     public static User createSuperUser() {
 
         // [1] Create the user
         List<User> users = createUsers(1, true);
 
-        // [2] Give it the Super User permission set, and return it
+        // [2] Give it the Super User permission set
         assignPermissionSet(users, 'AIAssistSuperUser');
+
+        // [3] Give it the active settings row the User trigger gives a real user, and an active default policy, so it may read and send. Other users get a row only when a test creates one
+        insertAsSetupUser(createAIUserSettings(users[0].Id, false));
+        createDefaultUsagePolicy();
 
         return users[0];
     }
@@ -352,6 +356,35 @@ public without sharing class AIAssistTestDataFactory {
         if (shouldDoInsert && !userSettingsRows.isEmpty()) insert userSettingsRows;
 
         return userSettingsRows;
+    }
+
+    // An active default usage policy with no limits, which covers every user who has no policy assigned to them, so they may send.
+    public static AIUsagePolicy__c createDefaultUsagePolicy() {
+
+        // [1] Create it as the setup user
+        AIUsagePolicy__c policy = new AIUsagePolicy__c(IsActive__c = true, IsDefault__c = true);
+
+        System.runAs(getSetupUser()) { insert policy; }
+
+        return policy;
+    }
+
+    // Switches every usage policy off, so a test can check a user who has none.
+    public static void deactivateUsagePolicies() {
+
+        // [1] Switch each one off as the setup user
+        List<AIUsagePolicy__c> policies = [SELECT Id FROM AIUsagePolicy__c];
+
+        for (AIUsagePolicy__c policy : policies) policy.IsActive__c = false;
+
+        System.runAs(getSetupUser()) { update policies; }
+    }
+
+    // The active settings row a user created by createUsers already has, to change a value on it and update it.
+    public static AIUserSettings__c getAIUserSettings(Id userId) {
+
+        // [1] Read the user's row
+        return [SELECT Id, User__c, IsActive__c FROM AIUserSettings__c WHERE User__c = :userId LIMIT 1];
     }
 
     // An active usage policy with the given limits, assigned to the user. A limit left null is not set.

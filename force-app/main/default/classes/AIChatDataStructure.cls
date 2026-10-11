@@ -80,6 +80,8 @@ public without sharing class AIChatDataStructure {
         public Boolean workflowActionsEnabled = false;
         @AuraEnabled
         public Boolean newChatsDisabled = false;
+        @AuraEnabled
+        public Boolean canSend = true;
     }
 
     public class TermsState {
