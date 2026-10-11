@@ -2,8 +2,10 @@ name: PR Hygiene
 
 # Labels PRs by the areas they change and enforces a conventional PR title (feat:, fix:, ...).
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
+  # CI switched off: pull_request trigger disabled, run manually only.
+  # pull_request:
+  #   types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: read

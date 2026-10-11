@@ -5,10 +5,12 @@ name: PR Validation
 # combines all work (classes, objects, layouts, labels) and the scratch org job deploys all of
 # force-app in one go.
 on:
-  pull_request:
-    branches: [development, master, integration-testing]
-  push:
-    branches: ['feature/**', development, integration-testing]
+  # CI switched off: pull_request and push triggers disabled, run manually only.
+  # pull_request:
+  #   branches: [development, master, integration-testing]
+  # push:
+  #   branches: ['feature/**', development, integration-testing]
+  workflow_dispatch:
 
 concurrency:
   group: pr-validation-${{ github.ref }}
