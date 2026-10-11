@@ -1,0 +1,39 @@
+<template>
+  <main class="state-panel slds-grid slds-grid_vertical slds-grid_vertical-align-center slds-grid_align-center slds-grow slds-text-align_center">
+    <!-- Icon holder: a drawn power icon, a drawn wrench icon, or a lightning-icon that matches the variant -->
+    <div class="state-icon slds-grid slds-grid_vertical-align-center slds-grid_align-center" aria-hidden="true">
+      <!-- Inactive: the app is switched off -->
+      <template lwc:if={isInactive}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5E6270" stroke-width="1.8" stroke-linecap="round">
+          <path d="M12 3v9"></path>
+          <path d="M6.3 7a8 8 0 1 0 11.4 0"></path>
+        </svg>
+      </template>
+      <!-- Maintenance: the app is being worked on -->
+      <template lwc:elseif={isMaintenance}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4 2.5-2.5z"></path></svg>
+      </template>
+      <!-- Every other variant: an icon picked by the controller -->
+      <template lwc:else>
+        <lightning-icon icon-name={iconName} size="small" class="state-lightning-icon"></lightning-icon>
+      </template>
+    </div>
+
+    <!-- Heading and body text -->
+    <h1 class="state-heading slds-m-around_none">{heading}</h1>
+    <p class="state-body slds-m-around_none">{body}</p>
+
+    <!-- Action button: shown when the parent passed an action label -->
+    <template lwc:if={actionLabel}>
+      <button type="button" class="aia-btn aia-btn_neutral state-action" onclick={handleAction}>
+        <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
+        {actionLabel}
+      </button>
+    </template>
+  </main>
+
+  <!-- Footer: shown when the parent passed footer text -->
+  <template lwc:if={footer}>
+    <footer class="state-footer slds-text-align_center slds-p-vertical_small slds-p-horizontal_medium">{footer}</footer>
+  </template>
+</template>
