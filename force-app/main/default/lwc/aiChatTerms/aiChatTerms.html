@@ -1,0 +1,79 @@
+<template>
+  <main class="terms slds-grid slds-grid_vertical slds-grow">
+    <!-- Intro: the small label and the heading -->
+    <div class="terms-intro slds-grid slds-grid_vertical">
+      <div class="aia-eyebrow eyebrow-accent">{labels.termsEyebrow}</div>
+      <h1 class="terms-heading slds-m-around_none">{labels.termsHeading}</h1>
+    </div>
+
+    <!-- The three things the user should know -->
+    <ul class="terms-points slds-grid slds-grid_vertical slds-m-around_none slds-p-around_none">
+      <!-- Point 1: personal data is masked -->
+      <li class="slds-grid">
+        <div class="point-icon point-icon_success slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-shrink-none slds-m-right_small" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F6F4A" stroke-width="1.8"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"></path></svg>
+        </div>
+        <div class="slds-grid slds-grid_vertical">
+          <div class="point-title">{labels.termsPiiTitle}</div>
+          <div class="point-body slds-m-top_xxx-small">{labels.termsPiiBody}</div>
+        </div>
+      </li>
+
+      <!-- Point 2: answers can be wrong -->
+      <li class="slds-grid">
+        <div class="point-icon point-icon_accent slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-shrink-none slds-m-right_small" aria-hidden="true">
+          <lightning-icon icon-name="utility:info" size="x-small" class="accent-icon"></lightning-icon>
+        </div>
+        <div class="slds-grid slds-grid_vertical">
+          <div class="point-title">{labels.termsWrongTitle}</div>
+          <div class="point-body slds-m-top_xxx-small">{labels.termsWrongBody}</div>
+        </div>
+      </li>
+
+      <!-- Point 3: conversations are logged -->
+      <li class="slds-grid">
+        <div class="point-icon slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-shrink-none slds-m-right_small" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E6270" stroke-width="1.8" stroke-linecap="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 9h8M8 13h8M8 17h4"></path>
+          </svg>
+        </div>
+        <div class="slds-grid slds-grid_vertical">
+          <div class="point-title">{labels.termsLoggedTitle}</div>
+          <div class="point-body slds-m-top_xxx-small">{labels.termsLoggedBody}</div>
+        </div>
+      </li>
+    </ul>
+
+    <!-- Spacer: pushes the checkbox and button to the bottom -->
+    <div class="slds-grow"></div>
+
+    <!-- Agreement checkbox: the policy name is a link when the parent passed a policy URL -->
+    <div class="agree slds-form-element">
+      <div class="slds-form-element__control">
+        <div class="slds-checkbox">
+          <input type="checkbox" id="terms-agree" checked={isAgreed} onchange={handleAgreeChange} />
+          <label class="slds-checkbox__label" for="terms-agree">
+            <span class="slds-checkbox_faux"></span>
+            <span class="agree-text slds-form-element__label">
+              {labels.termsAgreePrefix}
+              <template lwc:if={policyUrl}>
+                <a href={policyUrl} target="_blank" rel="noopener noreferrer">{labels.termsPolicy}</a>
+              </template>
+              <template lwc:else>{labels.termsPolicy}</template>
+              {labels.termsAgreeSuffix}
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agree button: switched off until the box is ticked or while saving -->
+    <button type="button" class="aia-btn aia-btn_brand aia-btn_large" disabled={isAgreeDisabled} onclick={handleAgree}>{labels.termsAgree}</button>
+
+    <!-- Error message: shown when saving the acknowledgment failed -->
+    <template lwc:if={errorMessage}>
+      <p class="slds-text-color_error slds-text-body_small" role="alert">{errorMessage}</p>
+    </template>
+  </main>
+</template>
