@@ -1,0 +1,162 @@
+/* Text buttons. SLDS has no button with this size, radius and brand colour token. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the button, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Greyed-out look while the button is switched off. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Brand colours for the main button, taken from the --aia-* design tokens. The icon colour variables keep a button icon white. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Darker brand colour when the mouse is over an enabled main button. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Outlined look for the neutral button (Edit first). */
+.aia-btn_neutral {
+  background: var(--aia-surface);
+  border-color: var(--aia-line-strong);
+  color: var(--aia-ink);
+  font-weight: 500;
+}
+
+/* Soft background when the mouse is over an enabled neutral button. */
+.aia-btn_neutral:hover:not([disabled]) {
+  background: var(--aia-surface-soft);
+}
+
+/* Quiet outlined button (Cancel, Dismiss): a light border and a muted colour. */
+.aia-btn_text {
+  padding: 0 10px;
+  background: none;
+  border-color: var(--aia-line-strong);
+  color: var(--aia-muted);
+  font-weight: 400;
+}
+
+/* Darker text when the mouse is over an enabled text button. */
+.aia-btn_text:hover:not([disabled]) {
+  color: var(--aia-ink);
+}
+
+/* Card look: the bordered box with the accent border from the design tokens. SLDS has no utility for this border colour. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-accent-border);
+  border-radius: 12px;
+}
+
+/* Inline look: no box, just the buttons stacked with a small gap. */
+.inline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Small uppercase "Suggested action" label above the action name, in the accent colour. */
+.eyebrow {
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aia-accent);
+}
+
+/* Action name and description stacked, with the text size and colour of the design. */
+.action-text {
+  gap: 2px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--aia-ink);
+}
+
+/* Description under the action name, in a smaller muted text. */
+.action-description {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--aia-muted);
+}
+
+/* Gap between the buttons when they sit in a row or wrap onto a new line. */
+.buttons {
+  gap: 8px;
+}
+
+/* Smaller buttons when the action is shown inline instead of as a card. */
+.inline .aia-btn {
+  height: 32px;
+  padding: 0 12px;
+}
+
+/* Confirmation step: question and buttons stacked with a small gap. */
+.confirm {
+  gap: 8px;
+}
+
+/* Confirmation question text. */
+.confirm-text {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--aia-ink);
+}
+
+/* Edit form: the inputs and buttons stacked with a small gap. */
+.edit-form {
+  gap: 8px;
+}
+
+/* Result line (done or failed): text size and the gap between icon and text. */
+.result {
+  gap: 6px;
+  font-size: 13px;
+  line-height: 19px;
+}
+
+/* Green text when the action ran. */
+.result_done {
+  color: var(--aia-success);
+}
+
+/* Red text when the action failed. */
+.result_failed {
+  color: var(--aia-danger);
+}
+
+/* Colours the success icon with the success token. SLDS icon colour can only be changed through this variable. */
+.success-icon {
+  --slds-c-icon-color-foreground-default: var(--aia-success);
+}
