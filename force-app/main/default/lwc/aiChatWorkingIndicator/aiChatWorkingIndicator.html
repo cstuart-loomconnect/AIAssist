@@ -1,0 +1,42 @@
+<template>
+  <!-- Step card: shown when the parent asks for the steps mode -->
+  <template lwc:if={isSteps}>
+    <div class="slds-box slds-box_xx-small slds-theme_default" role="status" aria-live="polite">
+      <!-- Card header: animated dots, the heading and the clock -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-p-around_small slds-border_bottom">
+        <span class="aia-dots slds-m-right_small" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="slds-col slds-text-title_bold">{labels.workingHeading}</span>
+        <span class="slds-text-body_small slds-text-color_weak aia-mono">{elapsedLabel}</span>
+      </div>
+
+      <!-- Step list: one row per step, with an icon that matches its state -->
+      <ul class="slds-p-around_small">
+        <template for:each={stepViews} for:item="step">
+          <li key={step.key} class="slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small">
+            <!-- Done: green tick -->
+            <template lwc:if={step.isDone}>
+              <lightning-icon icon-name="utility:success" variant="success" size="xx-small" class="slds-m-right_small"></lightning-icon>
+            </template>
+            <!-- Active: spinning icon -->
+            <template lwc:elseif={step.isActive}>
+              <lightning-icon icon-name="utility:spinner" size="xx-small" class="slds-m-right_small aia-spin"></lightning-icon>
+            </template>
+            <!-- Pending: plain dot -->
+            <template lwc:else>
+              <lightning-icon icon-name="utility:record" size="xx-small" class="slds-m-right_small"></lightning-icon>
+            </template>
+            <span class={step.className}>{step.label}</span>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </template>
+
+  <!-- Typing indicator: shown for every other mode -->
+  <template lwc:else>
+    <div class="slds-grid slds-grid_vertical-align-center slds-p-around_x-small" role="status" aria-live="polite">
+      <span class="aia-dots slds-m-right_small" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="slds-text-body_small slds-text-color_weak">{label}</span>
+    </div>
+  </template>
+</template>
