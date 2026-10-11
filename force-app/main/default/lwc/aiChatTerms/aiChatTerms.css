@@ -1,0 +1,158 @@
+/* Text buttons. SLDS has no button with this size, radius and brand colour token. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the button, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Greyed-out look while the button is switched off. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Brand colours for the button, taken from the --aia-* design tokens. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Darker brand colour when the mouse is over an enabled button. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* The taller button used for the main action. */
+.aia-btn_large {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+/* 11px uppercase section label. SLDS has no utility with this size and spacing. */
+.aia-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aia-subtle);
+}
+
+/* Lets the component fill the space the parent gives it. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* The screen itself: spacing between blocks (20px is not an SLDS step), padding, and scrolling when the window is short. */
+.terms {
+  gap: 20px;
+  padding: 28px 20px 20px;
+  overflow-y: auto;
+}
+
+/* Space between the small label and the heading. */
+.terms-intro {
+  gap: 6px;
+}
+
+/* Accent colour for the small label. */
+.eyebrow-accent {
+  color: var(--aia-accent);
+}
+
+/* The heading size and colour. */
+.terms-heading {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Space between the points (16px) and no bullets. */
+.terms-points {
+  gap: 16px;
+  list-style: none;
+}
+
+/* The square icon holder beside each point. */
+.point-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--aia-chip);
+}
+
+/* Green holder for the personal data point. */
+.point-icon_success {
+  background: var(--aia-success-tint);
+}
+
+/* Accent holder for the "answers can be wrong" point. */
+.point-icon_accent {
+  background: var(--aia-accent-tint);
+}
+
+/* Colours the info icon with the accent colour. */
+.accent-icon {
+  --slds-c-icon-color-foreground-default: var(--aia-accent);
+}
+
+/* Point title text. */
+.point-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Point body text. */
+.point-body {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--aia-muted);
+}
+
+/* Text beside the checkbox. */
+.agree-text {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--aia-ink);
+}
+
+/* Policy link in the accent colour. */
+.agree a {
+  color: var(--aia-accent);
+}
+
+/* Slightly larger checkbox than the SLDS default. */
+.agree .slds-checkbox_faux {
+  width: 18px;
+  height: 18px;
+}
+
+/* Ticked checkbox in the accent colour. */
+.agree input:checked + .slds-checkbox__label .slds-checkbox_faux {
+  background: var(--aia-accent);
+  border-color: var(--aia-accent);
+}
