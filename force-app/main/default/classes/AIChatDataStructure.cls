@@ -47,6 +47,27 @@ public without sharing class AIChatDataStructure {
         public String blockedState;
         @AuraEnabled
         public String blockedMessage;
+        // The usage limit the user has reached, or null when they have reached none
+        @AuraEnabled
+        public UsageLimitState usage;
+    }
+
+    // The usage limit a user has reached (AIAssistApplicationConstants.USAGE_LIMIT_TYPE_*), and what it stops them doing. Mirrors AIUsageLimitService.enforceUsageLimits, so the window shows what a send would be refused for.
+    public class UsageLimitState {
+        @AuraEnabled
+        public String limitType;
+        @AuraEnabled
+        public Decimal used;
+        @AuraEnabled
+        public Decimal max;
+        // Notify Only: the user is told, and nothing is blocked
+        @AuraEnabled
+        public Boolean isNotifyOnly = false;
+        @AuraEnabled
+        public Boolean blocksNewConversations = false;
+        // Every message is blocked, including one in a conversation that is already open
+        @AuraEnabled
+        public Boolean blocksMessages = false;
     }
 
     public class UiSettings {
@@ -276,6 +297,9 @@ public without sharing class AIChatDataStructure {
         public Boolean isHeld = false;
         @AuraEnabled
         public String status;
+        // The limit the user has reached, sent once the reply is finished (null while it is still being worked on, and when no limit is reached)
+        @AuraEnabled
+        public UsageLimitState usage;
     }
 
     public class SendRequest {

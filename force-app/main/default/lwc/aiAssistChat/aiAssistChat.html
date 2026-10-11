@@ -68,6 +68,11 @@
           </div>
         </template>
 
+        <!-- Usage limit: the user has reached a limit, shown before they press Send -->
+        <template lwc:if={showUsageBanner}>
+          <c-ai-chat-usage-banner limit-state={usageLimit} onopenhistory={handleOpenHistory}></c-ai-chat-usage-banner>
+        </template>
+
         <!-- Context bar: the record the conversation is about -->
         <template lwc:if={showContextBar}>
           <c-ai-chat-context-bar object-label={record.objectLabel} record-name={record.recordName} pii-protected={record.piiProtected}></c-ai-chat-context-bar>

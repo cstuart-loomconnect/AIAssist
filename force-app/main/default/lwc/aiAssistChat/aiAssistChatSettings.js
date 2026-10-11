@@ -34,6 +34,11 @@ export const BLOCKED_STATE = {
   NO_POLICY: "NO_POLICY"
 };
 
+// Mirrors AIAssistApplicationConstants.USAGE_LIMIT_TYPE_* (ChatContext.usage.limitType): which usage limit the user has reached.
+export const USAGE_LIMIT_TYPE = {
+  OPEN: "OPEN"
+};
+
 // Mirrors AIAssistApplicationConstants.CHAT_SEND_STATUS_*. A refusal of any kind (a company rule, a limit, a paused chat) is ERROR with its Custom Label text in message.
 export const SEND_STATUS = {
   SENT: "SENT",
@@ -250,6 +255,8 @@ export const LABELS = {
   appName: "AI Assist",
   disclaimer: "AI can make mistakes. Check before acting.",
   composerPlaceholder: "Ask about this record, or type / for commands",
+  composerPlaceholderAllowanceUsed: "Your daily allowance is used up",
+  composerPlaceholderNewPaused: "Starting a new conversation is paused",
   composerPlaceholderNoRecord: "Ask anything, or type / for commands",
   closeConversation: "End conversation",
   exportConversation: "Export conversation",

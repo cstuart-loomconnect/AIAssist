@@ -113,12 +113,15 @@ public without sharing class AIChatController {
             // [5] Add the messages newer than the last one the window has
             conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(userSettings), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));
 
-            // [6] Return the update
+            // [6] Say which usage limit the user has reached once the reply is finished, because that is when the tokens are added up. While it is being worked on the window keeps what it has
+            if (!conversationUpdate.isProcessing) conversationUpdate.usage = AIUsageLimitService.getLimitState(UserInfo.getUserId(), AIUsagePolicyService.getUsageLimits(UserInfo.getUserId()));
+
+            // [7] Return the update
             return conversationUpdate;
 
         } catch (Exception ex) {
 
-            // [7] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [8] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getConversationUpdate');
@@ -717,7 +720,10 @@ public without sharing class AIChatController {
             if (context.agent.loadTrigger != AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY) context.conversation = AIChatConversationService.buildConversationView(activeConversation.Id, context.ui.messagePageSize, context.user, context.ui);
         }
 
-        // [13] Return the context
+        // [13] Say which usage limit the user has reached, if any, so the window can warn them before they press Send
+        context.usage = context.user.canSend ? AIUsageLimitService.getLimitState(context.user.userId, AIUsagePolicyService.getUsageLimits(context.user.userId)) : null;
+
+        // [14] Return the context
         return context;
     }
 }

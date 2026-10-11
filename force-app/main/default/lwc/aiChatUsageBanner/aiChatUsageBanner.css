@@ -1,0 +1,86 @@
+/* The banner: spacing between its parts (8px) and padding (10px 12px), which are not SLDS steps. */
+.banner {
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid;
+}
+
+/* Nothing is blocked: the warning colours. */
+.banner_warning {
+  background: var(--aia-warning-tint);
+  border-color: var(--aia-warning-border);
+  color: var(--aia-warning-ink);
+}
+
+/* Something is blocked: the danger colours. */
+.banner_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger-ink);
+}
+
+/* Space between the title and the line under it. */
+.text {
+  gap: 2px;
+}
+
+/* The title size and weight. */
+.title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The line under the title. */
+.sub {
+  font-size: 12px;
+}
+
+/* Space between the meter and the figures under it. */
+.meter-block {
+  gap: 6px;
+}
+
+/* The meter: 12px high with a rounded track in a faded banner colour, so it reads clearly. SLDS has no step this size. */
+.banner .slds-progress-bar {
+  height: 12px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  overflow: hidden;
+}
+
+/* The filled part of the meter: solid banner colour, the full height of the track. */
+.meter-value {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: currentColor;
+}
+
+/* The figures under the meter: with digits that line up. */
+.meter-row {
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The history button: a text button in the banner colour. */
+.action {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Keyboard focus ring for the button. */
+.action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

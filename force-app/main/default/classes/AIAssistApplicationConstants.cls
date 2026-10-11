@@ -30,6 +30,11 @@ public without sharing class AIAssistApplicationConstants {
     public static final String USAGE_LIMIT_BLOCK_NEW_MESSAGES = 'Block New Messages';
     public static final String USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY = 'Block New Conversations Only';
 
+    // AIChatDataStructure.UsageLimitState.limitType: which usage limit the user has reached
+    public static final String USAGE_LIMIT_TYPE_TOKENS = 'TOKENS';
+    public static final String USAGE_LIMIT_TYPE_CONVERSATIONS = 'CONVERSATIONS';
+    public static final String USAGE_LIMIT_TYPE_OPEN = 'OPEN';
+
     // AIPlatformLogEvent__e.ExceptionType__c
     public static final String LOG_TYPE_CUSTOM_MESSAGE = 'Custom Message';
     public static final String LOG_TYPE_DML_FAILURE = 'DML Save Failure';

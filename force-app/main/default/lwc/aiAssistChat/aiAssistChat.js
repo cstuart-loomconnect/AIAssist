@@ -45,7 +45,7 @@ import getDebugTrace from "@salesforce/apex/AIChatController.getDebugTrace";
 import getFailureDetail from "@salesforce/apex/AIChatController.getFailureDetail";
 import exportConversation from "@salesforce/apex/AIChatController.exportConversation";
 
-import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, BLOCKED_STATE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
+import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, BLOCKED_STATE, USAGE_LIMIT_TYPE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
 import { formatLabel, buildShellStyle, getPollDelay, isSavedAgentMessage, buildServerMessage, buildDraftMessage, buildNoticeMessage, buildConversationFromView, buildStartedConversation, findFreshMessages, buildHeaderMenuItems, buildWorkingView, buildMessageItems, getErrorMessage, isSameId, downloadTextFile, buildTranscriptFileName, buildLocalId, findLastIndex } from "./aiAssistChatHelper";
 
 // The AI Assist chat window. Lives in the utility bar or on a record page. Replies are found by polling AIChatController.getConversationUpdate, and only while a reply is being worked on: every 2s, 4s, 8s... up to 8s while it is processing, and up to 60s while the message is held waiting for a free place. Polling is paused while the browser tab is hidden. The call is always made imperatively, never as a @wire, because it can start a held message.
@@ -332,7 +332,7 @@ export default class AiAssistChat extends LightningElement {
 
   get isNewDisabled() {
 
-    return !!(this.user.newChatsDisabled || !this.canSend || this.waiting || this.isSending);
+    return !!(this.user.newChatsDisabled || !this.canSend || this.blocksNewConversations || this.waiting || this.isSending);
   }
 
   get headerMenuItems() {
@@ -388,13 +388,36 @@ export default class AiAssistChat extends LightningElement {
 
   get isStartNewDisabled() {
 
-    return !!(this.user.newChatsDisabled || !this.canSend);
+    return !!(this.user.newChatsDisabled || !this.canSend || this.blocksNewConversations);
   }
 
   // A user with an AI User Setting but no AI Usage Policy can read, but nothing that sends or starts AI work.
   get canSend() {
 
     return this.user.canSend !== false;
+  }
+
+  // The usage limit the user has reached, from the server; empty when they have reached none.
+  get usageLimit() {
+
+    return this.context ? this.context.usage : null;
+  }
+
+  get showUsageBanner() {
+
+    return !!(this.usageLimit && !this.isReadOnly);
+  }
+
+  // A reached limit stops a new conversation unless the user's behaviour is Notify Only.
+  get blocksNewConversations() {
+
+    return !!(this.usageLimit && this.usageLimit.blocksNewConversations);
+  }
+
+  // A limit that blocks every message, or one that blocks a new conversation while the user has none open, stops the composer.
+  get isBlockedByUsage() {
+
+    return !!(this.usageLimit && (this.usageLimit.blocksMessages || (this.usageLimit.blocksNewConversations && !this.conversation)));
   }
 
   get showNoPolicyBanner() {
@@ -420,7 +443,7 @@ export default class AiAssistChat extends LightningElement {
 
   get isComposerDisabled() {
 
-    return this.isBlocked || this.isSending;
+    return this.isBlocked || this.isBlockedByUsage || this.isSending;
   }
 
   get composerPlaceholder() {
@@ -428,7 +451,10 @@ export default class AiAssistChat extends LightningElement {
     // [1] A blocked user is told why, in the box itself
     if (this.isBlocked && this.context.blockedMessage) return this.context.blockedMessage;
 
-    // [2] Otherwise the hint depends on whether there is a record
+    // [2] A user held back by a usage limit is told, in the box itself
+    if (this.isBlockedByUsage) return this.usageLimit.blocksMessages ? LABELS.composerPlaceholderAllowanceUsed : LABELS.composerPlaceholderNewPaused;
+
+    // [3] Otherwise the hint depends on whether there is a record
     return this.record.recordId ? LABELS.composerPlaceholder : LABELS.composerPlaceholderNoRecord;
   }
 
@@ -691,6 +717,9 @@ export default class AiAssistChat extends LightningElement {
 
         this.stopWaiting();
         this.conversation = { ...this.conversation, isActive: false, status: CONVERSATION_STATUS.CLOSED, canResume: !!(this.agent && this.agent.allowResume) };
+
+        // Ending one frees a place, so the open conversations limit no longer applies
+        if (this.usageLimit && this.usageLimit.limitType === USAGE_LIMIT_TYPE.OPEN) this.context = { ...this.context, usage: null };
       } catch (error) {
 
         this.toastError(error);
@@ -1024,8 +1053,10 @@ export default class AiAssistChat extends LightningElement {
 
       if (freshMessages.length) this.addFreshMessages(freshMessages, isAnswered);
 
-      // [5] Keep the conversation's status up to date
+      // [5] Keep the conversation's status up to date, and the usage limit once the reply is finished (the server sends it only then)
       this.conversation = { ...this.conversation, status: update.status, isActive: update.status === CONVERSATION_STATUS.ACTIVE };
+
+      if (!update.isProcessing) this.context = { ...this.context, usage: update.usage };
 
       // [6] A reply that arrived after the window gave up on it means the failed card no longer applies
       if (isAnswered) {
