@@ -4,8 +4,9 @@ name: Nightly Build
 # expired dependencies and flaky tests surface before anyone merges. Scheduled workflows only run
 # from the default branch, so this starts working once it reaches master.
 on:
-  schedule:
-    - cron: '0 2 * * *'
+  # CI switched off: the nightly schedule is disabled, run manually only.
+  # schedule:
+  #   - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
