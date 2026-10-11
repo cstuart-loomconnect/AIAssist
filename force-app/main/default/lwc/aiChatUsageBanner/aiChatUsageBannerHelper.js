@@ -17,17 +17,11 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-import {
-  LIMIT_TYPE,
-  LIMIT_LABELS,
-  LABELS,
-  PLACEHOLDERS,
-  MAX_PERCENT,
-  NUMBER_LOCALE
-} from "./aiChatUsageBannerSettings";
+import { LIMIT_TYPE, LIMIT_LABELS, LABELS, PLACEHOLDERS, MAX_PERCENT, NUMBER_LOCALE } from "./aiChatUsageBannerSettings";
 
 // Writes a number the way the user's locale does, such as 48,900.
 export function formatAmount(value) {
+
   // [1] Write the number
   const amountLabel = Number(value || 0).toLocaleString(NUMBER_LOCALE);
 
@@ -36,55 +30,52 @@ export function formatAmount(value) {
 
 // How full the meter is, from 0 to 100.
 export function buildPercent(used, max) {
+
   // [1] A limit of nothing is full
   if (!max) return MAX_PERCENT;
 
   // [2] Work out the share, and never go past full
-  const percent = Math.min(
-    MAX_PERCENT,
-    Math.round((Number(used || 0) / Number(max)) * MAX_PERCENT)
-  );
+  const share = Number(used || 0) / Number(max);
+  const roundedPercent = Math.round(share * MAX_PERCENT);
+  const percent = Math.min(MAX_PERCENT, roundedPercent);
 
   return percent;
 }
 
 // The line under the title, from what the limit stops.
 export function buildSubLabel(limitState) {
+
   // [1] Notify Only blocks nothing
   if (limitState.isNotifyOnly) return LABELS.subNotifyOnly;
 
   // [2] A limit that blocks messages blocks all of them; any other only stops a new conversation
-  return limitState.blocksMessages
-    ? LABELS.subBlocksMessages
-    : LABELS.subBlocksNewConversations;
+  const subLabel = limitState.blocksMessages ? LABELS.subBlocksMessages : LABELS.subBlocksNewConversations;
+
+  return subLabel;
 }
 
 // Everything the template shows for a reached limit. Nothing when no limit is reached or the type is unknown.
 export function buildView(limitState) {
+
   // [1] Nothing to show
   if (!limitState || !LIMIT_LABELS[limitState.limitType]) return null;
 
   // [2] Take the text for this limit
   const text = LIMIT_LABELS[limitState.limitType];
-  const values = [
-    formatAmount(limitState.used),
-    formatAmount(limitState.max),
-    text.unit
-  ];
-  const usageLabel = PLACEHOLDERS.reduce(
-    (label, placeholder, index) => label.replace(placeholder, values[index]),
-    LABELS.usageOf
-  );
+  const values = [formatAmount(limitState.used), formatAmount(limitState.max), text.unit];
 
-  // [3] Hand back the view
-  return {
-    title: text.title,
-    subLabel: buildSubLabel(limitState),
-    usageLabel,
-    resetLabel: text.reset,
-    percent: buildPercent(limitState.used, limitState.max),
-    isNotifyOnly: !!limitState.isNotifyOnly,
-    showHistoryButton:
-      limitState.limitType === LIMIT_TYPE.OPEN && !limitState.isNotifyOnly
-  };
+  // [3] Put the amount used, the limit and the unit into the usage line
+  let usageLabel = LABELS.usageOf;
+
+  PLACEHOLDERS.forEach((placeholder, index) => {
+    usageLabel = usageLabel.replace(placeholder, values[index]);
+  });
+
+  // [4] Work out the meter and the button
+  const percent = buildPercent(limitState.used, limitState.max);
+  const isNotifyOnly = !!limitState.isNotifyOnly;
+  const showHistoryButton = limitState.limitType === LIMIT_TYPE.OPEN && !isNotifyOnly;
+
+  // [5] Hand back the view
+  return { title: text.title, subLabel: buildSubLabel(limitState), usageLabel, resetLabel: text.reset, percent, isNotifyOnly, showHistoryButton };
 }

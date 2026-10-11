@@ -24,15 +24,9 @@
   gap: 2px;
 }
 
-/* The title size and weight. */
+/* The title weight: SLDS has no semi-bold utility. */
 .title {
-  font-size: 13px;
   font-weight: 600;
-}
-
-/* The line under the title. */
-.sub {
-  font-size: 12px;
 }
 
 /* Space between the meter and the figures under it. */
@@ -57,10 +51,9 @@
   background: currentColor;
 }
 
-/* The figures under the meter: with digits that line up. */
+/* The figures under the meter: spaced apart, bold, with digits that line up. */
 .meter-row {
   gap: 8px;
-  font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -74,7 +67,6 @@
   background: transparent;
   color: inherit;
   font-family: inherit;
-  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }

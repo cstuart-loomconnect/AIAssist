@@ -45,18 +45,19 @@ export const LIMIT_LABELS = {
 
 // The line under the title, by what the limit stops.
 export const LABELS = {
-  subNotifyOnly:
-    "You are over the limit set for you, but you can keep chatting.",
-  subBlocksMessages:
-    "You cannot send messages until your allowance resets. You can still read your conversations.",
-  subBlocksNewConversations:
-    "You can carry on in your current conversation. New conversations are paused.",
+  subNotifyOnly: "You are over the limit set for you, but you can keep chatting.",
+  subBlocksMessages: "You cannot send messages until your allowance resets. You can still read your conversations.",
+  subBlocksNewConversations: "You can carry on in your current conversation. New conversations are paused.",
   usageOf: "{0} of {1} {2}",
   openHistory: "Open history"
 };
 
 // The text inside usageOf that is replaced, in order, with the amount used, the limit and the unit.
 export const PLACEHOLDERS = ["{0}", "{1}", "{2}"];
+
+// The banner's class names: a warning when nothing is blocked, an error when something is.
+export const BANNER_CLASS_WARNING = "banner banner_warning slds-grid slds-grid_vertical";
+export const BANNER_CLASS_BLOCKED = "banner banner_blocked slds-grid slds-grid_vertical";
 
 // The most the meter can show.
 export const MAX_PERCENT = 100;

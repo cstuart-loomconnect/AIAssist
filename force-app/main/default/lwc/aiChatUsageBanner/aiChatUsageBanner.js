@@ -18,11 +18,12 @@ Version      Author                   Description
 */
 
 import { LightningElement, api } from "lwc";
-import { LABELS, EVENT_OPEN_HISTORY } from "./aiChatUsageBannerSettings";
+import { LABELS, EVENT_OPEN_HISTORY, BANNER_CLASS_WARNING, BANNER_CLASS_BLOCKED } from "./aiChatUsageBannerSettings";
 import { buildView } from "./aiChatUsageBannerHelper";
 
 // Shown under the header while the user is at a usage limit. Mirrors what AIUsageLimitService would refuse on Send.
 export default class AiChatUsageBanner extends LightningElement {
+
   // Values passed in by the parent component
   @api limitState; // { limitType, used, max, isNotifyOnly, blocksNewConversations, blocksMessages }, or empty when no limit is reached
 
@@ -31,25 +32,36 @@ export default class AiChatUsageBanner extends LightningElement {
 
   // Everything the template shows, or nothing when no limit is reached.
   get view() {
+
     // [1] Hand the work to the helper
     return buildView(this.limitState);
   }
 
   // The banner colour: a warning when nothing is blocked, an error when something is.
   get bannerClass() {
+
     // [1] Pick the colour from what the limit stops
-    return this.view && this.view.isNotifyOnly
-      ? "banner banner_warning slds-grid slds-grid_vertical"
-      : "banner banner_blocked slds-grid slds-grid_vertical";
+    const view = this.view;
+    const isNotifyOnly = view && view.isNotifyOnly;
+    const bannerClass = isNotifyOnly ? BANNER_CLASS_WARNING : BANNER_CLASS_BLOCKED;
+
+    return bannerClass;
   }
 
   // The meter's width.
   get meterStyle() {
-    return `width:${this.view.percent}%`;
+
+    // [1] Fill the meter to the share used
+    const meterStyle = `width:${this.view.percent}%`;
+
+    return meterStyle;
   }
 
   // Tells the parent the user wants the history, to end a conversation.
   handleOpenHistory() {
-    this.dispatchEvent(new CustomEvent(EVENT_OPEN_HISTORY));
+
+    // [1] Send the event to the parent
+    const openHistoryEvent = new CustomEvent(EVENT_OPEN_HISTORY);
+    this.dispatchEvent(openHistoryEvent);
   }
 }

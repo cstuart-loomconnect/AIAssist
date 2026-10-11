@@ -39,6 +39,10 @@
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {
+      "files": "**/lwc/aiChatUsageBanner/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiAssistChat/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     }
