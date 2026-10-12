@@ -1,0 +1,21 @@
+/* Colours the whole bar and draws its bottom line with the --aia-* design tokens. SLDS colours would not follow the tokens. */
+.context-bar {
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* Lets the record chip shrink so a long record name truncates, and gives it its token colours and rounded look. SLDS has no utility for these. */
+.record-chip {
+  min-width: 0;
+  border-radius: 6px;
+  background: var(--aia-chip);
+  color: var(--aia-ink);
+}
+
+/* Gives the PII badge its green token colours, rounded look and medium weight. SLDS has no utility for these. */
+.pii-badge {
+  border-radius: 6px;
+  background: var(--aia-success-tint);
+  font-weight: 500;
+  color: var(--aia-success);
+}
