@@ -114,7 +114,13 @@ public without sharing class AIChatController {
             conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(userSettings), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));
 
             // [6] Say which usage limit the user has reached once the reply is finished, because that is when the tokens are added up. While it is being worked on the window keeps what it has
-            if (!conversationUpdate.isProcessing) conversationUpdate.usage = AIUsageLimitService.getLimitState(UserInfo.getUserId(), AIUsagePolicyService.getUsageLimits(UserInfo.getUserId()));
+            if (!conversationUpdate.isProcessing) {
+
+                AIChatDataStructure.ChatContext usageContext = new AIChatDataStructure.ChatContext();
+                setUsage(UserInfo.getUserId(), usageContext);
+                conversationUpdate.usage = usageContext.usage;
+                conversationUpdate.usageMeters = usageContext.usageMeters;
+            }
 
             // [7] Return the update
             return conversationUpdate;
@@ -638,6 +644,17 @@ public without sharing class AIChatController {
         }
     }
 
+    // Fills in how much of each usage limit the user has used and the limit they have reached, from one read of the limits and the usage.
+    private static void setUsage(Id userId, AIChatDataStructure.ChatContext context) {
+
+        // [1] Read the user's limits and how much of each is used
+        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsageLimits(userId);
+        context.usageMeters = AIUsageLimitService.getUsageMeters(userId, usageLimits);
+
+        // [2] Say which limit is reached
+        context.usage = AIUsageLimitService.getLimitState(context.usageMeters, usageLimits);
+    }
+
     // Everything the window needs to open, up to the first state that stops it.
     private static AIChatDataStructure.ChatContext buildChatContext(String recordId, String objectApiName, String channel, String agentKey) {
 
@@ -720,8 +737,8 @@ public without sharing class AIChatController {
             if (context.agent.loadTrigger != AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY) context.conversation = AIChatConversationService.buildConversationView(activeConversation.Id, context.ui.messagePageSize, context.user, context.ui);
         }
 
-        // [13] Say which usage limit the user has reached, if any, so the window can warn them before they press Send
-        context.usage = context.user.canSend ? AIUsageLimitService.getLimitState(context.user.userId, AIUsagePolicyService.getUsageLimits(context.user.userId)) : null;
+        // [13] Say how much of each usage limit the user has used, and which they have reached, if any, so the window can show the panel and warn them before they press Send
+        if (context.user.canSend) setUsage(context.user.userId, context);
 
         // [14] Return the context
         return context;

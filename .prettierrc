@@ -43,6 +43,22 @@
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {
+      "files": "**/lwc/aiChatUsagePanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHeader/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHistory/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatComposer/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiAssistChat/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     }

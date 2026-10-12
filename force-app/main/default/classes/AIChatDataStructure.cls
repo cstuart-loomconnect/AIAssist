@@ -50,6 +50,19 @@ public without sharing class AIChatDataStructure {
         // The usage limit the user has reached, or null when they have reached none
         @AuraEnabled
         public UsageLimitState usage;
+        // How much of each usage limit the user has used today, for the usage panel. Always the three, whether or not their policy sets the limit
+        @AuraEnabled
+        public List<UsageMeter> usageMeters = new List<UsageMeter>();
+    }
+
+    // How much of one usage limit the user has used (AIAssistApplicationConstants.USAGE_LIMIT_TYPE_*), reached or not. max is empty when the policy sets no limit
+    public class UsageMeter {
+        @AuraEnabled
+        public String limitType;
+        @AuraEnabled
+        public Decimal used;
+        @AuraEnabled
+        public Decimal max;
     }
 
     // The usage limit a user has reached (AIAssistApplicationConstants.USAGE_LIMIT_TYPE_*), and what it stops them doing. Mirrors AIUsageLimitService.enforceUsageLimits, so the window shows what a send would be refused for.
@@ -144,6 +157,9 @@ public without sharing class AIChatDataStructure {
         public String loadTrigger;
         @AuraEnabled
         public Boolean allowResume = false;
+        // Minutes without activity before a conversation stops counting as open, or empty for never. The usage panel says so beside the open conversations limit
+        @AuraEnabled
+        public Decimal idleTimeoutMinutes;
     }
 
     public class CommandOption {
@@ -300,6 +316,9 @@ public without sharing class AIChatDataStructure {
         // The limit the user has reached, sent once the reply is finished (null while it is still being worked on, and when no limit is reached)
         @AuraEnabled
         public UsageLimitState usage;
+        // How much of each usage limit has been used, sent with usage
+        @AuraEnabled
+        public List<UsageMeter> usageMeters = new List<UsageMeter>();
     }
 
     public class SendRequest {

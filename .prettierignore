@@ -30,3 +30,7 @@ force-app/main/default/lwc/aiChatScreenFlowModal/*.js
 force-app/main/default/lwc/aiChatNewChatsPaused/*.js
 force-app/main/default/lwc/aiAssistChat/*.js
 force-app/main/default/lwc/aiChatUsageBanner/*.js
+force-app/main/default/lwc/aiChatUsagePanel/*.js
+force-app/main/default/lwc/aiChatHeader/*.js
+force-app/main/default/lwc/aiChatHistory/*.js
+force-app/main/default/lwc/aiChatComposer/*.js

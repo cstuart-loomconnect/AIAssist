@@ -1,0 +1,160 @@
+<template>
+  <header class="header">
+    <!-- Logo mark: grid icon, dims via logoClass/logoStroke when muted -->
+    <div class={logoClass} aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={logoStroke} stroke-width="2" stroke-linecap="round">
+        <path d="M4 8h16M4 16h16M8 4v16M16 4v16"></path>
+      </svg>
+    </div>
+
+    <!-- Title and agent line: a plain label, or a switcher when there is more than one agent -->
+    <div class="titles">
+      <div class={titleClass}>{title}</div>
+      <template lwc:if={showAgentLine}>
+        <template lwc:if={canSwitchAgent}>
+          <!-- Agent switcher: the button, and the list of agents under it -->
+          <div class="agent-picker" onfocusout={handlePickerFocusOut} onkeydown={handlePickerKeyDown}>
+            <button type="button" class="agent-trigger" aria-haspopup="true" aria-expanded={agentMenuExpanded} title={labels.switchAgent} onclick={handleToggleAgentMenu}>
+              <span class="slds-truncate">{agentName}</span>
+              <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="agent-chevron"></lightning-icon>
+            </button>
+
+            <!-- Agent list: a tick beside the agent in use -->
+            <template lwc:if={isAgentMenuOpen}>
+              <div class="slds-dropdown slds-dropdown_left agent-menu">
+                <ul class="slds-dropdown__list" role="menu" aria-label={labels.switchAgent}>
+                  <template for:each={agentOptions} for:item="agent">
+                    <li key={agent.id} class="slds-dropdown__item" role="presentation">
+                      <button type="button" class="agent-option" role="menuitemradio" aria-checked={agent.checked} data-id={agent.id} onclick={handleAgentSelect}>
+                        <span class="agent-option-check">
+                          <template lwc:if={agent.isSelected}>
+                            <lightning-icon icon-name="utility:check" size="xx-small" class="accent-icon"></lightning-icon>
+                          </template>
+                        </span>
+                        <span class="slds-grid slds-grid_vertical agent-option-text">
+                          <span class="slds-truncate agent-option-name">{agent.name}</span>
+                          <template lwc:if={agent.description}>
+                            <span class="slds-truncate agent-option-description">{agent.description}</span>
+                          </template>
+                        </span>
+                      </button>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- One agent: a plain label with no switcher -->
+        <template lwc:else>
+          <div class="agent-static slds-truncate">{agentName}</div>
+        </template>
+      </template>
+    </div>
+
+    <!-- Badge: debug, maintenance or off -->
+    <template lwc:if={badgeLabel}>
+      <span class={badgeClass}>
+        <template lwc:if={isDebugBadge}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M8 6l-6 6 6 6M16 6l6 6-6 6"></path>
+          </svg>
+        </template>
+        {badgeLabel}
+      </span>
+    </template>
+
+    <!-- New button: starts a new conversation -->
+    <template lwc:if={showNew}>
+      <button type="button" class="aia-btn aia-btn_neutral" aria-label={newLabel} title={newLabel} disabled={newDisabled} onclick={handleNew}>
+        <svg class="aia-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        <span>{labels.newShort}</span>
+      </button>
+    </template>
+
+    <!-- End button: asks the user to confirm before the conversation ends -->
+    <template lwc:if={showEnd}>
+      <div class="popover-wrap" onfocusout={handlePopoverFocusOut} onkeydown={handlePopoverKeyDown}>
+        <button type="button" class="aia-btn aia-btn_neutral aia-btn_end" aria-haspopup="dialog" aria-expanded={endExpanded} title={labels.endConversation} onclick={handleToggleEndConfirm}>
+          <svg class="aia-btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9 9l6 6M15 9l-6 6"></path>
+          </svg>
+          <span>{labels.endShort}</span>
+        </button>
+
+        <!-- Confirmation: shown under the End button until the user keeps the conversation or ends it -->
+        <template lwc:if={isEndConfirmOpen}>
+          <div class="popover confirm" role="alertdialog" aria-label={labels.endConfirmHeading}>
+            <b class="confirm-heading">{labels.endConfirmHeading}</b>
+            <p class="confirm-body">{labels.endConfirmBody}</p>
+            <div class="confirm-actions">
+              <button type="button" class="aia-btn aia-btn_neutral aia-btn_small" onclick={handleKeepOpen}>{labels.endKeep}</button>
+              <button type="button" class="aia-btn aia-btn_danger aia-btn_small" onclick={handleConfirmEnd}>{labels.endConfirm}</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- More menu: History and Export, each with an icon and a short line -->
+    <template lwc:if={hasMenu}>
+      <div class="popover-wrap" onfocusout={handlePopoverFocusOut} onkeydown={handlePopoverKeyDown}>
+        <button type="button" class={moreButtonClass} aria-haspopup="menu" aria-expanded={moreExpanded} aria-label={labels.moreOptions} title={labels.moreOptions} onclick={handleToggleMore}>
+          <svg class="aia-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.8"></circle>
+            <circle cx="12" cy="12" r="1.8"></circle>
+            <circle cx="19" cy="12" r="1.8"></circle>
+          </svg>
+        </button>
+
+        <!-- Menu rows: shown under the button while it is open -->
+        <template lwc:if={isMoreOpen}>
+          <div class="popover menu" role="menu" aria-label={labels.moreOptions}>
+            <!-- Usage: all three limits, in place of the rows, with a way back -->
+            <template lwc:if={isUsageOpen}>
+              <div class="menu-usage">
+                <button type="button" class="usage-back" aria-label={labels.usageBack} title={labels.usageBack} onclick={handleUsageBack}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 5l-7 7 7 7"></path>
+                  </svg>
+                  <span>{labels.usageHeading}</span>
+                </button>
+                <c-ai-chat-usage-panel meters={usageMeters} idle-timeout-minutes={idleTimeoutMinutes} embedded></c-ai-chat-usage-panel>
+              </div>
+            </template>
+
+            <template lwc:if={showMenuRows}>
+              <template for:each={menuRows} for:item="row">
+                <button key={row.key} type="button" class="menu-row" role="menuitem" data-value={row.value} onclick={handleMenuRowSelect}>
+                  <template lwc:if={row.isHistory}>
+                    <svg class="menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"></path>
+                    </svg>
+                  </template>
+                  <template lwc:elseif={row.isUsage}>
+                    <svg class="menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+                    </svg>
+                  </template>
+                  <template lwc:else>
+                    <svg class="menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M12 3v12M7 10l5 5 5-5M5 20h14"></path>
+                    </svg>
+                  </template>
+                  <span class="menu-text">
+                    <span class="menu-label">{row.label}</span>
+                    <span class="menu-hint">{row.hint}</span>
+                  </span>
+                </button>
+              </template>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </header>
+</template>

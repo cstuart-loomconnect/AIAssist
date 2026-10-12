@@ -403,6 +403,18 @@ export default class AiAssistChat extends LightningElement {
     return this.context ? this.context.usage : null;
   }
 
+  // How much of each usage limit the user has used, for the More menu in the header and the usage readout under the composer.
+  get usageMeters() {
+
+    return (this.context && this.context.usageMeters) || [];
+  }
+
+  // Minutes without activity before a conversation stops counting as open, for the agent in use; empty for never.
+  get agentIdleTimeoutMinutes() {
+
+    return this.agent ? this.agent.idleTimeoutMinutes : null;
+  }
+
   get showUsageBanner() {
 
     return !!(this.usageLimit && !this.isReadOnly);
@@ -720,6 +732,9 @@ export default class AiAssistChat extends LightningElement {
 
         // Ending one frees a place, so the open conversations limit no longer applies
         if (this.usageLimit && this.usageLimit.limitType === USAGE_LIMIT_TYPE.OPEN) this.context = { ...this.context, usage: null };
+
+        // The open conversations meter drops by one
+        this.context = { ...this.context, usageMeters: this.usageMeters.map((meter) => (meter.limitType === USAGE_LIMIT_TYPE.OPEN ? { ...meter, used: Math.max(0, meter.used - 1) } : meter)) };
       } catch (error) {
 
         this.toastError(error);
@@ -1056,7 +1071,7 @@ export default class AiAssistChat extends LightningElement {
       // [5] Keep the conversation's status up to date, and the usage limit once the reply is finished (the server sends it only then)
       this.conversation = { ...this.conversation, status: update.status, isActive: update.status === CONVERSATION_STATUS.ACTIVE };
 
-      if (!update.isProcessing) this.context = { ...this.context, usage: update.usage };
+      if (!update.isProcessing) this.context = { ...this.context, usage: update.usage, usageMeters: update.usageMeters };
 
       // [6] A reply that arrived after the window gave up on it means the failed card no longer applies
       if (isAnswered) {

@@ -35,6 +35,8 @@ Version      Author                   Description
     // testScenario13: A daily conversations limit and a concurrent limit reached under Block New Messages -> each reports its own type and blocks new conversations only, never messages.
     // testScenario14: Tokens and conversations both reached -> the token limit is the one reported.
 
+    // testScenario15: getUsageMeters with no limits, with one limit set and with all three set -> always three meters in the order tokens, daily conversations, open conversations; a limit that is not set has what is used and no max.
+
     @TestSetup static void setup() {
 
         AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
@@ -560,6 +562,42 @@ Version      Author                   Description
 
             // [3] Check the token limit is the one reported
             Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_TOKENS, limitState.limitType, 'The token limit should win when every limit is reached.');
+        }
+    }
+
+    @IsTest static void testScenario15() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a user who has spent 40 tokens and has one open conversation
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+
+            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, model.Id, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
+            AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 40, 1, true);
+
+            // [2] Ask with no limits, with one limit and with all three
+            Test.startTest();
+                List<AIChatDataStructure.UsageMeter> noMeters = AIUsageLimitService.getUsageMeters(chatUser.Id, null);
+                List<AIChatDataStructure.UsageMeter> oneMeter = AIUsageLimitService.getUsageMeters(chatUser.Id, new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100));
+                List<AIChatDataStructure.UsageMeter> allMeters = AIUsageLimitService.getUsageMeters(chatUser.Id, new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, MaxConversationsPer24Hours__c = 5, MaxConcurrentConversations__c = 3));
+            Test.stopTest();
+
+            // [3] Check what each reports
+            Assert.areEqual(3, noMeters.size(), 'With no limits there should still be a meter for each limit.');
+            Assert.isNull(noMeters[0].max, 'A limit that is not set should have no max.');
+            Assert.areEqual(40, noMeters[0].used, 'What was used should be reported even with no limit.');
+            Assert.areEqual(3, oneMeter.size(), 'There should always be three meters.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_TOKENS, oneMeter[0].limitType, 'Tokens should come first.');
+            Assert.areEqual(100, oneMeter[0].max, 'The limit should be reported.');
+            Assert.isNull(oneMeter[1].max, 'A limit that is not set should have no max.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_CONVERSATIONS, allMeters[1].limitType, 'Daily conversations should come second.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_OPEN, allMeters[2].limitType, 'Open conversations should come third.');
+            Assert.areEqual(3, allMeters[2].max, 'The concurrent limit should be reported.');
+            Assert.areEqual(1, allMeters[2].used, 'The open conversation should be counted.');
+            Assert.isNull(AIUsageLimitService.getLimitState(noMeters, null), 'Meters with no limits reach nothing.');
         }
     }
 

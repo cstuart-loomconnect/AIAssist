@@ -26,7 +26,7 @@
 
     <!-- Chat: the header, then one body for the state the window is in -->
     <template lwc:else>
-      <c-ai-chat-header agent-name={agentName} agent-id={agentId} agents={agents} show-agent-line={isReady} show-new={hasConversation} new-disabled={isNewDisabled} show-history={isReady} menu-items={headerMenuItems} badge={headerBadge} muted={isInactive} onagentselect={handleAgentSelect} onnewconversation={handleNewConversation} onopenhistory={handleOpenHistory} onmenuselect={handleMenuSelect}></c-ai-chat-header>
+      <c-ai-chat-header agent-name={agentName} agent-id={agentId} agents={agents} show-agent-line={isReady} show-new={isReady} new-disabled={isNewDisabled} show-history={isReady} menu-items={headerMenuItems} badge={headerBadge} usage-meters={usageMeters} idle-timeout-minutes={agentIdleTimeoutMinutes} muted={isInactive} onagentselect={handleAgentSelect} onnewconversation={handleNewConversation} onopenhistory={handleOpenHistory} onmenuselect={handleMenuSelect}></c-ai-chat-header>
 
       <!-- Off: AI Assist is switched off for the organisation -->
       <template lwc:if={isInactive}>
@@ -111,7 +111,7 @@
           </footer>
         </template>
         <template lwc:elseif={showComposer}>
-          <c-ai-chat-composer commands={commands} disabled={isComposerDisabled} is-working={isWorking} placeholder={composerPlaceholder} footer-text={composerFooter} error-text={composerError} onsend={handleSend} onstop={handleStop} onmenutoggle={handleCommandMenuToggle}></c-ai-chat-composer>
+          <c-ai-chat-composer commands={commands} disabled={isComposerDisabled} is-working={isWorking} placeholder={composerPlaceholder} usage-meters={usageMeters} footer-text={composerFooter} error-text={composerError} onsend={handleSend} onstop={handleStop} onmenutoggle={handleCommandMenuToggle}></c-ai-chat-composer>
         </template>
       </template>
     </template>

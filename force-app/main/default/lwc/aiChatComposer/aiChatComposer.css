@@ -1,0 +1,327 @@
+/* The small uppercase label above the command list. SLDS has no utility for this letter-spaced look. */
+.aia-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aia-subtle);
+}
+
+/* Monospace font for commands. SLDS has no utility for this font stack. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* The whole composer: a column on the chat surface with a line above it, and the anchor the command menu is placed against. */
+.composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  background: var(--aia-surface);
+  border-top: 1px solid var(--aia-line);
+}
+
+/* The message box: a rounded outline holding the text and the buttons. */
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 12px;
+  background: var(--aia-surface);
+}
+
+/* The box while the user is typing or the menu is open: a thicker accent edge, with the padding trimmed so the box does not grow. */
+.box:focus-within,
+.box_focused {
+  border: 1.5px solid var(--aia-accent);
+  padding: 9.5px 11.5px;
+}
+
+/* The box while it is off or the agent is answering: the soft surface. */
+.box_disabled {
+  background: var(--aia-surface-soft);
+}
+
+/* The text area: no border or resize, so it looks like part of the box. */
+.input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--aia-ink);
+}
+
+/* The hint in the empty box: the subtle text colour. */
+.input::placeholder {
+  color: var(--aia-subtle);
+}
+
+/* The text area while it is off: subtle text and a not-allowed cursor. */
+.input[disabled] {
+  color: var(--aia-subtle);
+  cursor: not-allowed;
+}
+
+/* The row under the text: the gap between the slash button and Send. */
+.controls {
+  gap: 6px;
+}
+
+/* The slash button: a small chip that starts a command. */
+.slash {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--aia-line);
+  border-radius: 6px;
+  background: var(--aia-surface-soft);
+  font-size: 13px;
+  color: var(--aia-muted);
+  cursor: pointer;
+}
+
+/* The slash button while the command menu is open: the accent tint. */
+.slash_active {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The keyboard focus ring on the slash, Send and Stop buttons. */
+.slash:focus-visible,
+.send:focus-visible,
+.stop:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* The Send button: a square in the accent colour. */
+.send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--aia-accent);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* Send while the mouse is over it and it can be pressed: the stronger accent. */
+.send:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Send while it cannot be pressed: grey with a not-allowed cursor. */
+.send_disabled {
+  background: var(--aia-line);
+  color: #8a8d98;
+  cursor: not-allowed;
+}
+
+/* The Stop button: shown in place of Send while the agent answers. */
+.stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 10px;
+  background: var(--aia-surface);
+  color: var(--aia-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The small filled square inside the Stop button. */
+.stop-square {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--aia-ink);
+}
+
+/* The error line under the box. */
+.composer-error {
+  font-size: 12px;
+  color: var(--aia-danger);
+}
+
+/* The line under the box: the gap between the note and the token readout, in small subtle text. */
+.footnote {
+  gap: 8px;
+  font-size: 11px;
+  color: var(--aia-subtle);
+}
+
+/* The token readout at the right of the footnote: a small ring and the percentage used. */
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The token readout when the allowance is nearly used up: the warning text colour. */
+.token_warn {
+  color: var(--aia-warning-ink);
+}
+
+/* The token readout when the allowance is used up: the danger text colour. */
+.token_bad {
+  color: var(--aia-danger-ink);
+}
+
+/* The token ring: a small square drawing that does not shrink. */
+.token-ring {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* The ring's track and filled arc share a fill and a thickness. */
+.token-track,
+
+/* The ring's filled arc: green, starting at the top. */
+.token-value {
+  fill: none;
+  stroke-width: 4;
+}
+
+/* The ring's track: the part not yet used. */
+.token-track {
+  stroke: var(--aia-line);
+}
+
+/* The ring's filled arc: green, starting at the top. */
+.token-value {
+  stroke: var(--aia-success);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* The ring's arc when the allowance is nearly used up: amber. */
+.token_warn .token-value {
+  stroke: var(--aia-warning);
+}
+
+/* The ring's arc when the allowance is used up: red. */
+.token_bad .token-value {
+  stroke: var(--aia-danger);
+}
+
+/* The command menu: a card that opens above the box, as wide as the composer, and scrolls when it is long. */
+.command-menu {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(100% + 8px);
+  z-index: 5;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(28, 30, 38, 0.14);
+}
+
+/* The menu heading: spacing for the title and the key hint. */
+.menu-header {
+  padding: 10px 14px 6px;
+}
+
+/* The key hint in the menu heading. */
+.menu-hint {
+  font-size: 11px;
+  color: var(--aia-subtle);
+}
+
+/* The list of commands: no bullets, with a little room round it. */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 6px 6px;
+  list-style: none;
+}
+
+/* One command in the menu: the name, then its description. */
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* The highlighted command: the accent tint. */
+.option_active {
+  background: var(--aia-accent-tint);
+}
+
+/* The top line of a command: the gap between its name and its scope tag. */
+.option-top {
+  gap: 8px;
+}
+
+/* The command name. */
+.option-command {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aia-ink);
+}
+
+/* The command name while its row is highlighted: the accent colour. */
+.option_active .option-command {
+  color: var(--aia-accent);
+}
+
+/* The small tag at the right of a command that says where it applies. */
+.scope {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--aia-chip);
+  font-size: 10px;
+  color: var(--aia-muted);
+  white-space: nowrap;
+}
+
+/* The scope tag while its row is highlighted: white, to stand out from the tint. */
+.scope_active {
+  background: var(--aia-surface);
+}
+
+/* The command description. */
+.option-description {
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The command description while its row is highlighted: darker text. */
+.option_active .option-description {
+  color: var(--aia-ink-soft);
+}
+
+/* The line shown when no command matches. */
+.no-match {
+  padding: 4px 14px 12px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}

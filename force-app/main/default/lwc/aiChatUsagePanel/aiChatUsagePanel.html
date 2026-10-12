@@ -1,0 +1,46 @@
+<template>
+  <section class={panelClass} role="group" aria-label={labels.heading} onkeydown={handleKeyDown}>
+    <!-- Heading: the title and a close button, left out when the panel sits inside a menu -->
+    <template lwc:if={showHeading}>
+      <div class="panel-head slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+        <h2 class="heading slds-m-around_none">{labels.heading}</h2>
+        <button type="button" class="close" aria-label={labels.close} title={labels.close} onclick={handleClose}>
+          <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
+        </button>
+      </div>
+    </template>
+
+    <!-- Rows: one for each limit, with a bar when the policy sets it -->
+    <ul class="rows slds-grid slds-grid_vertical">
+      <template for:each={rows} for:item="row">
+        <li key={row.key} class={row.rowClass}>
+          <!-- Name and amounts, with a tag when the limit is nearly used up or reached -->
+          <div class="row-top slds-grid slds-grid_align-spread slds-grid_vertical-align-baseline">
+            <span class="row-name">
+              {row.name}
+              <template lwc:if={row.tagLabel}>
+                <span class="tag">{row.tagLabel}</span>
+              </template>
+            </span>
+            <span class="row-usage">{row.usageLabel}</span>
+          </div>
+
+          <!-- Bar: shown only when the policy sets the limit -->
+          <template lwc:if={row.showBar}>
+            <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={row.percent} aria-label={row.name}>
+              <span class="bar-fill" style={row.meterStyle}></span>
+            </div>
+          </template>
+
+          <!-- Help line: what is left and when it resets -->
+          <div class="row-help">{row.helpLabel}</div>
+        </li>
+      </template>
+    </ul>
+
+    <!-- Footer: where the limits come from -->
+    <template lwc:if={showHeading}>
+      <div class="footer">{labels.footer}</div>
+    </template>
+  </section>
+</template>
