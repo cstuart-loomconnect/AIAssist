@@ -8,7 +8,7 @@
       <div class="slds-form-element slds-m-top_small">
         <label class="slds-form-element__label" for="save-text">{labels.textLabel}</label>
         <div class="slds-form-element__control">
-          <textarea id="save-text" class="slds-textarea text" rows="7" value={draftText} disabled={isSaving} oninput={handleInput}></textarea>
+          <textarea id="save-text" class="slds-textarea text" rows="7" disabled={isSaving} oninput={handleInput}>{draftText}</textarea>
         </div>
         <div class="slds-form-element__help hint">{labels.textHelp}</div>
       </div>
