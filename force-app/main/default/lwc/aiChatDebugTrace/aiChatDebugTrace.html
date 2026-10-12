@@ -1,0 +1,94 @@
+<template>
+  <!-- Trace panel: the dark box that holds everything below -->
+  <div class="trace aia-mono">
+    <!-- Header: the title, plus the status and duration once the trace has loaded -->
+    <div class="trace-header trace-divider slds-grid slds-grid_vertical-align-center slds-p-vertical_x-small slds-p-horizontal_small">
+      <span class="trace-title slds-col">{labels.requestTrace}</span>
+      <template lwc:if={trace}>
+        <span class={statusClass}>{statusLabel}</span>
+        <span class="muted slds-m-left_x-small">{durationLabel}</span>
+      </template>
+    </div>
+    <!-- Loaded trace: shown when the parent has handed down the trace -->
+    <template lwc:if={trace}>
+      <!-- Summary grid: model, tokens, tool calls, iterations, attempts and PII fields -->
+      <dl class="trace-grid trace-divider">
+        <dt>{labels.modelConfig}</dt>
+        <dd>{modelLabel}</dd>
+        <dt>{labels.tokensInOut}</dt>
+        <dd>{tokensLabel}</dd>
+        <dt>{labels.toolCalls}</dt>
+        <dd>{trace.toolCalls}</dd>
+        <!-- Tool iterations: shown when the trace says how many were used -->
+        <template lwc:if={hasIterations}>
+          <dt>{labels.toolIterations}</dt>
+          <dd>{iterationsLabel}</dd>
+        </template>
+        <!-- Attempts: shown when the trace says which attempt this was -->
+        <template lwc:if={hasAttempts}>
+          <dt>{labels.attempts}</dt>
+          <dd>{trace.attemptNumber}</dd>
+        </template>
+        <dt>{labels.piiMasked}</dt>
+        <dd>{piiLabel}</dd>
+      </dl>
+      <!-- Steps table: shown when the trace has at least one step -->
+      <template lwc:if={hasSteps}>
+        <div class="trace-divider slds-scrollable_x">
+          <table class="steps">
+            <thead>
+              <tr>
+                <th class="col-order">{labels.stepOrder}</th>
+                <th>{labels.stepType}</th>
+                <th>{labels.stepStatus}</th>
+                <th>{labels.stepMilliseconds}</th>
+                <th>{labels.stepDetail}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={stepViews} for:item="step">
+                <tr key={step.key} class={step.rowClass}>
+                  <td class="col-order muted">{step.order}</td>
+                  <td class="slds-nowrap">{step.stepType}</td>
+                  <td><span class={step.statusClass}>{step.status}</span></td>
+                  <td class="slds-text-align_right slds-nowrap">{step.msLabel}</td>
+                  <td class="col-detail">{step.detail}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+      <!-- Sent preview: shown when the trace carries the preview of what was sent -->
+      <template lwc:if={hasSentPreview}>
+        <div class="sent-preview trace-divider">{labels.sentPreviewPrefix} "{trace.sentPreviewText}"</div>
+      </template>
+      <!-- Conversation name -->
+      <div class="ids">{labels.conversation} {trace.conversationName}</div>
+      <!-- Actions: download request and response when present, copy ids, close -->
+      <div class="trace-actions slds-grid slds-wrap">
+        <template lwc:if={hasRequestJson}>
+          <button type="button" class="trace-button" onclick={handleDownloadRequest}>{labels.requestJson}</button>
+        </template>
+        <template lwc:if={hasResponseJson}>
+          <button type="button" class="trace-button" onclick={handleDownloadResponse}>{labels.responseJson}</button>
+        </template>
+        <button type="button" class="trace-button" onclick={handleCopyIds}>{copyLabel}</button>
+        <button type="button" class="trace-button slds-col_bump-left" onclick={handleCloseTrace}>{labels.closeTrace}</button>
+      </div>
+    </template>
+    <!-- Not loaded yet: the loading text, or the error message when loading failed -->
+    <template lwc:else>
+      <div class="loading">
+        <template lwc:if={errorMessage}>{errorMessage}</template>
+        <template lwc:else>{labels.loading}</template>
+      </div>
+      <!-- Close button: only offered after an error, so the user is not stuck -->
+      <template lwc:if={errorMessage}>
+        <div class="trace-actions slds-grid slds-wrap">
+          <button type="button" class="trace-button slds-col_bump-left" onclick={handleCloseTrace}>{labels.closeTrace}</button>
+        </div>
+      </template>
+    </template>
+  </div>
+</template>

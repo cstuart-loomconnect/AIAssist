@@ -1,0 +1,184 @@
+/* Monospace font for ids, clocks and code. SLDS has no utility for this. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* The dark trace box: debug token colours, rounded border and small text. SLDS has no dark debug theme. */
+.trace {
+  border: 1px solid var(--aia-debug-line);
+  border-radius: 10px;
+  background: var(--aia-debug-bg);
+  color: var(--aia-debug-ink);
+  font-size: 11px;
+  line-height: 17px;
+  overflow: hidden;
+}
+
+/* The line under a section of the trace, in the debug line colour. SLDS borders do not use the debug tokens. */
+.trace-divider {
+  border-bottom: 1px solid var(--aia-debug-line);
+}
+
+/* The trace title: medium weight in white. SLDS has no utility for this weight or colour. */
+.trace-title {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+/* The small coloured box around the status text. SLDS has no utility for this look. */
+.status {
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+/* Green status for a successful request. */
+.status_ok {
+  background: #1f4f37;
+  color: #a7e3c1;
+}
+
+/* Red status for a failed request. */
+.status_error {
+  background: #6e2412;
+  color: #f6c2b4;
+}
+
+/* Dimmed text for secondary values, in the debug muted colour. */
+.muted {
+  color: var(--aia-debug-muted);
+}
+
+/* The two-column grid for the summary rows. SLDS grid classes cannot lay out dt and dd pairs like this. */
+.trace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+/* The summary labels in the muted colour. */
+.trace-grid dt {
+  color: var(--aia-debug-muted);
+}
+
+/* The summary values: no browser indent, and long values wrap instead of overflowing. */
+.trace-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The steps table: kept wide enough to scroll sideways on a narrow panel, with aligned digits. */
+.steps {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The step table headings: small, muted, uppercase. SLDS tables would change the dark look. */
+.steps th {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--aia-debug-line);
+  color: var(--aia-debug-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+/* The step table cells: padding and a line between rows in the debug line colour. */
+.steps td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--aia-debug-line);
+  vertical-align: top;
+}
+
+/* No line under the last step, because the section below draws its own. */
+.steps tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Keeps the # column as narrow as its content. */
+.col-order {
+  width: 1%;
+}
+
+/* Lets a long step detail wrap instead of stretching the table. */
+.col-detail {
+  overflow-wrap: anywhere;
+}
+
+/* Shows the detail of a failed step in red. */
+.step_failed .col-detail {
+  color: #f6c2b4;
+}
+
+/* The small coloured box around a step status. SLDS has no utility for this look. */
+.pill {
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+/* Green pill for a successful step. */
+.pill_ok {
+  background: #1f4f37;
+  color: #a7e3c1;
+}
+
+/* Red pill for a failed step. */
+.pill_error {
+  background: #6e2412;
+  color: #f6c2b4;
+}
+
+/* Amber pill for any other step status, such as Blocked or Cancelled. */
+.pill_warn {
+  background: #5a4510;
+  color: #f0d58a;
+}
+
+/* The preview of what was sent: muted, and long text wraps. */
+.sent-preview {
+  padding: 10px 12px;
+  color: var(--aia-debug-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The conversation name line: muted, and long names wrap. */
+.ids {
+  padding: 10px 12px;
+  color: var(--aia-debug-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The row of buttons: padding and the space between buttons. SLDS has no 6px gap utility. */
+.trace-actions {
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+/* The outlined dark buttons. SLDS buttons would change the dark look. */
+.trace-button {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #3a3e50;
+  border-radius: 6px;
+  background: none;
+  color: var(--aia-debug-ink);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* Lights up a button border when the pointer is over it. */
+.trace-button:hover {
+  border-color: var(--aia-debug-muted);
+}
+
+/* The loading text or error message shown before the trace arrives. */
+.loading {
+  padding: 10px 12px;
+  color: var(--aia-debug-muted);
+}
