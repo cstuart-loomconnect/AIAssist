@@ -160,6 +160,9 @@ public without sharing class AIChatDataStructure {
         // Minutes without activity before a conversation stops counting as open, or empty for never. The usage panel says so beside the open conversations limit
         @AuraEnabled
         public Decimal idleTimeoutMinutes;
+        // True when the agent's conversations are Global, so a conversation with it may be shared with individual users
+        @AuraEnabled
+        public Boolean isShareable = false;
     }
 
     public class CommandOption {
@@ -200,6 +203,34 @@ public without sharing class AIChatDataStructure {
         public List<ChatMessage> messages = new List<ChatMessage>();
         @AuraEnabled
         public Boolean hasMoreMessages = false;
+        // True when the signed-in user started the conversation and its agent is Global, so they may share it with individual users
+        @AuraEnabled
+        public Boolean canShare = false;
+        // True when the conversation is about a record (RelatedRecordId__c is a valid Id), so a reply may be saved to it
+        @AuraEnabled
+        public Boolean hasRelatedRecord = false;
+    }
+
+    // Where a saved reply went: the target (AIAssistApplicationConstants.SAVE_TARGET_*), its label, the new note, post or task, and what to tell the user
+    public class SaveToRecordResult {
+        @AuraEnabled
+        public String target;
+        @AuraEnabled
+        public String targetLabel;
+        @AuraEnabled
+        public Id recordId;
+        @AuraEnabled
+        public String message;
+    }
+
+    // A user a conversation is shared with, or may be shared with. subtitle is the user's title, else their role name, else blank
+    public class ShareRecipient {
+        @AuraEnabled
+        public Id userId;
+        @AuraEnabled
+        public String name;
+        @AuraEnabled
+        public String subtitle;
     }
 
     public class ConversationSummary {

@@ -139,20 +139,26 @@ export const MESSAGE_ACTION = {
   DECLINE_ACTION: "declineaction",
   DISMISS_ACTION: "dismissaction",
   LOAD_TRACE: "loadtrace",
-  CLOSE_TRACE: "closetrace"
+  CLOSE_TRACE: "closetrace",
+  SAVE_TO_RECORD: "savetorecord"
 };
 
 // The values of the header's menu.
 export const MENU = {
   END: "end",
-  EXPORT: "export"
+  EXPORT: "export",
+  SHARE: "share"
 };
 
 // The icon shown beside each header menu item.
 export const MENU_ICONS = {
   EXPORT: "utility:download",
+  SHARE: "utility:share",
   END: "utility:close"
 };
+
+// The shortest search for a person to share with. Mirrors the Apex search, which refuses fewer letters.
+export const SHARE_MIN_SEARCH_LENGTH = 2;
 
 // The public methods of the child components the window calls.
 export const LIST_METHOD = {
@@ -183,6 +189,7 @@ export const ID_PREFIX_NOTICE = "notice";
 
 export const SCREEN_FLOW_MODAL_SIZE = "medium";
 export const TOAST_VARIANT_ERROR = "error";
+export const TOAST_VARIANT_SUCCESS = "success";
 
 // The accent colour and height of the window.
 export const DEFAULT_ACCENT = "#3040C4";
@@ -260,6 +267,9 @@ export const LABELS = {
   composerPlaceholderNoRecord: "Ask anything, or type / for commands",
   closeConversation: "End conversation",
   exportConversation: "Export conversation",
+  shareConversation: "Share conversation",
+  shareHint: "Let a colleague read this conversation",
+  savedToRecord: "Saved to the record.",
   actionFailed: "Didn’t work",
   workingLabel: "Working on it…",
   workingOnRecord: "Working on {0}…",

@@ -93,16 +93,16 @@ export function buildNoticeMessage(noticeId, noticeText) {
 export function buildConversationFromView(view) {
 
   // [1] Keep only what the window needs
-  return { id: view.id, name: view.name, title: view.title, status: view.status, isActive: view.isActive, canResume: view.canResume, agentName: view.agentName };
+  return { id: view.id, name: view.name, title: view.title, status: view.status, isActive: view.isActive, canResume: view.canResume, agentName: view.agentName, canShare: !!view.canShare, hasRelatedRecord: !!view.hasRelatedRecord };
 }
 
 // The window's own record of a conversation the server has just started for the user's first message.
-export function buildStartedConversation(conversationId, text, agentName) {
+export function buildStartedConversation(conversationId, text, agentName, canShare, hasRelatedRecord) {
 
   // [1] The title is the start of the first message
   const title = text.slice(0, NEW_CONVERSATION_TITLE_LENGTH);
 
-  return { id: conversationId, title, status: CONVERSATION_STATUS.ACTIVE, isActive: true, canResume: false, agentName };
+  return { id: conversationId, title, status: CONVERSATION_STATUS.ACTIVE, isActive: true, canResume: false, agentName, canShare, hasRelatedRecord };
 }
 
 // The messages Apex sent that the window does not have yet, ready to show.
@@ -117,8 +117,8 @@ export function findFreshMessages(knownMessages, serverMessages) {
   return newMessages.map(buildServerMessage);
 }
 
-// What the header's menu offers: export when the user may, and ending a conversation that is still open.
-export function buildHeaderMenuItems(isMenuAvailable, exportEnabled, isConversationActive) {
+// What the header's menu offers: export when the user may, sharing when the conversation can be shared, and ending a conversation that is still open.
+export function buildHeaderMenuItems(isMenuAvailable, exportEnabled, isConversationActive, canShare) {
 
   // [1] No menu while the window is not ready, there is no conversation, or it is someone else's
   const items = [];
@@ -127,6 +127,8 @@ export function buildHeaderMenuItems(isMenuAvailable, exportEnabled, isConversat
 
   // [2] Add each item the user may use
   if (exportEnabled) items.push({ value: MENU.EXPORT, label: LABELS.exportConversation, iconName: MENU_ICONS.EXPORT });
+
+  if (canShare) items.push({ value: MENU.SHARE, label: LABELS.shareConversation, iconName: MENU_ICONS.SHARE, hint: LABELS.shareHint });
 
   if (isConversationActive) items.push({ value: MENU.END, label: LABELS.closeConversation, iconName: MENU_ICONS.END });
 
@@ -173,7 +175,8 @@ export function buildMessageItems(messages, options) {
   const isActionsOn = canAct && canSend && !!ui.inlineActionsEnabled && !!user.workflowActionsEnabled;
   const isConversationActive = !!(conversation && conversation.isActive);
   const shownAgentName = (conversation && conversation.agentName) || agentName || LABELS.appName;
-  const shared = { ui, canAct, canSend, isDebugMode, isActionsOn, isConversationActive, isWaiting, hasErrorTurn, feedbackStates, actionStates, debugTraces, agentName: shownAgentName };
+  const canSaveToRecord = canAct && !!(conversation && conversation.hasRelatedRecord);
+  const shared = { ui, canAct, canSend, canSaveToRecord, isDebugMode, isActionsOn, isConversationActive, isWaiting, hasErrorTurn, feedbackStates, actionStates, debugTraces, agentName: shownAgentName };
 
   // [2] Find the newest saved AI reply, and the first message that is not a notice
   const lastAgentIndex = findLastIndex(messages, isSavedAgentMessage);
@@ -244,7 +247,7 @@ function buildUserItem(base, message) {
 function buildAgentItem(base, message, shared, showAgentHeader, isLastAgentMessage) {
 
   // [1] Read what the window knows about this message
-  const { ui, canAct, canSend, isDebugMode, isActionsOn, isConversationActive, isWaiting, hasErrorTurn, feedbackStates, actionStates, debugTraces, agentName } = shared;
+  const { ui, canAct, canSend, canSaveToRecord, isDebugMode, isActionsOn, isConversationActive, isWaiting, hasErrorTurn, feedbackStates, actionStates, debugTraces, agentName } = shared;
   const feedback = feedbackStates[message.id] || {};
   const trace = debugTraces[message.id];
   const sources = message.sources || [];
@@ -278,6 +281,7 @@ function buildAgentItem(base, message, shared, showAgentHeader, isLastAgentMessa
     feedbackSubmitting: !!feedback.submitting,
     feedbackThanks: !!feedback.thanks,
     canRegenerate,
+    canSaveToRecord,
     tokenLabel: message.tokenCount ? formatTokenCount(message.tokenCount) : null,
     suggestedAction,
     actionsDisplay: ui.suggestedActionsDisplay,

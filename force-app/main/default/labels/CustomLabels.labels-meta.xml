@@ -1258,4 +1258,174 @@
     >Provider picklist value label: OpenAI.</shortDescription>
         <value>OpenAI</value>
     </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Chatter</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save target name, Chatter post.</shortDescription>
+        <value>Chatter post</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Note</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save target name, note.</shortDescription>
+        <value>Note</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Task</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save target name, task.</shortDescription>
+        <value>Task</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Chatter</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: reply posted to the record feed.</shortDescription>
+        <value>Posted to the record feed</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Note</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: reply saved as a note.</shortDescription>
+        <value>Saved as a note on the record</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Task</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: reply saved as a task.</shortDescription>
+        <value>Created a task on the record</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Note_Default_Title</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: note title when the first line is blank.</shortDescription>
+        <value>AI Assist reply</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Task_Default_Subject</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: task subject when the first line is blank.</shortDescription>
+        <value>Follow up on AI Assist reply</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_No_Record</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, conversation has no record.</shortDescription>
+        <value>This conversation is not about a record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Text_Empty</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save to record, no text.</shortDescription>
+        <value>There is no text to save.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Target_Invalid</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, unknown target.</shortDescription>
+        <value
+    >Choose whether to save as a note, a Chatter post or a task.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Chatter_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, no Chatter feed on object.</shortDescription>
+        <value>Chatter posts are not turned on for this kind of record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record failed or not permitted.</shortDescription>
+        <value
+    >The reply could not be saved to the record. You may not have permission to add to it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Not_Global</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, agent conversations are private.</shortDescription>
+        <value
+    >This conversation cannot be shared because its agent keeps conversations private.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: share, limit reached.</shortDescription>
+        <value
+    >This conversation is already shared with as many people as it can be.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Self</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: share, own conversation.</shortDescription>
+        <value>You already own this conversation.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_User_Ineligible</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, user cannot use AI Assist.</shortDescription>
+        <value
+    >That person cannot use AI Assist, so this conversation cannot be shared with them.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, the share could not be saved.</shortDescription>
+        <value>The conversation could not be shared. Try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Notes_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, Notes are not turned on in the org.</shortDescription>
+        <value
+    >Notes are not turned on in this org, so the reply cannot be saved as a note.</value>
+    </labels>
 </CustomLabels>

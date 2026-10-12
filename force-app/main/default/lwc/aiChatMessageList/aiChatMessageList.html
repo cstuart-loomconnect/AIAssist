@@ -26,4 +26,12 @@
       <c-ai-chat-error-card reference={errorTurn.reference} debug-detail={errorTurn.debugDetail} is-retrying={errorTurn.isRetrying} retry-error={errorTurn.retryError} onretry={handleRetry}></c-ai-chat-error-card>
     </template>
   </main>
+
+  <!-- Jump to latest button: shown when the user has scrolled away from the newest message, and says when a new reply is waiting -->
+  <template lwc:if={showJump}>
+    <button type="button" class={jumpClass} onclick={handleJump}>
+      <lightning-icon icon-name="utility:arrowdown" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+      <span>{jumpLabel}</span>
+    </button>
+  </template>
 </template>

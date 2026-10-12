@@ -1,0 +1,25 @@
+<template>
+  <!-- Backdrop: dims the chat and centres the dialog -->
+  <div class="overlay slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-p-around_small" onkeydown={handleKeyDown}>
+    <!-- Dialog: the heading, the editable text, an error when the save failed, and the buttons -->
+    <section class="dialog slds-grid slds-grid_vertical slds-p-around_medium" role="dialog" aria-modal="true" aria-labelledby="save-heading">
+      <h2 id="save-heading" class="heading">{heading}</h2>
+      <p class="hint slds-m-top_xx-small">{hint}</p>
+      <div class="slds-form-element slds-m-top_small">
+        <label class="slds-form-element__label" for="save-text">{labels.textLabel}</label>
+        <div class="slds-form-element__control">
+          <textarea id="save-text" class="slds-textarea text" rows="7" value={draftText} disabled={isSaving} oninput={handleInput}></textarea>
+        </div>
+        <div class="slds-form-element__help hint">{labels.textHelp}</div>
+      </div>
+      <!-- Error: shown when the last save failed -->
+      <template lwc:if={hasError}>
+        <div class="error slds-m-top_small" role="alert">{errorMessage}</div>
+      </template>
+      <div class="actions slds-grid slds-grid_align-end slds-m-top_medium">
+        <button type="button" class="aia-btn aia-btn_neutral" disabled={isSaving} onclick={handleCancel}>{labels.cancel}</button>
+        <button type="button" class="aia-btn aia-btn_brand" disabled={isSaveDisabled} onclick={handleSave}>{saveLabel}</button>
+      </div>
+    </section>
+  </div>
+</template>

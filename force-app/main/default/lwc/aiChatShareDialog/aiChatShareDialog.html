@@ -1,0 +1,75 @@
+<template>
+  <!-- Backdrop: dims the chat and centres the dialog -->
+  <div class="overlay slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-p-around_small" onkeydown={handleKeyDown}>
+    <!-- Dialog: the heading, the search, the results and the people with access -->
+    <section class="dialog slds-grid slds-grid_vertical slds-p-around_medium" role="dialog" aria-modal="true" aria-labelledby="share-heading">
+      <h2 id="share-heading" class="heading">{labels.heading}</h2>
+      <p class="hint slds-m-top_xx-small">{labels.hint}</p>
+
+      <!-- Search box: finds people to share with -->
+      <div class="slds-form-element slds-m-top_small">
+        <label class="slds-form-element__label" for="share-search">{labels.searchLabel}</label>
+        <div class="slds-form-element__control">
+          <input id="share-search" type="search" class="slds-input" placeholder={labels.searchPlaceholder} autocomplete="off" disabled={isBusy} oninput={handleSearchInput} />
+        </div>
+      </div>
+
+      <!-- Search state: a hint to type more, the spinner text, the results, or nobody found -->
+      <div class="results slds-m-top_x-small" aria-live="polite">
+        <template lwc:if={showSearchMore}>
+          <p class="hint">{labels.searchMore}</p>
+        </template>
+        <template lwc:elseif={isSearching}>
+          <p class="hint">{labels.searching}</p>
+        </template>
+        <template lwc:elseif={hasResults}>
+          <ul class="list">
+            <template for:each={resultViews} for:item="result">
+              <li key={result.key} class="person slds-grid slds-grid_vertical-align-center">
+                <span class="who slds-grow">
+                  <span class="name">{result.name}</span>
+                  <span class="hint slds-show">{result.subtitle}</span>
+                </span>
+                <button type="button" class="aia-btn aia-btn_neutral aia-btn_small" data-userid={result.userId} disabled={isBusy} onclick={handleShare}>{labels.share}</button>
+              </li>
+            </template>
+          </ul>
+        </template>
+        <template lwc:elseif={showNoResults}>
+          <p class="hint">{labels.noResults}</p>
+        </template>
+      </div>
+
+      <!-- People with access: who can read the conversation now, each with a remove button -->
+      <h3 class="subheading slds-m-top_medium">{labels.peopleHeading}</h3>
+      <template lwc:if={isLoading}>
+        <p class="hint slds-m-top_x-small">{labels.loading}</p>
+      </template>
+      <template lwc:elseif={hasRecipients}>
+        <ul class="list slds-m-top_x-small">
+          <template for:each={recipientViews} for:item="recipient">
+            <li key={recipient.key} class="person slds-grid slds-grid_vertical-align-center">
+              <span class="who slds-grow">
+                <span class="name">{recipient.name}</span>
+                <span class="hint slds-show">{recipient.subtitle}</span>
+              </span>
+              <button type="button" class="aia-btn aia-btn_neutral aia-btn_small" aria-label={recipient.removeLabel} title={recipient.removeLabel} data-userid={recipient.userId} disabled={isBusy} onclick={handleUnshare}>{labels.remove}</button>
+            </li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:else>
+        <p class="hint slds-m-top_x-small">{labels.noPeople}</p>
+      </template>
+
+      <!-- Error: shown when the last step failed -->
+      <template lwc:if={errorMessage}>
+        <div class="error slds-m-top_small" role="alert">{errorMessage}</div>
+      </template>
+
+      <div class="actions slds-grid slds-grid_align-end slds-m-top_medium">
+        <button type="button" class="aia-btn aia-btn_brand" onclick={handleClose}>{labels.done}</button>
+      </div>
+    </section>
+  </div>
+</template>

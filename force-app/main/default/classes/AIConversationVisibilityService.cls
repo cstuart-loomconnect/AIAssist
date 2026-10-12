@@ -8,7 +8,7 @@ Description: Decides who may read a conversation they did not start. Reading onl
 
 Step 1: Read the conversation in user mode, so sharing decides first and a viewer never reaches one the org does not already give them
 Step 2: Let the starter read their own conversation
-Step 3: For anyone else, require a Global agent and a scope (own, subordinates or all) that reaches the starter
+Step 3: For anyone else, require a Global agent and either a direct share from the starter or a scope (own, subordinates or all) that reaches the starter
 Step 4: Require that the viewer can read the record the conversation is about
 Step 5: Refuse with the "not found" message when any check fails, and fail closed on anything unknown
 
@@ -100,9 +100,13 @@ public without sharing class AIConversationVisibilityService {
 
                 // [3] The starter always reads their own conversation
                 isReadable = true;
+            } else if (conversation.AIAgent__r?.ConversationVisibility__c == AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL && AIConversationShareService.hasDirectShare(conversation.Id, UserInfo.getUserId())) {
+
+                // [4] The starter chose this viewer, so no scope is needed, but the viewer must still be able to read the record and the agent must still be Global
+                isReadable = filterReadableRecords(new List<AIConversation__c>{ conversation }).size() == 1;
             } else if (conversation.AIAgent__r?.ConversationVisibility__c == AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL) {
 
-                // [4] For anyone else, check the starter is within the viewer's scope
+                // [5] For anyone else, check the starter is within the viewer's scope
                 Boolean isInScope = false;
 
                 if (scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL) {
@@ -114,12 +118,12 @@ public without sharing class AIConversationVisibilityService {
                     isInScope = !subordinateRoleIds.isEmpty() && [SELECT COUNT() FROM User WHERE Id = :conversation.OwnerId AND UserRoleId IN :subordinateRoleIds WITH SYSTEM_MODE] == 1;
                 }
 
-                // [5] The viewer must also be able to read the record the conversation is about
+                // [6] The viewer must also be able to read the record the conversation is about
                 isReadable = isInScope && filterReadableRecords(new List<AIConversation__c>{ conversation }).size() == 1;
             }
         }
 
-        // [6] Refuse with the same answer as for a missing conversation
+        // [7] Refuse with the same answer as for a missing conversation
         if (!isReadable) throw new AIConversationVisibilityServiceException(Label.AI_Error_Conversation_Not_Found);
 
         return conversations[0];
@@ -151,7 +155,36 @@ public without sharing class AIConversationVisibilityService {
 
         // [3] Read more rows than needed, because the record-access check can remove some; user mode means sharing has already removed what the viewer cannot reach
         queryBinds.put('candidateRows', maxRows * 4);
-        List<AIConversation__c> candidates = Database.queryWithBinds('SELECT ' + selectFields + ', OwnerId, Owner.Name, RelatedRecordId__c, AIAgent__r.ConversationVisibility__c FROM AIConversation__c' + ' WHERE OwnerId != :viewerId AND AIAgent__r.ConversationVisibility__c = :globalVisibility' + ownerFilter + ' ORDER BY LastModifiedDate DESC LIMIT :candidateRows', queryBinds, AccessLevel.USER_MODE);
+        List<AIConversation__c> candidates = Database.queryWithBinds('SELECT ' + getSelectWithOwnerAndRecord(selectFields) + ' FROM AIConversation__c' + ' WHERE OwnerId != :viewerId AND AIAgent__r.ConversationVisibility__c = :globalVisibility' + ownerFilter + ' ORDER BY LastModifiedDate DESC LIMIT :candidateRows', queryBinds, AccessLevel.USER_MODE);
+
+        // [4] Keep the ones about records the viewer can read, up to the row limit
+        for (AIConversation__c readable : filterReadableRecords(candidates)) {
+
+            shared.add(readable);
+            if (shared.size() >= maxRows) break;
+        }
+
+        return shared;
+    }
+
+    // The conversations someone else started that they shared directly with the signed-in user, newest first, whatever the viewer's own scope. Only Global agents, and only about records the viewer can read.
+    public static List<AIConversation__c> getDirectlySharedConversations(String selectFields, Map<String, Object> binds, Integer maxRows) {
+
+        List<AIConversation__c> shared = new List<AIConversation__c>();
+
+        // [1] Find the conversations shared directly with the viewer; the share rows are read in system mode because a user cannot read them
+        Set<Id> sharedIds = AIConversationShareService.getConversationIdsSharedWith(UserInfo.getUserId(), maxRows * 4);
+        if (sharedIds.isEmpty()) return shared;
+
+        // [2] Add the viewer and the Global setting to the caller's binds
+        Map<String, Object> queryBinds = new Map<String, Object>(binds);
+        queryBinds.put('viewerId', UserInfo.getUserId());
+        queryBinds.put('globalVisibility', AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL);
+        queryBinds.put('sharedIds', sharedIds);
+        queryBinds.put('candidateRows', maxRows * 4);
+
+        // [3] Read them in user mode, so sharing still decides what the viewer reaches
+        List<AIConversation__c> candidates = Database.queryWithBinds('SELECT ' + getSelectWithOwnerAndRecord(selectFields) + ' FROM AIConversation__c' + ' WHERE Id IN :sharedIds AND OwnerId != :viewerId AND AIAgent__r.ConversationVisibility__c = :globalVisibility' + ' ORDER BY LastModifiedDate DESC LIMIT :candidateRows', queryBinds, AccessLevel.USER_MODE);
 
         // [4] Keep the ones about records the viewer can read, up to the row limit
         for (AIConversation__c readable : filterReadableRecords(candidates)) {
@@ -164,7 +197,7 @@ public without sharing class AIConversationVisibilityService {
     }
 
     // Keeps the conversations that are not about a record, and those about a record the viewer can read. UserRecordAccess answers with the viewer's real sharing, hierarchy and permissions.
-    private static List<AIConversation__c> filterReadableRecords(List<AIConversation__c> conversations) {
+    public static List<AIConversation__c> filterReadableRecords(List<AIConversation__c> conversations) {
 
         List<AIConversation__c> readable = new List<AIConversation__c>();
 
@@ -203,5 +236,19 @@ public without sharing class AIConversationVisibilityService {
         }
 
         return readable;
+    }
+
+    // The caller's fields plus the ones the checks need, each added only when the caller has not already selected it, because a field selected twice fails the query.
+    private static String getSelectWithOwnerAndRecord(String selectFields) {
+
+        // [1] Add each field the caller did not select
+        String fields = selectFields;
+
+        for (String neededField : new List<String>{ 'OwnerId', 'Owner.Name', 'RelatedRecordId__c', 'AIAgent__r.ConversationVisibility__c' }) {
+
+            if (!selectFields.contains(neededField)) fields += ', ' + neededField;
+        }
+
+        return fields;
     }
 }

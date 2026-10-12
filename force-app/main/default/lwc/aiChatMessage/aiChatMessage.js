@@ -7,7 +7,7 @@ Component Name: aiChatMessage
 Description: One item in the conversation: a user bubble, an AI reply with its toolbar, or a centred notice.
 
 Step 1: Show the message the parent passes in
-Step 2: Let the user copy, rate and regenerate an AI reply
+Step 2: Let the user copy, rate, regenerate and save an AI reply to its record
 Step 3: Show feedback, suggested action and debug trace when the message asks for them
 Step 4: Report everything it cannot do alone to aiAssistChat as one bubbling "messageaction" event
 
@@ -19,7 +19,7 @@ Version      Author                   Description
 */
 
 import { LightningElement, api } from "lwc";
-import { LABELS, FEEDBACK_RATING, ACTION, EVENT_MESSAGE_ACTION, CLASS_USER_BUBBLE, CLASS_USER_BUBBLE_SENDING, CLASS_TOOL, CLASS_TOOL_HELPFUL, CLASS_TOOL_NOT_HELPFUL, ARIA_PRESSED_TRUE, ARIA_PRESSED_FALSE, FILL_SELECTED, FILL_UNSELECTED } from "./aiChatMessageSettings";
+import { LABELS, FEEDBACK_RATING, ACTION, EVENT_MESSAGE_ACTION, CLASS_USER_BUBBLE, CLASS_USER_BUBBLE_SENDING, CLASS_TOOL, CLASS_TOOL_HELPFUL, CLASS_TOOL_NOT_HELPFUL, ARIA_PRESSED_TRUE, ARIA_PRESSED_FALSE, FILL_SELECTED, FILL_UNSELECTED, SAVE_OPTIONS, ARIA_EXPANDED_TRUE, ARIA_EXPANDED_FALSE, KEY_ESCAPE, SAVE_WRAP_SELECTOR } from "./aiChatMessageSettings";
 import { copyToClipboard, getCopyLabel, getCopyIcon } from "./aiChatMessageHelper";
 
 // One item in the conversation - a user bubble (sent or sending), an AI reply with its toolbar, feedback, suggested action and debug trace, or a centred notice.
@@ -33,6 +33,7 @@ export default class AiChatMessage extends LightningElement {
 
   // Tracked state
   isCopied = false; // true right after the user copies the reply
+  isSaveMenuOpen = false; // true while the Save to record menu is open
 
   // The class for the user bubble: dimmed while the message is still sending.
   get userBubbleClass() {
@@ -118,6 +119,22 @@ export default class AiChatMessage extends LightningElement {
     return getCopyIcon(this.isCopied);
   }
 
+  // The places the reply can be saved to, one row each in the Save to record menu.
+  get saveOptions() {
+
+    // [1] The rows are the same for every reply
+    return SAVE_OPTIONS;
+  }
+
+  // The aria-expanded value for the Save to record button.
+  get saveMenuExpanded() {
+
+    // [1] aria-expanded needs the text "true" or "false"
+    const expanded = this.isSaveMenuOpen ? ARIA_EXPANDED_TRUE : ARIA_EXPANDED_FALSE;
+
+    return expanded;
+  }
+
   // Copies the reply text and remembers whether it worked.
   async handleCopy() {
 
@@ -200,6 +217,51 @@ export default class AiChatMessage extends LightningElement {
 
     // [1] Send the close
     this.sendMessageAction(ACTION.CLOSE_TRACE);
+  }
+
+  // Opens or closes the Save to record menu.
+  handleToggleSaveMenu() {
+
+    // [1] Flip it
+    this.isSaveMenuOpen = !this.isSaveMenuOpen;
+  }
+
+  // Stops a press on the menu from taking focus off the button, which would close the menu before the click lands (Safari does not focus buttons on click).
+  handleSaveMenuMouseDown(event) {
+
+    // [1] Keep focus where it is
+    event.preventDefault();
+  }
+
+  // Closes the Save to record menu once focus leaves it entirely.
+  handleSaveMenuFocusOut(event) {
+
+    // [1] Stay open while focus moves inside the menu and its button
+    const wrapper = this.template.querySelector(SAVE_WRAP_SELECTOR);
+    const isFocusInside = !!(wrapper && event.relatedTarget && wrapper.contains(event.relatedTarget));
+
+    if (isFocusInside) return;
+
+    // [2] Close it
+    this.isSaveMenuOpen = false;
+  }
+
+  // Closes the Save to record menu when the user presses Escape.
+  handleSaveMenuKeyDown(event) {
+
+    // [1] Close on Escape only
+    if (event.key === KEY_ESCAPE) this.isSaveMenuOpen = false;
+  }
+
+  // Tells aiAssistChat where the user chose to save the reply, then closes the menu.
+  handleSaveTarget(event) {
+
+    // [1] Read the row they chose
+    const target = event.currentTarget.dataset.target;
+
+    // [2] Close the menu and send the choice
+    this.isSaveMenuOpen = false;
+    this.sendMessageAction(ACTION.SAVE_TO_RECORD, { target });
   }
 
   // Sends the one bubbling event aiAssistChat listens for, with the action, this message's id and any extra detail.

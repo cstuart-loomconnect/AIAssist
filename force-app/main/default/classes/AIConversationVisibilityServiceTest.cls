@@ -26,6 +26,8 @@ Version      Author                   Description
     // testScenario6: Read under My Conversations Only, with no settings, and with a null or wrong-type Id -> all are "not found".
     // testScenario7: Read a conversation about a value that is not a record Id as another user -> it is not shown.
     // testScenario8: List shared conversations for each scope and for a row cap -> only other users' Global-agent conversations within the viewer's scope and sharing are listed, within the cap.
+    // testScenario9: Read conversations shared directly with a viewer on the narrowest scope -> the shared one is readable, and one about a record the viewer cannot read, one whose agent became Private, one not shared and a conversation after unsharing are not.
+    // testScenario10: List directly shared conversations -> only readable, Global-agent conversations shared with the viewer are listed, newest first, within the cap.
 
     private static final String AGENT_VISIBILITY_PRIVATE = 'Private';
     private static final String AGENT_VISIBILITY_GLOBAL = 'Global';
@@ -582,6 +584,141 @@ Version      Author                   Description
             Assert.isTrue(noRole.isEmpty(), 'A viewer with no role should have no subordinates.');
             Assert.areEqual(new Map<Id, AIConversation__c>(onGlobal).keySet(), new Map<Id, AIConversation__c>(underAllWithViewAll).keySet(), 'Everybody on a Global agent should be listed, and nothing from a Private one.');
             Assert.areEqual(1, capped.size(), 'The row cap should hold.');
+        }
+    }
+
+    @IsTest static void testScenario9() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global agent, an account, three users who can use the window, and a record the viewer cannot read
+            AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            globalAgent.ConversationVisibility__c = AGENT_VISIBILITY_GLOBAL;
+            insert globalAgent;
+
+            AIAgent__c laterPrivateAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            laterPrivateAgent.ConversationVisibility__c = AGENT_VISIBILITY_GLOBAL;
+            insert laterPrivateAgent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            List<User> users = AIAssistTestDataFactory.createUsers(3, true);
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new List<AIUserSettings__c>{ new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true), new AIUserSettings__c(User__c = users[1].Id, IsActive__c = true), new AIUserSettings__c(User__c = users[2].Id, IsActive__c = true) };
+            AIConversation__c unreadableRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, true)[0];
+
+            // [2] Create the owner's conversations: readable record, unreadable record, agent that later turns Private, not shared, and one shared then unshared
+            AIConversation__c readable = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[0].Id, 1, false)[0];
+            readable.RelatedRecordId__c = account.Id;
+            AIConversation__c hiddenRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[0].Id, 1, false)[0];
+            hiddenRecord.RelatedRecordId__c = unreadableRecord.Id;
+            AIConversation__c laterPrivate = AIAssistTestDataFactory.createAIConversations(laterPrivateAgent.Id, users[0].Id, 1, false)[0];
+            AIConversation__c notShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[0].Id, 1, false)[0];
+            AIConversation__c unshared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[0].Id, 1, false)[0];
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert new List<AIConversation__c>{ readable, hiddenRecord, laterPrivate, notShared, unshared }; }
+
+            // [3] The owner shares four of them with the viewer, one agent turns Private, and the owner unshares the last
+            System.runAs(users[0]) {
+                AIConversationShareService.shareConversation(readable.Id, users[1].Id);
+                AIConversationShareService.shareConversation(hiddenRecord.Id, users[1].Id);
+                AIConversationShareService.shareConversation(laterPrivate.Id, users[1].Id);
+                AIConversationShareService.shareConversation(unshared.Id, users[1].Id);
+            }
+
+            laterPrivateAgent.ConversationVisibility__c = AGENT_VISIBILITY_PRIVATE;
+            update laterPrivateAgent;
+
+            List<Boolean> answers = new List<Boolean>();
+            List<AIConversation__c> toRead = new List<AIConversation__c>{ readable, hiddenRecord, laterPrivate, notShared, unshared };
+            Boolean afterUnshare;
+
+            // [4] Read each as the viewer, unshare as the owner, and read the unshared one again
+            Test.startTest();
+                System.runAs(users[1]) {
+                    for (AIConversation__c conversation : toRead) {
+                        try {
+                            AIConversationVisibilityService.getViewableConversation(conversation.Id);
+                            answers.add(true);
+                        } catch (AIConversationVisibilityService.AIConversationVisibilityServiceException ex) {
+                            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, ex.getMessage(), 'A refusal should give the same answer as for a missing conversation.');
+                            answers.add(false);
+                        }
+                    }
+                }
+
+                System.runAs(users[0]) { AIConversationShareService.unshareConversation(readable.Id, users[1].Id); }
+
+                System.runAs(users[1]) {
+                    try {
+                        AIConversationVisibilityService.getViewableConversation(readable.Id);
+                        afterUnshare = true;
+                    } catch (AIConversationVisibilityService.AIConversationVisibilityServiceException ex) {
+                        afterUnshare = false;
+                    }
+                }
+            Test.stopTest();
+
+            // [5] Check only the shared, readable, Global one was readable, and not after unsharing
+            Assert.isTrue(answers[0], 'A conversation shared directly should be readable on the narrowest scope.');
+            Assert.isFalse(answers[1], 'A conversation about a record the viewer cannot read should not be shown.');
+            Assert.isFalse(answers[2], 'A conversation whose agent became Private should not be shown through a share.');
+            Assert.isFalse(answers[3], 'A conversation that was not shared should not be shown.');
+            Assert.isTrue(answers[4], 'The one still shared should be readable.');
+            Assert.isFalse(afterUnshare, 'An unshared conversation should not be readable.');
+        }
+    }
+
+    @IsTest static void testScenario10() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global and a Private agent, two users who can use the window, and an account
+            AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            globalAgent.ConversationVisibility__c = AGENT_VISIBILITY_GLOBAL;
+            insert globalAgent;
+
+            AIAgent__c privateAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            privateAgent.ConversationVisibility__c = AGENT_VISIBILITY_PRIVATE;
+            insert privateAgent;
+
+            List<User> users = AIAssistTestDataFactory.createUsers(3, true);
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new List<AIUserSettings__c>{ new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true), new AIUserSettings__c(User__c = users[1].Id, IsActive__c = true) };
+            AIConversation__c unreadableRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, true)[0];
+
+            // [2] Share two readable conversations, one about an unreadable record and one on a Private agent, directly with the viewer, as the system would find them
+            List<AIConversation__c> conversations = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[0].Id, 4, false);
+            conversations[2].RelatedRecordId__c = unreadableRecord.Id;
+            conversations[3].AIAgent__c = privateAgent.Id;
+            AIConversation__c own = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[1].Id, 1, false)[0];
+            conversations.add(own);
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert conversations; }
+
+            List<AIConversation__Share> shareRows = new List<AIConversation__Share>();
+
+            for (AIConversation__c conversation : conversations) shareRows.add(new AIConversation__Share(ParentId = conversation.Id, UserOrGroupId = users[1].Id, AccessLevel = 'Read', RowCause = Schema.AIConversation__Share.RowCause.DirectShare__c));
+
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert shareRows[0]; insert shareRows[1]; insert shareRows[2]; insert shareRows[3]; }
+
+            List<AIConversation__c> listed;
+            List<AIConversation__c> capped;
+            List<AIConversation__c> noneShared;
+
+            // [3] List as the viewer, with a cap, and as a user nothing was shared with
+            Test.startTest();
+                System.runAs(users[1]) {
+                    listed = AIConversationVisibilityService.getDirectlySharedConversations('Id', new Map<String, Object>(), 10);
+                    capped = AIConversationVisibilityService.getDirectlySharedConversations('Id', new Map<String, Object>(), 1);
+                }
+
+                System.runAs(users[0]) { noneShared = AIConversationVisibilityService.getDirectlySharedConversations('Id', new Map<String, Object>(), 10); }
+            Test.stopTest();
+
+            // [4] Check only the two readable Global conversations are listed, within the cap
+            Assert.areEqual(new Set<Id>{ conversations[0].Id, conversations[1].Id }, new Map<Id, AIConversation__c>(listed).keySet(), 'Only the readable, Global-agent conversations shared with the viewer should be listed.');
+            Assert.areEqual(1, capped.size(), 'The row cap should hold.');
+            Assert.isTrue(noneShared.isEmpty(), 'A user nothing was shared with should list none.');
         }
     }
 }

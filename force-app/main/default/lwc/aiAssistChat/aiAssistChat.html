@@ -113,6 +113,16 @@
         <template lwc:elseif={showComposer}>
           <c-ai-chat-composer commands={commands} disabled={isComposerDisabled} is-working={isWorking} placeholder={composerPlaceholder} usage-meters={usageMeters} footer-text={composerFooter} error-text={composerError} onsend={handleSend} onstop={handleStop} onmenutoggle={handleCommandMenuToggle}></c-ai-chat-composer>
         </template>
+
+        <!-- Save dialog: confirms saving a reply to the record as a note or a task -->
+        <template lwc:if={isSaveDialogOpen}>
+          <c-ai-chat-save-dialog target={saveTarget} text={saveText} is-saving={isSavingToRecord} error-message={saveError} onsave={handleSaveConfirm} oncancel={handleSaveCancel}></c-ai-chat-save-dialog>
+        </template>
+
+        <!-- Share dialog: shares the conversation, read-only, with individual users -->
+        <template lwc:if={isShareOpen}>
+          <c-ai-chat-share-dialog recipients={shareRecipients} results={shareResults} is-loading={isShareLoading} is-searching={isShareSearching} is-busy={isShareBusy} error-message={shareError} onsearch={handleShareSearch} onshare={handleShareUser} onunshare={handleUnshareUser} onclose={handleShareClose}></c-ai-chat-share-dialog>
+        </template>
       </template>
     </template>
   </div>

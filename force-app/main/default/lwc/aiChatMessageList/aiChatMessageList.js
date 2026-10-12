@@ -9,7 +9,8 @@ Description: The scrolling conversation: earlier messages, each message with its
 Step 1: Show the messages the parent passes in
 Step 2: Remember whether the user is reading near the newest message
 Step 3: Let aiAssistChat scroll to the bottom and keep the same message in view when older ones load
-Step 4: Tell the parent when the user asks for earlier messages or a retry
+Step 4: Show a Jump to latest button when the user is away from the newest message, and say when a new reply arrived there
+Step 5: Tell the parent when the user asks for earlier messages or a retry
 
 =================================================================
 =================================================================
@@ -19,7 +20,7 @@ Version      Author                   Description
 */
 
 import { LightningElement, api } from "lwc";
-import { LABELS, NEAR_BOTTOM_PX, SCROLL_SELECTOR, CLASS_SCROLL, CLASS_SCROLL_DIMMED, EVENT_LOAD_EARLIER, EVENT_RETRY } from "./aiChatMessageListSettings";
+import { LABELS, NEAR_BOTTOM_PX, SCROLL_SELECTOR, CLASS_SCROLL, CLASS_SCROLL_DIMMED, CLASS_JUMP, CLASS_JUMP_NEW, SCROLL_BEHAVIOR_SMOOTH, SCROLL_BEHAVIOR_INSTANT, REDUCED_MOTION_QUERY, EVENT_LOAD_EARLIER, EVENT_RETRY } from "./aiChatMessageListSettings";
 
 // aiAssistChat drives the scroll position through the @api methods.
 export default class AiChatMessageList extends LightningElement {
@@ -38,6 +39,7 @@ export default class AiChatMessageList extends LightningElement {
   // Tracked state
   savedDistanceFromBottom = null; // Where the user was before older messages were added
   isNearBottom = true; // true while the user is reading the newest messages
+  hasUnseenMessages = false; // true when a new message arrived while the user was reading older ones
 
   // The class for the scrolling area: faded when dimmed.
   get scrollClass() {
@@ -46,6 +48,31 @@ export default class AiChatMessageList extends LightningElement {
     const scrollClass = this.dimmed ? CLASS_SCROLL_DIMMED : CLASS_SCROLL;
 
     return scrollClass;
+  }
+
+  // True when the Jump to latest button shows: the user has scrolled away from the newest message.
+  get showJump() {
+
+    // [1] The button is the opposite of reading near the bottom
+    return !this.isNearBottom;
+  }
+
+  // The class for the Jump to latest button: stands out when a new reply arrived out of view.
+  get jumpClass() {
+
+    // [1] Pick the class for the current state
+    const jumpClass = this.hasUnseenMessages ? CLASS_JUMP_NEW : CLASS_JUMP;
+
+    return jumpClass;
+  }
+
+  // The text of the Jump to latest button: says when a new reply is waiting.
+  get jumpLabel() {
+
+    // [1] Pick the text for the current state
+    const jumpLabel = this.hasUnseenMessages ? LABELS.newReply : LABELS.jumpToLatest;
+
+    return jumpLabel;
   }
 
   // The scrolling area in the template.
@@ -67,6 +94,12 @@ export default class AiChatMessageList extends LightningElement {
 
     if (canScroll) {
       scroller.scrollTop = scroller.scrollHeight;
+      this.isNearBottom = true;
+      this.hasUnseenMessages = false;
+    } else if (scroller) {
+
+      // [3] The user is reading older messages, so leave them there and say a new one arrived
+      this.hasUnseenMessages = true;
     }
   }
 
@@ -110,7 +143,29 @@ export default class AiChatMessageList extends LightningElement {
       // [2] Work out how far the user is from the bottom
       const distanceFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
       this.isNearBottom = distanceFromBottom < NEAR_BOTTOM_PX;
+
+      // [3] Reaching the bottom means the new message has been seen
+      if (this.isNearBottom) {
+        this.hasUnseenMessages = false;
+      }
     }
+  }
+
+  // Scrolls to the newest message when the user presses the Jump to latest button.
+  handleJump() {
+
+    // [1] Find the scrolling area
+    const scroller = this.scroller;
+
+    if (!scroller) return;
+
+    // [2] Scroll at once when the user asked for less motion, smoothly otherwise
+    const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    const behavior = prefersReducedMotion ? SCROLL_BEHAVIOR_INSTANT : SCROLL_BEHAVIOR_SMOOTH;
+
+    // [3] Go to the newest message
+    scroller.scrollTo({ top: scroller.scrollHeight, behavior });
+    this.hasUnseenMessages = false;
   }
 
   // Tells the parent the user wants earlier messages.
