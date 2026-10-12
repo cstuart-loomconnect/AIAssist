@@ -1,0 +1,29 @@
+<template>
+  <!-- Scroll area: holds every message and scrolls -->
+  <main class={scrollClass} aria-live="polite" aria-relevant="additions" onscroll={handleScroll}>
+    <!-- Show earlier button: shown when older messages exist -->
+    <template lwc:if={hasMore}>
+      <button type="button" class="earlier slds-shrink-none" disabled={isLoadingEarlier} onclick={handleLoadEarlier}>{labels.showEarlier}</button>
+    </template>
+
+    <!-- Messages: one per item, with a day separator above when the day changes -->
+    <template for:each={items} for:item="item">
+      <div key={item.id} class="item slds-grid slds-grid_vertical">
+        <template lwc:if={item.separatorLabel}>
+          <div class="separator slds-text-align_center">{item.separatorLabel}</div>
+        </template>
+        <c-ai-chat-message message={item}></c-ai-chat-message>
+      </div>
+    </template>
+
+    <!-- Working indicator: shown while the Agent is working -->
+    <template lwc:if={working}>
+      <c-ai-chat-working-indicator mode={working.mode} label={working.label} elapsed-label={working.elapsedLabel} steps={working.steps}></c-ai-chat-working-indicator>
+    </template>
+
+    <!-- Error card: shown when the last reply failed -->
+    <template lwc:if={errorTurn}>
+      <c-ai-chat-error-card reference={errorTurn.reference} debug-detail={errorTurn.debugDetail} is-retrying={errorTurn.isRetrying} retry-error={errorTurn.retryError} onretry={handleRetry}></c-ai-chat-error-card>
+    </template>
+  </main>
+</template>

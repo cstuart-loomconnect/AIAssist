@@ -1,0 +1,20 @@
+<template>
+  <!-- Context bar: always shown, holds the record chip on the left and the PII badge on the right -->
+  <div class="context-bar slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-vertical_x-small slds-p-horizontal_medium">
+    <!-- Record chip: the object label and record name -->
+    <div class="record-chip slds-grid slds-grid_vertical-align-center slds-m-right_x-small slds-p-vertical_xx-small slds-p-horizontal_x-small slds-text-body_small" title={recordLabel}>
+      <svg class="slds-shrink-none slds-m-right_xx-small" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E6270" stroke-width="1.8" aria-hidden="true">
+        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+        <path d="M8 8h8M8 12h8M8 16h5"></path>
+      </svg>
+      <span class="slds-truncate">{recordLabel}</span>
+    </div>
+    <!-- PII protected badge: shown when a synced PII Registry covers the object -->
+    <template lwc:if={piiProtected}>
+      <div class="pii-badge slds-grid slds-grid_vertical-align-center slds-shrink-none slds-p-vertical_xx-small slds-p-horizontal_x-small slds-text-body_small">
+        <svg class="slds-m-right_xx-small" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"></path></svg>
+        {labels.piiProtected}
+      </div>
+    </template>
+  </div>
+</template>
