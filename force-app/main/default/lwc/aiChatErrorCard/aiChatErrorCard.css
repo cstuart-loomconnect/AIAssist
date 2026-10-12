@@ -1,0 +1,102 @@
+/* Draws the Try again button: size, rounded look and bold text. SLDS buttons would change the design. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Shows a keyboard focus ring on the button. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Dims a disabled button and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Colours the button with the accent token and turns its icon white. SLDS has no utility for the token or the icon colour. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Darkens the button under the mouse, unless it is disabled. Uses a design token. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Monospace font for the reference and debug detail. SLDS has no utility for this. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Draws the card with token colours and a pointed top-left corner, and spaces its rows. SLDS has no utility for these. */
+.error-card {
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px 14px 14px 14px;
+}
+
+/* Spaces the icon from the heading text and sets the heading look. Uses a design token. */
+.error-heading {
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Sets the body text size and its muted token colour. */
+.error-body {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--aia-muted);
+}
+
+/* Spaces the button from the reference. SLDS has no gap utility. */
+.error-actions {
+  gap: 8px;
+}
+
+/* Sets the small reference text and its subtle token colour. */
+.reference {
+  font-size: 11px;
+  color: var(--aia-subtle);
+}
+
+/* Draws the debug detail as a token-coloured box that wraps long lines. SLDS has no utility for the tokens. */
+.debug-detail {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--aia-debug-bg);
+  color: var(--aia-debug-ink);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Shows the retry error in the danger token colour. */
+.retry-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--aia-danger);
+}

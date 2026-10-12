@@ -34,3 +34,10 @@ force-app/main/default/lwc/aiChatUsagePanel/*.js
 force-app/main/default/lwc/aiChatHeader/*.js
 force-app/main/default/lwc/aiChatHistory/*.js
 force-app/main/default/lwc/aiChatComposer/*.js
+force-app/main/default/lwc/aiChatContextBar/*.js
+force-app/main/default/lwc/aiChatDebugTrace/*.js
+force-app/main/default/lwc/aiChatEmptyState/*.js
+force-app/main/default/lwc/aiChatErrorCard/*.js
+force-app/main/default/lwc/aiChatFeedbackPanel/*.js
+force-app/main/default/lwc/aiChatMessage/*.js
+force-app/main/default/lwc/aiChatMessageList/*.js

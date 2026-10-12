@@ -1,0 +1,108 @@
+<template>
+  <!-- Notice: a centred system note -->
+  <template lwc:if={message.isNotice}>
+    <div class="notice slds-text-align_center" role="note">{message.noticeText}</div>
+  </template>
+
+  <!-- User message: a right-hand bubble with an optional time -->
+  <template lwc:elseif={message.isUser}>
+    <div class="user-row slds-grid slds-grid_vertical slds-grid_vertical-align-end slds-col_bump-left">
+      <!-- Bubble: a slash command shows in monospace, anything else shows as plain text -->
+      <div class={userBubbleClass}>
+        <template lwc:if={message.isCommand}>
+          <span class="aia-mono command">{message.commandName}</span><template lwc:if={message.commandRest}><span> {message.commandRest}</span></template>
+        </template>
+        <template lwc:else>{message.displayText}</template>
+      </div>
+      <!-- Time: shown when the message asks for it -->
+      <template lwc:if={message.showTimestamp}>
+        <span class="meta">{message.timeLabel}</span>
+      </template>
+    </div>
+  </template>
+
+  <!-- AI Agent message: a left-hand bubble with a toolbar and optional extras -->
+  <template lwc:else>
+    <div class="agent slds-grid slds-grid_vertical">
+      <!-- Agent header: avatar and name, shown on the first reply in a run -->
+      <template lwc:if={message.showAgentHeader}>
+        <div class="agent-header slds-grid slds-grid_vertical-align-center">
+          <div class="agent-avatar slds-grid slds-grid_align-center slds-grid_vertical-align-center" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 8h16M4 16h16M8 4v16M16 4v16"></path></svg>
+          </div>
+          <span class="agent-name">{message.agentName}</span>
+        </div>
+      </template>
+
+      <!-- Reply bubble: the answer and its sources -->
+      <div class="agent-bubble slds-grid slds-grid_vertical">
+        <lightning-formatted-rich-text class="rich" value={message.bodyHtml}></lightning-formatted-rich-text>
+        <!-- Sources: shown when the answer used any -->
+        <template lwc:if={message.hasSources}>
+          <div class="sources slds-grid slds-wrap">
+            <span class="sources-label">{labels.sources}</span>
+            <template for:each={message.sources} for:item="source">
+              <span key={source.key} class="source-chip">{source.label}</span>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- Toolbar: rate, copy, regenerate, time and token count -->
+      <div class="toolbar slds-grid slds-grid_vertical-align-center">
+        <!-- Thumbs buttons: shown when the reply can be rated -->
+        <template lwc:if={message.showFeedback}>
+          <button type="button" class={helpfulClass} aria-label={labels.helpful} title={labels.helpful} aria-pressed={helpfulPressed} onclick={handleHelpful}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={helpfulFill} fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v11H3V10h4zM7 10l4-7c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.3l-1.2 8A2 2 0 0 1 18.3 21H7"></path></svg>
+          </button>
+          <button type="button" class={notHelpfulClass} aria-label={labels.notHelpful} title={labels.notHelpful} aria-pressed={notHelpfulPressed} onclick={handleNotHelpful}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={notHelpfulFill} fill-opacity="0.15" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17 14V3h4v11h-4zM17 14l-4 7c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.3l1.2-8A2 2 0 0 1 5.7 3H17"></path>
+            </svg>
+          </button>
+        </template>
+        <!-- Copy button: always shown -->
+        <button type="button" class="aia-icon-btn aia-icon-btn_small tool" aria-label={copyLabel} title={copyLabel} onclick={handleCopy}>
+          <lightning-icon icon-name={copyIcon} size="xx-small"></lightning-icon>
+        </button>
+        <!-- Regenerate button: shown on the newest reply only -->
+        <template lwc:if={message.canRegenerate}>
+          <button type="button" class="aia-icon-btn aia-icon-btn_small tool" aria-label={labels.regenerate} title={labels.regenerate} onclick={handleRegenerate}>
+            <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
+          </button>
+        </template>
+        <!-- Time: shown when the message asks for it -->
+        <template lwc:if={message.showTimestamp}>
+          <span class="meta toolbar-time">{message.timeLabel}</span>
+        </template>
+        <div class="slds-grow"></div>
+        <!-- Token count: shown to debug users -->
+        <template lwc:if={message.tokenLabel}>
+          <span class="aia-mono meta">{message.tokenLabel}</span>
+        </template>
+      </div>
+
+      <!-- Thanks note: shown after feedback was sent -->
+      <template lwc:if={message.feedbackThanks}>
+        <div class="thanks" role="status">{labels.feedbackThanks}</div>
+      </template>
+      <!-- Feedback panel: shown after a thumbs down -->
+      <template lwc:if={message.feedbackOpen}>
+        <c-ai-chat-feedback-panel is-submitting={message.feedbackSubmitting} onsubmit={handleFeedbackSubmit} onskip={handleFeedbackSkip}></c-ai-chat-feedback-panel>
+      </template>
+
+      <!-- Suggested action: shown when the reply proposes one -->
+      <template lwc:if={message.suggestedAction}>
+        <c-ai-chat-suggested-action action={message.suggestedAction} display={message.actionsDisplay} state={message.actionState} onrun={handleRunAction} ondismiss={handleDismissAction} ondecline={handleDeclineAction}></c-ai-chat-suggested-action>
+      </template>
+
+      <!-- Debug trace: shown when open, otherwise a link to load it for debug users -->
+      <template lwc:if={message.showTrace}>
+        <c-ai-chat-debug-trace trace={message.trace} error-message={message.traceError} onclosetrace={handleCloseTrace}></c-ai-chat-debug-trace>
+      </template>
+      <template lwc:elseif={message.showTraceLink}>
+        <button type="button" class="trace-link aia-mono" onclick={handleLoadTrace}>{labels.showTrace}</button>
+      </template>
+    </div>
+  </template>
+</template>

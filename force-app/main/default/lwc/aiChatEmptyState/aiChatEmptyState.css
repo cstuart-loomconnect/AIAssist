@@ -1,0 +1,156 @@
+/* Makes the component fill the space its parent gives it. SLDS has no utility for styling :host. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* Spaces the screen's sections apart, pads the screen and lets it scroll. SLDS spacing steps do not match this design. */
+.empty {
+  gap: 20px;
+  padding: 32px 20px 16px;
+  overflow-y: auto;
+}
+
+/* Spaces the logo, greeting and working-on line. SLDS has no gap utility. */
+.intro {
+  gap: 8px;
+}
+
+/* The AI Assist mark: a rounded tile in the accent colour. SLDS has no utility for the token colour or the size. */
+.aia-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--aia-accent);
+}
+
+/* The soft version of the mark, with a tinted background. Uses a design token. */
+.aia-logo_soft {
+  background: var(--aia-accent-tint);
+}
+
+/* Makes the intro logo larger and colours its glyph. SLDS has no utility for these. */
+.intro-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--aia-accent);
+}
+
+/* The greeting's size and token colour. SLDS heading sizes do not match this design. */
+.greeting {
+  margin: 8px 0 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Spaces the record icon from its name, lets the name truncate and gives it the muted token colour. */
+.working-on {
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* Stops the record icon from shrinking when the name is long. SLDS has no utility for a child selector. */
+.working-on svg {
+  flex-shrink: 0;
+}
+
+/* Spaces the heading and the suggestion buttons. SLDS has no gap utility. */
+.suggestions {
+  gap: 8px;
+}
+
+/* 11px uppercase section label in the subtle token colour. SLDS has no utility for this look. */
+.aia-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aia-subtle);
+}
+
+/* Monospace font for the command text. SLDS has no utility for this. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Draws each suggestion as a bordered card button with token colours. A native button needs these to look like a card. */
+.suggestion {
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 1px solid var(--aia-line);
+  border-radius: 10px;
+  background: var(--aia-surface);
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--aia-ink);
+  cursor: pointer;
+}
+
+/* Highlights a suggestion under the mouse, unless it is disabled. Uses design tokens. */
+.suggestion:hover:not([disabled]) {
+  border-color: var(--aia-accent-border);
+  background: var(--aia-accent-tint);
+}
+
+/* Shows a keyboard focus ring on a suggestion. */
+.suggestion:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Dims a disabled suggestion and shows the not-allowed cursor. */
+.suggestion[disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Gives the command text a fixed width column in the accent colour. SLDS has no utility for the width or token colour. */
+.suggestion-command {
+  width: 84px;
+  font-size: 12px;
+  color: var(--aia-accent);
+}
+
+/* Draws the PII banner as a green token-coloured card. SLDS themes do not match these tokens. */
+.pii-banner {
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--aia-success-tint);
+  color: var(--aia-success-ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Stops the shield icon from shrinking and lines it up with the first text line. SLDS has no utility for a child selector. */
+.pii-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Makes the "How this works" button look like an underlined link. A native button needs its default look removed. */
+.pii-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-success-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Spaces the explanation text from the line above it. SLDS spacing steps are not 6px. */
+.pii-explanation {
+  margin: 6px 0 0;
+}

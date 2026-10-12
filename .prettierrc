@@ -59,6 +59,34 @@
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {
+      "files": "**/lwc/aiChatContextBar/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatDebugTrace/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatEmptyState/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatErrorCard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatFeedbackPanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatMessage/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatMessageList/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiAssistChat/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     }
