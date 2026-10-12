@@ -3,6 +3,9 @@
   "edition": "Developer",
   "features": ["EnableSetPasswordInApi"],
   "settings": {
+    "enhancedNotesSettings": {
+      "enableEnhancedNotes": true
+    },
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
     },
