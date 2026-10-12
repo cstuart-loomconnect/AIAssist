@@ -1,0 +1,29 @@
+<template>
+  <main class="paused slds-grid slds-grid_vertical slds-grow">
+    <!-- Intro: the heading and the explanation -->
+    <div class="intro slds-grid slds-grid_vertical">
+      <h1 class="heading slds-m-around_none">{labels.newChatsPausedHeading}</h1>
+      <p class="body slds-m-around_none">{labels.newChatsPausedBody}</p>
+    </div>
+
+    <!-- Open conversation: shown when the parent passed a conversation that is open on this record -->
+    <template lwc:if={openConversation}>
+      <div class="open slds-grid slds-grid_vertical">
+        <div class="aia-eyebrow">{labels.openOnRecord}</div>
+        <button type="button" class="open-card slds-grid slds-grid_vertical-align-center" onclick={handleContinue}>
+          <span class="open-text slds-grid slds-grid_vertical slds-grow">
+            <span class="open-title slds-truncate">{openConversation.title}</span>
+            <span class="open-meta">{metaLabel}</span>
+          </span>
+          <span class="continue">{labels.continueLabel}</span>
+        </button>
+      </div>
+    </template>
+
+    <!-- Spacer: pushes the contact line to the bottom -->
+    <div class="slds-grow"></div>
+
+    <!-- Contact line: who to ask when there is no open conversation -->
+    <div class="contact slds-text-align_center">{labels.noOpenConversation}</div>
+  </main>
+</template>

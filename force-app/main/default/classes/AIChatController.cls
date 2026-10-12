@@ -57,18 +57,21 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user may view the conversation
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user may view the conversation
             AIConversationVisibilityService.getViewableConversation(conversationId);
 
-            // [2] Read the window's settings
+            // [3] Read the window's settings
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
 
-            // [3] Return the page of earlier messages
+            // [4] Return the page of earlier messages
             return AIChatConversationService.loadMessagePage(conversationId, beforeMessageId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()), uiSettings);
 
         } catch (Exception ex) {
 
-            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [5] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getEarlierMessages');
@@ -85,11 +88,14 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user may view the conversation
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user may view the conversation
             AIConversation__c conversation = AIConversationVisibilityService.getViewableConversation(conversationId);
             AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
 
-            // [2] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it. Only a conversation with a held message asks, so the other updates do no org-wide work
+            // [3] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it. Only a conversation with a held message asks, so the other updates do no org-wide work
             Boolean isHeld = AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null && AIConversationMessageService.hasHeldMessage(conversationId);
 
             if (isHeld && AIConversationMessageService.startHeldMessage()) {
@@ -98,21 +104,30 @@ public without sharing class AIChatController {
                 isHeld = false;
             }
 
-            // [3] Report the conversation's status, whether a reply is still being worked on and whether the message is still waiting for a place
+            // [4] Report the conversation's status, whether a reply is still being worked on and whether the message is still waiting for a place
             AIChatDataStructure.ConversationUpdate conversationUpdate = new AIChatDataStructure.ConversationUpdate();
             conversationUpdate.status = conversation.Status__c;
             conversationUpdate.isHeld = isHeld;
             conversationUpdate.isProcessing = isHeld || (conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now());
 
-            // [4] Add the messages newer than the last one the window has
+            // [5] Add the messages newer than the last one the window has
             conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(userSettings), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));
 
-            // [5] Return the update
+            // [6] Say which usage limit the user has reached once the reply is finished, because that is when the tokens are added up. While it is being worked on the window keeps what it has
+            if (!conversationUpdate.isProcessing) {
+
+                AIChatDataStructure.ChatContext usageContext = new AIChatDataStructure.ChatContext();
+                setUsage(UserInfo.getUserId(), usageContext);
+                conversationUpdate.usage = usageContext.usage;
+                conversationUpdate.usageMeters = usageContext.usageMeters;
+            }
+
+            // [7] Return the update
             return conversationUpdate;
 
         } catch (Exception ex) {
 
-            // [6] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [8] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getConversationUpdate');
@@ -210,15 +225,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user owns the conversation
+            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
+            AIChatStateService.requireSendAccess();
+
+            // [2] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
 
-            // [2] Send the latest user message again
+            // [3] Send the latest user message again
             AIConversationMessageService.retryLatestUserMessage(conversationId);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'retryLatestMessage');
@@ -235,15 +253,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user owns the conversation
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
 
-            // [2] Close it, recording that the user closed it
+            // [3] Close it, recording that the user closed it
             AIConversationMessageService.closeConversation(conversationId, AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'closeConversation');
@@ -260,18 +281,21 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user may view the conversation
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user may view the conversation
             AIConversationVisibilityService.getViewableConversation(conversationId);
 
-            // [2] Read the window's settings
+            // [3] Read the window's settings
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
 
-            // [3] Return the conversation with its latest messages
+            // [4] Return the conversation with its latest messages
             return AIChatConversationService.buildConversationView(conversationId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()), uiSettings);
 
         } catch (Exception ex) {
 
-            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [5] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'openConversation');
@@ -288,15 +312,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Reopen the conversation, which the service refuses unless its agent allows resuming
+            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
+            AIChatStateService.requireSendAccess();
+
+            // [2] Reopen the conversation, which the service refuses unless its agent allows resuming
             AIChatConversationService.resumeConversation(conversationId);
 
-            // [2] Return the reopened conversation
+            // [3] Return the reopened conversation
             return openConversation(conversationId);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'resumeConversation');
@@ -313,12 +340,15 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Return the user's conversation history
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Return the user's conversation history
             return AIChatConversationService.getConversationHistory(recordId, onlyThisRecord);
 
         } catch (Exception ex) {
 
-            // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getConversationHistory');
@@ -335,12 +365,15 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Return the shared conversation history
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Return the shared conversation history
             return AIChatConversationService.getSharedConversationHistory();
 
         } catch (Exception ex) {
 
-            // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getSharedConversationHistory');
@@ -357,15 +390,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse when feedback is switched off
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Refuse when feedback is switched off
             if (!AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()).feedbackEnabled) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
-            // [2] Save the feedback
+            // [3] Save the feedback
             AIChatFeedbackService.submitFeedback(messageId, rating, reason, comment);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'submitFeedback');
@@ -382,12 +418,15 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Save the acknowledgment
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Save the acknowledgment
             AIChatTermsService.acknowledgeTerms();
 
         } catch (Exception ex) {
 
-            // [2] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'acknowledgeTerms');
@@ -404,16 +443,19 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse when inline actions are switched off
+            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
+            AIChatStateService.requireSendAccess();
+
+            // [2] Refuse when inline actions are switched off
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
             if (!uiSettings.inlineActionsEnabled) throw new AIChatControllerException(Label.AI_Error_Action_Not_Permitted);
 
-            // [2] Run the action on the reply the user owns, as confirmed
+            // [3] Run the action on the reply the user owns, as confirmed
             return AIChatActionService.runSuggestedAction(AIChatConversationService.getOwnedAgentMessage(messageId), inputsJson, true);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'runSuggestedAction');
@@ -430,22 +472,25 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse when inline actions are switched off
+            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
+            AIChatStateService.requireSendAccess();
+
+            // [2] Refuse when inline actions are switched off
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
             if (!uiSettings.inlineActionsEnabled) throw new AIChatControllerException(Label.AI_Error_Action_Not_Permitted);
 
-            // [2] Check the user owns the reply that suggested the action, and that it suggested one
+            // [3] Check the user owns the reply that suggested the action, and that it suggested one
             AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(messageId);
             if (suggestingMessage.SuggestedWorkflowAction__c == null) throw new AIChatControllerException(Label.AI_Error_Action_Not_Permitted);
 
-            // [3] Make the checks and build the flow's inputs, as confirmed
+            // [4] Make the checks and build the flow's inputs, as confirmed
             Map<String, Object> inputs = String.isBlank(inputsJson) ? new Map<String, Object>() : (Map<String, Object>) JSON.deserializeUntyped(inputsJson);
 
             return AIWorkflowActionDispatcher.prepareScreenFlow(suggestingMessage.SuggestedWorkflowAction__c, suggestingMessage.AIConversation__r.AIAgent__c, AIChatDataStructure.getIdOrNull(suggestingMessage.AIConversation__r.RelatedRecordId__c), inputs, true);
 
         } catch (Exception ex) {
 
-            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [5] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'launchScreenFlowAction');
@@ -462,15 +507,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user owns the reply that suggested the action
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user owns the reply that suggested the action
             AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(messageId);
 
-            // [2] Record how the flow ended
+            // [3] Record how the flow ended
             AIWorkflowActionDispatcher.recordScreenFlowOutcome(suggestingMessage.SuggestedWorkflowAction__c, suggestingMessage.AIConversation__r.AIAgent__c, suggestingMessage.Id, AIChatDataStructure.getIdOrNull(suggestingMessage.AIConversation__r.RelatedRecordId__c), outcome, true);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'recordScreenFlowOutcome');
@@ -487,15 +535,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user owns the reply that suggested the action
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user owns the reply that suggested the action
             AIConversationMessage__c suggestingMessage = AIChatConversationService.getOwnedAgentMessage(messageId);
 
-            // [2] Record that the action was offered and declined
+            // [3] Record that the action was offered and declined
             AIWorkflowActionDispatcher.recordDeclinedAction(suggestingMessage.SuggestedWorkflowAction__c, suggestingMessage.AIConversation__r.AIAgent__c, suggestingMessage.Id, AIChatDataStructure.getIdOrNull(suggestingMessage.AIConversation__r.RelatedRecordId__c));
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'declineSuggestedAction');
@@ -512,15 +563,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse when the user does not have debug mode
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Refuse when the user does not have debug mode
             if (!AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).debugMode) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
-            // [2] Return the trace of the reply the user owns
+            // [3] Return the trace of the reply the user owns
             return AIChatDebugService.getDebugTrace(AIChatConversationService.getOwnedAgentMessage(messageId));
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getDebugTrace');
@@ -537,15 +591,18 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Check the user owns the conversation
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
 
-            // [2] Return the failure detail, with more for a user with debug mode on
+            // [3] Return the failure detail, with more for a user with debug mode on
             return AIChatDebugService.getFailureDetail(conversationId, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).debugMode);
 
         } catch (Exception ex) {
 
-            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'getFailureDetail');
@@ -562,18 +619,21 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse when export is switched off for the user
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Refuse when export is switched off for the user
             if (!AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).exportEnabled) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
-            // [2] Check the user owns the conversation
+            // [3] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
 
-            // [3] Return the export
+            // [4] Return the export
             return AIChatConversationService.exportConversation(conversationId);
 
         } catch (Exception ex) {
 
-            // [4] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            // [5] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'exportConversation');
@@ -582,6 +642,17 @@ public without sharing class AIChatController {
             auraException.setMessage(errorText);
             throw auraException;
         }
+    }
+
+    // Fills in how much of each usage limit the user has used and the limit they have reached, from one read of the limits and the usage.
+    private static void setUsage(Id userId, AIChatDataStructure.ChatContext context) {
+
+        // [1] Read the user's limits and how much of each is used
+        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsageLimits(userId);
+        context.usageMeters = AIUsageLimitService.getUsageMeters(userId, usageLimits);
+
+        // [2] Say which limit is reached
+        context.usage = AIUsageLimitService.getLimitState(context.usageMeters, usageLimits);
     }
 
     // Everything the window needs to open, up to the first state that stops it.
@@ -613,14 +684,24 @@ public without sharing class AIChatController {
             return context;
         }
 
-        // [4] Stop when the user's settings do not allow this channel
+        // [4] Stop when the user has no active AI User Setting and no active AI Usage Policy, because they may not use AI Assist at all
+        if (userSettings == null) {
+
+            context.state = AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS;
+            return context;
+        }
+
+        // [5] Note whether the user may send: only a user with an AI Usage Policy can, and one with just an AI User Setting can read
+        context.user.canSend = AIChatStateService.getAccessLevel() == AIAssistApplicationConstants.ACCESS_LEVEL_FULL;
+
+        // [6] Stop when the user's settings do not allow this channel
         if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
 
             context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
             return context;
         }
 
-        // [5] Stop when the user must accept the terms first
+        // [7] Stop when the user must accept the terms first
         context.terms = AIChatStateService.buildTermsState(appSettings);
 
         if (context.terms.required) {
@@ -629,34 +710,37 @@ public without sharing class AIChatController {
             return context;
         }
 
-        // [6] Add the record and the agents offered for it, and pick the agent to open with
+        // [8] Add the record and the agents offered for it, and pick the agent to open with
         context.record = AIChatContextService.buildRecordContext(recordId, objectApiName);
         context.agents = AIChatContextService.getAvailableAgents(context.record.objectApiName);
         context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
 
-        // [7] Stop when no agent is offered
+        // [9] Stop when no agent is offered
         if (context.agent == null) {
 
             context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
             return context;
         }
 
-        // [8] The window is ready: add the slash commands the user can use
+        // [10] The window is ready: add the slash commands the user can use
         context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
         context.commands = AIChatCommandService.getAvailableCommands(context.agent.id, context.record);
 
-        // [9] Open the active conversation for this agent and record, if there is one
+        // [11] Open the active conversation for this agent and record, if there is one
         AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(context.agent.id, context.record.recordId);
 
         if (activeConversation != null) {
 
             context.openConversation = AIChatConversationService.buildConversationSummary(activeConversation);
 
-            // [10] Load its messages unless the agent loads them only when the user asks
+            // [12] Load its messages unless the agent loads them only when the user asks
             if (context.agent.loadTrigger != AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY) context.conversation = AIChatConversationService.buildConversationView(activeConversation.Id, context.ui.messagePageSize, context.user, context.ui);
         }
 
-        // [11] Return the context
+        // [13] Say how much of each usage limit the user has used, and which they have reached, if any, so the window can show the panel and warn them before they press Send
+        if (context.user.canSend) setUsage(context.user.userId, context);
+
+        // [14] Return the context
         return context;
     }
 }

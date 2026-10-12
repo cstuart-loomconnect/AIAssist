@@ -416,6 +416,35 @@
     >AI Assist is not available from here for your user. Use a different channel, or ask your administrator to enable this one.</value>
     </labels>
     <labels>
+        <fullName>AI_Error_No_Access</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the user has no active AI User Setting and no active AI Usage Policy.</shortDescription>
+        <value
+    >AI Assist has not been set up for your user. Ask your administrator to give you access.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_No_Policy</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the user has no AI Usage Policy, so cannot send.</shortDescription>
+        <value
+    >You can read your conversations but not send messages. Ask your administrator to assign you an AI Usage Policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_No_Policy</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the message box text when the user has no AI Usage Policy.</shortDescription>
+        <value>Sending is switched off for your user</value>
+    </labels>
+    <labels>
         <fullName>AI_Error_Concurrent_Limit</fullName>
         <categories>AI Assist,Error</categories>
         <language>en_US</language>

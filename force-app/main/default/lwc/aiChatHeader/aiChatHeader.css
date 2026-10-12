@@ -1,0 +1,411 @@
+/* The buttons in the header (New, End and the three dots): 36px high with an 8px radius and 14px padding, the same size as the buttons in the history view. These are not SLDS steps. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the header buttons, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* A header button that is switched off looks faded and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The header buttons share one soft look: a warm grey fill, a visible edge and dark text. */
+.aia-btn_neutral {
+  background: var(--aia-chip);
+  border-color: var(--aia-line-strong);
+  color: var(--aia-ink);
+}
+
+/* A neutral button gets a little darker when the mouse is over it. */
+.aia-btn_neutral:hover:not([disabled]) {
+  background: var(--aia-line);
+}
+
+/* The End button has red text and icon, so it reads as the one that cannot be undone. */
+.aia-btn_end {
+  color: var(--aia-danger);
+}
+
+/* The three dots button is a square with no text. */
+.aia-btn_square {
+  width: 36px;
+  padding: 0;
+}
+
+/* The three dots button while its menu is open: the accent tint and edge, so it is clear what the menu belongs to. */
+.aia-btn_open {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The red button that confirms ending a conversation. */
+.aia-btn_danger {
+  background: var(--aia-danger);
+  color: #ffffff;
+}
+
+/* The red button gets darker when the mouse is over it. */
+.aia-btn_danger:hover:not([disabled]) {
+  background: var(--aia-danger-ink);
+}
+
+/* The smaller size of button used inside the confirmation: 32px high. */
+.aia-btn_small {
+  height: 32px;
+  padding: 0 12px;
+}
+
+/* The drawn icon in a header button: it keeps its size and takes the button's text colour. */
+.aia-btn-icon {
+  flex: none;
+}
+
+/* Holds a button and the box that opens under it, so the box can be placed against the button. */
+.popover-wrap {
+  position: relative;
+}
+
+/* The box that opens under a button: white, with a stronger edge, 10px radius and a deeper shadow. It sits against the right edge of its button and above the chat. */
+.popover {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 6;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(28, 30, 38, 0.22);
+}
+
+/* The menu box: a fixed width, with the rows stacked. */
+.menu {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+}
+
+/* One menu row: an icon, a label and a short line under it. */
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--aia-ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* A thin line between menu rows. */
+.menu-row + .menu-row {
+  margin-top: 6px;
+  border-top: 1px solid var(--aia-line);
+  border-radius: 0 0 8px 8px;
+  padding-top: 14px;
+}
+
+/* The row the mouse or keyboard is on. */
+.menu-row:hover,
+.menu-row:focus-visible {
+  background: var(--aia-chip);
+  outline: none;
+}
+
+/* The row's icon keeps its size. */
+.menu-icon {
+  flex: none;
+}
+
+/* The label and the short line, stacked. min-width 0 lets long text wrap. */
+.menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The row's label. */
+.menu-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* The short line under the label. */
+.menu-hint {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The End confirmation box: a pale red fill with a red edge, so it reads as a warning. */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+}
+
+/* The confirmation's heading in the red text colour. */
+.confirm-heading {
+  font-size: 14px;
+  color: var(--aia-danger-ink);
+}
+
+/* The confirmation's explanation. */
+.confirm-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--aia-ink);
+}
+
+/* The confirmation's two buttons, side by side on the right. */
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* The AI Assist mark: a rounded accent tile holding the # glyph. */
+.aia-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--aia-accent);
+}
+
+/* The mark when the window is off: a grey tile. */
+.aia-logo_muted {
+  background: var(--aia-line);
+}
+
+/* The bar itself: logo, titles and buttons in a row, with a line under it. The padding is not an SLDS step. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 16px;
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The title and the agent line, stacked, taking the space between the logo and the buttons. min-width 0 lets a long name be cut short. */
+.titles {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* The title size, weight and colour. */
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--aia-ink);
+}
+
+/* The title when the window is off. */
+.title_muted {
+  color: var(--aia-muted);
+}
+
+/* The agent name when there is only one agent. */
+.agent-static {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The agent picker: the list is placed against it. */
+.agent-picker {
+  position: relative;
+  min-width: 0;
+}
+
+/* The button that opens the agent list: plain text with a small arrow. */
+.agent-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--aia-muted);
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+}
+
+/* Darker text when the mouse is over the agent button. */
+.agent-trigger:hover {
+  color: var(--aia-ink);
+}
+
+/* Keyboard focus ring for the agent button. */
+.agent-trigger:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The agent list: a rounded box under the picker. SLDS dropdowns are square, so this keeps the design's look. */
+.agent-menu {
+  display: block;
+  min-width: 220px;
+  max-width: 300px;
+  margin-top: 6px;
+  padding: 4px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(28, 30, 38, 0.14);
+}
+
+/* One agent in the list: a full-width button with a tick space and two lines of text. */
+.agent-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* The tinted background for the agent the mouse or keyboard is on. */
+.agent-option:hover,
+.agent-option:focus-visible {
+  background: var(--aia-accent-tint);
+  outline: none;
+}
+
+/* The space for the tick, so the names line up whether or not one is shown. */
+.agent-option-check {
+  width: 14px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* The agent's name and description. min-width 0 lets long text be cut short. */
+.agent-option-text {
+  min-width: 0;
+}
+
+/* The agent's name. */
+.agent-option-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The agent's description. */
+.agent-option-description {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The tick beside the agent in use, in the accent colour. */
+.accent-icon {
+  --slds-c-icon-color-foreground-default: var(--aia-accent);
+}
+
+/* The badge beside the title: a small rounded label. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The debug badge: dark, in a monospace font. */
+.badge_debug {
+  padding: 3px 8px;
+  background: var(--aia-ink);
+  color: #ffffff;
+  font-weight: 400;
+}
+
+/* The maintenance badge: the warning colours. */
+.badge_maintenance {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The off badge: grey. */
+.badge_off {
+  background: var(--aia-chip);
+  color: var(--aia-muted);
+}
+
+/* Monospace font for ids, clocks and code. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* The usage limits shown in place of the menu rows. */
+.menu-usage {
+  padding: 2px 4px 4px;
+}
+
+/* The heading of the usage view: a back arrow and the title, one button. */
+.usage-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--aia-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.usage-back:hover,
+.usage-back:focus-visible {
+  background: var(--aia-chip);
+}

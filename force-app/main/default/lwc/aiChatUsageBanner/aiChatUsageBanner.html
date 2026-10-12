@@ -1,0 +1,27 @@
+<template>
+  <template lwc:if={view}>
+    <div class={bannerClass} role="status">
+      <!-- Heading: the limit, and what it stops -->
+      <div class="text slds-grid slds-grid_vertical">
+        <span class="title slds-text-body_regular">{view.title}</span>
+        <span class="slds-text-body_small">{view.subLabel}</span>
+      </div>
+
+      <!-- Meter: how much of the limit has been used -->
+      <div class="slds-grid slds-grid_vertical meter-block">
+        <div class="slds-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={view.percent} aria-label={view.usageLabel}>
+          <span class="slds-progress-bar__value meter-value" style={meterStyle}></span>
+        </div>
+        <div class="meter-row slds-grid slds-grid_align-spread slds-text-body_regular">
+          <span>{view.usageLabel}</span>
+          <span>{view.resetLabel}</span>
+        </div>
+      </div>
+
+      <!-- Button: shown to end a conversation when too many are open -->
+      <template lwc:if={view.showHistoryButton}>
+        <button type="button" class="action slds-text-body_small" onclick={handleOpenHistory}>{labels.openHistory}</button>
+      </template>
+    </div>
+  </template>
+</template>

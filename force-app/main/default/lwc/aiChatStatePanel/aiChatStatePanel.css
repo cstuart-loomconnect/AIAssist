@@ -1,0 +1,104 @@
+/* Text buttons. SLDS has no button with this size, radius and brand colour token. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the button, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Greyed-out look while the button is switched off. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Neutral colours for the button, taken from the --aia-* design tokens. */
+.aia-btn_neutral {
+  background: var(--aia-surface);
+  border-color: var(--aia-line-strong);
+  color: var(--aia-ink);
+  font-weight: 500;
+}
+
+/* Soft background when the mouse is over an enabled button. */
+.aia-btn_neutral:hover:not([disabled]) {
+  background: var(--aia-surface-soft);
+}
+
+/* Lets the component fill the space the parent gives it. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* The panel: spacing between blocks (16px) and padding (32px 28px). Neither is an SLDS step. */
+.state-panel {
+  gap: 16px;
+  padding: 32px 28px;
+}
+
+/* The rounded square that holds the icon. SLDS has no utility for this size, radius and border colour. */
+.state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line);
+}
+
+/* Colours the lightning-icon with the muted text colour. */
+.state-lightning-icon {
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+}
+
+/* The heading size and colour. */
+.state-heading {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The body text size and colour. */
+.state-body {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--aia-muted);
+}
+
+/* Makes the action button taller and rounder than the default button. */
+.state-action {
+  margin-top: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+/* The footer strip: surface colour, a top line in the design token colour and small text. */
+.state-footer {
+  background: var(--aia-surface);
+  border-top: 1px solid var(--aia-line);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--aia-subtle);
+}

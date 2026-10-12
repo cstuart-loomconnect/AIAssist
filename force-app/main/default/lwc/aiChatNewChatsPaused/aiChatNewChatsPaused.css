@@ -1,0 +1,103 @@
+/* 11px uppercase section label. SLDS has no utility with this size and spacing. */
+.aia-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aia-subtle);
+}
+
+/* Lets the component fill the space the parent gives it. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* The screen itself: spacing between blocks (20px) and padding (32px 20px 20px). Neither is an SLDS step. */
+.paused {
+  gap: 20px;
+  padding: 32px 20px 20px;
+}
+
+/* Space between the heading and the explanation. */
+.intro {
+  gap: 8px;
+}
+
+/* The heading size and colour. */
+.heading {
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The explanation size and colour. */
+.body {
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--aia-muted);
+}
+
+/* Space between the small label and the conversation card. */
+.open {
+  gap: 8px;
+}
+
+/* The conversation card: a button with the design token border, radius and surface colour. */
+.open-card {
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--aia-line);
+  border-radius: 10px;
+  background: var(--aia-surface);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Accent border when the mouse is over the card. */
+.open-card:hover {
+  border-color: var(--aia-accent-border);
+}
+
+/* Keyboard focus ring for the card, in the accent colour. */
+.open-card:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* The title and the small line: a 2px gap between them, and min-width 0 so a long title can be cut short. */
+.open-text {
+  gap: 2px;
+  min-width: 0;
+}
+
+/* The conversation title size and colour. */
+.open-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The small line under the title. */
+.open-meta {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The "Continue" text in the accent colour. */
+.continue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aia-accent);
+}
+
+/* The contact line size and colour. */
+.contact {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--aia-subtle);
+}

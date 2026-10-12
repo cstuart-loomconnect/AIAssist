@@ -1,0 +1,338 @@
+/* Icon-only buttons in the header: a 36px square target. SLDS has no utility for this look. */
+.aia-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--aia-muted);
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+  --slds-c-icon-color-foreground: var(--aia-muted);
+}
+
+/* Faded background when the mouse is over an icon button. */
+.aia-icon-btn:hover:not([disabled]) {
+  background: var(--aia-chip);
+}
+
+/* Keyboard focus ring for the icon buttons, in the accent colour. */
+.aia-icon-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* An icon button that is switched off looks faded and shows the not-allowed cursor. */
+.aia-icon-btn[disabled] {
+  cursor: not-allowed;
+  --slds-c-icon-color-foreground-default: var(--aia-faint);
+  --slds-c-icon-color-foreground: var(--aia-faint);
+}
+
+/* Text buttons: 36px high with 8px radius and 14px padding, none of which are SLDS steps. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the text buttons, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* A text button that is switched off looks faded and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The main button: accent background and white text, with the icon colour passed to any icon inside it. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* The main button gets darker when the mouse is over it. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Pill toggles for the history filters: a 32px rounded button with a border. */
+.aia-pill {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 999px;
+  background: var(--aia-surface);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* The filter that is chosen: accent border, tinted background and bold text. */
+.aia-pill[aria-pressed="true"] {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+  font-weight: 600;
+}
+
+/* Keyboard focus ring for the filter buttons. */
+.aia-pill:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* The 11px uppercase day heading. SLDS has no utility with this size and spacing. */
+.aia-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aia-subtle);
+}
+
+/* Lets the component fill the space the parent gives it. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* The top bar: back button, title and New button in a row, with a line under it. The padding is not an SLDS step. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 12px 8px;
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The back arrow in the ink colour. */
+.back {
+  --slds-c-icon-color-foreground-default: var(--aia-ink);
+}
+
+/* The title takes the space between the back button and New, in the heading size and weight. */
+.title {
+  flex-grow: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The New button is a little narrower than the standard text button. */
+.new {
+  padding: 0 12px;
+}
+
+/* The search box and scope buttons, stacked, on the surface colour with a line under them. */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The search box: a bordered row holding the search icon and the input. */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The search box gets an accent border while the user is typing in it. */
+.search:focus-within {
+  border-color: var(--aia-accent);
+  box-shadow: 0 0 0 1px var(--aia-accent);
+}
+
+/* The search icon in the muted colour. */
+.search-icon {
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+}
+
+/* The search input fills the box and takes its look from it, so it has no border of its own. */
+.search-input {
+  flex-grow: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--aia-ink);
+}
+
+/* The scope buttons in a row. */
+.scope {
+  display: flex;
+  gap: 6px;
+}
+
+/* The scope buttons are a little smaller than the standard filter button. */
+.scope-pill {
+  height: 30px;
+  font-size: 12px;
+}
+
+/* The list of conversations: it fills the space between the filters and the footer and scrolls. */
+.list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 2px;
+  min-height: 0;
+  padding: 8px 8px 16px;
+  overflow-y: auto;
+}
+
+/* One day's conversations, stacked. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Space around the day heading. */
+.group-label {
+  padding: 10px 8px 4px;
+}
+
+/* A little more space above a day heading that follows another day. */
+.group + .group .group-label {
+  padding-top: 14px;
+}
+
+/* One conversation: a full-width button with its two lines stacked. */
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A white background when the mouse is over a conversation. */
+.conversation:hover {
+  background: var(--aia-surface);
+}
+
+/* Keyboard focus ring for a conversation, drawn inside so the list does not cut it off. */
+.conversation:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: -2px;
+}
+
+/* The conversation that is open in the chat: white with a thin edge. */
+.conversation_current {
+  background: var(--aia-surface);
+  box-shadow: inset 0 0 0 1px var(--aia-line);
+}
+
+/* One line of a conversation, with its two sides spread apart. min-width 0 lets a long title be cut short. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* The conversation's title. */
+.conversation-title {
+  flex-grow: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--aia-ink);
+}
+
+/* The title of the conversation that is open is bold. */
+.conversation-title_current {
+  font-weight: 600;
+}
+
+/* The date or time on the right, which does not shrink. */
+.date {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--aia-subtle);
+}
+
+/* The small line under the title. */
+.meta {
+  flex-grow: 1;
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The message shown when there is nothing to list, or the list could not be loaded. */
+.empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The retention note at the bottom, on the surface colour with a line above it. */
+.footer {
+  padding: 12px 16px;
+  background: var(--aia-surface);
+  border-top: 1px solid var(--aia-line);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--aia-subtle);
+}
+
+/* The status badge on a conversation: a small grey label. */
+.aia-status {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--aia-chip);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--aia-muted);
+  white-space: nowrap;
+}
+
+/* The badge of an open conversation is green. */
+.aia-status_active {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}

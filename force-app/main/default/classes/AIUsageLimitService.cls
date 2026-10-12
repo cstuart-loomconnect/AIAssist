@@ -12,6 +12,8 @@ Step 3: Refuse a new conversation when the user has started AIUsagePolicy__c.Max
 Step 4: Refuse when the user's conversations have spent AIUsagePolicy__c.MaxTokensPer24Hours__c tokens today and their behaviour blocks it
 Step 5: Refuse when the org's asynchronous queue is full, so new turns cannot crowd out the org's own queueables, batches and flows
 Step 6: Separately, say whether the cap on messages in flight (AIAssistSettings__c.MaxMessagesInFlight__c) is reached, so a message waits as Queued
+Step 7: Separately, report which usage limit the user has reached and what it stops, for the chat window to show before they press Send
+Step 8: Separately, report how much of each of the three usage limits the user has used, set or not, for the chat window's usage panel
 
 =================================================================
 =================================================================
@@ -42,18 +44,108 @@ public without sharing class AIUsageLimitService {
         if (settings.MaxMessagesPerUserPerMinute__c != null && settings.MaxMessagesPerUserPerMinute__c >= 1 && countRecentUserMessages(chatContext.userId) >= settings.MaxMessagesPerUserPerMinute__c) throw new AIUsageLimitServiceException(Label.AI_Error_Rate_Limited);
 
         // [3] Refuse a new conversation when the user has reached their concurrent limit and their behaviour blocks it
-        if (isNewConversation && usageLimits != null && usageLimits.MaxConcurrentConversations__c != null && usageLimits.UsageLimitReachedBehavior__c != AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY && countActiveConversations(chatContext.userId) >= usageLimits.MaxConcurrentConversations__c) throw new AIUsageLimitServiceException(Label.AI_Error_Concurrent_Limit);
+        if (isNewConversation && isBlockingBehaviour(usageLimits) && isConcurrentLimitReached(chatContext.userId, usageLimits)) throw new AIUsageLimitServiceException(Label.AI_Error_Concurrent_Limit);
 
         // [4] Refuse a new conversation when the user has started their daily number of conversations and their behaviour blocks it
-        if (isNewConversation && usageLimits != null && usageLimits.MaxConversationsPer24Hours__c != null && usageLimits.UsageLimitReachedBehavior__c != AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY && countUserConversationsToday(chatContext.userId) >= usageLimits.MaxConversationsPer24Hours__c) throw new AIUsageLimitServiceException(Label.AI_Error_Daily_Conversation_Limit);
+        if (isNewConversation && isBlockingBehaviour(usageLimits) && isDailyConversationLimitReached(chatContext.userId, usageLimits)) throw new AIUsageLimitServiceException(Label.AI_Error_Daily_Conversation_Limit);
 
         // [5] Refuse when the user has used their daily tokens. Block New Messages refuses every message; otherwise only a new conversation is refused
-        if (usageLimits != null && usageLimits.MaxTokensPer24Hours__c != null && usageLimits.UsageLimitReachedBehavior__c != AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY && (isNewConversation || usageLimits.UsageLimitReachedBehavior__c == AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES) && sumUserTokensToday(chatContext.userId) >= usageLimits.MaxTokensPer24Hours__c) throw new AIUsageLimitServiceException(Label.AI_Error_Daily_Usage_Limit);
+        if (isBlockingBehaviour(usageLimits) && (isNewConversation || usageLimits.UsageLimitReachedBehavior__c == AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES) && isDailyTokenLimitReached(chatContext.userId, usageLimits)) throw new AIUsageLimitServiceException(Label.AI_Error_Daily_Usage_Limit);
 
         // [6] Refuse when the shared queue is full
         Integer pendingJobLimit = maxPendingJobsForTest == null ? AIAssistApplicationConstants.MAX_PENDING_PROCESSING_JOBS : maxPendingJobsForTest;
 
         if (countQueuedMessageJobs() >= pendingJobLimit) throw new AIUsageLimitServiceException(Label.AI_Error_Service_Busy);
+    }
+
+    // How much of each usage limit the user has used today, for the usage panel. Always the three, in the order tokens, daily conversations, open conversations. A limit that is not set has no max, and the panel shows what the user has used against no limit.
+    public static List<AIChatDataStructure.UsageMeter> getUsageMeters(Id userId, AIUsagePolicy__c usageLimits) {
+
+        // [1] No user, no meters
+        List<AIChatDataStructure.UsageMeter> meters = new List<AIChatDataStructure.UsageMeter>();
+
+        if (userId == null) return meters;
+
+        // [2] Read what the user has used, and the limit for each when one is set
+        meters.add(buildMeter(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_TOKENS, sumUserTokensToday(userId), usageLimits?.MaxTokensPer24Hours__c));
+        meters.add(buildMeter(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_CONVERSATIONS, countUserConversationsToday(userId), usageLimits?.MaxConversationsPer24Hours__c));
+        meters.add(buildMeter(AIAssistApplicationConstants.USAGE_LIMIT_TYPE_OPEN, countActiveConversations(userId), usageLimits?.MaxConcurrentConversations__c));
+
+        return meters;
+    }
+
+    // The limit the user has reached and what it stops them doing, for the window to show before they press Send. Null when they have reached none. It makes the same checks as enforceUsageLimits, so what the window says is what a send is refused for.
+    public static AIChatDataStructure.UsageLimitState getLimitState(Id userId, AIUsagePolicy__c usageLimits) {
+
+        // [1] Read how much of each limit has been used, then say which is reached
+        return getLimitState(getUsageMeters(userId, usageLimits), usageLimits);
+    }
+
+    // The same, from meters already read, so the window's two answers cost one set of queries. When more than one limit is reached, the one that blocks most is reported, which is the first of tokens, daily conversations and open conversations because the meters come in that order.
+    public static AIChatDataStructure.UsageLimitState getLimitState(List<AIChatDataStructure.UsageMeter> meters, AIUsagePolicy__c usageLimits) {
+
+        // [1] Report the first limit that is used up
+        for (AIChatDataStructure.UsageMeter meter : meters) if (meter.max != null && meter.used >= meter.max) return buildLimitState(meter.limitType, meter.used, meter.max, usageLimits);
+
+        // [2] None is reached
+        return null;
+    }
+
+    // One meter: which limit, how much is used and the limit.
+    private static AIChatDataStructure.UsageMeter buildMeter(String limitType, Decimal used, Decimal max) {
+
+        // [1] Say which limit and how far the user is
+        AIChatDataStructure.UsageMeter meter = new AIChatDataStructure.UsageMeter();
+        meter.limitType = limitType;
+        meter.used = used;
+        meter.max = max;
+
+        return meter;
+    }
+
+    // What a reached limit stops, from the user's behaviour. A conversation count only ever blocks a new conversation; the token limit blocks every message only under Block New Messages.
+    private static AIChatDataStructure.UsageLimitState buildLimitState(String limitType, Decimal used, Decimal max, AIUsagePolicy__c usageLimits) {
+
+        // [1] Say which limit and how far the user is
+        AIChatDataStructure.UsageLimitState limitState = new AIChatDataStructure.UsageLimitState();
+        limitState.limitType = limitType;
+        limitState.used = used;
+        limitState.max = max;
+
+        // [2] Say what it stops
+        limitState.isNotifyOnly = !isBlockingBehaviour(usageLimits);
+        limitState.blocksNewConversations = !limitState.isNotifyOnly;
+        limitState.blocksMessages = limitType == AIAssistApplicationConstants.USAGE_LIMIT_TYPE_TOKENS && usageLimits.UsageLimitReachedBehavior__c == AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES;
+
+        return limitState;
+    }
+
+    // True unless the user's behaviour is Notify Only, or there are no limits at all.
+    private static Boolean isBlockingBehaviour(AIUsagePolicy__c usageLimits) {
+
+        // [1] Anything but Notify Only blocks
+        return usageLimits != null && usageLimits.UsageLimitReachedBehavior__c != AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY;
+    }
+
+    // True when a concurrent limit is set and the user has that many conversations open.
+    private static Boolean isConcurrentLimitReached(Id userId, AIUsagePolicy__c usageLimits) {
+
+        // [1] Count only when a limit is set
+        return usageLimits != null && usageLimits.MaxConcurrentConversations__c != null && countActiveConversations(userId) >= usageLimits.MaxConcurrentConversations__c;
+    }
+
+    // True when a daily conversations limit is set and the user has started that many today.
+    private static Boolean isDailyConversationLimitReached(Id userId, AIUsagePolicy__c usageLimits) {
+
+        // [1] Count only when a limit is set
+        return usageLimits != null && usageLimits.MaxConversationsPer24Hours__c != null && countUserConversationsToday(userId) >= usageLimits.MaxConversationsPer24Hours__c;
+    }
+
+    // True when a daily tokens limit is set and the user has used that many today.
+    private static Boolean isDailyTokenLimitReached(Id userId, AIUsagePolicy__c usageLimits) {
+
+        // [1] Count only when a limit is set
+        return usageLimits != null && usageLimits.MaxTokensPer24Hours__c != null && sumUserTokensToday(userId) >= usageLimits.MaxTokensPer24Hours__c;
     }
 
     // True when the org-wide cap on messages in flight is reached: a new message is kept Queued and started when a place is free. False when no cap is set.

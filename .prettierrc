@@ -13,6 +13,54 @@
     {
       "files": "*.{cmp,page,component}",
       "options": { "parser": "html" }
+    },
+    {
+      "files": "**/lwc/aiChatWorkingIndicator/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatTerms/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatSuggestedAction/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatStatePanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatScreenFlowModal/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatNewChatsPaused/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatUsageBanner/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatUsagePanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHeader/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHistory/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatComposer/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistChat/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
     }
   ]
 }

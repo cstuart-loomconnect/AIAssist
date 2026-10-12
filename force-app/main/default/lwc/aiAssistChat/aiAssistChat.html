@@ -1,0 +1,119 @@
+<template>
+  <div class="shell" style={shellStyle} onclick={handleShellClick}>
+    <!-- Too narrow: asks for a wider region -->
+    <template lwc:if={isTooNarrow}>
+      <c-ai-chat-state-panel variant="space" heading={labels.spaceHeading} body={labels.spaceBody}></c-ai-chat-state-panel>
+    </template>
+
+    <!-- Loading: the empty header and a spinner while Apex answers -->
+    <template lwc:elseif={isLoading}>
+      <c-ai-chat-header></c-ai-chat-header>
+      <div class="slds-is-relative slds-grow">
+        <lightning-spinner alternative-text="Loading AI Assist" size="small"></lightning-spinner>
+      </div>
+    </template>
+
+    <!-- Load error: the empty header and the reason, with a Try again button -->
+    <template lwc:elseif={loadError}>
+      <c-ai-chat-header></c-ai-chat-header>
+      <c-ai-chat-state-panel variant="error" heading={labels.loadErrorHeading} body={loadError} action-label={labels.tryAgain} onaction={handleCheckAgain}></c-ai-chat-state-panel>
+    </template>
+
+    <!-- History: the user's past conversations -->
+    <template lwc:elseif={isHistoryView}>
+      <c-ai-chat-history conversations={historyItems} is-loading={isHistoryLoading} error-message={historyError} filter={historyFilter} has-record={hasRecord} has-shared={hasSharedHistory} current-conversation-id={currentConversationId} new-disabled={isNewDisabled} onback={handleHistoryBack} onnewconversation={handleNewConversation} onfilterchange={handleHistoryFilter} onopen={handleOpenConversation}></c-ai-chat-history>
+    </template>
+
+    <!-- Chat: the header, then one body for the state the window is in -->
+    <template lwc:else>
+      <c-ai-chat-header agent-name={agentName} agent-id={agentId} agents={agents} show-agent-line={isReady} show-new={isReady} new-disabled={isNewDisabled} show-history={isReady} menu-items={headerMenuItems} badge={headerBadge} usage-meters={usageMeters} idle-timeout-minutes={agentIdleTimeoutMinutes} muted={isInactive} onagentselect={handleAgentSelect} onnewconversation={handleNewConversation} onopenhistory={handleOpenHistory} onmenuselect={handleMenuSelect}></c-ai-chat-header>
+
+      <!-- Off: AI Assist is switched off for the organisation -->
+      <template lwc:if={isInactive}>
+        <c-ai-chat-state-panel variant="inactive" heading={labels.inactiveHeading} body={labels.inactiveBody}></c-ai-chat-state-panel>
+      </template>
+
+      <!-- Maintenance: the admin is making changes -->
+      <template lwc:elseif={isMaintenance}>
+        <c-ai-chat-state-panel variant="maintenance" heading={labels.maintenanceHeading} body={labels.maintenanceBody} action-label={labels.checkAgain} footer={labels.contactAdmin} onaction={handleCheckAgain}></c-ai-chat-state-panel>
+      </template>
+
+      <!-- No access: the user has no active AI User Setting and no active AI Usage Policy -->
+      <template lwc:elseif={isNoAccess}>
+        <c-ai-chat-state-panel variant="noaccess" heading={labels.noAccessHeading} body={labels.noAccessBody} footer={labels.contactAdmin}></c-ai-chat-state-panel>
+      </template>
+
+      <!-- Channel not allowed: the admin has not enabled this part of Salesforce for the user -->
+      <template lwc:elseif={isChannelDisabled}>
+        <c-ai-chat-state-panel variant="channel" heading={labels.channelHeading} body={labels.channelBody} footer={labels.contactAdmin}></c-ai-chat-state-panel>
+      </template>
+
+      <!-- Terms: the user has to accept the usage terms first -->
+      <template lwc:elseif={isTerms}>
+        <c-ai-chat-terms policy-url={termsPolicyUrl} is-saving={isAcknowledging} error-message={termsError} onagree={handleAgreeTerms}></c-ai-chat-terms>
+      </template>
+
+      <!-- No agent: nothing is offered on this page -->
+      <template lwc:elseif={isNoAgent}>
+        <c-ai-chat-state-panel variant="noagent" heading={labels.noAgentHeading} body={labels.noAgentBody}></c-ai-chat-state-panel>
+      </template>
+
+      <!-- Ready: the conversation -->
+      <template lwc:else>
+        <!-- No policy: the user can read but not send, because no AI Usage Policy applies to them -->
+        <template lwc:if={showNoPolicyBanner}>
+          <div class="no-policy slds-grid slds-grid_vertical" role="status">
+            <span class="no-policy-heading">{labels.noPolicyHeading}</span>
+            <span class="no-policy-body">{labels.noPolicyBody}</span>
+          </div>
+        </template>
+
+        <!-- Usage limit: the user has reached a limit, shown before they press Send -->
+        <template lwc:if={showUsageBanner}>
+          <c-ai-chat-usage-banner limit-state={usageLimit} onopenhistory={handleOpenHistory}></c-ai-chat-usage-banner>
+        </template>
+
+        <!-- Context bar: the record the conversation is about -->
+        <template lwc:if={showContextBar}>
+          <c-ai-chat-context-bar object-label={record.objectLabel} record-name={record.recordName} pii-protected={record.piiProtected}></c-ai-chat-context-bar>
+        </template>
+
+        <!-- Body: new chats paused, the empty state, or the messages -->
+        <template lwc:if={showNewChatsPaused}>
+          <c-ai-chat-new-chats-paused open-conversation={openConversationSummary} oncontinue={handleOpenConversation}></c-ai-chat-new-chats-paused>
+        </template>
+        <template lwc:elseif={showEmptyState}>
+          <c-ai-chat-empty-state greeting={agentGreeting} record-name={record.recordName} object-label={record.objectLabel} object-label-plural={record.objectLabelPlural} commands={commands} pii-protected={record.piiProtected} disabled={isComposerDisabled} oncommandselect={handleCommandSelect}></c-ai-chat-empty-state>
+        </template>
+        <template lwc:else>
+          <c-ai-chat-message-list items={messageItems} has-more={hasMoreMessages} is-loading-earlier={isLoadingEarlier} working={working} error-turn={errorTurn} dimmed={isCommandMenuOpen} onloadearlier={handleLoadEarlier} onretry={handleRetry} onmessageaction={handleMessageAction}></c-ai-chat-message-list>
+        </template>
+
+        <!-- Bottom bar: read-only notice for someone else's conversation, the ended bar, or the composer -->
+        <template lwc:if={showReadOnlyBar}>
+          <footer class="ended slds-grid slds-grid_vertical">
+            <span class="ended-text">{readOnlyHeading}</span>
+            <div class="ended-actions slds-grid slds-wrap">
+              <button type="button" class="aia-btn aia-btn_neutral" onclick={handleBackToOwnChat}>{labels.backToMine}</button>
+            </div>
+          </footer>
+        </template>
+        <template lwc:elseif={showEndedBar}>
+          <footer class="ended slds-grid slds-grid_vertical">
+            <span class="ended-text">{labels.endedHeading}</span>
+            <div class="ended-actions slds-grid slds-wrap">
+              <!-- Continue: shown when the agent allows a closed conversation to be resumed -->
+              <template lwc:if={canResumeConversation}>
+                <button type="button" class="aia-btn aia-btn_brand" onclick={handleResume}>{labels.resume}</button>
+              </template>
+              <button type="button" class="aia-btn aia-btn_neutral" disabled={isStartNewDisabled} onclick={handleStartNew}>{labels.startNew}</button>
+            </div>
+          </footer>
+        </template>
+        <template lwc:elseif={showComposer}>
+          <c-ai-chat-composer commands={commands} disabled={isComposerDisabled} is-working={isWorking} placeholder={composerPlaceholder} usage-meters={usageMeters} footer-text={composerFooter} error-text={composerError} onsend={handleSend} onstop={handleStop} onmenutoggle={handleCommandMenuToggle}></c-ai-chat-composer>
+        </template>
+      </template>
+    </template>
+  </div>
+</template>

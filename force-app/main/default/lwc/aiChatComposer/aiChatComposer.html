@@ -1,0 +1,95 @@
+<template>
+  <footer class="composer">
+    <!-- Command menu: shown while the user is typing a slash command -->
+    <template lwc:if={isMenuOpen}>
+      <div class="command-menu" onmousedown={preventBlur}>
+        <div class="menu-header slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+          <span class="aia-eyebrow">{labels.commands}</span>
+          <span class="menu-hint">{labels.commandsHint}</span>
+        </div>
+
+        <!-- Matching commands: one row each, the highlighted one has the accent tint -->
+        <template lwc:if={hasMatches}>
+          <ul class="menu-list" role="listbox" id="command-list" aria-label={labels.commands}>
+            <template for:each={matchViews} for:item="command">
+              <li key={command.key} id={command.optionId} class={command.className} role="option" aria-selected={command.selected} data-index={command.index} onclick={handleCommandClick} onmouseenter={handleCommandHover}>
+                <div class="option-top slds-grid slds-grid_vertical-align-center">
+                  <span class="aia-mono option-command">{command.before}<strong>{command.match}</strong>{command.after}</span>
+                  <span class={command.scopeClass}>{command.scopeLabel}</span>
+                </div>
+                <template lwc:if={command.description}>
+                  <div class="option-description">{command.description}</div>
+                </template>
+              </li>
+            </template>
+          </ul>
+        </template>
+
+        <!-- No match: nothing fits what was typed -->
+        <template lwc:else>
+          <div class="no-match">{labels.noCommands}</div>
+        </template>
+      </div>
+    </template>
+
+    <!-- Message box: the text, then the slash button on the left and Send or Stop on the right -->
+    <div class={boxClass}>
+      <label class="slds-assistive-text" for="composer-input">{labels.messageLabel}</label>
+      <textarea
+        id="composer-input"
+        class="input"
+        rows="2"
+        maxlength={maxLength}
+        placeholder={effectivePlaceholder}
+        disabled={isInputDisabled}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={menuExpanded}
+        aria-controls="command-list"
+        aria-activedescendant={activeOptionId}
+        oninput={handleInput}
+        onkeydown={handleKeyDown}
+        onblur={handleBlur}
+      ></textarea>
+      <div class="controls slds-grid slds-grid_vertical-align-center">
+        <!-- Working: the agent is answering, so only Stop shows -->
+        <template lwc:if={isWorking}>
+          <div class="slds-grow"></div>
+          <button type="button" class="stop" aria-label={labels.stop} onclick={handleStop}><span class="stop-square" aria-hidden="true"></span>{labels.stop}</button>
+        </template>
+
+        <!-- Ready: the slash button when there are commands, and Send -->
+        <template lwc:else>
+          <template lwc:if={hasCommands}>
+            <button type="button" class={slashClass} aria-label={labels.commands} title={labels.commands} disabled={disabled} onclick={handleSlash}>/</button>
+          </template>
+          <div class="slds-grow"></div>
+          <button type="button" class={sendClass} aria-label={labels.send} title={labels.send} disabled={isSendDisabled} onclick={handleSendClick}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 19V5M5 12l7-7 7 7"></path>
+            </svg>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Error: shown under the box when the parent passes a message -->
+    <template lwc:if={errorText}>
+      <div class="composer-error" role="alert">{errorText}</div>
+    </template>
+
+    <!-- Footnote: the note on the left, and today's token usage on the right when the policy sets a limit -->
+    <div class="footnote slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+      <span>{footerText}</span>
+      <template lwc:if={hasTokenUsage}>
+        <span class={tokenClass} title={tokenTitle}>
+          <svg class="token-ring" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="token-track" cx="12" cy="12" r="9"></circle>
+            <circle class="token-value" cx="12" cy="12" r="9" stroke-dasharray={tokenDash}></circle>
+          </svg>
+          <span>{tokenLabel}</span>
+        </span>
+      </template>
+    </div>
+  </footer>
+</template>
