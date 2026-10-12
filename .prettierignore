@@ -41,3 +41,5 @@ force-app/main/default/lwc/aiChatErrorCard/*.js
 force-app/main/default/lwc/aiChatFeedbackPanel/*.js
 force-app/main/default/lwc/aiChatMessage/*.js
 force-app/main/default/lwc/aiChatMessageList/*.js
+force-app/main/default/lwc/aiChatSaveDialog/*.js
+force-app/main/default/lwc/aiChatShareDialog/*.js

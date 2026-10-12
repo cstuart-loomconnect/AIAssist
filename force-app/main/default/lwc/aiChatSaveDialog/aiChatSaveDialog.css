@@ -1,0 +1,114 @@
+/* Lets the dialog cover the whole chat window. The window is the positioned parent, and SLDS has no utility for styling :host. */
+:host {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: block;
+}
+
+/* Dims the chat behind the dialog. SLDS has no overlay utility for a panel inside a component. */
+.overlay {
+  height: 100%;
+  background: rgba(28, 30, 38, 0.45);
+}
+
+/* Draws the dialog box: white, with a strong edge, rounded corners and a deep shadow, never wider than the window. */
+.dialog {
+  width: 100%;
+  max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(28, 30, 38, 0.3);
+}
+
+/* Sets the heading size and weight with the ink token colour. */
+.heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Sets the small helper text size and muted token colour. */
+.hint {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* Keeps the text box to a sensible height and lets the user resize it up and down only. */
+.text {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Draws the error as a tinted box with the danger token colours. */
+.error {
+  padding: 8px 10px;
+  border: 1px solid var(--aia-danger);
+  border-radius: 8px;
+  background: var(--aia-danger-tint);
+  font-size: 12px;
+  color: var(--aia-danger-ink);
+}
+
+/* Spaces the two buttons apart. SLDS has no gap utility. */
+.actions {
+  gap: 8px;
+}
+
+/* Draws the Cancel and Save buttons: size, rounded look and bold text. SLDS buttons would change the design. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Shows a keyboard focus ring on the button. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Dims a disabled button and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Colours the main button with the accent token and white text. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+}
+
+/* Darkens the main button when the mouse is over it. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Draws the quieter button: surface colour with a border. */
+.aia-btn_neutral {
+  background: var(--aia-surface);
+  border-color: var(--aia-line-strong);
+  color: var(--aia-ink);
+  font-weight: 500;
+}
+
+/* Gives the quieter button a soft background when the mouse is over it. */
+.aia-btn_neutral:hover:not([disabled]) {
+  background: var(--aia-surface-soft);
+}

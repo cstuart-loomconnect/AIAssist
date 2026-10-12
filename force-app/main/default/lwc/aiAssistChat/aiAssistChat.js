@@ -11,6 +11,7 @@ Step 2: Send a message, show it at once, then poll for the reply only while one 
 Step 3: Show each message with its feedback, suggested action and debug trace, and pass the user's clicks on to Apex
 Step 4: Open the history, open, resume, end and export conversations, and start a new one
 Step 5: Keep the utility bar, the page record and the window width in step with what the user is doing
+Step 6: Save a reply to its record as a note or a task, and share the conversation, read-only, with individual users
 
 =================================================================
 =================================================================
@@ -44,8 +45,13 @@ import recordScreenFlowOutcome from "@salesforce/apex/AIChatController.recordScr
 import getDebugTrace from "@salesforce/apex/AIChatController.getDebugTrace";
 import getFailureDetail from "@salesforce/apex/AIChatController.getFailureDetail";
 import exportConversation from "@salesforce/apex/AIChatController.exportConversation";
+import saveReplyToRecord from "@salesforce/apex/AIChatController.saveReplyToRecord";
+import getConversationShares from "@salesforce/apex/AIChatController.getConversationShares";
+import searchShareableUsers from "@salesforce/apex/AIChatController.searchShareableUsers";
+import shareConversation from "@salesforce/apex/AIChatController.shareConversation";
+import unshareConversation from "@salesforce/apex/AIChatController.unshareConversation";
 
-import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, BLOCKED_STATE, USAGE_LIMIT_TYPE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
+import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, BLOCKED_STATE, USAGE_LIMIT_TYPE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, TOAST_VARIANT_SUCCESS, SHARE_MIN_SEARCH_LENGTH, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
 import { formatLabel, buildShellStyle, getPollDelay, isSavedAgentMessage, buildServerMessage, buildDraftMessage, buildNoticeMessage, buildConversationFromView, buildStartedConversation, findFreshMessages, buildHeaderMenuItems, buildWorkingView, buildMessageItems, getErrorMessage, isSameId, downloadTextFile, buildTranscriptFileName, buildLocalId, findLastIndex } from "./aiAssistChatHelper";
 
 // The AI Assist chat window. Lives in the utility bar or on a record page. Replies are found by polling AIChatController.getConversationUpdate, and only while a reply is being worked on: every 2s, 4s, 8s... up to 8s while it is processing, and up to 60s while the message is held waiting for a free place. Polling is paused while the browser tab is hidden. The call is always made imperatively, never as a @wire, because it can start a held message.
@@ -98,6 +104,21 @@ export default class AiAssistChat extends LightningElement {
   feedbackStates = {}; // messageId -> { open, submitting, thanks }
   actionStates = {}; // messageId -> { status, message }
   debugTraces = {}; // messageId -> { trace, error }
+
+  // The Save to record dialog
+  saveDialog = null; // { messageId, target, text }. When empty, the dialog is closed.
+  isSavingToRecord = false;
+  saveError;
+
+  // The Share dialog
+  isShareOpen = false;
+  shareRecipients = [];
+  shareResults = [];
+  isShareLoading = false;
+  isShareSearching = false;
+  isShareBusy = false;
+  shareError;
+  shareSequence = 0; // Counts searches, so a late answer to an older search is ignored
 
   // The page and the window around the chat
   isTooNarrow = false;
@@ -342,7 +363,25 @@ export default class AiAssistChat extends LightningElement {
     const isConversationActive = !!(this.conversation && this.conversation.isActive);
 
     // [2] Hand the work to the helper
-    return buildHeaderMenuItems(isMenuAvailable, this.user.exportEnabled, isConversationActive);
+    const canShare = !!(this.conversation && this.conversation.canShare);
+
+    return buildHeaderMenuItems(isMenuAvailable, this.user.exportEnabled, isConversationActive, canShare);
+  }
+
+  // What the dialogs show.
+  get isSaveDialogOpen() {
+
+    return !!this.saveDialog;
+  }
+
+  get saveTarget() {
+
+    return this.saveDialog ? this.saveDialog.target : null;
+  }
+
+  get saveText() {
+
+    return this.saveDialog ? this.saveDialog.text : "";
   }
 
   // What the body shows.
@@ -668,6 +707,7 @@ export default class AiAssistChat extends LightningElement {
     else if (action === MESSAGE_ACTION.DISMISS_ACTION) this.setActionState(messageId, { status: ACTION_STATUS.DISMISSED });
     else if (action === MESSAGE_ACTION.LOAD_TRACE) this.loadTrace(messageId);
     else if (action === MESSAGE_ACTION.CLOSE_TRACE) this.closeTrace(messageId);
+    else if (action === MESSAGE_ACTION.SAVE_TO_RECORD) this.openSaveDialog(messageId, event.detail.target);
   }
 
   // The user picked another agent in the header.
@@ -739,6 +779,10 @@ export default class AiAssistChat extends LightningElement {
 
         this.toastError(error);
       }
+    } else if (value === MENU.SHARE) {
+
+      // [2b] Share the conversation, read-only, with individual users
+      this.openShareDialog();
     } else if (value === MENU.EXPORT) {
 
       // [3] Export the transcript as a text file
@@ -912,6 +956,8 @@ export default class AiAssistChat extends LightningElement {
     this.debugTraces = {};
     this.errorTurn = null;
     this.composerError = null;
+    this.saveDialog = null;
+    this.isShareOpen = false;
     this.readOnlyOwner = readOnlyOwner;
 
     // [2] No conversation: show an empty window
@@ -957,7 +1003,9 @@ export default class AiAssistChat extends LightningElement {
     // [3] A new conversation was started for this message
     if (result.isNewConversation || !this.conversation) {
 
-      this.conversation = buildStartedConversation(result.conversationId, text, this.agentName);
+      const canShare = !!(this.agent && this.agent.isShareable);
+
+      this.conversation = buildStartedConversation(result.conversationId, text, this.agentName, canShare, !!this.record.recordId);
       this.context = { ...this.context, openConversation: null };
     }
 
@@ -1428,6 +1476,173 @@ export default class AiAssistChat extends LightningElement {
   }
 
   // Shows an error as a toast.
+  // Opens the Save to record dialog with the reply text, so the user can change it before it is saved.
+  openSaveDialog(messageId, target) {
+
+    // [1] Find the reply
+    const message = this.messages.find((item) => item.id === messageId);
+
+    if (!message) return;
+
+    // [2] Open the dialog with the text the user sees
+    this.saveError = null;
+    this.saveDialog = { messageId, target, text: message.displayText };
+  }
+
+  // The user confirmed the text in the Save to record dialog. Apex checks the reply is theirs and saves it as the user.
+  async handleSaveConfirm(event) {
+
+    // [1] Nothing to save without a dialog, or while a save is running
+    if (!this.saveDialog || this.isSavingToRecord) return;
+
+    this.isSavingToRecord = true;
+    this.saveError = null;
+
+    try {
+
+      // [2] Save the text the user confirmed
+      const { messageId, target } = this.saveDialog;
+      const result = await saveReplyToRecord({ messageId, target, text: event.detail.text });
+
+      // [3] Close the dialog and say it worked
+      this.saveDialog = null;
+      this.dispatchEvent(new ShowToastEvent({ title: LABELS.appName, message: (result && result.message) || LABELS.savedToRecord, variant: TOAST_VARIANT_SUCCESS }));
+    } catch (error) {
+
+      // [4] Keep the dialog open with the reason, so the text is not lost
+      this.saveError = getErrorMessage(error);
+    } finally {
+
+      this.isSavingToRecord = false;
+    }
+  }
+
+  // The user closed the Save to record dialog without saving.
+  handleSaveCancel() {
+
+    // [1] Close it
+    this.saveDialog = null;
+    this.saveError = null;
+  }
+
+  // Opens the Share dialog and loads the people the conversation is already shared with.
+  async openShareDialog() {
+
+    // [1] Open it empty, with the people loading
+    this.isShareOpen = true;
+    this.shareRecipients = [];
+    this.shareResults = [];
+    this.shareError = null;
+    this.isShareLoading = true;
+
+    try {
+
+      // [2] Load the people with access
+      this.shareRecipients = await getConversationShares({ conversationId: this.conversation.id });
+    } catch (error) {
+
+      this.shareError = getErrorMessage(error);
+    } finally {
+
+      this.isShareLoading = false;
+    }
+  }
+
+  // The user typed in the Share dialog's search box and stopped. Only the newest search's answer is kept.
+  async handleShareSearch(event) {
+
+    // [1] Start a new search, and drop the answer of any older one
+    const searchText = event.detail.text;
+    this.shareSequence += 1;
+    const sequence = this.shareSequence;
+
+    // [2] Too short to search: show no results
+    if (searchText.length < SHARE_MIN_SEARCH_LENGTH) {
+
+      this.shareResults = [];
+      this.isShareSearching = false;
+      return;
+    }
+
+    this.isShareSearching = true;
+    this.shareError = null;
+
+    try {
+
+      // [3] Search, and keep the answer only when no newer search has started
+      const results = await searchShareableUsers({ conversationId: this.conversation.id, searchText });
+
+      if (sequence === this.shareSequence) this.shareResults = results;
+    } catch (error) {
+
+      if (sequence === this.shareSequence) this.shareError = getErrorMessage(error);
+    } finally {
+
+      if (sequence === this.shareSequence) this.isShareSearching = false;
+    }
+  }
+
+  // The user chose a person to share the conversation with.
+  async handleShareUser(event) {
+
+    // [1] Nothing to do while another step is running
+    if (this.isShareBusy) return;
+
+    this.isShareBusy = true;
+    this.shareError = null;
+
+    try {
+
+      // [2] Share it, then show the person as having access and take them out of the results
+      const userId = event.detail.userId;
+      const recipient = await shareConversation({ conversationId: this.conversation.id, userId });
+
+      this.shareRecipients = [...this.shareRecipients, recipient];
+      this.shareResults = this.shareResults.filter((result) => result.userId !== userId);
+    } catch (error) {
+
+      this.shareError = getErrorMessage(error);
+    } finally {
+
+      this.isShareBusy = false;
+    }
+  }
+
+  // The user chose to remove a person's access.
+  async handleUnshareUser(event) {
+
+    // [1] Nothing to do while another step is running
+    if (this.isShareBusy) return;
+
+    this.isShareBusy = true;
+    this.shareError = null;
+
+    try {
+
+      // [2] Remove the access, then take the person out of the list
+      const userId = event.detail.userId;
+
+      await unshareConversation({ conversationId: this.conversation.id, userId });
+
+      this.shareRecipients = this.shareRecipients.filter((recipient) => recipient.userId !== userId);
+    } catch (error) {
+
+      this.shareError = getErrorMessage(error);
+    } finally {
+
+      this.isShareBusy = false;
+    }
+  }
+
+  // The user closed the Share dialog.
+  handleShareClose() {
+
+    // [1] Close it and drop any search still waiting
+    this.shareSequence += 1;
+    this.isShareOpen = false;
+    this.isShareSearching = false;
+  }
+
   toastError(error) {
 
     this.dispatchEvent(new ShowToastEvent({ title: LABELS.appName, message: getErrorMessage(error), variant: TOAST_VARIANT_ERROR }));

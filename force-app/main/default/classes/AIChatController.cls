@@ -9,7 +9,7 @@ Description: The Apex controller behind the AI Assist chat window.
 Step 1: Open the window: build the chat context, up to the first state that stops it
 Step 2: Send a message: turn a slash command into its hidden instructions and the Prompt Template it names, then hand the message to AIConversationMessageService
 Step 3: Read and change conversations: earlier messages, updates, history, open, resume, retry and close
-Step 4: Run, decline, give feedback on or debug a reply, and export a conversation, each after proving the user owns it
+Step 4: Run, decline, give feedback on, debug or save to the record a reply, export a conversation, and share one with individual users, each after proving the user owns it
 Step 5: Turn an expected refusal into its Custom Label, and log anything unexpected once and show the generic label
 
 =================================================================
@@ -637,6 +637,131 @@ public without sharing class AIChatController {
             String errorText = Label.AI_Error_Generic;
             if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
             else AIPlatformLogManager.logException(ex, 'AIChatController', 'exportConversation');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // Saves a reply, as the user confirmed it, to the record the conversation is about, as a note, a Chatter post or a task. Only the user who started the conversation may.
+    @AuraEnabled
+    public static AIChatDataStructure.SaveToRecordResult saveReplyToRecord(Id messageId, String target, String text) {
+
+        try {
+
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Save the text, which checks the user owns the reply
+            return AIChatSaveToRecordService.saveReplyToRecord(messageId, target, text);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'saveReplyToRecord');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // The users the conversation is shared with. Only the user who started it may ask.
+    @AuraEnabled
+    public static List<AIChatDataStructure.ShareRecipient> getConversationShares(Id conversationId) {
+
+        try {
+
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Return who it is shared with, which checks the user started it
+            return AIConversationShareService.getShares(conversationId);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'getConversationShares');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // Up to ten users the conversation could be shared with. Only the user who started it may ask.
+    @AuraEnabled
+    public static List<AIChatDataStructure.ShareRecipient> searchShareableUsers(Id conversationId, String searchText) {
+
+        try {
+
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Return the matching users, which checks the user started it
+            return AIConversationShareService.searchShareableUsers(conversationId, searchText);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'searchShareableUsers');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // Shares the conversation, read-only, with one user. Only the user who started it may, and only for a Global agent.
+    @AuraEnabled
+    public static AIChatDataStructure.ShareRecipient shareConversation(Id conversationId, Id userId) {
+
+        try {
+
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Share it, which checks the user started it
+            return AIConversationShareService.shareConversation(conversationId, userId);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'shareConversation');
+
+            AuraHandledException auraException = new AuraHandledException(errorText);
+            auraException.setMessage(errorText);
+            throw auraException;
+        }
+    }
+
+    // Stops sharing the conversation with one user. Only the user who started it may.
+    @AuraEnabled
+    public static void unshareConversation(Id conversationId, Id userId) {
+
+        try {
+
+            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            AIChatStateService.requireAccess();
+
+            // [2] Stop sharing it, which checks the user started it
+            AIConversationShareService.unshareConversation(conversationId, userId);
+
+        } catch (Exception ex) {
+
+            // [3] Show a package refusal as it is, which is already a Custom Label, and log anything else once so the window gets the generic label
+            String errorText = Label.AI_Error_Generic;
+            if (!ex.getTypeName().startsWith('System.')) errorText = ex.getMessage();
+            else AIPlatformLogManager.logException(ex, 'AIChatController', 'unshareConversation');
 
             AuraHandledException auraException = new AuraHandledException(errorText);
             auraException.setMessage(errorText);

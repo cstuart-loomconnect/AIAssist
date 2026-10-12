@@ -87,6 +87,14 @@
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {
+      "files": "**/lwc/aiChatSaveDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatShareDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiAssistChat/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     }

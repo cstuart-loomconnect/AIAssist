@@ -414,4 +414,24 @@ public without sharing class AIAssistApplicationConstants {
     public static final Integer CHAT_CONVERSATION_TITLE_MAX_LENGTH = 60;
     public static final Integer CHAT_MAX_AGENTS = 50;
     public static final Integer FEEDBACK_COMMENT_LENGTH = 255;
+
+    // Saving a reply to the record it is about (AIChatSaveToRecordService)
+    public static final String SAVE_TARGET_NOTE = 'NOTE';
+    public static final String SAVE_TARGET_CHATTER = 'CHATTER';
+    public static final String SAVE_TARGET_TASK = 'TASK';
+    public static final Integer SAVE_CHATTER_BODY_MAX_LENGTH = 10000;
+    public static final Integer SAVE_TASK_DESCRIPTION_MAX_LENGTH = 32000;
+    public static final Integer SAVE_NOTE_BODY_MAX_LENGTH = 100000;
+    public static final Integer SAVE_TITLE_MAX_LENGTH = 80;
+    public static final String CONTENT_LINK_SHARE_TYPE_VIEWER = 'V';
+    public static final String CONTENT_LINK_VISIBILITY_ALL_USERS = 'AllUsers';
+    public static final String FEED_ITEM_TYPE_TEXT_POST = 'TextPost';
+    public static final String TASK_STATUS_NOT_STARTED = 'Not Started';
+
+    // Sharing a conversation with individual users (AIConversationShareService)
+    public static final Integer SHARE_MAX_PER_CONVERSATION = 25;
+    public static final Integer SHARE_SEARCH_MIN_LENGTH = 2;
+    public static final Integer SHARE_SEARCH_MAX_RESULTS = 10;
+    public static final String SHARE_ACCESS_LEVEL_READ = 'Read';
+    public static final String USER_TYPE_STANDARD = 'Standard';
 }

@@ -1,5 +1,6 @@
-/* Makes the component fill the space its parent gives it. SLDS has no utility for styling :host. */
+/* Makes the component fill the space its parent gives it, and holds the Jump to latest button against its bottom edge. SLDS has no utility for styling :host. */
 :host {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -55,4 +56,46 @@
 .earlier:focus-visible {
   outline: 2px solid var(--aia-accent);
   outline-offset: 1px;
+}
+
+/* Draws the Jump to latest button as a small rounded pill floating at the bottom centre of the list. A native button needs these token colours and the shadow. */
+.jump {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 2;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 999px;
+  background: var(--aia-surface);
+  box-shadow: 0 4px 14px rgba(28, 30, 38, 0.18);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink);
+  cursor: pointer;
+  transform: translateX(-50%);
+  --slds-c-icon-color-foreground-default: var(--aia-ink);
+  --slds-c-icon-color-foreground: var(--aia-ink);
+}
+
+/* Fills the pill with the accent colour when a new reply arrived out of view. Uses a design token. */
+.jump_new {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Shades the quiet pill under the mouse. Uses a design token. */
+.jump:hover:not(.jump_new) {
+  background: var(--aia-surface-soft);
+}
+
+/* Shows a keyboard focus ring on the pill. */
+.jump:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
 }

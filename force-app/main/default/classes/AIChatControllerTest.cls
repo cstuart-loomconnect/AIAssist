@@ -31,6 +31,12 @@ Version      Author                   Description
     // testScenario11: A slash command names a template that is inactive or does not exist -> the command is refused with the label and nothing is stored.
     // testScenario12: A user with no active settings row and no policy -> the window stops with no access, a send is refused in place and history is refused with the label.
     // testScenario13: A user with a settings row but no policy -> the window opens and reads, and send, retry and resume are refused with the no policy label.
+    // testScenario14: Save a reply to the record as a note, a post and a task -> each is created and the result says so, and a bad target, a user who does not own the reply and a user with no access are refused with their labels.
+    // testScenario15: Share, list and search through the window -> the shared user lists, opens, polls and pages the conversation, and the view says it cannot be shared onward.
+    // testScenario16: The agents the window offers say whether their conversations can be shared, and an opened conversation says whether it can be shared and whether it is about a record.
+    // testScenario17: A user with no active settings row and no policy -> the five save and share endpoints are refused with the no access label.
+    // testScenario18: A user a conversation is shared with tries every owner-only call -> retry, close, resume, rate, run or decline an action, save to the record, share onward, list shares, search, export, debug and send are all refused and nothing changes.
+    // testScenario19: Share then unshare through the window -> a bystander sees nothing, and the shared user loses the conversation when it is unshared.
 
     @TestSetup static void setup() {
 
@@ -575,6 +581,349 @@ Version      Author                   Description
             Assert.areEqual(Label.AI_Error_No_Policy, retryRefusal, 'A retry should be refused with the no policy label.');
             Assert.areEqual(Label.AI_Error_No_Policy, resumeRefusal, 'Resuming should be refused with the no policy label.');
             Assert.areEqual(0, [SELECT COUNT() FROM AIConversationMessage__c], 'No message should have been saved.');
+        }
+    }
+
+    @IsTest static void testScenario14() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a conversation about an account with an AI reply, another user's conversation and a user's message
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            conversation.RelatedRecordId__c = account.Id;
+            insert conversation;
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            User other = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, other.Id, 1, false)[0];
+            theirs.RelatedRecordId__c = account.Id;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert theirs; }
+            AIConversationMessage__c theirReply = AIAssistTestDataFactory.createAIConversationMessages(theirs.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            AIChatDataStructure.SaveToRecordResult noteResult;
+            AIChatDataStructure.SaveToRecordResult postResult;
+            AIChatDataStructure.SaveToRecordResult taskResult;
+            List<String> refusals = new List<String>();
+
+            // [2] Save the reply three ways, then try the refusals
+            Test.startTest();
+                noteResult = AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_NOTE, 'A note');
+                postResult = AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_CHATTER, 'A post');
+                taskResult = AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_TASK, 'A task');
+
+                try { AIChatController.saveReplyToRecord(reply.Id, 'EMAIL', 'Text'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.saveReplyToRecord(theirReply.Id, AIAssistApplicationConstants.SAVE_TARGET_NOTE, 'Text'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_NOTE, '   '); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+            Test.stopTest();
+
+            // [3] Check what was created and each refusal
+            Assert.areEqual(Label.AI_Chat_Saved_As_Note, noteResult.message, 'The note result should carry its message.');
+            Assert.isNotNull(noteResult.recordId, 'The note should have an Id.');
+            Assert.areEqual(1, [SELECT COUNT() FROM FeedItem WHERE Id = :postResult.recordId AND ParentId = :account.Id], 'The post should be on the record.');
+            Assert.areEqual(1, [SELECT COUNT() FROM Task WHERE Id = :taskResult.recordId AND WhatId = :account.Id], 'The task should be about the record.');
+            Assert.areEqual(Label.AI_Error_Save_Target_Invalid, refusals[0], 'A bad target should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[1], 'Another user\'s reply should be not found.');
+            Assert.areEqual(Label.AI_Error_Save_Text_Empty, refusals[2], 'Blank text should be refused.');
+        }
+    }
+
+    @IsTest static void testScenario15() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global agent, the starter's conversation about an account with a user message and an AI reply, and two users
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            agent.ConversationVisibility__c = 'Global';
+            insert agent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            conversation.RelatedRecordId__c = account.Id;
+            insert conversation;
+
+            AIConversationMessage__c userMessage = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            List<User> users = AIAssistTestDataFactory.createUsers(2, false);
+            users[0].LastName = 'Zqshare Viewer';
+            users[1].LastName = 'Zqshare Bystander';
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert users; }
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new List<AIUserSettings__c>{ new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true, ConversationExportEnabled__c = true, DebugModeEnabled__c = true), new AIUserSettings__c(User__c = users[1].Id, IsActive__c = true) };
+
+            List<AIChatDataStructure.ShareRecipient> before;
+            List<AIChatDataStructure.ShareRecipient> found;
+            AIChatDataStructure.ShareRecipient shared;
+            List<AIChatDataStructure.ShareRecipient> after;
+            AIChatDataStructure.ConversationView ownerView;
+
+            // [2] Share it as the starter
+            Test.startTest();
+                before = AIChatController.getConversationShares(conversation.Id);
+                found = AIChatController.searchShareableUsers(conversation.Id, 'Zqshare');
+                shared = AIChatController.shareConversation(conversation.Id, users[0].Id);
+                after = AIChatController.getConversationShares(conversation.Id);
+                ownerView = AIChatController.openConversation(conversation.Id);
+            Test.stopTest();
+
+            List<AIChatDataStructure.ConversationSummary> viewerHistory;
+            AIChatDataStructure.ConversationView viewerView;
+            AIChatDataStructure.ConversationUpdate viewerUpdate;
+            AIChatDataStructure.MessagePage viewerEarlier;
+
+            // [3] Use it as the user it is shared with
+            System.runAs(users[0]) {
+                viewerHistory = AIChatController.getSharedConversationHistory();
+                viewerView = AIChatController.openConversation(conversation.Id);
+                viewerUpdate = AIChatController.getConversationUpdate(conversation.Id, null);
+                viewerEarlier = AIChatController.getEarlierMessages(conversation.Id, reply.Id);
+            }
+
+            // [4] Check the starter's side
+            Assert.isTrue(before.isEmpty(), 'Nothing should be shared at first.');
+            Assert.areEqual(2, found.size(), 'The search should find both eligible users.');
+            Assert.areEqual(users[0].Id, shared.userId, 'The share should name the recipient.');
+            Assert.areEqual(1, after.size(), 'The share should be listed.');
+            Assert.isTrue(ownerView.canShare, 'The starter should be able to share.');
+            Assert.isTrue(ownerView.hasRelatedRecord, 'The view should say the conversation is about a record.');
+
+            // [5] Check the shared user's side
+            Assert.areEqual(1, viewerHistory.size(), 'The shared conversation should be in Shared with me.');
+            Assert.areEqual(conversation.Id, viewerHistory[0].id, 'It should be the shared conversation.');
+            Assert.areEqual(conversation.Id, viewerView.id, 'The shared user should open it.');
+            Assert.isFalse(viewerView.canShare, 'The shared user should not share it onward.');
+            Assert.isTrue(viewerView.hasRelatedRecord, 'The shared view should say it is about a record.');
+            Assert.isFalse(viewerUpdate.messages.isEmpty(), 'The shared user should poll its messages.');
+            Assert.isNotNull(viewerEarlier, 'The shared user should page earlier messages.');
+        }
+    }
+
+    @IsTest static void testScenario16() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global agent and a Private agent, both open to all users, and a conversation about an account on the Global one
+            AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            globalAgent.ConversationVisibility__c = 'Global';
+            insert globalAgent;
+
+            AIAgent__c privateAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            privateAgent.ConversationVisibility__c = 'Private';
+            insert privateAgent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c about = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            about.RelatedRecordId__c = account.Id;
+            AIConversation__c noRecord = AIAssistTestDataFactory.createAIConversations(privateAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            insert new List<AIConversation__c>{ about, noRecord };
+
+            AIChatDataStructure.ChatContext context;
+            AIChatDataStructure.ConversationView aboutView;
+            AIChatDataStructure.ConversationView noRecordView;
+
+            // [2] Open the window and both conversations
+            Test.startTest();
+                context = AIChatController.getChatContext(null, null, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null);
+                aboutView = AIChatController.openConversation(about.Id);
+                noRecordView = AIChatController.openConversation(noRecord.Id);
+            Test.stopTest();
+
+            // [3] Check the agent options and the views
+            Map<Id, AIChatDataStructure.AgentOption> optionsById = new Map<Id, AIChatDataStructure.AgentOption>();
+            for (AIChatDataStructure.AgentOption option : context.agents) optionsById.put(option.id, option);
+
+            Assert.isTrue(optionsById.get(globalAgent.Id).isShareable, 'A Global agent should be shareable.');
+            Assert.isFalse(optionsById.get(privateAgent.Id).isShareable, 'A Private agent should not be shareable.');
+            Assert.isTrue(aboutView.canShare, 'The starter of a Global-agent conversation should be able to share it.');
+            Assert.isTrue(aboutView.hasRelatedRecord, 'A conversation about a record should say so.');
+            Assert.isFalse(noRecordView.canShare, 'A Private agent\'s conversation should not be shareable.');
+            Assert.isFalse(noRecordView.hasRelatedRecord, 'A conversation about no record should say so.');
+        }
+    }
+
+    @IsTest static void testScenario17() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a conversation with a reply, then take away the user's settings row and every policy
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            agent.ConversationVisibility__c = 'Global';
+            insert agent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            conversation.RelatedRecordId__c = account.Id;
+            insert conversation;
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            AIUserSettings__c userRow = [SELECT Id FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
+            userRow.IsActive__c = false;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+
+            List<String> refusals = new List<String>();
+
+            // [2] Call each endpoint
+            Test.startTest();
+                try { AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_NOTE, 'Text'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.getConversationShares(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.searchShareableUsers(conversation.Id, 'Assist'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.shareConversation(conversation.Id, UserInfo.getUserId()); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                try { AIChatController.unshareConversation(conversation.Id, UserInfo.getUserId()); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+            Test.stopTest();
+
+            // [3] Check each is refused with the no access label
+            Assert.areEqual(5, refusals.size(), 'Every call should be refused.');
+
+            for (String refusal : refusals) Assert.areEqual(Label.AI_Error_No_Access, refusal, 'A user with no access should get the no access label.');
+        }
+    }
+
+    @IsTest static void testScenario18() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global agent, the starter's conversation about an account with a user message and an AI reply, and two users
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            agent.ConversationVisibility__c = 'Global';
+            insert agent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            conversation.RelatedRecordId__c = account.Id;
+            insert conversation;
+
+            AIConversationMessage__c userMessage = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            List<User> users = AIAssistTestDataFactory.createUsers(2, false);
+            users[0].LastName = 'Zqshare Viewer';
+            users[1].LastName = 'Zqshare Bystander';
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert users; }
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new List<AIUserSettings__c>{ new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true, ConversationExportEnabled__c = true, DebugModeEnabled__c = true), new AIUserSettings__c(User__c = users[1].Id, IsActive__c = true) };
+
+            AIAssistUISettings__c uiSettings = AIAssistUISettings__c.getOrgDefaults();
+            uiSettings.IsInlineWorkflowActionsEnabled__c = true;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { upsert uiSettings; }
+
+            AIChatController.shareConversation(conversation.Id, users[0].Id);
+
+            List<String> refusals = new List<String>();
+            AIChatDataStructure.SendResult sendResult;
+            String statusBefore = [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id].Status__c;
+
+            // [2] Call every owner-only endpoint as the user it is shared with
+            Test.startTest();
+                System.runAs(users[0]) {
+                    try { AIChatController.retryLatestMessage(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.closeConversation(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.resumeConversation(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.submitFeedback(reply.Id, AIAssistApplicationConstants.FEEDBACK_RATING_HELPFUL, null, null); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.runSuggestedAction(reply.Id, null); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.declineSuggestedAction(reply.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.launchScreenFlowAction(reply.Id, null); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.saveReplyToRecord(reply.Id, AIAssistApplicationConstants.SAVE_TARGET_NOTE, 'Text'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.shareConversation(conversation.Id, users[1].Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.unshareConversation(conversation.Id, users[0].Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.getConversationShares(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.searchShareableUsers(conversation.Id, 'Zqshare'); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.exportConversation(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.getFailureDetail(conversation.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+                    try { AIChatController.getDebugTrace(reply.Id); } catch (AuraHandledException ex) { refusals.add(ex.getMessage()); }
+
+                    sendResult = AIChatController.sendMessage(JSON.serialize(new Map<String, Object>{ 'conversationId' => conversation.Id, 'agentId' => agent.Id, 'text' => 'Hello', 'channel' => AIAssistApplicationConstants.CHANNEL_UTILITY_BAR }));
+                }
+            Test.stopTest();
+
+            // [3] Check each call was refused with a specific label and nothing changed
+            Assert.areEqual(15, refusals.size(), 'Every owner-only call should have been refused.');
+
+            for (String refusal : refusals) Assert.areNotEqual(Label.AI_Error_Generic, refusal, 'A refusal should be a specific label, not the generic one.');
+
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[0], 'Retry should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[1], 'Close should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[2], 'Resume should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[3], 'Rating should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[4], 'Running an action should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[7], 'Saving to the record should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[8], 'Sharing onward should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[9], 'Unsharing should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[10], 'Listing shares should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[11], 'Searching should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[12], 'Export should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[13], 'Failure detail should be refused.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusals[14], 'The debug trace should be refused.');
+            Assert.areNotEqual(conversation.Id, sendResult.conversationId, 'A send from the shared user should start their own conversation, never continue the starter\'s.');
+            Assert.areEqual(0, [SELECT COUNT() FROM AIConversationMessage__c WHERE AIConversation__c = :conversation.Id AND Id NOT IN (:userMessage.Id, :reply.Id)], 'The shared user should have added no message.');
+            Assert.areEqual(statusBefore, [SELECT Status__c FROM AIConversation__c WHERE Id = :conversation.Id].Status__c, 'The shared user should not have closed it.');
+        }
+    }
+
+    @IsTest static void testScenario19() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global agent, the starter's conversation about an account with a user message and an AI reply, and two users
+            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            agent.ConversationVisibility__c = 'Global';
+            insert agent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, false)[0];
+            conversation.RelatedRecordId__c = account.Id;
+            insert conversation;
+
+            AIConversationMessage__c userMessage = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, 1, 1, true)[0];
+            AIConversationMessage__c reply = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 5, 1, true)[0];
+
+            List<User> users = AIAssistTestDataFactory.createUsers(2, false);
+            users[0].LastName = 'Zqshare Viewer';
+            users[1].LastName = 'Zqshare Bystander';
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert users; }
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new List<AIUserSettings__c>{ new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true, ConversationExportEnabled__c = true, DebugModeEnabled__c = true), new AIUserSettings__c(User__c = users[1].Id, IsActive__c = true) };
+
+            AIChatController.shareConversation(conversation.Id, users[0].Id);
+
+            List<AIChatDataStructure.ConversationSummary> bystanderHistory;
+            String bystanderRefusal;
+            List<AIChatDataStructure.ShareRecipient> afterUnshare;
+            List<AIChatDataStructure.ConversationSummary> historyAfterUnshare;
+            String openAfterUnshare;
+
+            // [2] Read as a bystander, unshare as the starter, then read as the viewer again
+            Test.startTest();
+                System.runAs(users[1]) {
+                    bystanderHistory = AIChatController.getSharedConversationHistory();
+
+                    try { AIChatController.openConversation(conversation.Id); } catch (AuraHandledException ex) { bystanderRefusal = ex.getMessage(); }
+                }
+
+                AIChatController.unshareConversation(conversation.Id, users[0].Id);
+                afterUnshare = AIChatController.getConversationShares(conversation.Id);
+
+                System.runAs(users[0]) {
+                    historyAfterUnshare = AIChatController.getSharedConversationHistory();
+
+                    try { AIChatController.openConversation(conversation.Id); } catch (AuraHandledException ex) { openAfterUnshare = ex.getMessage(); }
+                }
+            Test.stopTest();
+
+            // [3] Check a bystander and the unshared user see nothing
+            Assert.isTrue(bystanderHistory.isEmpty(), 'A user it was not shared with should list nothing.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, bystanderRefusal, 'A user it was not shared with should not open it.');
+            Assert.isTrue(afterUnshare.isEmpty(), 'The share should be gone for the starter.');
+            Assert.isTrue(historyAfterUnshare.isEmpty(), 'The unshared user should list nothing.');
+            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, openAfterUnshare, 'The unshared user should not open it.');
         }
     }
 }

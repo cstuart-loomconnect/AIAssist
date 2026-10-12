@@ -147,7 +147,11 @@ public without sharing class AIChatConversationService {
         List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
 
         // [2] Turn each conversation the user may read into a summary that names its owner
-        List<AIConversation__c> sharedConversations = AIConversationVisibilityService.getSharedConversations(AIConversationVisibilityService.getEffectiveScope(AIChatStateService.getUserSettings()), CONVERSATION_FIELDS, new Map<String, Object>{'userSender' => AIAssistApplicationConstants.SENDER_USER}, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
+        Map<String, Object> binds = new Map<String, Object>{'userSender' => AIAssistApplicationConstants.SENDER_USER};
+        List<AIConversation__c> sharedConversations = AIConversationVisibilityService.getSharedConversations(AIConversationVisibilityService.getEffectiveScope(AIChatStateService.getUserSettings()), CONVERSATION_FIELDS, binds, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
+
+        // [3] Add the conversations shared directly with the user, whatever their scope, newest first, without repeating one the scope already gave, up to the history limit
+        sharedConversations = mergeNewestFirst(sharedConversations, AIConversationVisibilityService.getDirectlySharedConversations(CONVERSATION_FIELDS, binds, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS), AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
 
         for (AIConversation__c conversation : sharedConversations) {
 
@@ -156,7 +160,7 @@ public without sharing class AIChatConversationService {
             summaries.add(summary);
         }
 
-        // [3] Return the summaries
+        // [4] Return the summaries
         return summaries;
     }
 
@@ -199,7 +203,7 @@ public without sharing class AIChatConversationService {
             'conversationId' => conversationId,
             'userSender' => userSender
         };
-        AIConversation__c conversation = (AIConversation__c) Database.queryWithBinds('SELECT ' + CONVERSATION_FIELDS + ' FROM AIConversation__c WHERE Id = :conversationId LIMIT 1', queryBinds, AccessLevel.SYSTEM_MODE)[0];
+        AIConversation__c conversation = (AIConversation__c) Database.queryWithBinds('SELECT ' + CONVERSATION_FIELDS + ', OwnerId, AIAgent__r.ConversationVisibility__c FROM AIConversation__c WHERE Id = :conversationId LIMIT 1', queryBinds, AccessLevel.SYSTEM_MODE)[0];
 
         // [2] Copy its details onto the view, titling it after its first user message because a conversation has no title field
         AIChatDataStructure.ConversationView conversationView = new AIChatDataStructure.ConversationView();
@@ -216,6 +220,8 @@ public without sharing class AIChatConversationService {
         conversationView.isActive = conversation.Status__c == AIAssistApplicationConstants.CONVERSATION_STATUS_ACTIVE;
         conversationView.canResume = conversation.Status__c == AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED && conversation.AIAgent__r != null && conversation.AIAgent__r.IsActive__c == true && conversation.AIAgent__r.AllowConversationResume__c == true;
         conversationView.isProcessing = conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now();
+        conversationView.canShare = conversation.OwnerId == UserInfo.getUserId() && conversation.AIAgent__r != null && conversation.AIAgent__r.ConversationVisibility__c == AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL;
+        conversationView.hasRelatedRecord = AIChatDataStructure.getIdOrNull(conversation.RelatedRecordId__c) != null;
 
         // [3] Add the latest page of messages
         AIChatDataStructure.MessagePage messagePage = loadMessagePage(conversationId, null, pageSize, user, ui);
@@ -441,6 +447,27 @@ public without sharing class AIChatConversationService {
 
         // [2] Return the summary
         return summary;
+    }
+
+    // Joins two lists that are each newest first into one newest first, dropping a conversation that is in both, up to maxRows.
+    private static List<AIConversation__c> mergeNewestFirst(List<AIConversation__c> first, List<AIConversation__c> second, Integer maxRows) {
+
+        // [1] Start with nothing listed
+        List<AIConversation__c> merged = new List<AIConversation__c>();
+        Set<Id> listedIds = new Set<Id>();
+        Integer firstIndex = 0;
+        Integer secondIndex = 0;
+
+        // [2] Take whichever list has the newer conversation next
+        while (merged.size() < maxRows && (firstIndex < first.size() || secondIndex < second.size())) {
+
+            Boolean takeFirst = secondIndex >= second.size() || (firstIndex < first.size() && first[firstIndex].LastModifiedDate >= second[secondIndex].LastModifiedDate);
+            AIConversation__c next = takeFirst ? first[firstIndex++] : second[secondIndex++];
+
+            if (listedIds.add(next.Id)) merged.add(next);
+        }
+
+        return merged;
     }
 
     // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation.

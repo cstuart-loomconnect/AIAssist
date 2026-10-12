@@ -65,6 +65,25 @@
         <button type="button" class="aia-icon-btn aia-icon-btn_small tool" aria-label={copyLabel} title={copyLabel} onclick={handleCopy}>
           <lightning-icon icon-name={copyIcon} size="xx-small"></lightning-icon>
         </button>
+        <!-- Save to record: shown when the conversation is about a record, and opens a menu of where to save the reply -->
+        <template lwc:if={message.canSaveToRecord}>
+          <div class="save-wrap slds-is-relative" onfocusout={handleSaveMenuFocusOut} onkeydown={handleSaveMenuKeyDown}>
+            <button type="button" class="aia-icon-btn aia-icon-btn_small tool" aria-haspopup="menu" aria-expanded={saveMenuExpanded} aria-label={labels.saveToRecord} title={labels.saveToRecord} onclick={handleToggleSaveMenu}>
+              <lightning-icon icon-name="utility:save" size="xx-small"></lightning-icon>
+            </button>
+            <!-- Save menu: Notes and Task, shown under the button while it is open -->
+            <template lwc:if={isSaveMenuOpen}>
+              <div class="save-menu" role="menu" aria-label={labels.saveToRecord} onmousedown={handleSaveMenuMouseDown}>
+                <template for:each={saveOptions} for:item="option">
+                  <button key={option.target} type="button" class="save-option slds-grid slds-grid_vertical-align-center" role="menuitem" data-target={option.target} onclick={handleSaveTarget}>
+                    <lightning-icon icon-name={option.iconName} size="xx-small" class="slds-m-right_x-small"></lightning-icon>
+                    <span>{option.label}</span>
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
         <!-- Regenerate button: shown on the newest reply only -->
         <template lwc:if={message.canRegenerate}>
           <button type="button" class="aia-icon-btn aia-icon-btn_small tool" aria-label={labels.regenerate} title={labels.regenerate} onclick={handleRegenerate}>

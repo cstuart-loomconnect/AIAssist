@@ -76,6 +76,7 @@ export const MENU_ROW_SELECTOR = ".menu-row";
 // The values of the menu items aiAssistChat passes in. Mirrors MENU in aiAssistChatSettings.
 export const MENU_VALUE_END = "end";
 export const MENU_VALUE_EXPORT = "export";
+export const MENU_VALUE_SHARE = "share";
 
 // The keys of the rows in the More menu. History is added by the header; the others come from the parent's menu items.
 export const ROW_KEY_HISTORY = "history";

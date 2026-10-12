@@ -18,7 +18,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-import { LABELS, BADGE, BADGE_CLASSES, BADGE_CLASS_DEFAULT, LOGO_STROKE, ARIA_TRUE, ARIA_FALSE, MENU_VALUE_END, MENU_VALUE_EXPORT, ROW_KEY_HISTORY, ROW_KEY_USAGE } from "./aiChatHeaderSettings";
+import { LABELS, BADGE, BADGE_CLASSES, BADGE_CLASS_DEFAULT, LOGO_STROKE, ARIA_TRUE, ARIA_FALSE, MENU_VALUE_END, MENU_VALUE_EXPORT, MENU_VALUE_SHARE, ROW_KEY_HISTORY, ROW_KEY_USAGE } from "./aiChatHeaderSettings";
 
 // Picks the colour of the logo mark: dimmed when the window is off.
 export function getLogoStroke(isMuted) {
@@ -80,7 +80,7 @@ export function hasEndItem(menuItems) {
   return hasEnd;
 }
 
-// Builds the rows of the More menu: History, Usage, then each item the parent offered except End.
+// Builds the rows of the More menu: History, Usage, then each item the parent offered (Export, Share) except End.
 export function buildMenuRows(menuItems, showHistory, showUsage) {
 
   // [1] The parent may not have set any items yet
@@ -88,17 +88,17 @@ export function buildMenuRows(menuItems, showHistory, showUsage) {
   const rows = [];
 
   // [2] History is always the first row when the history is offered
-  if (showHistory) rows.push({ key: ROW_KEY_HISTORY, value: ROW_KEY_HISTORY, label: LABELS.historyShort, hint: LABELS.historyHint, isHistory: true, isUsage: false, isExport: false });
+  if (showHistory) rows.push({ key: ROW_KEY_HISTORY, value: ROW_KEY_HISTORY, label: LABELS.historyShort, hint: LABELS.historyHint, isHistory: true, isUsage: false, isExport: false, isShare: false });
 
   // [2b] Usage follows History when the user has usage limits to see
-  if (showUsage) rows.push({ key: ROW_KEY_USAGE, value: ROW_KEY_USAGE, label: LABELS.usageShort, hint: LABELS.usageHint, isHistory: false, isUsage: true, isExport: false });
+  if (showUsage) rows.push({ key: ROW_KEY_USAGE, value: ROW_KEY_USAGE, label: LABELS.usageShort, hint: LABELS.usageHint, isHistory: false, isUsage: true, isExport: false, isShare: false });
 
   // [3] Add the other items, leaving out End, which has its own button
   itemList.forEach((item) => {
 
     if (item.value === MENU_VALUE_END) return;
 
-    rows.push({ key: item.value, value: item.value, label: item.label, hint: LABELS.exportHint, isHistory: false, isUsage: false, isExport: item.value === MENU_VALUE_EXPORT });
+    rows.push({ key: item.value, value: item.value, label: item.label, hint: item.hint || LABELS.exportHint, isHistory: false, isUsage: false, isExport: item.value === MENU_VALUE_EXPORT, isShare: item.value === MENU_VALUE_SHARE });
   });
 
   return rows;

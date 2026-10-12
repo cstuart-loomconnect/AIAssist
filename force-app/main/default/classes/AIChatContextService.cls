@@ -66,7 +66,7 @@ public without sharing class AIChatContextService {
 
         // [1] Read the active agents for this object or with no object, because agents for other objects only are left out
         String objectPattern = String.isBlank(objectApiName) ? '' : '%' + objectApiName + '%';
-        List<AIAgent__c> candidates = [SELECT Id, Name, DeveloperName__c, Description__c, GreetingMessage__c, ConversationLoadTrigger__c, AllowConversationResume__c, IdleTimeoutMinutes__c, AccessMode__c, ObjectApiNames__c FROM AIAgent__c WHERE IsActive__c = TRUE AND (ObjectApiNames__c = NULL OR ObjectApiNames__c LIKE :objectPattern) WITH SYSTEM_MODE ORDER BY Name LIMIT :AIAssistApplicationConstants.CHAT_MAX_AGENTS];
+        List<AIAgent__c> candidates = [SELECT Id, Name, DeveloperName__c, Description__c, GreetingMessage__c, ConversationLoadTrigger__c, AllowConversationResume__c, IdleTimeoutMinutes__c, ConversationVisibility__c, AccessMode__c, ObjectApiNames__c FROM AIAgent__c WHERE IsActive__c = TRUE AND (ObjectApiNames__c = NULL OR ObjectApiNames__c LIKE :objectPattern) WITH SYSTEM_MODE ORDER BY Name LIMIT :AIAssistApplicationConstants.CHAT_MAX_AGENTS];
 
         // [2] Note the agents that are for assigned users only
         Set<Id> restrictedIds = new Set<Id>();
@@ -113,6 +113,7 @@ public without sharing class AIChatContextService {
             option.loadTrigger = agent.ConversationLoadTrigger__c;
             option.allowResume = agent.AllowConversationResume__c == true;
             option.idleTimeoutMinutes = agent.IdleTimeoutMinutes__c;
+            option.isShareable = agent.ConversationVisibility__c == AIAssistApplicationConstants.AGENT_VISIBILITY_GLOBAL;
 
             options.add(option);
         }

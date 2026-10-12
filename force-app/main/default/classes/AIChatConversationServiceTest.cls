@@ -27,6 +27,8 @@ Version      Author                   Description
     // testScenario7: A closed conversation is resumed when the agent allows it, and refused otherwise, with the closed label.
     // testScenario8: Resume is refused at the user's concurrent conversation limit.
     // testScenario9: Execution steps get a Custom Label by what they did, with the data source or action name added.
+    // testScenario10: Shared history merges the scope-based rows with the directly shared ones -> no duplicates, Private agents left out, and a viewer on the narrowest scope sees only the direct ones.
+    // testScenario11: A view says whether the viewer may share it and whether it is about a record -> true only for the starter of a Global-agent conversation, and only for a valid record Id.
 
     @TestSetup static void setup() {
 
@@ -379,6 +381,133 @@ Version      Author                   Description
             Assert.areEqual(Label.AI_Step_Finalising, anyOther.label, 'Any other step type should get the finalising label.');
 
             Assert.areEqual('Custom', detail.label, 'The stored step detail should win over the label.');
+        }
+    }
+
+    @IsTest static void testScenario10() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global and a Private agent, an account and four users in a role hierarchy
+            AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            globalAgent.ConversationVisibility__c = 'Global';
+            insert globalAgent;
+
+            AIAgent__c privateAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            privateAgent.ConversationVisibility__c = 'Private';
+            insert privateAgent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            List<User> users = AIAssistTestDataFactory.createUsers(4, true);
+
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) {
+                UserRole parentRole = new UserRole(Name = 'AI Assist Test Parent');
+                insert parentRole;
+                UserRole childRole = new UserRole(Name = 'AI Assist Test Child', ParentRoleId = parentRole.Id);
+                insert childRole;
+                users[0].UserRoleId = parentRole.Id;
+                users[1].UserRoleId = childRole.Id;
+                update users;
+            }
+
+            AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            AIUserSettings__c viewerSettings = new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true, ConversationVisibilityScope__c = AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES);
+            insert new List<AIUserSettings__c>{ viewerSettings, new AIUserSettings__c(User__c = users[3].Id, IsActive__c = true) };
+
+            // [2] Create a subordinate's conversation (also shared directly), a peer's shared directly, a subordinate's on the Private agent and an unshared peer's
+            AIConversation__c subordinateAndShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[1].Id, 1, false)[0];
+            AIConversation__c subordinateOnly = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[1].Id, 1, false)[0];
+            AIConversation__c peerShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, false)[0];
+            AIConversation__c peerNotShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, false)[0];
+            AIConversation__c onPrivate = AIAssistTestDataFactory.createAIConversations(privateAgent.Id, users[2].Id, 1, false)[0];
+            List<AIConversation__c> all = new List<AIConversation__c>{ subordinateAndShared, subordinateOnly, peerShared, peerNotShared, onPrivate };
+            for (AIConversation__c conversation : all) conversation.RelatedRecordId__c = account.Id;
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert all; }
+
+            System.runAs(users[1]) { AIConversationShareService.shareConversation(subordinateAndShared.Id, users[0].Id); AIConversationShareService.shareConversation(subordinateAndShared.Id, users[3].Id); }
+            System.runAs(users[2]) { AIConversationShareService.shareConversation(peerShared.Id, users[0].Id); AIConversationShareService.shareConversation(peerShared.Id, users[3].Id); }
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert new AIConversation__Share(ParentId = onPrivate.Id, UserOrGroupId = users[0].Id, AccessLevel = 'Read', RowCause = Schema.AIConversation__Share.RowCause.DirectShare__c); }
+
+            List<AIChatDataStructure.ConversationSummary> managerHistory;
+            List<AIChatDataStructure.ConversationSummary> narrowHistory;
+
+            // [3] Read the shared history as the manager and as a viewer on the narrowest scope
+            Test.startTest();
+                System.runAs(users[0]) { managerHistory = AIChatConversationService.getSharedConversationHistory(); }
+                System.runAs(users[3]) { narrowHistory = AIChatConversationService.getSharedConversationHistory(); }
+            Test.stopTest();
+
+            // [4] Check the merge, with no duplicates and no Private agent
+            Set<Id> managerIds = new Set<Id>();
+            for (AIChatDataStructure.ConversationSummary summary : managerHistory) managerIds.add(summary.id);
+
+            Set<Id> narrowIds = new Set<Id>();
+            for (AIChatDataStructure.ConversationSummary summary : narrowHistory) narrowIds.add(summary.id);
+
+            Assert.areEqual(3, managerHistory.size(), 'A conversation in scope and shared directly should be listed once.');
+            Assert.areEqual(new Set<Id>{ subordinateAndShared.Id, subordinateOnly.Id, peerShared.Id }, managerIds, 'The manager should see the subordinate\'s two and the peer\'s shared one.');
+            Assert.areEqual(new Set<Id>{ subordinateAndShared.Id, peerShared.Id }, narrowIds, 'A viewer on the narrowest scope should see only what was shared with them.');
+            Assert.areEqual(users[1].Id, [SELECT OwnerId FROM AIConversation__c WHERE Id = :subordinateOnly.Id].OwnerId, 'The owner should be unchanged by sharing.');
+            Assert.isNotNull(managerHistory[0].ownerName, 'Each shared row should name its owner.');
+        }
+    }
+
+    @IsTest static void testScenario11() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a Global and a Private agent, an account, a user who is shared a conversation, and conversations to view
+            AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            globalAgent.ConversationVisibility__c = 'Global';
+            insert globalAgent;
+
+            AIAgent__c privateAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
+            privateAgent.ConversationVisibility__c = 'Private';
+            insert privateAgent;
+
+            Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
+            User viewer = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIAssistTestDataFactory.assignPermissionSet(new List<User>{ viewer }, AIAssistApplicationConstants.PERMISSION_SET_USER);
+            insert new AIUserSettings__c(User__c = viewer.Id, IsActive__c = true);
+
+            AIConversation__c onGlobal = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            onGlobal.RelatedRecordId__c = account.Id;
+            AIConversation__c onPrivate = AIAssistTestDataFactory.createAIConversations(privateAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            onPrivate.RelatedRecordId__c = account.Id;
+            AIConversation__c noRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            AIConversation__c badRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
+            badRecord.RelatedRecordId__c = 'not-a-record-id';
+            insert new List<AIConversation__c>{ onGlobal, onPrivate, noRecord, badRecord };
+            AIConversationShareService.shareConversation(onGlobal.Id, viewer.Id);
+
+            AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
+            AIChatDataStructure.UiSettings ui = new AIChatDataStructure.UiSettings();
+            ui.messagePageSize = 3;
+            AIChatDataStructure.ConversationView globalView;
+            AIChatDataStructure.ConversationView privateView;
+            AIChatDataStructure.ConversationView noRecordView;
+            AIChatDataStructure.ConversationView badRecordView;
+            AIChatDataStructure.ConversationView sharedView;
+
+            // [2] Build each view as the starter, and the shared one as the viewer
+            Test.startTest();
+                globalView = AIChatConversationService.buildConversationView(onGlobal.Id, 3, user, ui);
+                privateView = AIChatConversationService.buildConversationView(onPrivate.Id, 3, user, ui);
+                noRecordView = AIChatConversationService.buildConversationView(noRecord.Id, 3, user, ui);
+                badRecordView = AIChatConversationService.buildConversationView(badRecord.Id, 3, user, ui);
+                System.runAs(viewer) { sharedView = AIChatConversationService.buildConversationView(onGlobal.Id, 3, user, ui); }
+            Test.stopTest();
+
+            // [3] Check the flags
+            Assert.isTrue(globalView.canShare, 'The starter of a Global-agent conversation may share it.');
+            Assert.isTrue(globalView.hasRelatedRecord, 'A conversation about a record should say so.');
+            Assert.isFalse(privateView.canShare, 'A Private agent\'s conversation may not be shared.');
+            Assert.isTrue(privateView.hasRelatedRecord, 'A Private agent\'s conversation can still be about a record.');
+            Assert.isFalse(noRecordView.hasRelatedRecord, 'A conversation with no record should say so.');
+            Assert.isFalse(badRecordView.hasRelatedRecord, 'A value that is not a record Id should not count.');
+            Assert.isFalse(sharedView.canShare, 'A viewer it was shared with may not share it onward.');
         }
     }
 
