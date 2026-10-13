@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0176D3</headerColor>
+        <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
+    </brand>
+    <description
+  >Build and administer AI Assist: agents, data sources, workflow actions, model configuration, usage policies and PII handling, plus conversations, feedback and platform logs for oversight.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <label>AI Assist</label>
+    <navType>Standard</navType>
+    <tabs>AIAgent__c</tabs>
+    <tabs>AIDataSource__c</tabs>
+    <tabs>AIWorkflowAction__c</tabs>
+    <tabs>AIPromptTemplate__c</tabs>
+    <tabs>AIModelConfiguration__c</tabs>
+    <tabs>AIUsagePolicy__c</tabs>
+    <tabs>AIUserSettings__c</tabs>
+    <tabs>AIAgentAssignment__c</tabs>
+    <tabs>AIAgentDataSource__c</tabs>
+    <tabs>AIAgentWorkflowAction__c</tabs>
+    <tabs>AIUsagePolicyAssignment__c</tabs>
+    <tabs>AIConversation__c</tabs>
+    <tabs>AIConversationMessage__c</tabs>
+    <tabs>AIFeedback__c</tabs>
+    <tabs>AIUsage__c</tabs>
+    <tabs>AITermsAcknowledgment__c</tabs>
+    <tabs>AIPIIRegistry__c</tabs>
+    <tabs>AIPIIFieldMetadata__c</tabs>
+    <tabs>AIPIIMapping__c</tabs>
+    <tabs>AIPIIMaskingRecord__c</tabs>
+    <tabs>AIPlatformLog__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>
