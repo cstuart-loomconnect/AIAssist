@@ -67,15 +67,7 @@ public without sharing class AIUsageService {
                 if (!usageByUserId.containsKey(usage.User__c)) usageByUserId.put(usage.User__c, usage);
             }
 
-            // [3] Find the users' own settings records, to link a new usage record to
-            Map<Id, Id> settingsIdByUserId = new Map<Id, Id>();
-
-            for (AIUserSettings__c settings : [SELECT Id, User__c FROM AIUserSettings__c WHERE User__c IN :userIds WITH SYSTEM_MODE]) {
-
-                settingsIdByUserId.put(settings.User__c, settings.Id);
-            }
-
-            // [4] Work out the new totals for each user
+            // [3] Work out the new totals for each user
             List<AIUsage__c> toInsert = new List<AIUsage__c>();
             List<AIUsage__c> toUpdate = new List<AIUsage__c>();
 
@@ -84,7 +76,7 @@ public without sharing class AIUsageService {
                 UsageToAdd addition = additionsByUserId.get(userId);
                 AIUsage__c existing = usageByUserId.get(userId);
 
-                // [5] A record from an earlier day, or no record at all, starts from zero
+                // [4] A record from an earlier day, or no record at all, starts from zero
                 Boolean isToday = existing != null && existing.UsageDate__c == today;
                 Decimal tokens = isToday ? valueOrZero(existing.TokensUsed__c) : 0;
                 Decimal inputTokens = isToday ? valueOrZero(existing.InputTokens__c) : 0;
@@ -93,11 +85,10 @@ public without sharing class AIUsageService {
 
                 AIUsage__c changed = new AIUsage__c(Id = existing?.Id, UsageDate__c = today, TokensUsed__c = tokens + addition.tokens, InputTokens__c = inputTokens + addition.inputTokens, OutputTokens__c = outputTokens + addition.outputTokens, ConversationsStarted__c = conversations + addition.conversations);
 
-                // [6] Update the record the user has, or create one linked to their settings
+                // [5] Update the record the user has, or create one
                 if (existing == null) {
 
                     changed.User__c = userId;
-                    changed.AIUserSettings__c = settingsIdByUserId.get(userId);
                     toInsert.add(changed);
 
                 } else {
@@ -106,11 +97,13 @@ public without sharing class AIUsageService {
                 }
             }
 
-            // [7] Save the changes and log any that fail
+            // [6] Save the changes and log any that fail
             AIMessagingDataService.insertAndLogFailures(toInsert, 'AIUsageService', 'addUsage');
             AIMessagingDataService.updateAndLogFailures(toUpdate, 'AIUsageService', 'addUsage');
 
         } catch (Exception ex) {
+
+            // [7] Log the failure and carry on, because recording usage must never block the work
             AIPlatformLogManager.logException(ex, 'AIUsageService', 'addUsage');
         }
     }

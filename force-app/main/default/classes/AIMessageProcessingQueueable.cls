@@ -8,7 +8,7 @@ Description: The asynchronous worker that answers one message outside the user's
 
 Step 1: Attach the finalizer so retries, the next message and the lock release happen however the job ends
 Step 2: Load the triggering message, and stand down if the conversation's lock has expired
-Step 3: Load the conversation, agent, model connection, prompt template (the one the user asked for, else the default, with the others the model may switch to), bounded history (noting any Suggested Action the user ran) and tools
+Step 3: Load the conversation, agent, model connection, prompt template, bounded history and tools
 Step 4: Run the turn through the AI Agent Manager and save any held PII mappings
 Step 5: Save the provider's reference to the conversation (the Anthropic Agent API session id) on the conversation
 Step 6: Hand a retryable result to the finalizer, otherwise record the outcome
@@ -47,12 +47,14 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
     // A message's first attempt. Only Ids are stored, since queueable arguments must be serializable and an SObject would go stale by execute time.
     public AIMessageProcessingQueueable(Id triggeringMessageId, Id conversationId) {
 
+        // [1] Start at attempt 1 with no tokens spent
         this(triggeringMessageId, conversationId, 1, 0, 0);
     }
 
     // A retry, scheduled by the finalizer. The prior tokens are what earlier failed attempts already spent, so the final reply and the usage record cover the whole turn.
     public AIMessageProcessingQueueable(Id triggeringMessageId, Id conversationId, Integer attemptNumber, Decimal priorInputTokens, Decimal priorOutputTokens) {
 
+        // [1] Remember the message and conversation, and fill in the defaults
         this.triggeringMessageId = triggeringMessageId;
         this.conversationId = conversationId;
         this.attemptNumber = attemptNumber == null ? 1 : attemptNumber;
@@ -176,10 +178,10 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.workflowActions = getAssignedActions(agent.Id);
             responseRequest.attemptNumber = attemptNumber;
 
-            // [16] Show live progress as the UI settings say, store steps when the user's settings say so, and keep request and response payloads only for a user with both step capture and debug mode on
-            AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
-            Boolean shouldCaptureSteps = userSettings?.ShouldCaptureExecutionSteps__c == true;
-            responseRequest.trace = new AIExecutionStepTracker(conversationId, triggeringMessageId, AIAssistSettingsService.getUiSettings().ShouldShowExecutionTrace__c == true, shouldCaptureSteps && userSettings.DebugModeEnabled__c == true);
+            // [16] Show live progress as the UI settings say, store steps when the user's usage policy says so, and keep request and response payloads only for a user with both step capture and debug mode on
+            AIUsagePolicy__c usagePolicy = AIChatStateService.getUsagePolicy();
+            Boolean shouldCaptureSteps = usagePolicy?.ShouldCaptureExecutionSteps__c == true;
+            responseRequest.trace = new AIExecutionStepTracker(conversationId, triggeringMessageId, AIAssistSettingsService.getUiSettings().ShouldShowExecutionTrace__c == true, shouldCaptureSteps && usagePolicy.DebugModeEnabled__c == true);
             responseRequest.trace.shouldCaptureSteps = shouldCaptureSteps;
 
             // [17] Run the turn through the AI Agent Manager

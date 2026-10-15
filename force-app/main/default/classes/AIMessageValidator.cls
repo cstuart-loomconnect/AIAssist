@@ -8,11 +8,12 @@ Description: Decides whether a request to chat is allowed at all, before anythin
 
 Step 1: Check the application is switched on and not in maintenance
 Step 2: Check the message has text and is not longer than the limit
-Step 3: Check the agent exists, is active and the user may use it
-Step 4: Check the user has accepted the current usage terms
-Step 5: Check the channel exists and is one the user may chat from
-Step 6: If the chat is about a record, check the user can read it and the agent works on that kind of record
-Step 7: Return the context the checks learned, so nothing is queried twice
+Step 3: Check the user has an active AI Usage Policy
+Step 4: Check the agent exists, is active and the user may use it
+Step 5: Check the user has accepted the current usage terms
+Step 6: Check the channel exists and is one the user may chat from
+Step 7: If the chat is about a record, check the user can read it and the agent works on that kind of record
+Step 8: Return the context the checks learned, so nothing is queried twice
 
 =================================================================
 =================================================================
@@ -29,8 +30,7 @@ public without sharing class AIMessageValidator {
     public class ChatContext {
         public Id userId;
         public AIAgent__c agent;
-        public AIUserSettings__c userSettings;
-        public AIUsagePolicy__c usageLimits;
+        public AIUsagePolicy__c usagePolicy;
     }
 
     public static final String TERMS_ACCEPTED = 'ACCEPTED';
@@ -53,11 +53,8 @@ public without sharing class AIMessageValidator {
         // [2] Refuse when the application is in maintenance mode
         if (AIAssistSettingsService.getUiSettings().IsMaintenanceMode__c == true) throw new AIMessageValidatorException(Label.AI_Error_Maintenance_Mode);
 
-        // [3] Refuse a user who may not send: no AI User Setting and no AI Usage Policy, or a setting with no policy. Nothing about the request is looked at first
-        String accessLevel = AIChatStateService.getAccessLevel();
-
-        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_NONE) throw new AIMessageValidatorException(Label.AI_Error_No_Access);
-        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY) throw new AIMessageValidatorException(Label.AI_Error_No_Policy);
+        // [3] Refuse a user who has no AI Usage Policy. Nothing about the request is looked at first
+        if (!AIChatStateService.hasAccess()) throw new AIMessageValidatorException(Label.AI_Error_No_Access);
 
         // [4] Refuse a message with no text
         if (String.isBlank(messageBody)) throw new AIMessageValidatorException(Label.AI_Error_Message_Empty);
@@ -94,9 +91,8 @@ public without sharing class AIMessageValidator {
         if (termsStatus == TERMS_OUTDATED) throw new AIMessageValidatorException(Label.AI_Error_Terms_Version_Changed);
         if (termsStatus == TERMS_NONE) throw new AIMessageValidatorException(Label.AI_Error_Terms_Not_Acknowledged);
 
-        // [13] Load the user's settings and limits, which the access check above has shown exist
-        chatContext.userSettings = AIUsagePolicyService.getUserSettings(chatContext.userId);
-        chatContext.usageLimits = AIUsagePolicyService.getUsageLimits(chatContext.userId);
+        // [13] Load the user's usage policy, which the access check above has shown exists
+        chatContext.usagePolicy = AIUsagePolicyService.getUsagePolicy(chatContext.userId);
 
         if (String.isNotBlank(channel)) {
 
@@ -111,7 +107,7 @@ public without sharing class AIMessageValidator {
             if (!definedChannels.contains(channel)) throw new AIMessageValidatorException(Label.AI_Error_Channel_Not_Allowed);
 
             // [15] Refuse a channel outside the user's allow-list. No allow-list means unrestricted
-            if (chatContext.userSettings != null && String.isNotBlank(chatContext.userSettings.AllowedChannels__c) && !new Set<String>(chatContext.userSettings.AllowedChannels__c.split(AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR)).contains(channel)) {
+            if (chatContext.usagePolicy != null && String.isNotBlank(chatContext.usagePolicy.AllowedChannels__c) && !new Set<String>(chatContext.usagePolicy.AllowedChannels__c.split(AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR)).contains(channel)) {
 
                 throw new AIMessageValidatorException(Label.AI_Error_Channel_Not_Allowed);
             }

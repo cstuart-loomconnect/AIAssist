@@ -421,28 +421,9 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Chat: the user has no active AI User Setting and no active AI Usage Policy.</shortDescription>
+    >Chat: the user has no active AI Usage Policy, so may not use AI Assist.</shortDescription>
         <value
     >AI Assist has not been set up for your user. Ask your administrator to give you access.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Error_No_Policy</fullName>
-        <categories>AI Assist,Error</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: the user has no AI Usage Policy, so cannot send.</shortDescription>
-        <value
-    >You can read your conversations but not send messages. Ask your administrator to assign you an AI Usage Policy.</value>
-    </labels>
-    <labels>
-        <fullName>AI_Chat_Blocked_No_Policy</fullName>
-        <categories>AI Assist,Chat</categories>
-        <language>en_US</language>
-        <protected>false</protected>
-        <shortDescription
-    >Chat: the message box text when the user has no AI Usage Policy.</shortDescription>
-        <value>Sending is switched off for your user</value>
     </labels>
     <labels>
         <fullName>AI_Error_Concurrent_Limit</fullName>
@@ -1427,5 +1408,149 @@
     >Chat: save to record, Notes are not turned on in the org.</shortDescription>
         <value
     >Notes are not turned on in this org, so the reply cannot be saved as a note.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Access</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: user may not use the tab.</shortDescription>
+        <value>Only AI Assist administrators can change these settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Policy_Error_Limit</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a usage limit that is not a whole number above zero.</shortDescription>
+        <value
+    >{0} must be a whole number above zero. Leave it blank for no limit.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Policy_Error_Assignee</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: an assignment with no valid user or permission set.</shortDescription>
+        <value
+    >Choose a user or a permission set to assign the policy to.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Policy_Error_Permission_Set</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a permission set name that does not exist.</shortDescription>
+        <value
+    >No permission set or permission set group has that name. Use the API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Policy_Error_Duplicate</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the same assignee added twice.</shortDescription>
+        <value
+    >This policy is already assigned to that user or permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Required</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: a required field is blank.</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Whole_Number_Range</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: a number is out of range.</shortDescription>
+        <value>{0} must be a whole number from {1} to {2}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Cap_Below_Default</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: iteration cap below the default.</shortDescription>
+        <value
+    >The iteration cap must be at least the default iterations.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Status_Codes</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: status code list is not valid.</shortDescription>
+        <value
+    >{0} must be HTTP status codes from 100 to 599 separated by commas, such as 200,201.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Choice</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: value is not one of the choices.</shortDescription>
+        <value>{0} has a value that is not allowed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Field_Not_Allowed</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: field cannot be set here.</shortDescription>
+        <value>{0} cannot be set on this row.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Owner</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: no profile or user chosen.</shortDescription>
+        <value>Choose the profile or user this row is for.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Org_Row_Delete</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: organisation row cannot be deleted.</shortDescription>
+        <value>The organisation row cannot be deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Row_Not_Found</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: row no longer exists.</shortDescription>
+        <value>This row no longer exists. Reload the settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Text_Length</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: text too long.</shortDescription>
+        <value>{0} must be {1} characters or fewer.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Settings_Name</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: unknown settings name.</shortDescription>
+        <value>These settings cannot be changed here.</value>
     </labels>
 </CustomLabels>

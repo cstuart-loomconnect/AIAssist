@@ -41,8 +41,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -93,8 +91,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -119,13 +115,14 @@ Version      Author                   Description
             Boolean startedTwice;
             Integer jobs;
 
-            // [3] Try to start the waiting message as another user, at the cap, with room, and again
-            Test.startTest();
-                AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
-                settings.put('MaxMessagesInFlight__c', 5);
-                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
-                AIAssistSettingsService.cachedSettings = null;
+            // [3] Set the limit on the settings record
+            AIAssistSettings__c settings = AIAssistSettings__c.getOrgDefaults();
+            settings.put('MaxMessagesInFlight__c', 5);
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+            AIAssistSettingsService.cachedSettings = null;
 
+            // [4] Try to start the waiting message as another user, at the cap, with room, and again
+            Test.startTest();
                 System.runAs(users[1]) {
 
                     startedByAnother = AIConversationMessageService.startHeldMessage();
@@ -144,7 +141,7 @@ Version      Author                   Description
                 waiting = [SELECT IsAwaitingCapacity__c, AIConversation__r.ProcessingLockedUntil__c FROM AIConversationMessage__c WHERE Id = :waiting.Id];
             Test.stopTest();
 
-            // [4] Check it was started once, by its sender only, once a place was free
+            // [5] Check it was started once, by its sender only, once a place was free
             Assert.isFalse(startedByAnother, 'Only its sender can start it.');
             Assert.isFalse(startedAtTheCap, 'Not while the cap is still reached.');
             Assert.isTrue(startedWithRoom, 'Started once a place is free.');
@@ -163,8 +160,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -221,8 +216,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -275,8 +268,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access, an agent and a mock provider
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -362,8 +353,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with access and an agent
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];

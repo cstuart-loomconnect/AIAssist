@@ -137,24 +137,3 @@ from it so a different brand colour keeps the same relationships.
 .ended-actions {
   gap: 8px;
 }
-
-/* The amber banner under the header for a user with no AI Usage Policy: spacing, warning colours and bottom border from the design tokens. */
-.no-policy {
-  gap: 2px;
-  padding: 10px 12px;
-  background: var(--aia-warning-tint);
-  border-bottom: 1px solid var(--aia-warning-border);
-}
-
-/* The banner's first line: bold, in the dark warning colour. */
-.no-policy-heading {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--aia-warning-strong);
-}
-
-/* The banner's second line: smaller, in the darkest warning colour. */
-.no-policy-body {
-  font-size: 12px;
-  color: var(--aia-warning-ink);
-}

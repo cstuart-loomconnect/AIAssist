@@ -19,13 +19,13 @@ Version      Author                   Description
 
 public without sharing class AIAssistApplicationConstants {
 
-    // AIConversation__c.Channel__c / AIUserSettings__c.AllowedChannels__c (global value set AIChannel)
+    // AIConversation__c.Channel__c / AIUsagePolicy__c.AllowedChannels__c (global value set AIChannel)
     public static final String CHANNEL_MOBILE = 'Mobile';
     public static final String CHANNEL_UTILITY_BAR = 'Utility Bar';
     public static final String CHANNEL_RECORD_PAGE_CHAT = 'Record Page Chat';
     public static final String DELIMITER_MULTI_SELECT_SEPARATOR = ';';
 
-    // AIUserSettings__c.UsageLimitReachedBehavior__c
+    // AIUsagePolicy__c.UsageLimitReachedBehavior__c
     public static final String USAGE_LIMIT_NOTIFY_ONLY = 'Notify Only';
     public static final String USAGE_LIMIT_BLOCK_NEW_MESSAGES = 'Block New Messages';
     public static final String USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY = 'Block New Conversations Only';
@@ -78,8 +78,7 @@ public without sharing class AIAssistApplicationConstants {
     public static final String TRACKING_METHOD_TRACK = 'Track Token Usage';
     public static final String TRACKING_METHOD_PRE_REQUEST_CHECK = 'Pre-Request Usage Check';
 
-    // AIAgentAssignment__c.AssigneeType__c
-    // AIUserSettings__c / AIUsagePolicy__c.ConversationVisibilityScope__c
+    // AIUsagePolicy__c.ConversationVisibilityScope__c
     public static final String VISIBILITY_SCOPE_OWN = 'My Conversations Only';
     public static final String VISIBILITY_SCOPE_SUBORDINATES = 'My Subordinates Conversations';
     public static final String VISIBILITY_SCOPE_ALL = 'All Conversations';
@@ -90,6 +89,7 @@ public without sharing class AIAssistApplicationConstants {
     public static final String PERMISSION_VIEW_SHARED_CONVERSATIONS = 'AIAssistViewSharedConversations'; // Custom permission: honours the All Conversations scope without View All.
     public static final Integer MAX_ROLE_HIERARCHY_DEPTH = 20; // Levels of the role hierarchy walked to find a viewer's subordinates.
 
+    // AIAgentAssignment__c.AssigneeType__c
     public static final String ASSIGNEE_TYPE_USER = 'User';
     public static final String ASSIGNEE_TYPE_PERMISSION_SET = 'Permission Set';
 
@@ -127,9 +127,10 @@ public without sharing class AIAssistApplicationConstants {
     public static final String FAILURE_REASON_MODEL_RETIRED = 'Model Retired';
     public static final String FAILURE_REASON_RATE_LIMITED = 'Rate Limited';
     public static final String FAILURE_REASON_SERVICE_BUSY = 'Service Busy'; // Held at the cap on messages in flight for too long, and never started.
+    public static final String FAILURE_REASON_MESSAGE_MISSING = 'Message Missing'; // Never stored: only selects the label shown when the message being answered was deleted.
+
     // HTTP statuses that will fail the same way however often they are sent again. Never retried, whatever AIAssistSettings__c.RetryableStatusCodes__c says.
     public static final Set<Integer> NEVER_RETRIED_STATUS_CODES = new Set<Integer>{400, 401, 403, 404, 410, 413, 422};
-    public static final String FAILURE_REASON_MESSAGE_MISSING = 'Message Missing'; // Never stored: only selects the label shown when the message being answered was deleted.
 
     // The stepType of an entry in AIConversationMessage__c.ExecutionTraceJson__c
     public static final String STEP_TYPE_PROMPT_ASSEMBLY = 'Prompt Assembly';
@@ -262,8 +263,6 @@ public without sharing class AIAssistApplicationConstants {
     public static final String OPENAI_FIELD_TOOL_CHOICE = 'tool_choice';
     public static final String OPENAI_TOOL_CHOICE_NONE = 'none';
 
-    // AIAgentManager - used when AIAssistSettings__c.DefaultMaxToolCallingIterations__c / MaxToolCallingIterationsCap__c / MaxToolCallsPerIteration__c are blank or below 1.
-
     // AIAgentManager - tool results sent back to the model when a tool call isn't run. Worded for the model, so it answers with what it already has rather than asking again.
     public static final String TOOL_RESULT_SKIPPED_TOO_MANY_CALLS = 'Not run: too many tool calls in one step. Ask for fewer tools at once, or answer with the information you already have.';
     public static final String TOOL_RESULT_FAILED = 'This tool failed to run. Answer with the information you already have, or tell the user the information is unavailable.';
@@ -356,9 +355,9 @@ public without sharing class AIAssistApplicationConstants {
     public static final String OPENAI_FIELD_ERROR_MESSAGE = 'message';
     public static final String OPENAI_FIELD_ERROR_TYPE = 'type';
     public static final String OPENAI_ROLE_TOOL = 'tool';
+
     // AIAssistUISettings__c.SuggestedActionsDisplay__c (Text - Custom Settings have no picklists)
     public static final String SUGGESTED_ACTIONS_DISPLAY_CARDS = 'Cards';
-    // AIAssistUISettings__c.SuggestedActionsDisplay__c (Text - Custom Settings have no picklists)
     public static final String SUGGESTED_ACTIONS_DISPLAY_INLINE_BUTTONS = 'Inline Buttons';
 
     // Housekeeping jobs and the PII registry sync.
@@ -372,8 +371,6 @@ public without sharing class AIAssistApplicationConstants {
     public static final Integer HOUSEKEEPING_BATCH_SIZE = 200;
     public static final Integer HELD_MESSAGE_TIMEOUT_MINUTES = 5; // How long a message waits for a place under the cap on messages in flight before it is failed.
     public static final Integer HELD_MESSAGE_SWEEP_SIZE = 20; // How many are failed in one go: each tells its chat window.
-
-    // Violations.
 
     // The chat window.
     public static final String PERMISSION_SET_USER = 'AIAssistUser';
@@ -397,15 +394,15 @@ public without sharing class AIAssistApplicationConstants {
     public static final String CHAT_STATE_NO_AGENT = 'NO_AGENT';
     public static final String CHAT_STATE_TERMS = 'TERMS';
     public static final String CHAT_STATE_NO_ACCESS = 'NO_ACCESS';
+
     // ChatContext.blockedState: why the user cannot send a message right now. Null when they can.
     public static final String CHAT_BLOCKED_INACTIVE = 'INACTIVE';
     public static final String CHAT_BLOCKED_NOT_ASSIGNED = 'NOT_ASSIGNED';
     public static final String CHAT_BLOCKED_TERMS = 'TERMS';
     public static final String CHAT_BLOCKED_NO_ACCESS = 'NO_ACCESS';
-    public static final String CHAT_BLOCKED_NO_POLICY = 'NO_POLICY';
-    // What a user may do with AI Assist: a usage policy gives full use, an AI User Setting alone gives read only, neither gives none.
+
+    // What a user may do with AI Assist: a usage policy gives full use, without one they have none.
     public static final String ACCESS_LEVEL_FULL = 'FULL';
-    public static final String ACCESS_LEVEL_READ_ONLY = 'READ_ONLY';
     public static final String ACCESS_LEVEL_NONE = 'NONE';
     public static final String CHAT_SEND_STATUS_SENT = 'SENT';
     public static final String CHAT_SEND_STATUS_ERROR = 'ERROR';
@@ -434,4 +431,23 @@ public without sharing class AIAssistApplicationConstants {
     public static final Integer SHARE_SEARCH_MAX_RESULTS = 10;
     public static final String SHARE_ACCESS_LEVEL_READ = 'Read';
     public static final String USER_TYPE_STANDARD = 'Standard';
+
+    // AIAssistSettingsService - used when a required number on AIAssistSettings__c has been cleared, so a blank cannot stop a reply.
+    public static final Decimal SETTINGS_DEFAULT_PROCESSING_LOCK_SECONDS = 600;
+    public static final Decimal SETTINGS_DEFAULT_CALLOUT_TIMEOUT_MILLISECONDS = 30000;
+    public static final Decimal SETTINGS_DEFAULT_RETRY_ATTEMPTS = 2;
+    public static final Decimal SETTINGS_DEFAULT_MAX_TOOL_CALLING_ITERATIONS = 5;
+    public static final Decimal SETTINGS_DEFAULT_TOOL_CALLING_ITERATIONS_CAP = 20;
+    public static final Decimal SETTINGS_DEFAULT_MAX_TOOL_CALLS_PER_ITERATION = 5;
+
+    // AIAssistSettingsEditorService - the Settings tab. The scope names are what the tab sends.
+    public static final String PERMISSION_MANAGE_SETTINGS = 'AIAssistManageSettings'; // Custom permission: lets a user use the Settings tab.
+    public static final String SETTINGS_SCOPE_ORGANISATION = 'Organisation';
+    public static final String SETTINGS_SCOPE_PROFILE = 'Profile';
+    public static final String SETTINGS_SCOPE_USER = 'User';
+    public static final String SETTINGS_NAME_ASSIST = 'AIAssistSettings__c';
+    public static final String SETTINGS_NAME_UI = 'AIAssistUISettings__c';
+    public static final Integer SETTINGS_OWNER_SEARCH_MIN_LENGTH = 2;
+    public static final Integer SETTINGS_OWNER_SEARCH_MAX_RESULTS = 25;
+    public static final Integer SETTINGS_POLICY_LIST_MAX_RESULTS = 200;
 }

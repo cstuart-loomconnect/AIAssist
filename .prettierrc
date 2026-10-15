@@ -15,6 +15,30 @@
       "options": { "parser": "html" }
     },
     {
+      "files": "**/lwc/aiAssistSettings/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsField/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsForm/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsPanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistUsagePolicies/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiChatWorkingIndicator/*.html",
       "options": { "parser": "lwc", "printWidth": 300 }
     },

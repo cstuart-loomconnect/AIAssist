@@ -1,0 +1,80 @@
+<template>
+  <!-- Panel: holds the sub-tabs, the intro and the form -->
+  <div class="slds-is-relative slds-p-around_medium">
+    <!-- Busy: shown while a search, a load or a delete is running -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.working}></lightning-spinner>
+    </template>
+
+    <!-- Sub-tabs: Org-wide, Profiles and Users, each with its row count; hidden when the panel is organisation only -->
+    <template lwc:if={showSubTabs}>
+      <div class="aiasp-tabs slds-grid" role="tablist">
+        <template for:each={subTabs} for:item="tab">
+          <button key={tab.value} type="button" role="tab" class={tab.tabClass} data-value={tab.value} onclick={handleScopeChange}>{tab.label}</button>
+        </template>
+      </div>
+    </template>
+
+    <!-- Intro: one sentence that says what a row at this level does -->
+    <p class="aiasp-intro slds-m-vertical_small">{scopeIntro}</p>
+
+    <!-- Organisation level: the form alone -->
+    <template lwc:if={isOrganisation}>
+      <template for:each={formKeyItems} for:item="item">
+        <c-ai-assist-settings-form key={item.key} groups={formGroups} values={formValues} show-scope-badges={showScopeBadges} is-saving={isSaving} error-message={errorMessage} onsave={handleSave}></c-ai-assist-settings-form>
+      </template>
+    </template>
+
+    <!-- Profile and user level: the list of rows beside the form -->
+    <template lwc:else>
+      <div class="slds-grid slds-wrap slds-gutters_small">
+        <!-- List: rows that exist, and a search for a profile or user to add -->
+        <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12">
+          <lightning-input type="search" label={findLabel} placeholder={findLabel} value={searchText} onchange={handleSearchChange}></lightning-input>
+          <!-- Search results: profiles or users without a row, to click and add -->
+          <template lwc:if={hasSearchResults}>
+            <ul class="slds-m-vertical_x-small slds-box slds-box_xx-small">
+              <template for:each={searchResults} for:item="result">
+                <li key={result.ownerId}><lightning-button variant="base" label={result.name} data-owner-id={result.ownerId} onclick={handleAddOwner}></lightning-button><span class="slds-text-color_weak slds-m-left_x-small">{result.detail}</span></li>
+              </template>
+            </ul>
+          </template>
+          <!-- No results: shown when a search found nobody to add -->
+          <template lwc:if={showNoResults}><p class="slds-text-color_weak slds-m-vertical_x-small">{labels.noResults}</p></template>
+          <!-- Rows that exist at this level -->
+          <template lwc:if={hasEntries}>
+            <lightning-vertical-navigation selected-item={selectedOwnerId} onselect={handleEntrySelect} compact>
+              <lightning-vertical-navigation-section label={listLabel}>
+                <template for:each={entryItems} for:item="item">
+                  <lightning-vertical-navigation-item key={item.ownerId} label={item.label} name={item.ownerId}></lightning-vertical-navigation-item>
+                </template>
+              </lightning-vertical-navigation-section>
+            </lightning-vertical-navigation>
+          </template>
+        </div>
+
+        <!-- Editor: the chosen row -->
+        <div class="slds-col slds-size_1-of-1 slds-large-size_9-of-12">
+          <!-- Choose one: shown until a row is picked -->
+          <template lwc:if={showChooseOne}><p class="slds-text-color_weak">{labels.chooseOne}</p></template>
+          <!-- Row heading: the name of the chosen row, with a delete button, or a remove button for a new row -->
+          <template lwc:if={hasSelectedEntry}>
+            <div class="slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+              <h3 class="slds-col slds-text-heading_medium">{selectedName}</h3>
+              <template lwc:if={canDelete}><lightning-button variant="destructive-text" label={labels.deleteRow} onclick={handleDeleteRow}></lightning-button></template>
+              <template lwc:if={canRemove}><lightning-button variant="neutral" label={labels.removeRow} onclick={handleRemoveNewRow}></lightning-button></template>
+            </div>
+            <!-- New row note: shown for a row that is not saved yet -->
+            <template lwc:if={isSelectedNew}><p class="slds-text-color_weak slds-m-bottom_small">{labels.newRowNote}</p></template>
+          </template>
+          <!-- Form: the fields of the chosen row -->
+          <template lwc:if={showForm}>
+            <template for:each={formKeyItems} for:item="item">
+              <c-ai-assist-settings-form key={item.key} groups={formGroups} values={formValues} show-scope-badges={showScopeBadges} is-saving={isSaving} error-message={errorMessage} onsave={handleSave}></c-ai-assist-settings-form>
+            </template>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

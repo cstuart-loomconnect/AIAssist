@@ -3,7 +3,7 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >What one user has used of AI Assist today: tokens and conversations started. One record per user, kept by the platform only. The counters belong to the day in UsageDate__c, and a record from an earlier day counts as zero and starts again on the user&apos;s next use. The limits that apply to the user are kept on AI User Settings and AI Usage Policy.</description>
+  >What one user has used of AI Assist today: tokens and conversations started. One record per user, kept by the platform only. The counters belong to the day in UsageDate__c, and a record from an earlier day counts as zero and starts again on the user&apos;s next use. The limits that apply to the user are kept on AI Usage Policy.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

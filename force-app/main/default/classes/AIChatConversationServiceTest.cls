@@ -27,7 +27,7 @@ Version      Author                   Description
     // testScenario7: A closed conversation is resumed when the agent allows it, and refused otherwise, with the closed label.
     // testScenario8: Resume is refused at the user's concurrent conversation limit.
     // testScenario9: Execution steps get a Custom Label by what they did, with the data source or action name added.
-    // testScenario10: Shared history merges the scope-based rows with the directly shared ones -> no duplicates, Private agents left out, and a viewer on the narrowest scope sees only the direct ones.
+    // testScenario10: Shared history merges the scope-based rows with the directly shared ones -> no duplicates, Private agents left out, and a viewer on the narrowest scope (the default policy) sees only the direct ones.
     // testScenario11: A view says whether the viewer may share it and whether it is about a record -> true only for the starter of a Global-agent conversation, and only for a valid record Id.
 
     @TestSetup static void setup() {
@@ -56,21 +56,31 @@ Version      Author                   Description
             List<String> messages = new List<String>();
             Id ownId;
             Id replyId;
+            List<Id> badIds = new List<Id>{
+                theirs.Id,
+                agent.Id,
+                null
+            };
 
             Test.startTest();
                 ownId = AIChatConversationService.getOwnedConversation(conversation.Id).Id;
                 replyId = AIChatConversationService.getOwnedAgentMessage(reply.Id).Id;
 
-                for (Id bad : new List<Id>{ theirs.Id, agent.Id, null }) {
+                for (Id bad : badIds) {
+
                     try {
+
                         AIChatConversationService.getOwnedConversation(bad);
+
                     } catch (AIChatConversationService.AIChatConversationServiceException ex) {
                         messages.add(ex.getMessage());
                     }
                 }
 
                 try {
+
                     AIChatConversationService.getOwnedAgentMessage(userMessage.Id);
+
                 } catch (AIChatConversationService.AIChatConversationServiceException ex) {
                     messages.add(ex.getMessage());
                 }
@@ -81,8 +91,11 @@ Version      Author                   Description
             Assert.areEqual(reply.Id, replyId, 'The user\'s own reply should be returned.');
 
             Assert.areEqual(4, messages.size(), 'Each of the four bad Ids should be refused.');
-            for (String refusal : messages)
-            Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusal, 'Each refusal should be the not found Custom Label.');
+
+            for (String refusal : messages) {
+
+                Assert.areEqual(Label.AI_Error_Conversation_Not_Found, refusal, 'Each refusal should be the not found Custom Label.');
+            }
         }
     }
 
@@ -280,6 +293,7 @@ Version      Author                   Description
             conversations.addAll(AIAssistTestDataFactory.createAIConversations(noResume.Id, UserInfo.getUserId(), 1, false));
 
             for (AIConversation__c each : conversations) {
+
                 each.Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED;
                 each.ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_USER_CLOSED;
                 each.ConversationClosedTimestamp__c = System.now();
@@ -292,7 +306,9 @@ Version      Author                   Description
             Test.startTest();
                 AIChatConversationService.resumeConversation(conversations[0].Id);
                 try {
+
                     AIChatConversationService.resumeConversation(conversations[1].Id);
+
                 } catch (AIChatConversationService.AIChatConversationServiceException ex) {
                     shown = ex.getMessage();
                 }
@@ -334,7 +350,9 @@ Version      Author                   Description
 
             Test.startTest();
                 try {
+
                     AIChatConversationService.resumeConversation(closed.Id);
+
                 } catch (AIChatConversationService.AIChatConversationServiceException ex) {
                     shown = ex.getMessage();
                 }
@@ -359,20 +377,33 @@ Version      Author                   Description
             AIDataSource__c source = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
             String sourceName = [SELECT DeveloperName__c FROM AIDataSource__c WHERE Id = :source.Id].DeveloperName__c;
 
-            // [2] Build an execution step of each type
+            // [2] Define a trace step of each type
+            AIExecutionStepRecorder.TraceStep providerStep = new AIExecutionStepRecorder.TraceStep();
+            providerStep.stepType = AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL;
+            providerStep.status = AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS;
+            providerStep.step = 2;
+            providerStep.ms = 40;
+            AIExecutionStepRecorder.TraceStep maskingStep = new AIExecutionStepRecorder.TraceStep();
+            maskingStep.stepType = AIAssistApplicationConstants.STEP_TYPE_PII_MASKING;
+            AIExecutionStepRecorder.TraceStep otherStep = new AIExecutionStepRecorder.TraceStep();
+            otherStep.stepType = AIAssistApplicationConstants.STEP_TYPE_OTHER;
+            AIExecutionStepRecorder.TraceStep detailStep = new AIExecutionStepRecorder.TraceStep();
+            detailStep.stepDetail = 'Custom';
+
+            // [3] Build an execution step of each type
             AIChatDataStructure.ExecutionStep provider;
             AIChatDataStructure.ExecutionStep masking;
             AIChatDataStructure.ExecutionStep anyOther;
             AIChatDataStructure.ExecutionStep detail;
 
             Test.startTest();
-                provider = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_PROVIDER_CALL, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_SUCCESS, 2, 40, null));
-                masking = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_PII_MASKING, null, null, null, null));
-                anyOther = AIChatConversationService.buildExecutionStep(makeStep(AIAssistApplicationConstants.STEP_TYPE_OTHER, null, null, null, null));
-                detail = AIChatConversationService.buildExecutionStep(makeStep(null, null, null, null, 'Custom'));
+                provider = AIChatConversationService.buildExecutionStep(providerStep);
+                masking = AIChatConversationService.buildExecutionStep(maskingStep);
+                anyOther = AIChatConversationService.buildExecutionStep(otherStep);
+                detail = AIChatConversationService.buildExecutionStep(detailStep);
             Test.stopTest();
 
-            // [3] Check each step label
+            // [4] Check each step label
             Assert.areEqual(Label.AI_Step_Calling_Model, provider.label, 'A provider call should get the calling model label.');
             Assert.isTrue(provider.isSuccess && provider.durationMs == 40 && provider.stepOrder == 2, 'The step should carry its success, time and order.');
 
@@ -412,8 +443,7 @@ Version      Author                   Description
             }
 
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
-            AIUserSettings__c viewerSettings = new AIUserSettings__c(User__c = users[0].Id, IsActive__c = true, ConversationVisibilityScope__c = AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES);
-            insert new List<AIUserSettings__c>{ viewerSettings, new AIUserSettings__c(User__c = users[3].Id, IsActive__c = true) };
+            AIAssistTestDataFactory.createAIUsagePolicyForUser(users[0].Id, new AIUsagePolicy__c(ConversationVisibilityScope__c = AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES));
 
             // [2] Create a subordinate's conversation (also shared directly), a peer's shared directly, a subordinate's on the Private agent and an unshared peer's
             AIConversation__c subordinateAndShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[1].Id, 1, false)[0];
@@ -421,34 +451,78 @@ Version      Author                   Description
             AIConversation__c peerShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, false)[0];
             AIConversation__c peerNotShared = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[2].Id, 1, false)[0];
             AIConversation__c onPrivate = AIAssistTestDataFactory.createAIConversations(privateAgent.Id, users[2].Id, 1, false)[0];
-            List<AIConversation__c> all = new List<AIConversation__c>{ subordinateAndShared, subordinateOnly, peerShared, peerNotShared, onPrivate };
-            for (AIConversation__c conversation : all) conversation.RelatedRecordId__c = account.Id;
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert all; }
+            List<AIConversation__c> all = new List<AIConversation__c>{
+                subordinateAndShared,
+                subordinateOnly,
+                peerShared,
+                peerNotShared,
+                onPrivate
+            };
 
-            System.runAs(users[1]) { AIConversationShareService.shareConversation(subordinateAndShared.Id, users[0].Id); AIConversationShareService.shareConversation(subordinateAndShared.Id, users[3].Id); }
-            System.runAs(users[2]) { AIConversationShareService.shareConversation(peerShared.Id, users[0].Id); AIConversationShareService.shareConversation(peerShared.Id, users[3].Id); }
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert new AIConversation__Share(ParentId = onPrivate.Id, UserOrGroupId = users[0].Id, AccessLevel = 'Read', RowCause = Schema.AIConversation__Share.RowCause.DirectShare__c); }
+            for (AIConversation__c conversation : all) {
+
+                conversation.RelatedRecordId__c = account.Id;
+            }
+
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) {
+
+                insert all;
+            }
+
+            System.runAs(users[1]) {
+
+                AIConversationShareService.shareConversation(subordinateAndShared.Id, users[0].Id);
+                AIConversationShareService.shareConversation(subordinateAndShared.Id, users[3].Id);
+            }
+
+            System.runAs(users[2]) {
+
+                AIConversationShareService.shareConversation(peerShared.Id, users[0].Id);
+                AIConversationShareService.shareConversation(peerShared.Id, users[3].Id);
+            }
+
+            System.runAs(AIAssistTestDataFactory.getSetupUser()) {
+
+                insert new AIConversation__Share(ParentId = onPrivate.Id, UserOrGroupId = users[0].Id, AccessLevel = 'Read', RowCause = Schema.AIConversation__Share.RowCause.DirectShare__c);
+            }
 
             List<AIChatDataStructure.ConversationSummary> managerHistory;
             List<AIChatDataStructure.ConversationSummary> narrowHistory;
 
             // [3] Read the shared history as the manager and as a viewer on the narrowest scope
             Test.startTest();
-                System.runAs(users[0]) { managerHistory = AIChatConversationService.getSharedConversationHistory(); }
-                System.runAs(users[3]) { narrowHistory = AIChatConversationService.getSharedConversationHistory(); }
+                System.runAs(users[0]) {
+
+                    managerHistory = AIChatConversationService.getSharedConversationHistory();
+                }
+
+                System.runAs(users[3]) {
+
+                    narrowHistory = AIChatConversationService.getSharedConversationHistory();
+                }
             Test.stopTest();
 
             // [4] Check the merge, with no duplicates and no Private agent
             Set<Id> managerIds = new Set<Id>();
-            for (AIChatDataStructure.ConversationSummary summary : managerHistory) managerIds.add(summary.id);
+
+            for (AIChatDataStructure.ConversationSummary summary : managerHistory) {
+
+                managerIds.add(summary.id);
+            }
 
             Set<Id> narrowIds = new Set<Id>();
-            for (AIChatDataStructure.ConversationSummary summary : narrowHistory) narrowIds.add(summary.id);
+
+            for (AIChatDataStructure.ConversationSummary summary : narrowHistory) {
+
+                narrowIds.add(summary.id);
+            }
+
+            AIConversation__c subordinateOnlyAfter = [SELECT OwnerId FROM AIConversation__c WHERE Id = :subordinateOnly.Id];
 
             Assert.areEqual(3, managerHistory.size(), 'A conversation in scope and shared directly should be listed once.');
             Assert.areEqual(new Set<Id>{ subordinateAndShared.Id, subordinateOnly.Id, peerShared.Id }, managerIds, 'The manager should see the subordinate\'s two and the peer\'s shared one.');
             Assert.areEqual(new Set<Id>{ subordinateAndShared.Id, peerShared.Id }, narrowIds, 'A viewer on the narrowest scope should see only what was shared with them.');
-            Assert.areEqual(users[1].Id, [SELECT OwnerId FROM AIConversation__c WHERE Id = :subordinateOnly.Id].OwnerId, 'The owner should be unchanged by sharing.');
+            Assert.areEqual(users[1].Id, subordinateOnlyAfter.OwnerId, 'The owner should be unchanged by sharing.');
             Assert.isNotNull(managerHistory[0].ownerName, 'Each shared row should name its owner.');
         }
     }
@@ -470,7 +544,6 @@ Version      Author                   Description
             Account account = AIAssistTestDataFactory.createAccounts(1, true)[0];
             User viewer = AIAssistTestDataFactory.createUsers(1, true)[0];
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ viewer }, AIAssistApplicationConstants.PERMISSION_SET_USER);
-            insert new AIUserSettings__c(User__c = viewer.Id, IsActive__c = true);
 
             AIConversation__c onGlobal = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
             onGlobal.RelatedRecordId__c = account.Id;
@@ -479,7 +552,13 @@ Version      Author                   Description
             AIConversation__c noRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
             AIConversation__c badRecord = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, UserInfo.getUserId(), 1, false)[0];
             badRecord.RelatedRecordId__c = 'not-a-record-id';
-            insert new List<AIConversation__c>{ onGlobal, onPrivate, noRecord, badRecord };
+            List<AIConversation__c> toInsert = new List<AIConversation__c>{
+                onGlobal,
+                onPrivate,
+                noRecord,
+                badRecord
+            };
+            insert toInsert;
             AIConversationShareService.shareConversation(onGlobal.Id, viewer.Id);
 
             AIChatDataStructure.UserState user = new AIChatDataStructure.UserState();
@@ -497,7 +576,10 @@ Version      Author                   Description
                 privateView = AIChatConversationService.buildConversationView(onPrivate.Id, 3, user, ui);
                 noRecordView = AIChatConversationService.buildConversationView(noRecord.Id, 3, user, ui);
                 badRecordView = AIChatConversationService.buildConversationView(badRecord.Id, 3, user, ui);
-                System.runAs(viewer) { sharedView = AIChatConversationService.buildConversationView(onGlobal.Id, 3, user, ui); }
+                System.runAs(viewer) {
+
+                    sharedView = AIChatConversationService.buildConversationView(onGlobal.Id, 3, user, ui);
+                }
             Test.stopTest();
 
             // [3] Check the flags
@@ -509,17 +591,5 @@ Version      Author                   Description
             Assert.isFalse(badRecordView.hasRelatedRecord, 'A value that is not a record Id should not count.');
             Assert.isFalse(sharedView.canShare, 'A viewer it was shared with may not share it onward.');
         }
-    }
-
-    private static AIExecutionStepRecorder.TraceStep makeStep(String stepType, String status, Integer step, Long ms, String stepDetail) {
-
-        AIExecutionStepRecorder.TraceStep traceStep = new AIExecutionStepRecorder.TraceStep();
-        traceStep.stepType = stepType;
-        traceStep.status = status;
-        traceStep.step = step;
-        traceStep.ms = ms;
-        traceStep.stepDetail = stepDetail;
-
-        return traceStep;
     }
 }

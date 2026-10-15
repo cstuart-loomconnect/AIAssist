@@ -74,8 +74,10 @@ Version      Author                   Description
 
             // [3] Index the built fields by name
             Map<String, AIChatDataStructure.ActionInputField> byName = new Map<String, AIChatDataStructure.ActionInputField>();
-            for (AIChatDataStructure.ActionInputField field : fields)
-            byName.put(field.name, field);
+            for (AIChatDataStructure.ActionInputField field : fields) {
+
+                byName.put(field.name, field);
+            }
 
             // [4] Check the field types, labels and required flags
             Assert.areEqual('date', byName.get('due_date').inputType, 'A date format should become a date field.');
@@ -99,10 +101,8 @@ Version      Author                   Description
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, 'AIAssistUser');
 
-            // [2] Create the user settings and UI settings
-            AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, false)[0];
+            // [2] Switch Workflow Actions on in the UI settings
             AIAssistTestDataFactory.upsertUiSettings(true);
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert settings; }
 
             // [3] Create a workflow action and link it to the agent
             AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -152,8 +152,10 @@ Version      Author                   Description
 
             Test.startTest();
                 try {
+
                     AIChatActionService.runSuggestedAction(loaded, null, true);
                 } catch (AIChatActionService.AIChatActionServiceException ex) {
+
                     shown = ex.getMessage();
                 }
             Test.stopTest();

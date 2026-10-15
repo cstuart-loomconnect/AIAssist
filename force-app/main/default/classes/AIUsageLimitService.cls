@@ -37,7 +37,7 @@ public without sharing class AIUsageLimitService {
     public static void enforceUsageLimits(AIMessageValidator.ChatContext chatContext, Boolean isNewConversation) {
 
         // [1] Read the user's usage limits and the org's settings
-        AIUsagePolicy__c usageLimits = chatContext.usageLimits;
+        AIUsagePolicy__c usageLimits = chatContext.usagePolicy;
         AIAssistSettings__c settings = AIAssistSettingsService.getSettings();
 
         // [2] Refuse when the user has sent too many messages in the last minute
@@ -89,6 +89,17 @@ public without sharing class AIUsageLimitService {
 
         // [2] None is reached
         return null;
+    }
+
+    // True when the org-wide cap on messages in flight is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
+    public static Boolean isInFlightCapReached() {
+
+        // [1] Read the cap and how many messages are in flight
+        Decimal inFlightCap = AIAssistSettingsService.getSettings().MaxMessagesInFlight__c;
+        Integer messagesInFlight = inFlightForTest == null ? countQueuedMessageJobs() : inFlightForTest;
+
+        // [2] The cap is reached when one is set and the messages in flight have used it up
+        return inFlightCap != null && inFlightCap >= 1 && messagesInFlight >= inFlightCap;
     }
 
     // One meter: which limit, how much is used and the limit.
@@ -146,17 +157,6 @@ public without sharing class AIUsageLimitService {
 
         // [1] Count only when a limit is set
         return usageLimits != null && usageLimits.MaxTokensPer24Hours__c != null && sumUserTokensToday(userId) >= usageLimits.MaxTokensPer24Hours__c;
-    }
-
-    // True when the org-wide cap on messages in flight is reached: a new message is kept Queued and started when a place is free. False when no cap is set.
-    public static Boolean isInFlightCapReached() {
-
-        // [1] Read the cap and how many messages are in flight
-        Decimal inFlightCap = AIAssistSettingsService.getSettings().MaxMessagesInFlight__c;
-        Integer messagesInFlight = inFlightForTest == null ? countQueuedMessageJobs() : inFlightForTest;
-
-        // [2] The cap is reached when one is set and the messages in flight have used it up
-        return inFlightCap != null && inFlightCap >= 1 && messagesInFlight >= inFlightCap;
     }
 
     // The user's conversations that count towards the concurrent limit: Active, and with activity inside their agent's idle timeout. One past its timeout is only waiting for the maintenance job to close it, so it does not hold a place. An agent with no timeout counts every Active conversation. It must see every user's records, so the class runs without sharing.

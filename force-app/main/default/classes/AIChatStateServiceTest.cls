@@ -4,7 +4,7 @@ Class Name: AIChatStateServiceTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIChatStateService: the UI settings, what a user may do, channel and terms state.
+Description: Testing utility for AIChatStateService: the UI settings, what a user may do from their usage policy, channel and terms state.
 
 =================================================================
 =================================================================
@@ -19,12 +19,12 @@ Version      Author                   Description
 @IsTest private class AIChatStateServiceTest {
 
     // testScenario1: Build UI settings from a configured record and an empty one -> the configured values are used and the empty one gets the defaults.
-    // testScenario2: Build the user state with no row, then with the UI settings on, then off -> no row grants nothing, the UI settings drive Workflow Actions, the row drives debug, export and new chats.
-    // testScenario3: Check a channel with no row, no channel, a listed channel and an unlisted channel -> allowed unless the channel is not on the list.
+    // testScenario2: Build the user state with no policy, then with the UI settings on, then off -> no policy grants nothing, the UI settings drive Workflow Actions, the policy drives debug, export and new chats.
+    // testScenario3: Check a channel with no policy, no channel, a listed channel and an unlisted channel -> allowed unless the channel is not on the list.
     // testScenario4: Build the terms state unsigned, signed and with no version configured -> required only while the configured version is unsigned.
     // testScenario5: Set the blocked state for a ready user, inactive app, no agent and terms to accept -> each is named with its message and a ready user is not blocked.
-    // testScenario6: A user with a row and a policy, a row only, neither, and a policy only -> full use, read only, none and full use, with each refusal using its label.
-    // testScenario7: Set the blocked state for a user with no access and one with no policy -> each is named with its message.
+    // testScenario6: A user covered by the default policy, then with every policy off, then with a policy assigned to them -> full use, none with the no access refusal, and full use.
+    // testScenario7: Set the blocked state for a user with no access -> it is named with its message.
 
     @TestSetup static void setup() {
 
@@ -66,35 +66,35 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Build a user settings row with debug and export enabled, and one with new chats turned off
-            AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, DebugModeEnabled__c = true, ConversationExportEnabled__c = true, IsUserInitiatedChatEnabled__c = true);
-            AIUserSettings__c pausedRow = new AIUserSettings__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = false);
+            // [1] Build a usage policy with debug and export enabled, and one with new chats turned off
+            AIUsagePolicy__c policy = new AIUsagePolicy__c(IsActive__c = true, DebugModeEnabled__c = true, ConversationExportEnabled__c = true, IsUserInitiatedChatEnabled__c = true);
+            AIUsagePolicy__c pausedPolicy = new AIUsagePolicy__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = false);
 
             AIChatDataStructure.UserState none;
             AIChatDataStructure.UserState full;
             AIChatDataStructure.UserState off;
             AIChatDataStructure.UserState paused;
 
-            // [2] Build the user state with no row, then with Workflow Actions on, then off, and with a row that turns new chats off
+            // [2] Build the user state with no policy, then with Workflow Actions on, then off, and with a policy that turns new chats off
             Test.startTest();
                 none = AIChatStateService.buildUserState(null);
 
                 AIAssistTestDataFactory.upsertUiSettings(true);
-                full = AIChatStateService.buildUserState(row);
+                full = AIChatStateService.buildUserState(policy);
 
                 AIAssistTestDataFactory.upsertUiSettings(false);
-                off = AIChatStateService.buildUserState(row);
-                paused = AIChatStateService.buildUserState(pausedRow);
+                off = AIChatStateService.buildUserState(policy);
+                paused = AIChatStateService.buildUserState(pausedPolicy);
             Test.stopTest();
 
             // [3] Check what each state grants
-            Assert.isFalse(none.debugMode || none.exportEnabled || none.workflowActionsEnabled || none.newChatsDisabled, 'A user with no row and no UI settings should have nothing, and may start new chats.');
-            Assert.isTrue(full.debugMode && full.exportEnabled && full.workflowActionsEnabled, 'The UI settings and a row with debug and export should grant everything.');
-            Assert.isFalse(full.newChatsDisabled, 'A row that allows new chats should not disable them.');
+            Assert.isFalse(none.debugMode || none.exportEnabled || none.workflowActionsEnabled || none.newChatsDisabled, 'A user with no policy and no UI settings should have nothing, and may start new chats.');
+            Assert.isTrue(full.debugMode && full.exportEnabled && full.workflowActionsEnabled, 'The UI settings and a policy with debug and export should grant everything.');
+            Assert.isFalse(full.newChatsDisabled, 'A policy that allows new chats should not disable them.');
 
             Assert.isFalse(off.workflowActionsEnabled, 'Workflow Actions should follow the UI settings.');
-            Assert.isTrue(off.debugMode && off.exportEnabled, 'Debug mode and export should follow the user\'s row.');
-            Assert.isTrue(paused.newChatsDisabled, 'New chats should be disabled when the user\'s row turns them off.');
+            Assert.isTrue(off.debugMode && off.exportEnabled, 'Debug mode and export should follow the user\'s policy.');
+            Assert.isTrue(paused.newChatsDisabled, 'New chats should be disabled when the user\'s policy turns them off.');
 
             Assert.areEqual(UserInfo.getUserId(), none.userId, 'The state should be for the signed-in user.');
         }
@@ -105,24 +105,24 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Build a user settings row that allows only the mobile channel
-            AIUserSettings__c row = new AIUserSettings__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE);
+            // [1] Build a usage policy that allows only the mobile channel
+            AIUsagePolicy__c policy = new AIUsagePolicy__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE);
 
-            Boolean noRow;
+            Boolean noPolicy;
             Boolean noChannel;
             Boolean listed;
             Boolean unlisted;
 
-            // [2] Check a channel with no row, no channel, a listed channel and an unlisted channel
+            // [2] Check a channel with no policy, no channel, a listed channel and an unlisted channel
             Test.startTest();
-                noRow = AIChatStateService.isChannelAllowed(null, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR);
-                noChannel = AIChatStateService.isChannelAllowed(row, null);
-                listed = AIChatStateService.isChannelAllowed(row, AIAssistApplicationConstants.CHANNEL_MOBILE);
-                unlisted = AIChatStateService.isChannelAllowed(row, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR);
+                noPolicy = AIChatStateService.isChannelAllowed(null, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR);
+                noChannel = AIChatStateService.isChannelAllowed(policy, null);
+                listed = AIChatStateService.isChannelAllowed(policy, AIAssistApplicationConstants.CHANNEL_MOBILE);
+                unlisted = AIChatStateService.isChannelAllowed(policy, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR);
             Test.stopTest();
 
             // [3] Check a channel is allowed unless it is not on the list
-            Assert.isTrue(noRow, 'A channel should be allowed when the user has no row.');
+            Assert.isTrue(noPolicy, 'A channel should be allowed when the user has no policy.');
             Assert.isTrue(noChannel, 'A missing channel should be allowed.');
 
             Assert.isTrue(listed, 'A channel on the list should be allowed.');
@@ -192,12 +192,18 @@ Version      Author                   Description
                 AIChatStateService.setBlockedState(notBlocked);
 
                 settings.IsEnabled__c = false;
-                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+                System.runAs(AIAssistTestDataFactory.getSetupUser()) {
+
+                    update settings;
+                }
                 AIAssistSettingsService.cachedSettings = null;
                 AIChatStateService.setBlockedState(inactive);
 
                 settings.IsEnabled__c = true;
-                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update settings; }
+                System.runAs(AIAssistTestDataFactory.getSetupUser()) {
+
+                    update settings;
+                }
                 AIAssistSettingsService.cachedSettings = null;
 
                 AIChatStateService.setBlockedState(notAssigned);
@@ -221,52 +227,37 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Find the user's own settings row, and note the access with the row and the default policy
-            AIUserSettings__c userRow = [SELECT Id, IsActive__c FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
-            String withBoth;
-            String withRowOnly;
-            String withNeither;
-            String withPolicyOnly;
-            String noPolicyRefusal;
+            // [1] Note the access the default policy gives, then switch every policy off
+            String withDefault;
+            String withNone;
+            String withAssigned;
             String noAccessRefusal;
 
             Test.startTest();
-                withBoth = AIChatStateService.getAccessLevel();
+                withDefault = AIChatStateService.getAccessLevel();
 
-                // [2] With the policies off the row alone gives read only: reading is allowed, sending is refused
+                // [2] With every policy off the user has no access and is refused
                 AIAssistTestDataFactory.deactivateUsagePolicies();
-                withRowOnly = AIChatStateService.getAccessLevel();
-                AIChatStateService.requireAccess();
+                withNone = AIChatStateService.getAccessLevel();
 
                 try {
-                    AIChatStateService.requireSendAccess();
-                } catch (AIChatStateService.AIChatStateServiceException ex) {
-                    noPolicyRefusal = ex.getMessage();
-                }
 
-                // [3] With the row off as well the user has no access: reading and sending are both refused
-                userRow.IsActive__c = false;
-                System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
-                withNeither = AIChatStateService.getAccessLevel();
-
-                try {
                     AIChatStateService.requireAccess();
+
                 } catch (AIChatStateService.AIChatStateServiceException ex) {
                     noAccessRefusal = ex.getMessage();
                 }
 
-                // [4] A policy assigned to the user gives full use without the row
+                // [3] A policy assigned to the user gives full use again
                 AIAssistTestDataFactory.createAIUsagePolicyForUser(superUser.Id, null, null, null, null);
-                withPolicyOnly = AIChatStateService.getAccessLevel();
+                withAssigned = AIChatStateService.getAccessLevel();
             Test.stopTest();
 
-            // [5] Check each outcome
-            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withBoth, 'A row and a policy should give full use.');
-            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY, withRowOnly, 'A row alone should give read only.');
-            Assert.areEqual(Label.AI_Error_No_Policy, noPolicyRefusal, 'Sending without a policy should be refused with the no policy label.');
-            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_NONE, withNeither, 'No row and no policy should give none.');
-            Assert.areEqual(Label.AI_Error_No_Access, noAccessRefusal, 'Reading with neither should be refused with the no access label.');
-            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withPolicyOnly, 'A policy alone should give full use.');
+            // [4] Check each outcome
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withDefault, 'The default policy should give full use.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_NONE, withNone, 'No policy should give none.');
+            Assert.areEqual(Label.AI_Error_No_Access, noAccessRefusal, 'Reading with no policy should be refused with the no access label.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, withAssigned, 'A policy assigned to the user should give full use.');
         }
     }
 
@@ -275,27 +266,18 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Build a context for a user with no access, and one who may read but not send
+            // [1] Build a context for a user with no access
             AIChatDataStructure.ChatContext noAccess = new AIChatDataStructure.ChatContext();
             noAccess.state = AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS;
-
-            AIChatDataStructure.ChatContext noPolicy = new AIChatDataStructure.ChatContext();
-            noPolicy.state = AIAssistApplicationConstants.CHAT_STATE_READY;
-            noPolicy.user = new AIChatDataStructure.UserState();
-            noPolicy.user.canSend = false;
 
             // [2] Set the blocked state
             Test.startTest();
                 AIChatStateService.setBlockedState(noAccess);
-                AIChatStateService.setBlockedState(noPolicy);
             Test.stopTest();
 
-            // [3] Check each is named with its message
+            // [3] Check it is named with its message
             Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_ACCESS, noAccess.blockedState, 'A user with no access should be blocked as such.');
             Assert.areEqual(Label.AI_Error_No_Access, noAccess.blockedMessage, 'The no access state should carry its message.');
-
-            Assert.areEqual(AIAssistApplicationConstants.CHAT_BLOCKED_NO_POLICY, noPolicy.blockedState, 'A user who may not send should be blocked as having no policy.');
-            Assert.areEqual(Label.AI_Chat_Blocked_No_Policy, noPolicy.blockedMessage, 'The no policy state should carry its message.');
         }
     }
 }

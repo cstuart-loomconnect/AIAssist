@@ -58,7 +58,7 @@ public without sharing class AIAssistTestDataFactory {
         insertAsSetupUser(assignments);
     }
 
-    // A standard user holding the AIAssistSuperUser permission set, with an active AIUserSettings__c row and an active default AIUsagePolicy__c, which grants read, create, edit and delete on everything AI Assist. Every test runs as this user with System.runAs.
+    // A standard user holding the AIAssistSuperUser permission set, with an active default AIUsagePolicy__c that covers every user, which grants read, create, edit and delete on everything AI Assist. Every test runs as this user with System.runAs.
     public static User createSuperUser() {
 
         // [1] Create the user
@@ -67,8 +67,7 @@ public without sharing class AIAssistTestDataFactory {
         // [2] Give it the Super User permission set
         assignPermissionSet(users, 'AIAssistSuperUser');
 
-        // [3] Give it the active settings row the User trigger gives a real user, and an active default policy, so it may read and send. Other users get a row only when a test creates one
-        insertAsSetupUser(createAIUserSettings(users[0].Id, false));
+        // [3] Create an active default policy, so it may use AI Assist. It covers every user who has no policy assigned to them
         createDefaultUsagePolicy();
 
         return users[0];
@@ -346,18 +345,6 @@ public without sharing class AIAssistTestDataFactory {
         AIMessagingDataService.updateOrThrow(new List<SObject>{ new AIConversationMessage__c(Id = messageId, ExecutionTraceJson__c = JSON.serialize(steps, true)) });
     }
 
-    // One active settings row for the user.
-    public static List<AIUserSettings__c> createAIUserSettings(Id userId, Boolean shouldDoInsert) {
-
-        // [1] Build the settings row
-        List<AIUserSettings__c> userSettingsRows = new List<AIUserSettings__c>{new AIUserSettings__c(User__c = userId, IsActive__c = true)};
-
-        // [2] Insert it when asked, and return it
-        if (shouldDoInsert && !userSettingsRows.isEmpty()) insert userSettingsRows;
-
-        return userSettingsRows;
-    }
-
     // An active default usage policy with no limits, which covers every user who has no policy assigned to them, so they may send.
     public static AIUsagePolicy__c createDefaultUsagePolicy() {
 
@@ -380,18 +367,29 @@ public without sharing class AIAssistTestDataFactory {
         System.runAs(getSetupUser()) { update policies; }
     }
 
-    // The active settings row a user created by createUsers already has, to change a value on it and update it.
-    public static AIUserSettings__c getAIUserSettings(Id userId) {
-
-        // [1] Read the user's row
-        return [SELECT Id, User__c, IsActive__c FROM AIUserSettings__c WHERE User__c = :userId LIMIT 1];
-    }
-
     // An active usage policy with the given limits, assigned to the user. A limit left null is not set.
     public static AIUsagePolicy__c createAIUsagePolicyForUser(Id userId, Decimal maxConcurrentConversations, Decimal maxConversationsPer24Hours, Decimal maxTokensPer24Hours, String usageLimitReachedBehavior) {
 
         // [1] Create the policy
         AIUsagePolicy__c policy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = maxConcurrentConversations, MaxConversationsPer24Hours__c = maxConversationsPer24Hours, MaxTokensPer24Hours__c = maxTokensPer24Hours, UsageLimitReachedBehavior__c = usageLimitReachedBehavior);
+
+        System.runAs(getSetupUser()) {
+
+            insert policy;
+
+            // [2] Assign it to the user
+            insert new AIUsagePolicyAssignment__c(AIUsagePolicy__c = policy.Id, AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER, User__c = userId, IsActive__c = true);
+        }
+
+        return policy;
+    }
+
+    // An active usage policy with the capabilities the policy record carries (channels, visibility, export, debug, new chats), assigned to the user. Once a user has a policy assigned the default policies no longer apply to them.
+    public static AIUsagePolicy__c createAIUsagePolicyForUser(Id userId, AIUsagePolicy__c policyValues) {
+
+        // [1] Create the policy from the values given, always active
+        AIUsagePolicy__c policy = policyValues.clone(false, true, false, false);
+        policy.IsActive__c = true;
 
         System.runAs(getSetupUser()) {
 
@@ -504,11 +502,27 @@ public without sharing class AIAssistTestDataFactory {
         return System.Uuid.randomUUID().toString().left(8);
     }
 
-    // An active System Administrator, for the setup work a Super User cannot do: inserting Users, roles and records owned by someone else. Use it as System.runAs(AIAssistTestDataFactory.getSetupUser()).
+    // An active System Administrator who also holds the AIAssistSuperUser permission set, for the setup work a Super User cannot do: inserting Users, roles and records owned by someone else. The permission set is needed because the System Administrator profile has no field access to the AI Assist fields. Use it as System.runAs(AIAssistTestDataFactory.getSetupUser()).
     public static User getSetupUser() {
 
         // [1] Find an active administrator
-        return new User(Id = [SELECT Id FROM User WHERE Profile.Name = 'System Administrator' AND IsActive = TRUE LIMIT 1].Id);
+        User setupUser = new User(Id = [SELECT Id FROM User WHERE Profile.Name = 'System Administrator' AND IsActive = TRUE LIMIT 1].Id);
+
+        // [2] Check whether the administrator already holds the Super User permission set
+        Boolean hasPermissionSet = [SELECT COUNT() FROM PermissionSetAssignment WHERE AssigneeId = :setupUser.Id AND PermissionSet.Name = :AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER] > 0;
+
+        // [3] Give it the permission set when it is missing, in its own context so the test can save other records afterwards
+        if (!hasPermissionSet) {
+
+            Id permissionSetId = [SELECT Id FROM PermissionSet WHERE Name = :AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER LIMIT 1].Id;
+
+            System.runAs(setupUser) {
+
+                insert new PermissionSetAssignment(AssigneeId = setupUser.Id, PermissionSetId = permissionSetId);
+            }
+        }
+
+        return setupUser;
     }
 
     // User is a setup object, so it is inserted in its own context apart from the test's other records, as the setup user so it works even when the test is running as a Super User.

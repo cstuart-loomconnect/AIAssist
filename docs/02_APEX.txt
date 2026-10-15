@@ -34,7 +34,7 @@ Sections are in call order, lowest layer first, so a class is checked after the 
 2.4 USAGE LIMITS
 ----------------
 
-[ ] AIUsagePolicyService (without sharing, 306 lines): Works out what one user is allowed, from the usage policies that apply to them and their own AIUserSettings__c row.
+[ ] AIUsagePolicyService (without sharing, 306 lines): Works out what one user is allowed, from the usage policies that apply to them.
   [ ] Test: AIUsagePolicyServiceTest
 [ ] AIUsageLimitService (without sharing, 129 lines): Decides whether a message may be accepted right now.
   [ ] Test: AIUsageLimitServiceTest

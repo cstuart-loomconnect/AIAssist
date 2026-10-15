@@ -1,0 +1,55 @@
+<template>
+  <!-- Tab: holds the intro, the policy list and the editor -->
+  <div class="slds-is-relative slds-p-around_medium">
+    <!-- Busy: shown while the list loads or a change is being saved -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Intro: what a policy does and how several policies combine -->
+    <p class="aiasp-intro slds-m-bottom_small">{labels.intro}</p>
+
+    <!-- Layout: the policy list on the left and the editor on the right -->
+    <div class="aiasp-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+      <!-- List: one bordered row for each policy, and a button to create one -->
+      <div class="aiasp-list slds-grid slds-grid_vertical">
+        <!-- List head: the button that starts a new policy -->
+        <div class="aiasp-list-head">
+          <lightning-button variant="brand" label={labels.newPolicy} icon-name="utility:add" onclick={handleNewPolicy}></lightning-button>
+        </div>
+        <!-- Policies: the name, the Active and Default pills and the assignment count of each -->
+        <template for:each={policyItems} for:item="item">
+          <button key={item.key} type="button" class={item.itemClass} data-key={item.key} onclick={handlePolicySelect}>
+            <span class="aiasp-name"
+              >{item.name}<template lwc:if={item.hasPills}
+                ><span class={item.activeClass}>{item.activeLabel}</span><template lwc:if={item.isDefault}><span class={item.defaultClass}>{item.defaultLabel}</span></template></template
+              ></span
+            >
+            <span class="aiasp-detail slds-text-body_small">{item.countLabel}</span>
+          </button>
+        </template>
+        <!-- No policies: shown when the load is done and the list is empty -->
+        <template lwc:if={showNoPolicies}><p class="aiasp-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.noPolicies}</p></template>
+      </div>
+
+      <!-- Editor: the chosen policy -->
+      <div class="aiasp-editor slds-grid slds-grid_vertical">
+        <!-- Choose one: shown until a policy is picked -->
+        <template lwc:if={showChooseOne}><p class="aiasp-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.chooseOne}</p></template>
+        <!-- Policy: the heading with a delete button, then the form -->
+        <template lwc:if={hasSelection}>
+          <div class="aiasp-editor-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+            <h3 class="aiasp-heading slds-m-around_none">{selectedName}</h3>
+            <!-- Delete: only for a policy that is already saved -->
+            <template lwc:if={canDelete}><lightning-button variant="destructive-text" label={labels.deletePolicy} onclick={handleDeletePolicy}></lightning-button></template>
+          </div>
+
+          <!-- Fields: the three groups of the policy -->
+          <template for:each={formKeyItems} for:item="item">
+            <c-ai-assist-settings-form key={item.key} groups={groups} values={formValues} is-saving={isSaving} error-message={errorMessage} onsave={handleSave}></c-ai-assist-settings-form>
+          </template>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>

@@ -7,7 +7,7 @@ Class Name: AIConversationShareService
 Description: Lets the user who started a conversation share it, read-only, with individual users, and take that back.
 
 Step 1: Check the user started the conversation, and that its agent keeps Global conversations, before anything is shared
-Step 2: Search the users the conversation may be shared with: active standard users with an active AI User Setting, not the starter and not already chosen
+Step 2: Search the users the conversation may be shared with: active standard users who hold an AI Assist permission set, not the starter and not already chosen
 Step 3: Share the conversation with a user, or stop sharing it, by adding or removing a Read share row with the DirectShare reason
 Step 4: Answer whether a user has been chosen, for AIConversationVisibilityService, which still checks the record and the agent
 
@@ -54,9 +54,10 @@ public without sharing class AIConversationShareService {
         String namePattern = '%' + trimmedText.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%';
         Set<Id> excludedIds = getSharedUserIds(conversationId);
         excludedIds.add(UserInfo.getUserId());
+        Set<String> aiAssistPermissionSets = new Set<String>{AIAssistApplicationConstants.PERMISSION_SET_USER, AIAssistApplicationConstants.PERMISSION_SET_SUPER_USER, AIAssistApplicationConstants.PERMISSION_SET_ADMIN_USER};
 
-        // [4] Find active standard users with an active AI User Setting, who can therefore open the window
-        for (User candidate : [SELECT Id, Name, Title, UserRole.Name FROM User WHERE IsActive = TRUE AND UserType = :AIAssistApplicationConstants.USER_TYPE_STANDARD AND Name LIKE :namePattern AND Id NOT IN :excludedIds AND Id IN (SELECT User__c FROM AIUserSettings__c WHERE IsActive__c = TRUE) WITH SYSTEM_MODE ORDER BY Name LIMIT :AIAssistApplicationConstants.SHARE_SEARCH_MAX_RESULTS]) recipients.add(buildRecipient(candidate));
+        // [4] Find active standard users who hold an AI Assist permission set, who can therefore open the window
+        for (User candidate : [SELECT Id, Name, Title, UserRole.Name FROM User WHERE IsActive = TRUE AND UserType = :AIAssistApplicationConstants.USER_TYPE_STANDARD AND Name LIKE :namePattern AND Id NOT IN :excludedIds AND Id IN (SELECT AssigneeId FROM PermissionSetAssignment WHERE PermissionSet.Name IN :aiAssistPermissionSets) WITH SYSTEM_MODE ORDER BY Name LIMIT :AIAssistApplicationConstants.SHARE_SEARCH_MAX_RESULTS]) recipients.add(buildRecipient(candidate));
 
         // [5] Return them
         return recipients;
