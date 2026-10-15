@@ -214,27 +214,6 @@ public class SampleDataLoader {
       );
     save('AIUsagePolicyAssignment__c', policyAssignments, false);
 
-    List<AIUserSettings__c> userSettings = new List<AIUserSettings__c>();
-    for (Integer userIndex = 0; userIndex < userIds.size(); userIndex++) {
-      Boolean isRunningUser = userIndex == 0;
-      userSettings.add(
-        new AIUserSettings__c(
-          User__c = userIds[userIndex],
-          AllowedChannels__c = isRunningUser
-            ? 'Utility Bar;Record Page Chat;Mobile'
-            : 'Utility Bar;Record Page Chat',
-          ConversationVisibilityScope__c = isRunningUser
-            ? 'All Conversations'
-            : 'My Conversations Only',
-          DebugModeEnabled__c = isRunningUser,
-          ConversationExportEnabled__c = isRunningUser,
-          IsUserInitiatedChatEnabled__c = true,
-          UsageLimitReachedBehavior__c = 'Notify Only'
-        )
-      );
-    }
-    save('AIUserSettings__c', userSettings, false);
-
     // ---------- Agents. An active agent needs a model configuration.
     Id firstModelId = models[0].Id;
     Id secondModelId = models[1].Id == null ? firstModelId : models[1].Id;

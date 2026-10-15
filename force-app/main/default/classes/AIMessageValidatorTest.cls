@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest private class AIMessageValidatorTest {
 
-    // testScenario1: An open agent and an acceptable message are validated -> the request is allowed and the context carries the user, the agent and the user's settings.
+    // testScenario1: An open agent and an acceptable message are validated -> the request is allowed and the context carries the user, the agent and the user's usage policy.
     // testScenario2: A message is validated while the application is switched off -> it is refused.
     // testScenario3: A message is validated in maintenance mode -> it is refused.
     // testScenario4: A blank, null, over-length and exactly-at-the-limit message are validated -> the first three are refused and the last is allowed.
@@ -27,8 +27,7 @@ Version      Author                   Description
     // testScenario7: Users who never accepted, accepted an earlier version and accepted the current version are validated -> the first two are refused and the last is allowed.
     // testScenario8: An undefined channel, a channel outside the allow-list, one on the list and none are validated -> the first two are refused and the last two are allowed.
     // testScenario9: Chats about a record are validated -> an owned record is allowed and a mismatched object name, an unreadable record and an unsupported object are refused.
-    // testScenario10: A message from a user with no active settings row and no policy -> it is refused with the no access label.
-    // testScenario11: A message from a user with a settings row but no policy -> it is refused with the no policy label.
+    // testScenario10: A message from a user to whom no usage policy applies -> it is refused with the no access label.
 
     private static final String ALLOWED = 'ALLOWED';
     private static final String MESSAGE_BODY = 'Hello';
@@ -47,13 +46,11 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a chat user with the permission set, an open agent and the user's settings
+            // [1] Create a chat user with the permission set and an open agent
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
             AIAssistTestDataFactory.assignPermissionSet(new List<User>{ chatUser }, PERMISSION_SET_NAME);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-
-            AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true);
 
             AIMessageValidator.ChatContext context;
 
@@ -65,10 +62,10 @@ Version      Author                   Description
                 }
             Test.stopTest();
 
-            // [3] Check the context carries the user, the agent and the user's settings
+            // [3] Check the context carries the user, the agent and the user's usage policy
             Assert.areEqual(chatUser.Id, context.userId, 'The context should carry the user.');
             Assert.areEqual(agent.Id, context.agent.Id, 'The context should carry the agent.');
-            Assert.isNotNull(context.userSettings, 'The context should carry the user\'s settings.');
+            Assert.isNotNull(context.usagePolicy, 'The context should carry the user\'s usage policy.');
         }
     }
 
@@ -146,15 +143,16 @@ Version      Author                   Description
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
             String atTheLimit = 'x'.repeat(AIAssistApplicationConstants.MAX_USER_MESSAGE_CHARACTERS);
             List<String> outcomes = new List<String>();
+            List<String> bodies = new List<String>{
+                '   ',
+                null,
+                atTheLimit + 'x',
+                atTheLimit
+            };
 
             // [2] Validate a blank, a null, an over-length and an at-the-limit message
             Test.startTest();
-                for (String body : new List<String>{
-                    '   ',
-                    null,
-                    atTheLimit + 'x',
-                    atTheLimit
-                }) {
+                for (String body : bodies) {
 
                     try {
 
@@ -193,15 +191,16 @@ Version      Author                   Description
             delete agents[1];
 
             Map<Id, String> outcomeByAgentId = new Map<Id, String>();
+            List<Id> agentIds = new List<Id>{
+                agents[0].Id,
+                deletedId,
+                UserInfo.getUserId(),
+                null
+            };
 
             // [2] Validate a message for the inactive agent, the deleted agent, a wrong-type Id and no Id
             Test.startTest();
-                for (Id agentId : new List<Id>{
-                    agents[0].Id,
-                    deletedId,
-                    UserInfo.getUserId(),
-                    null
-                }) {
+                for (Id agentId : agentIds) {
 
                     try {
 
@@ -231,8 +230,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with the permission set
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             // [2] Create three Assigned Users Only agents and one open agent
@@ -284,9 +281,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create three users with the permission set and an open agent
             List<User> users = AIAssistTestDataFactory.createUsers(3, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[2].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
@@ -340,28 +334,28 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a user with the permission set, an open agent and a mobile-only channel allow-list
+            // [1] Create a user with the permission set, an open agent and a usage policy that allows only the mobile channel
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
 
-            AIUserSettings__c settings = AIAssistTestDataFactory.createAIUserSettings(users[0].Id, false)[0];
-            settings.AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE;
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert settings; }
+            AIUsagePolicy__c policyValues = new AIUsagePolicy__c(AllowedChannels__c = AIAssistApplicationConstants.CHANNEL_MOBILE);
+            AIAssistTestDataFactory.createAIUsagePolicyForUser(users[0].Id, policyValues);
 
             Map<String, String> outcomeByChannel = new Map<String, String>();
+            List<String> channels = new List<String>{
+                UNDEFINED_CHANNEL,
+                AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
+                AIAssistApplicationConstants.CHANNEL_MOBILE,
+                ''
+            };
 
             // [2] Validate a message on an undefined channel, an unlisted channel, a listed channel and no channel
             Test.startTest();
                 System.runAs(users[0]) {
 
-                    for (String channel : new List<String>{
-                        UNDEFINED_CHANNEL,
-                        AIAssistApplicationConstants.CHANNEL_UTILITY_BAR,
-                        AIAssistApplicationConstants.CHANNEL_MOBILE,
-                        ''
-                    }) {
+                    for (String channel : channels) {
 
                         try {
 
@@ -392,8 +386,6 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create two users with the permission set and two agents, the second built for Contact
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIAssistTestDataFactory.assignPermissionSet(users, PERMISSION_SET_NAME);
 
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
@@ -412,7 +404,7 @@ Version      Author                   Description
 
             List<String> outcomes = new List<String>();
 
-            // [3] Validate five chats about records as the first user, matching the order of the checks below
+            // [3] Line up five chats about records, matching the order of the checks below
             List<Id> agentIds = new List<Id>{
                 agents[0].Id,
                 agents[0].Id,
@@ -435,6 +427,7 @@ Version      Author                   Description
                 ownAccount.Id
             };
 
+            // [4] Validate each chat as the first user
             Test.startTest();
                 System.runAs(users[0]) {
 
@@ -453,7 +446,7 @@ Version      Author                   Description
                 }
             Test.stopTest();
 
-            // [4] Check the owned record is allowed and the mismatched, unreadable and unsupported ones are refused
+            // [5] Check the owned record is allowed and the mismatched, unreadable and unsupported ones are refused
             Assert.areEqual(ALLOWED, outcomes[0], 'The user should be able to chat about their own record.');
             Assert.areEqual(ALLOWED, outcomes[1], 'A blank object name should be filled in from the Id.');
 
@@ -468,14 +461,11 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an open agent and switch the user's settings row off, leaving no policy
+            // [1] Create an open agent and switch every usage policy off
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
             agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
             update agent;
 
-            AIUserSettings__c userRow = [SELECT Id FROM AIUserSettings__c WHERE User__c = :superUser.Id LIMIT 1];
-            userRow.IsActive__c = false;
-            System.runAs(AIAssistTestDataFactory.getSetupUser()) { update userRow; }
             AIAssistTestDataFactory.deactivateUsagePolicies();
 
             String refusal;
@@ -483,42 +473,17 @@ Version      Author                   Description
             // [2] Validate a message
             Test.startTest();
                 try {
-                    AIMessageValidator.validateSendRequest(agent.Id, 'Hello', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
+                    AIMessageValidator.validateSendRequest(agent.Id, MESSAGE_BODY, AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
+
                 } catch (AIMessageValidator.AIMessageValidatorException ex) {
+
                     refusal = ex.getMessage();
                 }
             Test.stopTest();
 
             // [3] Check the message was refused with the no access label
-            Assert.areEqual(Label.AI_Error_No_Access, refusal, 'A user with no row and no policy should be refused.');
-        }
-    }
-
-    @IsTest static void testScenario11() {
-
-        User superUser = AIAssistTestDataFactory.createSuperUser();
-
-        System.runAs(superUser) {
-            // [1] Create an open agent and switch the policies off, leaving the user's settings row
-            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-            agent.AccessMode__c = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
-            update agent;
-
-            AIAssistTestDataFactory.deactivateUsagePolicies();
-
-            String refusal;
-
-            // [2] Validate a message
-            Test.startTest();
-                try {
-                    AIMessageValidator.validateSendRequest(agent.Id, 'Hello', AIAssistApplicationConstants.CHANNEL_UTILITY_BAR, null, null);
-                } catch (AIMessageValidator.AIMessageValidatorException ex) {
-                    refusal = ex.getMessage();
-                }
-            Test.stopTest();
-
-            // [3] Check the message was refused with the no policy label
-            Assert.areEqual(Label.AI_Error_No_Policy, refusal, 'A user with a settings row but no policy should be refused.');
+            Assert.areEqual(Label.AI_Error_No_Access, refusal, 'A user to whom no usage policy applies should be refused.');
         }
     }
 }

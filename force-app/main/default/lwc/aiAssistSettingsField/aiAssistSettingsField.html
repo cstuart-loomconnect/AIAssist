@@ -1,0 +1,63 @@
+<template>
+  <div class="slds-grid slds-wrap slds-gutters_small slds-p-vertical_small slds-p-horizontal_medium slds-border_bottom">
+    <!-- Left side: the label, any badge, the help text and the field name -->
+    <div class="slds-col slds-size_1-of-1 slds-large-size_5-of-12">
+      <!-- Label: the field name, with a badge for its scope and one when a value is required -->
+      <div class="slds-text-title_bold">
+        {field.label}<template lwc:if={hasBadge}><span class="slds-badge slds-m-left_x-small">{badgeLabel}</span></template
+        ><template lwc:if={field.required}><span class="slds-badge slds-theme_error slds-m-left_x-small">{labels.required}</span></template>
+      </div>
+      <!-- Help: what the setting does, shown when there is some -->
+      <template lwc:if={hasHelp}><p class="slds-text-body_small slds-text-color_weak">{field.help}</p></template>
+      <!-- Dependency hint: another setting this one needs, shown when there is one -->
+      <template lwc:if={hasDependencyHint}
+        ><p class="slds-text-body_small slds-text-color_weak"><i>{field.dependencyHint}</i></p></template
+      >
+      <!-- Field name: the object and field the value is saved to -->
+      <p class="slds-text-body_small slds-text-color_weak slds-truncate" title={apiName}>{labels.apiNamePrefix}{apiName}</p>
+    </div>
+
+    <!-- Right side: the control that fits the field type -->
+    <div class="slds-col slds-size_1-of-1 slds-large-size_7-of-12">
+      <!-- Switch -->
+      <template lwc:if={isToggle}>
+        <lightning-input type="toggle" label={field.label} variant="label-hidden" checked={isChecked} message-toggle-active={labels.on} message-toggle-inactive={labels.off} onchange={handleToggleChange}></lightning-input>
+      </template>
+
+      <!-- Whole number with its unit -->
+      <template lwc:elseif={isNumber}>
+        <div class="slds-grid slds-grid_vertical-align-center">
+          <lightning-input class="slds-col" type="number" step="1" label={field.label} variant="label-hidden" value={inputValue} min={field.min} max={field.max} required={field.required} onchange={handleInputChange}></lightning-input>
+          <!-- Unit: the word after the number, such as seconds -->
+          <template lwc:if={hasUnit}><span class="slds-m-left_small slds-text-color_weak">{field.unit}</span></template>
+        </div>
+        <!-- Blank help: what a blank number means, shown when there is some -->
+        <template lwc:if={hasBlankHelp}><p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">{field.blankHelp}</p></template>
+      </template>
+
+      <!-- Text, web address or list of codes -->
+      <template lwc:elseif={isText}>
+        <lightning-input type={textInputType} label={field.label} variant="label-hidden" value={inputValue} required={field.required} max-length={field.maxLength} onchange={handleInputChange}></lightning-input>
+        <!-- Blank help: what a blank value means, shown when there is some -->
+        <template lwc:if={hasBlankHelp}><p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">{field.blankHelp}</p></template>
+        <!-- Codes help: how to write the list, shown for a list of codes -->
+        <template lwc:if={isCodes}><p class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">{labels.codesHelp}</p></template>
+      </template>
+
+      <!-- Choice shown as radio buttons -->
+      <template lwc:elseif={isChoice}>
+        <lightning-radio-group name={field.key} label={field.label} variant="label-hidden" options={field.options} value={value} type="radio" onchange={handleChoiceChange}></lightning-radio-group>
+      </template>
+
+      <!-- Choice shown as a dropdown -->
+      <template lwc:elseif={isSelect}>
+        <lightning-combobox name={field.key} label={field.label} variant="label-hidden" options={field.options} value={value} onchange={handleChoiceChange}></lightning-combobox>
+      </template>
+
+      <!-- Several choices shown as checkboxes -->
+      <template lwc:elseif={isMulti}>
+        <lightning-checkbox-group name={field.key} label={field.label} variant="label-hidden" options={field.options} value={multiValue} onchange={handleChoiceChange}></lightning-checkbox-group>
+      </template>
+    </div>
+  </div>
+</template>

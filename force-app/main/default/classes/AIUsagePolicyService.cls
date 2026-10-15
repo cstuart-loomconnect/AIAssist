@@ -4,30 +4,12 @@ Class Name: AIUsagePolicyService
 =================================================================
 =================================================================
 
-Description: Works out what one user is allowed, from the usage policies that apply to them and their own AIUserSettings__c row.
+Description: Works out what one user is allowed, from the usage policies that apply to them.
 
-Step 1: Find the user's own AIUserSettings__c row and the usage policies that apply to them, in system mode
-Step 2: Take the user's own values first, where they have set any
-Step 3: Fill the rest from the policies: strictest limits, widest capabilities
-Step 4: Return an AIUserSettings__c that is never saved, or null when there is no row and no policy
-Step 5: Return the usage limits as an AIUsagePolicy__c that is never saved, or null when no policy applies
-Step 6: Say what the user may do at all (full use with a policy, read only with just a settings row, none with neither)
-
-Rules:
-[1] The user's own row is an override only. A behavior, channel list or visibility scope left blank
-    on the row is taken from the policies. The numeric usage limits (tokens a day, conversations a day,
-    concurrent conversations) are set on policies only, never on the user's row: a user who needs
-    their own limits is assigned a policy of their own through AIUsagePolicyAssignment__c.
-[2] Limits are strictest-wins across policies: the lowest number, and the behavior that blocks most
-    (Block New Messages, then Block New Conversations Only, then Notify Only). Adding a policy can
-    therefore never loosen a limit.
-[3] Capabilities are additive across policies: a channel, workflow actions, export or debug mode allowed by
-    any policy is allowed, and the widest conversation visibility wins. A policy with no channels listed
-    allows every channel.
-[4] A user's row can switch a capability on for that user. It cannot switch off a capability a policy
-    grants; remove the user from that policy instead.
-[5] An inactive row is ignored. With neither a row nor a policy the answer is null, which callers treat as
-    "no personal limits".
+Step 1: Find the usage policies that apply to the user, in system mode: those assigned to them or to a permission set they hold, otherwise the default policies
+Step 2: Combine them into one AIUsagePolicy__c that is never saved: strictest limits, widest capabilities
+Step 3: Return that policy, or null when no policy applies
+Step 4: Say what the user may do at all: full use when a policy applies, none when it does not
 
 =================================================================
 =================================================================
@@ -38,95 +20,54 @@ Version      Author                   Description
 
 public without sharing class AIUsagePolicyService {
 
-    // What this user is allowed: their own settings row as an override, over the usage policies that apply to them. Null when they have neither, which callers treat as "no personal limits".
-    public static AIUserSettings__c getUserSettings(Id userId) {
+    // What this user is allowed: the usage policies that apply to them, combined. Null when no policy applies, which means the user has no access.
+    public static AIUsagePolicy__c getUsagePolicy(Id userId) {
 
         // [1] Nothing to look up without a user
         if (userId == null) return null;
 
-        // [2] Read the user's own settings row
-        List<AIUserSettings__c> userSettingsRows = [SELECT Id, User__c, IsActive__c, AllowedChannels__c, DebugModeEnabled__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c, ConversationExportEnabled__c, ConversationVisibilityScope__c FROM AIUserSettings__c WHERE User__c = :userId WITH SYSTEM_MODE LIMIT 1];
-
-        // [3] Combine the row with the policies that apply to the user
-        return resolve(userSettingsRows.isEmpty() ? null : userSettingsRows[0], getUsagePoliciesForUser(userId));
+        // [2] Combine the policies that apply to the user
+        return resolvePolicies(getUsagePoliciesForUser(userId));
     }
 
-    // What the user may do with AI Assist. A usage policy that applies to them gives full use. Without one, an active AI User Setting gives read only. With neither they have none.
+    // What the user may do with AI Assist. A usage policy that applies to them gives full use. Without one they have none.
     public static String getAccessLevel(Id userId) {
 
         // [1] Nothing to look up without a user
         if (userId == null) return AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
 
         // [2] A policy that applies to the user, assigned or by default, gives full use
-        if (!getUsagePoliciesForUser(userId).isEmpty()) return AIAssistApplicationConstants.ACCESS_LEVEL_FULL;
-
-        // [3] Without a policy, an active settings row gives read only, and without that they have none
-        Boolean hasActiveRow = [SELECT COUNT() FROM AIUserSettings__c WHERE User__c = :userId AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 1] > 0;
-
-        return hasActiveRow ? AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY : AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
+        return getUsagePoliciesForUser(userId).isEmpty() ? AIAssistApplicationConstants.ACCESS_LEVEL_NONE : AIAssistApplicationConstants.ACCESS_LEVEL_FULL;
     }
 
-    // Combines a user's own row and their policies into what they are allowed. The answer is never saved.
-    public static AIUserSettings__c resolve(AIUserSettings__c userRow, List<AIUsagePolicy__c> policies) {
+    // Combines the policies that apply to a user into what they are allowed. The answer is never saved. Limits are strictest-wins: the lowest number, and the behavior that blocks most (Block New Messages, then Block New Conversations Only, then Notify Only), so adding a policy can never loosen a limit. Capabilities are additive: a channel, export or debug mode allowed by any policy is allowed, the widest conversation visibility wins, and a policy with no channels listed allows every channel.
+    public static AIUsagePolicy__c resolvePolicies(List<AIUsagePolicy__c> policies) {
 
-        // [1] Ignore a missing or inactive row, and treat no policies as an empty list
-        AIUserSettings__c personalRow = userRow != null && userRow.IsActive__c == true ? userRow : null;
+        // [1] Treat no policies as an empty list
         List<AIUsagePolicy__c> applicable = policies == null ? new List<AIUsagePolicy__c>() : policies;
 
-        // [2] Nothing applies to this user, so there are no personal limits
-        if (personalRow == null && applicable.isEmpty()) return null;
-
-        // [3] Start the answer from the user's row, if there is one
-        AIUserSettings__c resolved = new AIUserSettings__c(Id = personalRow?.Id, User__c = personalRow?.User__c, IsActive__c = true);
-
-        // [4] Visibility and channels: the user's own value if set, otherwise from the policies
-        resolved.ConversationVisibilityScope__c = String.isNotBlank(personalRow?.ConversationVisibilityScope__c) ? personalRow.ConversationVisibilityScope__c : widestVisibility(applicable);
-        resolved.AllowedChannels__c = String.isNotBlank(personalRow?.AllowedChannels__c) ? personalRow.AllowedChannels__c : channelsAllowedByAny(applicable);
-
-        // [5] Capabilities: on if the user's row or any policy switches them on
-        resolved.ShouldCaptureExecutionSteps__c = personalRow?.ShouldCaptureExecutionSteps__c == true || anyChecked(applicable, AIUsagePolicy__c.ShouldCaptureExecutionSteps__c);
-        resolved.ConversationExportEnabled__c = personalRow?.ConversationExportEnabled__c == true || anyChecked(applicable, AIUsagePolicy__c.ConversationExportEnabled__c);
-        resolved.DebugModeEnabled__c = personalRow?.DebugModeEnabled__c == true || anyChecked(applicable, AIUsagePolicy__c.DebugModeEnabled__c);
-
-        // [6] New chats: the user's own row decides when they have one, otherwise they are allowed if any policy allows them
-        resolved.IsUserInitiatedChatEnabled__c = personalRow != null ? personalRow.IsUserInitiatedChatEnabled__c == true : anyChecked(applicable, AIUsagePolicy__c.IsUserInitiatedChatEnabled__c);
-
-        // [7] Return the answer
-        return resolved;
-    }
-
-    // The usage limits for this user: the lowest limits across the policies that apply to them, and the user's own behavior when they have set one. Null when no policy applies, which callers treat as no limits.
-    public static AIUsagePolicy__c getUsageLimits(Id userId) {
-
-        // [1] Nothing to look up without a user
-        if (userId == null) return null;
-
-        // [2] Read the user's own settings row, which can still set the behavior
-        List<AIUserSettings__c> userSettingsRows = [SELECT Id, IsActive__c, UsageLimitReachedBehavior__c FROM AIUserSettings__c WHERE User__c = :userId WITH SYSTEM_MODE LIMIT 1];
-
-        // [3] Combine the row with the policies that apply to the user
-        return resolveUsageLimits(userSettingsRows.isEmpty() ? null : userSettingsRows[0], getUsagePoliciesForUser(userId));
-    }
-
-    // Combines a user's own behavior and their policies into the usage limits that apply. The answer is never saved.
-    public static AIUsagePolicy__c resolveUsageLimits(AIUserSettings__c userRow, List<AIUsagePolicy__c> policies) {
-
-        // [1] Ignore a missing or inactive row, and treat no policies as an empty list
-        AIUserSettings__c personalRow = userRow != null && userRow.IsActive__c == true ? userRow : null;
-        List<AIUsagePolicy__c> applicable = policies == null ? new List<AIUsagePolicy__c>() : policies;
-
-        // [2] No policy applies, so there are no limits
+        // [2] Nothing applies to this user, so there is no answer
         if (applicable.isEmpty()) return null;
 
-        // [3] Limits: the lowest across the policies. Behavior: the user's own if set, otherwise the one that blocks most
-        AIUsagePolicy__c limits = new AIUsagePolicy__c(IsActive__c = true);
-        limits.MaxConcurrentConversations__c = lowest(applicable, AIUsagePolicy__c.MaxConcurrentConversations__c);
-        limits.MaxConversationsPer24Hours__c = lowest(applicable, AIUsagePolicy__c.MaxConversationsPer24Hours__c);
-        limits.MaxTokensPer24Hours__c = lowest(applicable, AIUsagePolicy__c.MaxTokensPer24Hours__c);
-        limits.UsageLimitReachedBehavior__c = String.isNotBlank(personalRow?.UsageLimitReachedBehavior__c) ? personalRow.UsageLimitReachedBehavior__c : strictestBehavior(applicable);
+        // [3] Limits: the lowest across the policies, and the behavior that blocks most
+        AIUsagePolicy__c resolved = new AIUsagePolicy__c(IsActive__c = true);
+        resolved.MaxConcurrentConversations__c = lowest(applicable, AIUsagePolicy__c.MaxConcurrentConversations__c);
+        resolved.MaxConversationsPer24Hours__c = lowest(applicable, AIUsagePolicy__c.MaxConversationsPer24Hours__c);
+        resolved.MaxTokensPer24Hours__c = lowest(applicable, AIUsagePolicy__c.MaxTokensPer24Hours__c);
+        resolved.UsageLimitReachedBehavior__c = strictestBehavior(applicable);
 
-        // [4] Return the answer
-        return limits;
+        // [4] Visibility and channels: the widest visibility, and the channels any policy allows
+        resolved.ConversationVisibilityScope__c = widestVisibility(applicable);
+        resolved.AllowedChannels__c = channelsAllowedByAny(applicable);
+
+        // [5] Capabilities: on if any policy switches them on
+        resolved.ShouldCaptureExecutionSteps__c = anyChecked(applicable, AIUsagePolicy__c.ShouldCaptureExecutionSteps__c);
+        resolved.ConversationExportEnabled__c = anyChecked(applicable, AIUsagePolicy__c.ConversationExportEnabled__c);
+        resolved.DebugModeEnabled__c = anyChecked(applicable, AIUsagePolicy__c.DebugModeEnabled__c);
+        resolved.IsUserInitiatedChatEnabled__c = anyChecked(applicable, AIUsagePolicy__c.IsUserInitiatedChatEnabled__c);
+
+        // [6] Return the answer
+        return resolved;
     }
 
     // The lowest value set for a limit across the policies, or null when none of them sets it.
@@ -241,6 +182,7 @@ public without sharing class AIUsagePolicyService {
             heldNames.add(heldAssignment.PermissionSet.Name);
 
             if (heldAssignment.PermissionSetGroupId != null) {
+
                 heldGroupIds.add(heldAssignment.PermissionSetGroupId);
                 heldNames.add(heldAssignment.PermissionSetGroup.DeveloperName);
             }

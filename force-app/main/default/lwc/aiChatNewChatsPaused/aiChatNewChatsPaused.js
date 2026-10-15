@@ -22,7 +22,7 @@ import { LightningElement, api } from "lwc";
 import { LABELS, EVENT_CONTINUE } from "./aiChatNewChatsPausedSettings";
 import { buildMetaLabel } from "./aiChatNewChatsPausedHelper";
 
-// Shown instead of a new conversation while the user's AIUserSettings__c.IsUserInitiatedChatEnabled__c is off - offers the Active conversation on this record, if there is one.
+// Shown instead of a new conversation while the user's AIUsagePolicy__c.IsUserInitiatedChatEnabled__c is off - offers the Active conversation on this record, if there is one.
 export default class AiChatNewChatsPaused extends LightningElement {
 
   // Values passed in by the parent component

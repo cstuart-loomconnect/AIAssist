@@ -3,7 +3,7 @@
     <fullName>User__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <description
-  >The user this usage belongs to. It is the key the platform finds the record by, so it is set even for a user whose limits come from a usage policy and who has no AI User Settings record.</description>
+  >The user this usage belongs to. It is the key the platform finds the record by.</description>
     <inlineHelpText>Set by the platform. Do not edit.</inlineHelpText>
     <label>User</label>
     <referenceTo>User</referenceTo>

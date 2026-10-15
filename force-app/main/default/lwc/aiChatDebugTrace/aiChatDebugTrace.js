@@ -4,7 +4,7 @@ Component Name: aiChatDebugTrace
 =================================================================
 =================================================================
 
-Description: Debug mode's request trace for one AI reply (AIUserSettings__c.DebugModeEnabled__c).
+Description: Debug mode's request trace for one AI reply (AIUsagePolicy__c.DebugModeEnabled__c).
 
 Step 1: Take the trace (or an error message) that aiAssistChat loaded through AIChatController.getDebugTrace
 Step 2: Show the status, model, tokens, steps and ids, leaving out any row the trace has no value for

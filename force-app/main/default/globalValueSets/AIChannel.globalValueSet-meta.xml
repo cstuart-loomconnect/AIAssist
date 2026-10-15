@@ -16,7 +16,7 @@
         <label>Mobile</label>
     </customValue>
     <description
-  >Where an AI Assist conversation takes place. Shared by AI Conversation.Channel and AI User Settings.Allowed Channels so the two can never drift apart.</description>
+  >Where an AI Assist conversation takes place. Shared by AI Conversation.Channel and AI Usage Policy.Allowed Channels so the two can never drift apart.</description>
     <masterLabel>AI Channel</masterLabel>
     <sorted>false</sorted>
 </GlobalValueSet>

@@ -24,17 +24,14 @@ Version      Author                   Description
     // testScenario4: isInFlightCapReached with no cap, room under the cap and the cap reached -> false, false, true.
     // testScenario5: A full shared queue refuses the message as service busy, and room in the queue allows it -> only the full queue is refused with the service busy label.
     // testScenario6: A conversation idle for longer than its agent's timeout does not count towards the concurrent limit; one inside the timeout, and one on an agent with no timeout, do -> two are counted and the new conversation is only refused once all three places are taken.
-
-    // testScenario7: A daily token limit that is used up, with Block New Conversations Only and a limit that came from a policy rather than a saved row -> a new conversation is refused with the daily usage label and a message in an existing one is allowed.
+    // testScenario7: A daily token limit that is used up, with Block New Conversations Only-> a new conversation is refused with the daily usage label and a message in an existing one is allowed.
     // testScenario8: A daily token limit that is used up, with Block New Messages -> both a new conversation and a message in an existing one are refused, while a user still under the limit is allowed.
     // testScenario9: Tokens spent on an earlier day do not count and the day's total starts again from the next tokens, and Notify Only never refuses -> nothing is refused.
     // testScenario10: A daily conversations limit counts only conversations started today, refuses only a new conversation, and never refuses under Notify Only -> one refusal, with the daily conversation label.
-
     // testScenario11: getLimitState with no limits, and with limits not yet reached -> null both times.
     // testScenario12: The token limit reached under each behaviour -> Block New Messages blocks messages and new conversations, Block New Conversations Only blocks only new conversations, Notify Only blocks nothing.
     // testScenario13: A daily conversations limit and a concurrent limit reached under Block New Messages -> each reports its own type and blocks new conversations only, never messages.
     // testScenario14: Tokens and conversations both reached -> the token limit is the one reported.
-
     // testScenario15: getUsageMeters with no limits, with one limit set and with all three set -> always three meters in the order tokens, daily conversations, open conversations; a limit that is not set has what is used and no max.
 
     @TestSetup static void setup() {
@@ -66,7 +63,7 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Check nothing was refused
-            Assert.isNull(context.usageLimits, 'No policy applies, and no limit is set, so nothing should be refused.');
+            Assert.isNull(context.usagePolicy, 'No policy limits are set, so nothing should be refused.');
         }
     }
 
@@ -85,7 +82,7 @@ Version      Author                   Description
             context.userId = chatUser.Id;
             context.agent = agent;
 
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 2, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 2, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
 
             AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 2, true);
 
@@ -121,7 +118,7 @@ Version      Author                   Description
             context.userId = chatUser.Id;
             context.agent = agent;
 
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 1, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 1, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY);
 
             AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true);
 
@@ -129,15 +126,15 @@ Version      Author                   Description
             Test.startTest();
                 AIUsageLimitService.enforceUsageLimits(context, true);
 
-                context.usageLimits = null;
+                context.usagePolicy = null;
                 AIUsageLimitService.enforceUsageLimits(context, true);
 
-                context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 1, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
+                context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 1, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
                 AIUsageLimitService.enforceUsageLimits(context, false);
             Test.stopTest();
 
             // [3] Check nothing was refused
-            Assert.isNotNull(context.usageLimits, 'The last call ran with limits live; an existing conversation should still have been allowed.');
+            Assert.isNotNull(context.usagePolicy, 'The last call ran with limits live; an existing conversation should still have been allowed.');
         }
     }
 
@@ -228,7 +225,6 @@ Version      Author                   Description
 
             List<AIConversation__c> timed = AIAssistTestDataFactory.createAIConversations(agents[0].Id, chatUser.Id, 2, true);
             AIConversation__c untimed = AIAssistTestDataFactory.createAIConversations(agents[1].Id, chatUser.Id, 1, true)[0];
-            // One conversation on the timed agent went quiet two hours ago; the one with no timeout went quiet two days ago.
 
             // [2] Make one timed conversation idle and one untimed conversation old
             timed[0].LastMessageTimestamp__c = System.now().addHours(-2);
@@ -237,11 +233,10 @@ Version      Author                   Description
             update new List<AIConversation__c>{ timed[0], timed[1], untimed };
 
             // [3] Create a three conversation limit and the chat context
-
             AIMessageValidator.ChatContext context = new AIMessageValidator.ChatContext();
             context.userId = chatUser.Id;
             context.agent = agents[0];
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 3, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxConcurrentConversations__c = 3, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
 
             String firstRefusal;
             String secondRefusal;
@@ -278,7 +273,7 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a chat context whose daily token limit came from a policy, so the settings are not saved
+            // [1] Create a chat context with a 100 token daily limit under Block New Conversations Only
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
 
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
@@ -287,7 +282,7 @@ Version      Author                   Description
             AIMessageValidator.ChatContext context = new AIMessageValidator.ChatContext();
             context.userId = chatUser.Id;
             context.agent = agent;
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
 
             // [2] Spend exactly the limit in one of the user's conversations
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
@@ -324,12 +319,12 @@ Version      Author                   Description
             AIMessageValidator.ChatContext overContext = new AIMessageValidator.ChatContext();
             overContext.userId = chatUsers[0].Id;
             overContext.agent = agent;
-            overContext.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
+            overContext.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
 
             AIMessageValidator.ChatContext underContext = new AIMessageValidator.ChatContext();
             underContext.userId = chatUsers[1].Id;
             underContext.agent = agent;
-            underContext.usageLimits = overContext.usageLimits;
+            underContext.usagePolicy = overContext.usagePolicy;
 
             // [2] Spend the limit for the first user and one token less for the second
             AIConversation__c overConversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUsers[0].Id, 1, true)[0];
@@ -381,12 +376,14 @@ Version      Author                   Description
             AIMessageValidator.ChatContext context = new AIMessageValidator.ChatContext();
             context.userId = chatUser.Id;
             context.agent = agent;
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxTokensPer24Hours__c = 100, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
 
             // [2] Spend the whole limit, then move that usage back to yesterday
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true)[0];
             AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 500, 1, true);
-            moveUsageToYesterday(chatUser.Id);
+            AIUsage__c usage = [SELECT Id FROM AIUsage__c WHERE User__c = :chatUser.Id LIMIT 1];
+            usage.UsageDate__c = AIUsageService.getToday().addDays(-1);
+            update usage;
 
             // [3] Enforce the limits, then spend the limit just now and enforce them again under Notify Only
             Test.startTest();
@@ -394,7 +391,7 @@ Version      Author                   Description
                 AIUsageLimitService.enforceUsageLimits(context, true);
 
                 AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_AI_AGENT, 500, 1, true);
-                context.usageLimits.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY;
+                context.usagePolicy.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY;
                 AIUsageLimitService.enforceUsageLimits(context, true);
                 Decimal tokensCountedNow = AIUsageLimitService.sumUserTokensToday(chatUser.Id);
             Test.stopTest();
@@ -419,11 +416,13 @@ Version      Author                   Description
             AIMessageValidator.ChatContext context = new AIMessageValidator.ChatContext();
             context.userId = chatUser.Id;
             context.agent = agent;
-            context.usageLimits = new AIUsagePolicy__c(IsActive__c = true, MaxConversationsPer24Hours__c = 2, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
+            context.usagePolicy = new AIUsagePolicy__c(IsActive__c = true, MaxConversationsPer24Hours__c = 2, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_CONVERSATIONS_ONLY);
 
             // [2] Start one conversation and move that usage back to yesterday, then start two more today
             AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 1, true);
-            moveUsageToYesterday(chatUser.Id);
+            AIUsage__c usage = [SELECT Id FROM AIUsage__c WHERE User__c = :chatUser.Id LIMIT 1];
+            usage.UsageDate__c = AIUsageService.getToday().addDays(-1);
+            update usage;
             AIAssistTestDataFactory.createAIConversations(agent.Id, chatUser.Id, 2, true);
 
             String overLimitRefusal;
@@ -445,7 +444,7 @@ Version      Author                   Description
                     existingConversationRefusal = ex.getMessage();
                 }
 
-                context.usageLimits.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY;
+                context.usagePolicy.UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY;
                 try {
                     AIUsageLimitService.enforceUsageLimits(context, true);
                 } catch (AIUsageLimitService.AIUsageLimitServiceException ex) {
@@ -599,13 +598,5 @@ Version      Author                   Description
             Assert.areEqual(1, allMeters[2].used, 'The open conversation should be counted.');
             Assert.isNull(AIUsageLimitService.getLimitState(noMeters, null), 'Meters with no limits reach nothing.');
         }
-    }
-
-    // Dates the user's usage record yesterday, as if the tokens and conversations on it were from the day before.
-    private static void moveUsageToYesterday(Id userId) {
-
-        AIUsage__c usage = [SELECT Id FROM AIUsage__c WHERE User__c = :userId LIMIT 1];
-        usage.UsageDate__c = AIUsageService.getToday().addDays(-1);
-        update usage;
     }
 }

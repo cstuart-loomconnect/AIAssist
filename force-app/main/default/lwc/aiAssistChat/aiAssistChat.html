@@ -38,7 +38,7 @@
         <c-ai-chat-state-panel variant="maintenance" heading={labels.maintenanceHeading} body={labels.maintenanceBody} action-label={labels.checkAgain} footer={labels.contactAdmin} onaction={handleCheckAgain}></c-ai-chat-state-panel>
       </template>
 
-      <!-- No access: the user has no active AI User Setting and no active AI Usage Policy -->
+      <!-- No access: no active AI Usage Policy applies to the user -->
       <template lwc:elseif={isNoAccess}>
         <c-ai-chat-state-panel variant="noaccess" heading={labels.noAccessHeading} body={labels.noAccessBody} footer={labels.contactAdmin}></c-ai-chat-state-panel>
       </template>
@@ -60,14 +60,6 @@
 
       <!-- Ready: the conversation -->
       <template lwc:else>
-        <!-- No policy: the user can read but not send, because no AI Usage Policy applies to them -->
-        <template lwc:if={showNoPolicyBanner}>
-          <div class="no-policy slds-grid slds-grid_vertical" role="status">
-            <span class="no-policy-heading">{labels.noPolicyHeading}</span>
-            <span class="no-policy-body">{labels.noPolicyBody}</span>
-          </div>
-        </template>
-
         <!-- Usage limit: the user has reached a limit, shown before they press Send -->
         <template lwc:if={showUsageBanner}>
           <c-ai-chat-usage-banner limit-state={usageLimit} onopenhistory={handleOpenHistory}></c-ai-chat-usage-banner>

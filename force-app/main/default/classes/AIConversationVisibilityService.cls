@@ -4,7 +4,7 @@ Class Name: AIConversationVisibilityService
 =================================================================
 =================================================================
 
-Description: Decides who may read a conversation they did not start. Reading only: a conversation can be sent to, retried, closed, resumed, exported and acted on by the user who started it and nobody else.
+Description: Decides who may read a conversation they did not start.
 
 Step 1: Read the conversation in user mode, so sharing decides first and a viewer never reaches one the org does not already give them
 Step 2: Let the starter read their own conversation
@@ -26,10 +26,10 @@ public without sharing class AIConversationVisibilityService {
     private static final Integer RECORD_ACCESS_BATCH = 200; // UserRecordAccess answers for at most 200 records per query.
 
     // The narrowest scope when nothing, or something unrecognised, is set.
-    public static String getEffectiveScope(AIUserSettings__c userSettings) {
+    public static String getEffectiveScope(AIUsagePolicy__c usagePolicy) {
 
-        // [1] Read the scope from the user's settings
-        String scope = userSettings?.ConversationVisibilityScope__c;
+        // [1] Read the scope from the user's usage policy
+        String scope = usagePolicy?.ConversationVisibilityScope__c;
 
         // [2] Keep the two wider scopes, and fall back to the narrowest for anything else
         return scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_SUBORDINATES || scope == AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL ? scope : AIAssistApplicationConstants.VISIBILITY_SCOPE_OWN;
@@ -74,7 +74,7 @@ public without sharing class AIConversationVisibilityService {
         return [SELECT COUNT() FROM ObjectPermissions WHERE SobjectType = :String.valueOf(AIConversation__c.SObjectType) AND PermissionsViewAllRecords = TRUE AND ParentId IN (SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()) WITH SYSTEM_MODE] > 0;
     }
 
-    // The conversation, if the signed-in user started it or may read it under the rules above. Throws the "not found" refusal, the same answer as for a missing conversation, otherwise.
+    // The conversation, if the signed-in user started it or may read it under the steps above. Reading only: a conversation can be sent to, retried, closed, resumed, exported and acted on by the user who started it and nobody else. Throws the "not found" refusal, the same answer as for a missing conversation, otherwise.
     public static AIConversation__c getViewableConversation(Id conversationId) {
 
         List<AIConversation__c> conversations = new List<AIConversation__c>();
@@ -94,7 +94,7 @@ public without sharing class AIConversationVisibilityService {
 
             // [2] Work out the viewer's scope
             AIConversation__c conversation = conversations[0];
-            String scope = getEffectiveScope(AIUsagePolicyService.getUserSettings(UserInfo.getUserId()));
+            String scope = getEffectiveScope(AIUsagePolicyService.getUsagePolicy(UserInfo.getUserId()));
 
             if (conversation.OwnerId == UserInfo.getUserId()) {
 
@@ -231,7 +231,7 @@ public without sharing class AIConversationVisibilityService {
 
             Id recordId = AIChatDataStructure.getIdOrNull(conversation.RelatedRecordId__c);
 
-            // A value that is not an Id cannot be checked, so it is not shown.
+            // [4] A value that is not an Id cannot be checked, so it is not shown
             if (String.isBlank(conversation.RelatedRecordId__c) || (recordId != null && readableRecordIds.contains(recordId))) readable.add(conversation);
         }
 

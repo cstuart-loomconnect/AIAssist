@@ -4,23 +4,14 @@ Class Name: AIConversationMessageService
 =================================================================
 =================================================================
 
-Description: The entry point for a user sending a message: what the chat UI calls. Never talks to the AI provider; that is handed off entirely to the asynchronous job.
+Description: The entry point for a user sending a message, which the chat window calls. It never talks to the AI provider.
 
 Step 1: Check the request is allowed (AIMessageValidator)
 Step 2: Find an Active conversation to reuse, or start a new one, closing an existing one first if it hit the agent's message or token cap
 Step 3: Check the usage limits (AIUsageLimitService)
 Step 4: Take the conversation's processing lock, insert the user's message and enqueue AIMessageProcessingQueueable, only if the lock was free
-
-Also owns retrying the newest message, manually closing a conversation (distinct from the idle and retention jobs' automated closing),
-and starting or failing messages held at the cap on messages in flight.
-
-Authorises as the user even though the class is declared without sharing: a conversation is only ever found or changed with a
-user-mode statement, so a user reaches only their own (conversations are Private) and only fields the AI Assist User
-permission set can set. What the user may not write themselves (the message's token estimate and processing status)
-goes through AIMessagingDataService, after those checks.
-
-Every refusal is an exception whose message is a Custom Label; the UI shows it, not its text. An unexpected failure reaches
-the caller as the generic label and is logged in full.
+Step 5: Retry the newest message of a conversation, or close a conversation by hand
+Step 6: Start or fail messages held at the cap on messages in flight
 
 =================================================================
 =================================================================
@@ -47,7 +38,7 @@ public without sharing class AIConversationMessageService {
         return sendMessage(conversationId, agentId, messageBody, channel, relatedObjectApiName, relatedRecordId, null);
     }
 
-    // As above, and answers the message with promptTemplateId, one of the agent's active Prompt Templates, instead of the agent's default (a slash command's template arrives this way). A blank Id, or one that is no longer active on the agent when the turn runs, leaves the choice to the default and the model.
+    // As above, and answers the message with promptTemplateId, one of the agent's active Prompt Templates, instead of the agent's default (a slash command's template arrives this way). A blank Id, or one that is no longer active on the agent when the turn runs, leaves the choice to the default and the model. It authorises as the user even though the class is without sharing: a conversation is only ever found or changed with a user-mode statement, so a user reaches only their own (conversations are Private) and only fields the AI Assist User permission set can set. What the user may not write themselves (the message's token estimate and processing status) goes through AIMessagingDataService, after those checks. Every refusal is an exception whose message is a Custom Label, which the UI shows; an unexpected failure reaches the caller as the generic label and is logged in full.
     public static AIConversationMessage__c sendMessage(Id conversationId, Id agentId, String messageBody, String channel, String relatedObjectApiName, Id relatedRecordId, Id promptTemplateId) {
 
         try {
@@ -72,7 +63,7 @@ public without sharing class AIConversationMessageService {
 
             AIConversation__c conversation = candidateConversations.isEmpty() ? null : candidateConversations[0];
 
-            // [4] Close a conversation at the agent's message or token cap, with the matching reason, so the user starts a fresh one instead of being blocked
+            // [4] Close a conversation at the agent's message or token cap, with the matching reason, so the user starts a fresh one instead of being blocked. A close that fails is reported as not found, which reveals nothing about what exists
             if (conversation != null) {
 
                 Decimal tokensUsed = conversation.ConversationTokenUsage__c == null ? 0 : conversation.ConversationTokenUsage__c;
@@ -81,7 +72,6 @@ public without sharing class AIConversationMessageService {
 
                     Database.SaveResult messageLimitCloseResult = Database.update(new AIConversation__c(Id = conversation.Id, Status__c = AIAssistApplicationConstants.CONVERSATION_STATUS_CLOSED, ConversationCloseReason__c = AIAssistApplicationConstants.CONVERSATION_CLOSE_REASON_MESSAGE_LIMIT_REACHED), false, AccessLevel.USER_MODE);
 
-                    // A failure is reported as "not found", which reveals nothing about what exists
                     if (!messageLimitCloseResult.isSuccess()) throw new AIConversationMessageServiceException(Label.AI_Error_Conversation_Not_Found);
 
                     conversation = null;
@@ -98,7 +88,7 @@ public without sharing class AIConversationMessageService {
             // [5] Refuse a new conversation while new chats are paused
             Boolean isNewConversation = conversation == null;
 
-            if (isNewConversation && chatContext.userSettings != null && chatContext.userSettings.IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
+            if (isNewConversation && chatContext.usagePolicy != null && chatContext.usagePolicy.IsUserInitiatedChatEnabled__c == false) throw new AIConversationMessageServiceException(Label.AI_Chat_New_Chats_Paused);
 
             // [6] Check the usage limits
             AIUsageLimitService.enforceUsageLimits(chatContext, isNewConversation);
@@ -136,6 +126,7 @@ public without sharing class AIConversationMessageService {
             return userMessage;
 
         } catch (Exception ex) {
+
             // [12] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
             if (!ex.getTypeName().startsWith('System.')) throw ex;
 
@@ -176,6 +167,7 @@ public without sharing class AIConversationMessageService {
             return failedMessages.size();
 
         } catch (Exception ex) {
+
             // [6] Log it and report that nothing was failed
             AIPlatformLogManager.logException(ex, 'AIConversationMessageService', 'failExpiredHeldMessages');
 
@@ -186,6 +178,7 @@ public without sharing class AIConversationMessageService {
     // True when the signed-in user has a message in this conversation waiting for a place under the cap on messages in flight. The chat window asks this on every update, so it is one indexed read and nothing else: startHeldMessage and its sweep of every user's expired messages run only for a window that has something to start.
     public static Boolean hasHeldMessage(Id conversationId) {
 
+        // [1] Look for one message of the user's still waiting
         return ![SELECT Id FROM AIConversationMessage__c WHERE AIConversation__c = :conversationId AND IsAwaitingCapacity__c = TRUE AND ProcessingStatus__c = :AIAssistApplicationConstants.PROCESSING_STATUS_QUEUED AND CreatedById = :UserInfo.getUserId() WITH SYSTEM_MODE LIMIT 1].isEmpty();
     }
 
@@ -218,6 +211,7 @@ public without sharing class AIConversationMessageService {
             return true;
 
         } catch (Exception ex) {
+
             // [6] Roll back to the savepoint, log it and report that nothing was started
             if (beforeStart != null) Database.rollback(beforeStart);
 
@@ -267,6 +261,7 @@ public without sharing class AIConversationMessageService {
             return newestUserMessages[0].Id;
 
         } catch (Exception ex) {
+
             // [10] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
             if (!ex.getTypeName().startsWith('System.')) throw ex;
 
@@ -298,6 +293,7 @@ public without sharing class AIConversationMessageService {
             if (!closeResult.isSuccess()) throw new AIConversationMessageServiceException(Label.AI_Error_Conversation_Not_Found);
 
         } catch (Exception ex) {
+
             // [5] A package exception already carries a Custom Label and was logged where it was thrown, so pass it on
             if (!ex.getTypeName().startsWith('System.')) throw ex;
 

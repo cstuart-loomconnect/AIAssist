@@ -23,6 +23,10 @@
     <description
   >Builds and maintains AI Assist. Everything in AI Assist User, plus manage agents, prompts, data sources, actions, models, rules, PII registry and per-user limits. Cannot read other users&apos; messages or PII mappings, or delete audit data.</description>
     <classAccesses>
+        <apexClass>AIAssistSettingsController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>AIChatController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -34,6 +38,10 @@
         <apexClass>AIConversationShareService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>AIAssistManageSettings</name>
+    </customPermissions>
     <customPermissions>
         <enabled>true</enabled>
         <name>AIAssistViewSharedConversations</name>
@@ -735,11 +743,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>AIUsage__c.AIUserSettings__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>AIUsage__c.ConversationsStarted__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -766,51 +769,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIUsage__c.User__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.AllowedChannels__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.ConversationExportEnabled__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.ConversationVisibilityScope__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.DebugModeEnabled__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.IsActive__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.IsUserInitiatedChatEnabled__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.ShouldCaptureExecutionSteps__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.UsageLimitReachedBehavior__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>AIUserSettings__c.User__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1052,16 +1010,6 @@
     </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>true</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>false</modifyAllRecords>
-        <object>AIUserSettings__c</object>
-        <viewAllFields>false</viewAllFields>
-        <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
-    <objectPermissions>
-        <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
@@ -1120,10 +1068,6 @@
     </tabSettings>
     <tabSettings>
         <tab>AIUsagePolicy__c</tab>
-        <visibility>Available</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>AIUserSettings__c</tab>
         <visibility>Available</visibility>
     </tabSettings>
     <tabSettings>

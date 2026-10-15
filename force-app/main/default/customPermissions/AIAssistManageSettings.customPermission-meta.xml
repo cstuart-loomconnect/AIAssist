@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Lets a user open the AI Assist Settings tab and change AI Assist Settings, AI Assist UI Settings and AI Usage Policies. Granted to AI Assist Admin and AI Assist Super User.</description>
+    <isLicensed>false</isLicensed>
+    <label>AI Assist Manage Settings</label>
+</CustomPermission>

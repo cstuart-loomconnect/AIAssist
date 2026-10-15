@@ -3,7 +3,7 @@
     <fullName>IsWorkflowActionsEnabled__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >Lets users run Workflow Actions suggested in the chat. Set at user, profile or organisation level; there is no per-user override on AI User Settings.</description>
+  >Lets users run Workflow Actions suggested in the chat. Set at user, profile or organisation level.</description>
     <inlineHelpText
   >Tick to let users run Workflow Actions from the chat.</inlineHelpText>
     <label>Is Workflow Actions Enabled</label>

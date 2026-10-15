@@ -20,9 +20,9 @@ Version      Author                   Description
 
     // testScenario1: The starter shares a Global-agent conversation with an eligible user -> a Read DirectShare row exists, the recipient has the title as subtitle, and sharing again adds no second row.
     // testScenario2: A recipient with no title shows the role name and one with neither shows a blank subtitle, and getShares lists them by name.
-    // testScenario3: Sharing is refused for a Private agent, with oneself, with a user with no AI setting, with an inactive user, with a missing user and for someone else's conversation.
+    // testScenario3: Sharing is refused for a Private agent, with oneself, with a user no usage policy applies to, with an inactive user, with a missing user and for someone else's conversation.
     // testScenario4: A conversation already shared with 25 users refuses a 26th, and still accepts the same user again.
-    // testScenario5: Searching needs two characters, escapes wildcards, and leaves out the starter, shared users, inactive users and users with no AI setting, and returns at most ten.
+    // testScenario5: Searching needs two characters, escapes wildcards, and leaves out the starter, shared users, inactive users and users who hold no AI Assist permission set, and returns at most ten.
     // testScenario6: Unsharing removes only that user's row, does nothing for an unshared user, and is refused for a non-owner.
     // testScenario7: A non-owner cannot list shares or search, and the lookup methods answer from the share rows.
 
@@ -50,7 +50,6 @@ Version      Author                   Description
             User recipientUser = AIAssistTestDataFactory.createUsers(1, true)[0];
             recipientUser.Title = 'Head of Testing';
             System.runAs(AIAssistTestDataFactory.getSetupUser()) { update recipientUser; }
-            AIAssistTestDataFactory.createAIUserSettings(recipientUser.Id, true);
 
             AIChatDataStructure.ShareRecipient first;
             AIChatDataStructure.ShareRecipient second;
@@ -97,9 +96,6 @@ Version      Author                   Description
                 insert recipients;
             }
 
-            AIAssistTestDataFactory.createAIUserSettings(recipients[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(recipients[1].Id, true);
-
             List<AIChatDataStructure.ShareRecipient> shares;
 
             // [2] Share with both and list the shares
@@ -122,7 +118,7 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a Global and a Private agent, conversations on each, and an eligible, an ineligible and an inactive user
+            // [1] Create a Global and a Private agent, conversations on each, and an eligible user, a user no policy applies to and an inactive user
             AIAgent__c globalAgent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
             globalAgent.ConversationVisibility__c = AGENT_VISIBILITY_GLOBAL;
             insert globalAgent;
@@ -135,13 +131,10 @@ Version      Author                   Description
             AIConversation__c onPrivate = AIAssistTestDataFactory.createAIConversations(privateAgent.Id, UserInfo.getUserId(), 1, true)[0];
             List<User> users = AIAssistTestDataFactory.createUsers(4, true);
             AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(globalAgent.Id, users[3].Id, 1, true)[0];
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[2].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[3].Id, true);
             users[2].IsActive = false;
             System.runAs(AIAssistTestDataFactory.getSetupUser()) { update users[2]; }
             AIAssistTestDataFactory.deactivateUsagePolicies();
-            delete [SELECT Id FROM AIUserSettings__c WHERE User__c = :users[1].Id];
+            AIAssistTestDataFactory.createAIUsagePolicyForUser(users[0].Id, new AIUsagePolicy__c());
 
             List<String> refusals = new List<String>();
 
@@ -159,7 +152,7 @@ Version      Author                   Description
             // [3] Check each refusal and that nothing was shared
             Assert.areEqual(Label.AI_Error_Share_Not_Global, refusals[0], 'A Private agent should not be shared.');
             Assert.areEqual(Label.AI_Error_Share_Self, refusals[1], 'Sharing with oneself should be refused.');
-            Assert.areEqual(Label.AI_Error_Share_User_Ineligible, refusals[2], 'A user with no AI setting should be refused.');
+            Assert.areEqual(Label.AI_Error_Share_User_Ineligible, refusals[2], 'A user no usage policy applies to should be refused.');
             Assert.areEqual(Label.AI_Error_Share_User_Ineligible, refusals[3], 'An inactive user should be refused.');
             Assert.areEqual(Label.AI_Error_Share_User_Ineligible, refusals[4], 'A missing user should be refused.');
             Assert.areEqual(Label.AI_Error_Share_User_Ineligible, refusals[5], 'An Id that is not a user should be refused.');
@@ -173,23 +166,20 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a Global agent, a conversation and 26 eligible users, 25 of them already shared with
+            // [1] Create a Global agent, a conversation and 26 users, 25 of them already shared with
             AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, false)[0];
             agent.ConversationVisibility__c = AGENT_VISIBILITY_GLOBAL;
             insert agent;
 
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
             List<User> users = AIAssistTestDataFactory.createUsers(26, true);
-            List<AIUserSettings__c> settingsRows = new List<AIUserSettings__c>();
             List<AIConversation__Share> shareRows = new List<AIConversation__Share>();
 
             for (Integer index = 0; index < users.size(); index++) {
 
-                settingsRows.add(new AIUserSettings__c(User__c = users[index].Id, IsActive__c = true));
                 if (index < 25) shareRows.add(new AIConversation__Share(ParentId = conversation.Id, UserOrGroupId = users[index].Id, AccessLevel = 'Read', RowCause = Schema.AIConversation__Share.RowCause.DirectShare__c));
             }
 
-            insert settingsRows;
             System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert shareRows; }
 
             String refusal;
@@ -226,14 +216,14 @@ Version      Author                   Description
             users[13].LastName = 'Zqsearch %_ 13';
             System.runAs(AIAssistTestDataFactory.getSetupUser()) { insert users; }
 
-            List<AIUserSettings__c> settingsRows = new List<AIUserSettings__c>();
+            List<User> permittedUsers = new List<User>();
 
             for (Integer index = 0; index < users.size(); index++) {
 
-                if (index != 11) settingsRows.add(new AIUserSettings__c(User__c = users[index].Id, IsActive__c = true));
+                if (index != 11) permittedUsers.add(users[index]);
             }
 
-            insert settingsRows;
+            AIAssistTestDataFactory.assignPermissionSet(permittedUsers, AIAssistApplicationConstants.PERMISSION_SET_USER);
             users[10].IsActive = false;
             System.runAs(AIAssistTestDataFactory.getSetupUser()) { update users[10]; }
 
@@ -268,7 +258,7 @@ Version      Author                   Description
             Assert.areEqual(10, found.size(), 'At most ten users should come back.');
             Assert.isFalse(foundIds.contains(users[0].Id), 'A user already shared with should be left out.');
             Assert.isFalse(foundIds.contains(users[10].Id), 'An inactive user should be left out.');
-            Assert.isFalse(foundIds.contains(users[11].Id), 'A user with no AI setting should be left out.');
+            Assert.isFalse(foundIds.contains(users[11].Id), 'A user with no AI Assist permission set should be left out.');
             Assert.isTrue(wildcard.isEmpty(), 'A percent sign should not act as a wildcard.');
             Assert.areEqual(1, literal.size(), 'A percent sign and underscore should match themselves.');
             Assert.areEqual(users[13].Id, literal[0].userId, 'The literal match should be the user with those characters.');
@@ -288,8 +278,6 @@ Version      Author                   Description
 
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
             List<User> users = AIAssistTestDataFactory.createUsers(3, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
-            AIAssistTestDataFactory.createAIUserSettings(users[1].Id, true);
             AIConversation__c theirs = AIAssistTestDataFactory.createAIConversations(agent.Id, users[2].Id, 1, true)[0];
             AIConversationShareService.shareConversation(conversation.Id, users[0].Id);
             AIConversationShareService.shareConversation(conversation.Id, users[1].Id);
@@ -325,7 +313,6 @@ Version      Author                   Description
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, UserInfo.getUserId(), 1, true)[0];
             List<User> users = AIAssistTestDataFactory.createUsers(2, true);
             AIAssistTestDataFactory.assignPermissionSet(users, AIAssistApplicationConstants.PERMISSION_SET_USER);
-            AIAssistTestDataFactory.createAIUserSettings(users[0].Id, true);
             AIConversationShareService.shareConversation(conversation.Id, users[0].Id);
 
             List<String> refusals = new List<String>();

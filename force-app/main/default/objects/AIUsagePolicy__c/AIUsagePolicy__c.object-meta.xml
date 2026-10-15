@@ -144,7 +144,7 @@
     <compactLayoutAssignment>AIUsagePolicyCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >A named set of usage limits and chat capabilities, assigned to users or permission sets through AI Usage Policy Assignments, so limits are set once per group instead of once per person. A personal AI User Settings record overrides it.</description>
+  >A named set of usage limits and chat capabilities, assigned to users or permission sets through AI Usage Policy Assignments, so limits are set once per group instead of once per person. A user who needs different limits or features is assigned a policy of their own.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

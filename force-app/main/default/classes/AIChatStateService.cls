@@ -7,13 +7,10 @@ Class Name: AIChatStateService
 Description: Works out what state the chat window is in for the signed-in user (the settings behind ChatContext.state).
 
 Step 1: Build the UI settings from the org's UI settings record
-Step 2: Build what this user may do (debug, export, new chats, Workflow Actions) from their own settings and the UI settings
+Step 2: Build what this user may do (debug, export, new chats, Workflow Actions) from their usage policy and the UI settings
 Step 3: Check the channel is allowed and whether the terms have to be accepted
 Step 4: Name the one reason the user cannot send a message right now, if there is one
-Step 5: Say what the user may do (read with an active AI User Setting or an active AI Usage Policy, send only with a policy), and refuse a request from a user who may not
-
-The user's own AIUserSettings__c row is read in system mode (AIUsagePolicyService.getUserSettings), because the
-User permission set cannot read it; only the signed-in user's row is ever asked for.
+Step 5: Say whether the user may use AI Assist (they need an active AI Usage Policy), and refuse a request from a user who may not
 
 =================================================================
 =================================================================
@@ -48,35 +45,35 @@ public without sharing class AIChatStateService {
         return uiState;
     }
 
-    // Builds what the signed-in user may do. Workflow Actions follow the UI settings; debug mode, export and new chats follow the user's settings, so with none there is no debug and no export, and new chats are allowed.
-    public static AIChatDataStructure.UserState buildUserState(AIUserSettings__c userSettings) {
+    // Builds what the signed-in user may do. Workflow Actions follow the UI settings; debug mode, export and new chats follow the user's usage policy, so with none there is no debug and no export, and new chats are allowed.
+    public static AIChatDataStructure.UserState buildUserState(AIUsagePolicy__c usagePolicy) {
 
         // [1] Create the result for the signed-in user
         AIChatDataStructure.UserState userState = new AIChatDataStructure.UserState();
         userState.userId = UserInfo.getUserId();
 
-        // [2] Use an empty row when the user has none
-        AIUserSettings__c settings = userSettings == null ? new AIUserSettings__c() : userSettings;
+        // [2] Use an empty policy when the user has none
+        AIUsagePolicy__c policy = usagePolicy == null ? new AIUsagePolicy__c() : usagePolicy;
 
-        // [3] Workflow Actions come from the UI settings, and debug mode, export and new chats from the user's settings; all need the application on
+        // [3] Workflow Actions come from the UI settings, and debug mode, export and new chats from the user's usage policy; all need the application on
         Boolean isApplicationOn = AIAssistSettingsService.isEnabled();
         AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-        userState.debugMode = isApplicationOn && settings.DebugModeEnabled__c == true;
-        userState.exportEnabled = isApplicationOn && settings.ConversationExportEnabled__c == true;
+        userState.debugMode = isApplicationOn && policy.DebugModeEnabled__c == true;
+        userState.exportEnabled = isApplicationOn && policy.ConversationExportEnabled__c == true;
         userState.workflowActionsEnabled = isApplicationOn && uiSettings.IsWorkflowActionsEnabled__c == true;
-        userState.newChatsDisabled = userSettings != null && userSettings.IsUserInitiatedChatEnabled__c == false;
+        userState.newChatsDisabled = usagePolicy != null && usagePolicy.IsUserInitiatedChatEnabled__c == false;
 
         return userState;
     }
 
-    // The same rule the validator applies: no row, no allow-list or no channel means allowed.
-    public static Boolean isChannelAllowed(AIUserSettings__c userSettings, String channel) {
+    // The same rule the validator applies: no policy, no allow-list or no channel means allowed.
+    public static Boolean isChannelAllowed(AIUsagePolicy__c usagePolicy, String channel) {
 
         // [1] Allow the channel when there is nothing to check it against
-        if (userSettings == null || String.isBlank(userSettings.AllowedChannels__c) || String.isBlank(channel)) return true;
+        if (usagePolicy == null || String.isBlank(usagePolicy.AllowedChannels__c) || String.isBlank(channel)) return true;
 
         // [2] Allow it only when it is on the user's list
-        return new Set<String>(userSettings.AllowedChannels__c.split(AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR)).contains(channel);
+        return new Set<String>(usagePolicy.AllowedChannels__c.split(AIAssistApplicationConstants.DELIMITER_MULTI_SELECT_SEPARATOR)).contains(channel);
     }
 
     // Required when terms are configured and the user has not signed the current version. With none configured there is nothing to accept.
@@ -95,7 +92,7 @@ public without sharing class AIChatStateService {
         return termsState;
     }
 
-    // Fills in why the user cannot send a message right now. One reason is given, the first that applies, most fundamental first: the application, access, the terms, the agent assignment, then having no usage policy. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
+    // Fills in why the user cannot send a message right now. One reason is given, the first that applies, most fundamental first: the application, access, the terms, then the agent assignment. Every state the window can be blocked in is named here, so it does not have to work one out from the other fields.
     public static void setBlockedState(AIChatDataStructure.ChatContext context) {
 
         // [1] Read the application settings
@@ -117,55 +114,34 @@ public without sharing class AIChatStateService {
 
             context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NOT_ASSIGNED;
             context.blockedMessage = Label.AI_Chat_Blocked_Not_Assigned;
-        } else if (context.user != null && context.user.canSend == false) {
-
-            context.blockedState = AIAssistApplicationConstants.CHAT_BLOCKED_NO_POLICY;
-            context.blockedMessage = Label.AI_Chat_Blocked_No_Policy;
         }
     }
 
-    // What the signed-in user may do with AI Assist: full use with an active AI Usage Policy, read only with just an active AI User Setting, none with neither.
+    // What the signed-in user may do with AI Assist: full use with an active AI Usage Policy, none without one.
     public static String getAccessLevel() {
 
         // [1] Ask the policy service
         return AIUsagePolicyService.getAccessLevel(UserInfo.getUserId());
     }
 
-    // True when the signed-in user may open and read in the window: they have an active AI User Setting or an active AI Usage Policy.
+    // True when the signed-in user may use the window: an active AI Usage Policy applies to them.
     public static Boolean hasAccess() {
 
-        // [1] Anything but none may read
+        // [1] Anything but none may use it
         return getAccessLevel() != AIAssistApplicationConstants.ACCESS_LEVEL_NONE;
     }
 
-    // Stops a request from a user who may not use the window at all, with a Custom Label the window shows as it is.
+    // Stops a request from a user who may not use the window, with a Custom Label the window shows as it is.
     public static void requireAccess() {
 
-        // [1] Refuse the user who has neither an active AI User Setting nor an active AI Usage Policy
+        // [1] Refuse the user who has no active AI Usage Policy
         if (!hasAccess()) throw new AIChatStateServiceException(Label.AI_Error_No_Access);
     }
 
-    // Stops a request that sends or starts AI work from a user who may not send: none may not use the window, and read only may not send.
-    public static void requireSendAccess() {
+    // Gets the signed-in user's usage policy, or null when none applies to them. It is read in system mode because the User permission set cannot read the policy objects; only the signed-in user's policy is ever asked for.
+    public static AIUsagePolicy__c getUsagePolicy() {
 
-        // [1] Refuse by what the user may do
-        refuseUnlessMaySend(getAccessLevel());
-    }
-
-    // Throws the label that fits an access level that may not send; does nothing for full use.
-    public static void refuseUnlessMaySend(String accessLevel) {
-
-        // [1] No setting and no policy
-        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_NONE) throw new AIChatStateServiceException(Label.AI_Error_No_Access);
-
-        // [2] A setting but no policy
-        if (accessLevel == AIAssistApplicationConstants.ACCESS_LEVEL_READ_ONLY) throw new AIChatStateServiceException(Label.AI_Error_No_Policy);
-    }
-
-    // Gets the signed-in user's own settings row, or null when they have none.
-    public static AIUserSettings__c getUserSettings() {
-
-        // [1] Read the settings row for the signed-in user
-        return AIUsagePolicyService.getUserSettings(UserInfo.getUserId());
+        // [1] Read the combined usage policy for the signed-in user
+        return AIUsagePolicyService.getUsagePolicy(UserInfo.getUserId());
     }
 }

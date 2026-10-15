@@ -93,7 +93,7 @@ public without sharing class AIChatConversationService {
         if (!canResume) throw new AIChatConversationServiceException(Label.AI_Error_Conversation_Closed);
 
         // [3] Refuse when the user is already at their concurrent conversation limit
-        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsageLimits(UserInfo.getUserId());
+        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsagePolicy(UserInfo.getUserId());
 
         if (usageLimits != null && usageLimits.MaxConcurrentConversations__c != null && countActiveConversations(UserInfo.getUserId()) >= usageLimits.MaxConcurrentConversations__c) {
 
@@ -146,13 +146,14 @@ public without sharing class AIChatConversationService {
         // [1] Start with no summaries
         List<AIChatDataStructure.ConversationSummary> summaries = new List<AIChatDataStructure.ConversationSummary>();
 
-        // [2] Turn each conversation the user may read into a summary that names its owner
+        // [2] Find the conversations the user may read, from their visibility scope
         Map<String, Object> binds = new Map<String, Object>{'userSender' => AIAssistApplicationConstants.SENDER_USER};
-        List<AIConversation__c> sharedConversations = AIConversationVisibilityService.getSharedConversations(AIConversationVisibilityService.getEffectiveScope(AIChatStateService.getUserSettings()), CONVERSATION_FIELDS, binds, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
+        List<AIConversation__c> sharedConversations = AIConversationVisibilityService.getSharedConversations(AIConversationVisibilityService.getEffectiveScope(AIChatStateService.getUsagePolicy()), CONVERSATION_FIELDS, binds, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
 
         // [3] Add the conversations shared directly with the user, whatever their scope, newest first, without repeating one the scope already gave, up to the history limit
         sharedConversations = mergeNewestFirst(sharedConversations, AIConversationVisibilityService.getDirectlySharedConversations(CONVERSATION_FIELDS, binds, AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS), AIAssistApplicationConstants.CHAT_HISTORY_MAX_CONVERSATIONS);
 
+        // [4] Turn each conversation into a summary that names its owner
         for (AIConversation__c conversation : sharedConversations) {
 
             AIChatDataStructure.ConversationSummary summary = buildConversationSummary(conversation);
@@ -160,7 +161,7 @@ public without sharing class AIChatConversationService {
             summaries.add(summary);
         }
 
-        // [4] Return the summaries
+        // [5] Return the summaries
         return summaries;
     }
 
@@ -194,7 +195,7 @@ public without sharing class AIChatConversationService {
         return String.join(lines, '\n');
     }
 
-    // The caller has already checked the user may read the conversation: getOwnedConversation for their own, AIConversationVisibilityService.getViewableConversation when it may be someone else's.
+    // Builds the conversation for the window, with its latest page of messages. The caller has already checked the user may read the conversation: getOwnedConversation for their own, AIConversationVisibilityService.getViewableConversation when it may be someone else's.
     public static AIChatDataStructure.ConversationView buildConversationView(Id conversationId, Integer pageSize, AIChatDataStructure.UserState user, AIChatDataStructure.UiSettings ui) {
 
         // [1] Read the conversation

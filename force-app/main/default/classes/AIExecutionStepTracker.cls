@@ -60,10 +60,10 @@ public without sharing class AIExecutionStepTracker {
     private final Id conversationId;
     private final Id userMessageId;
 
-    // True when the user has AIUserSettings__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c on: gates the request and response payloads and the sent preview.
+    // True when the user has AIUsagePolicy__c.ShouldCaptureExecutionSteps__c and DebugModeEnabled__c on: gates the request and response payloads and the sent preview.
     public final Boolean captureFullDetail;
 
-    // False when the user has AIUserSettings__c.ShouldCaptureExecutionSteps__c off, so AIExecutionStepRecorder stores nothing for the turn. A tracker built elsewhere records by default.
+    // False when the user has AIUsagePolicy__c.ShouldCaptureExecutionSteps__c off, so AIExecutionStepRecorder stores nothing for the turn. A tracker built elsewhere records by default.
     public Boolean shouldCaptureSteps = true;
 
     public List<StepEntry> steps = new List<StepEntry>();
@@ -77,10 +77,14 @@ public without sharing class AIExecutionStepTracker {
     private Long phaseStartedAtMillis;
     private Id phaseDataSourceId;
 
+    // Creates the tracker for one turn of one conversation, and says whether the full request and response detail is kept.
     public AIExecutionStepTracker(Id conversationId, Id userMessageId, Boolean showLiveProgress, Boolean captureFullDetail) {
 
+        // [1] Remember which conversation and message the turn belongs to
         this.conversationId = conversationId;
         this.userMessageId = userMessageId;
+
+        // [2] Keep the full detail only when it was asked for
         this.captureFullDetail = captureFullDetail == true;
     }
 

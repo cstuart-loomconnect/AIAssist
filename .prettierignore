@@ -43,3 +43,9 @@ force-app/main/default/lwc/aiChatMessage/*.js
 force-app/main/default/lwc/aiChatMessageList/*.js
 force-app/main/default/lwc/aiChatSaveDialog/*.js
 force-app/main/default/lwc/aiChatShareDialog/*.js
+force-app/main/default/lwc/aiAgentWizard/*.js
+force-app/main/default/lwc/aiAssistSettings/*.js
+force-app/main/default/lwc/aiAssistSettingsField/*.js
+force-app/main/default/lwc/aiAssistSettingsForm/*.js
+force-app/main/default/lwc/aiAssistSettingsPanel/*.js
+force-app/main/default/lwc/aiAssistUsagePolicies/*.js

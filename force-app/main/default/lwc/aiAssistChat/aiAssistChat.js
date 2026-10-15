@@ -51,7 +51,7 @@ import searchShareableUsers from "@salesforce/apex/AIChatController.searchSharea
 import shareConversation from "@salesforce/apex/AIChatController.shareConversation";
 import unshareConversation from "@salesforce/apex/AIChatController.unshareConversation";
 
-import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, BLOCKED_STATE, USAGE_LIMIT_TYPE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, TOAST_VARIANT_SUCCESS, SHARE_MIN_SEARCH_LENGTH, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
+import { LABELS, CHAT_STATE, SEND_STATUS, CHANNEL, FEEDBACK_RATING, HISTORY_FILTER, VIEW, SCROLL_REQUEST, MESSAGE_SENDER, HEADER_BADGE, USAGE_LIMIT_TYPE, ACTION_STATUS, MESSAGE_ACTION, FLOW_OUTCOME, CONVERSATION_STATUS, MENU, LIST_METHOD, COMPOSER_METHOD, SELECTOR_MESSAGE_LIST, SELECTOR_COMPOSER, PAGE_TYPE_RECORD, ID_PREFIX_NOTICE, SCREEN_FLOW_MODAL_SIZE, TOAST_VARIANT_ERROR, TOAST_VARIANT_SUCCESS, SHARE_MIN_SEARCH_LENGTH, DEFAULT_ACCENT, DEFAULT_HEIGHT_PX, COMMAND_PATTERN, POLL_PROCESSING_CEILING_MS, POLL_HELD_CEILING_MS, ELAPSED_TICK_MS, PROCESSING_GRACE_SECONDS, MS_PER_SECOND, EVENT_VISIBILITY_CHANGE, MIN_CHAT_WIDTH_PX } from "./aiAssistChatSettings";
 import { formatLabel, buildShellStyle, getPollDelay, isSavedAgentMessage, buildServerMessage, buildDraftMessage, buildNoticeMessage, buildConversationFromView, buildStartedConversation, findFreshMessages, buildHeaderMenuItems, buildWorkingView, buildMessageItems, getErrorMessage, isSameId, downloadTextFile, buildTranscriptFileName, buildLocalId, findLastIndex } from "./aiAssistChatHelper";
 
 // The AI Assist chat window. Lives in the utility bar or on a record page. Replies are found by polling AIChatController.getConversationUpdate, and only while a reply is being worked on: every 2s, 4s, 8s... up to 8s while it is processing, and up to 60s while the message is held waiting for a free place. Polling is paused while the browser tab is hidden. The call is always made imperatively, never as a @wire, because it can start a held message.
@@ -430,7 +430,7 @@ export default class AiAssistChat extends LightningElement {
     return !!(this.user.newChatsDisabled || !this.canSend || this.blocksNewConversations);
   }
 
-  // A user with an AI User Setting but no AI Usage Policy can read, but nothing that sends or starts AI work.
+  // False only when the server says the user may not send.
   get canSend() {
 
     return this.user.canSend !== false;
@@ -469,11 +469,6 @@ export default class AiAssistChat extends LightningElement {
   get isBlockedByUsage() {
 
     return !!(this.usageLimit && (this.usageLimit.blocksMessages || (this.usageLimit.blocksNewConversations && !this.conversation)));
-  }
-
-  get showNoPolicyBanner() {
-
-    return !!(this.context && this.context.blockedState === BLOCKED_STATE.NO_POLICY);
   }
 
   get commands() {

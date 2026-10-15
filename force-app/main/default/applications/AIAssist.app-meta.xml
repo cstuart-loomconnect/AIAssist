@@ -11,26 +11,17 @@
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <label>AI Assist</label>
     <navType>Standard</navType>
+    <tabs>standard-home</tabs>
+    <tabs>AIAgentWizard</tabs>
     <tabs>AIAgent__c</tabs>
     <tabs>AIDataSource__c</tabs>
     <tabs>AIWorkflowAction__c</tabs>
     <tabs>AIPromptTemplate__c</tabs>
     <tabs>AIModelConfiguration__c</tabs>
     <tabs>AIUsagePolicy__c</tabs>
-    <tabs>AIUserSettings__c</tabs>
-    <tabs>AIAgentAssignment__c</tabs>
-    <tabs>AIAgentDataSource__c</tabs>
-    <tabs>AIAgentWorkflowAction__c</tabs>
-    <tabs>AIUsagePolicyAssignment__c</tabs>
+    <tabs>AIAssistSettingsTab</tabs>
     <tabs>AIConversation__c</tabs>
-    <tabs>AIConversationMessage__c</tabs>
     <tabs>AIFeedback__c</tabs>
-    <tabs>AIUsage__c</tabs>
-    <tabs>AITermsAcknowledgment__c</tabs>
-    <tabs>AIPIIRegistry__c</tabs>
-    <tabs>AIPIIFieldMetadata__c</tabs>
-    <tabs>AIPIIMapping__c</tabs>
-    <tabs>AIPIIMaskingRecord__c</tabs>
     <tabs>AIPlatformLog__c</tabs>
     <uiType>Lightning</uiType>
 </CustomApplication>

@@ -4,7 +4,7 @@ Class Name: AIUsageServiceTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIUsageService and the triggers that feed it: one AIUsage__c record per user, added to through the day, started again on a new day, and linked to the user's settings when they have a row.
+Description: Testing utility for AIUsageService and the triggers that feed it: one AIUsage__c record per user, added to through the day, started again on a new day.
 
 =================================================================
 =================================================================
@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest private class AIUsageServiceTest {
 
-    // testScenario1: Add usage for a user who has no record and a settings row -> one record is created for today with the totals and linked to the settings row.
+    // testScenario1: Add usage for a user who has no record -> one record is created for today with the totals.
     // testScenario2: Add usage twice on the same day -> the same record holds the sum of both.
     // testScenario3: Add usage when the record is from an earlier day -> the record starts again from zero, dated today, and the earlier day is not read back as today's.
     // testScenario4: Add usage for two users in one call, one with a record and one without -> each user has their own record with their own totals.
@@ -37,9 +37,8 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a user with a settings row
+            // [1] Create a user with no usage record
             User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
-            AIUserSettings__c userSettings = AIAssistTestDataFactory.createAIUserSettings(chatUser.Id, true)[0];
 
             AIUsageService.UsageToAdd addition = new AIUsageService.UsageToAdd();
             addition.tokens = 100;
@@ -53,16 +52,15 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Query the usage
-            List<AIUsage__c> usageRows = [SELECT UsageDate__c, TokensUsed__c, InputTokens__c, OutputTokens__c, ConversationsStarted__c, AIUserSettings__c FROM AIUsage__c WHERE User__c = :chatUser.Id];
+            List<AIUsage__c> usageRows = [SELECT UsageDate__c, TokensUsed__c, InputTokens__c, OutputTokens__c, ConversationsStarted__c FROM AIUsage__c WHERE User__c = :chatUser.Id];
 
-            // [4] Check one record holds the totals for today and is linked to the settings
+            // [4] Check one record holds the totals for today
             Assert.areEqual(1, usageRows.size(), 'One usage record should be created for the user.');
             Assert.areEqual(AIUsageService.getToday(), usageRows[0].UsageDate__c, 'The record should be dated today.');
             Assert.areEqual(100, usageRows[0].TokensUsed__c, 'The tokens should be recorded.');
             Assert.areEqual(60, usageRows[0].InputTokens__c, 'The input tokens should be recorded.');
             Assert.areEqual(40, usageRows[0].OutputTokens__c, 'The output tokens should be recorded.');
             Assert.areEqual(1, usageRows[0].ConversationsStarted__c, 'The conversation should be recorded.');
-            Assert.areEqual(userSettings.Id, usageRows[0].AIUserSettings__c, 'The record should be linked to the user\'s settings row.');
         }
     }
 
@@ -85,13 +83,12 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Query the usage
-            List<AIUsage__c> usageRows = [SELECT TokensUsed__c, ConversationsStarted__c, AIUserSettings__c FROM AIUsage__c WHERE User__c = :chatUser.Id];
+            List<AIUsage__c> usageRows = [SELECT TokensUsed__c, ConversationsStarted__c FROM AIUsage__c WHERE User__c = :chatUser.Id];
 
-            // [4] Check one record holds both, with no settings link as the user has no settings row
+            // [4] Check one record holds both and today's totals read back
             Assert.areEqual(1, usageRows.size(), 'The second addition should use the same record.');
             Assert.areEqual(200, usageRows[0].TokensUsed__c, 'The tokens of both additions should be summed.');
             Assert.areEqual(2, usageRows[0].ConversationsStarted__c, 'The conversations of both additions should be summed.');
-            Assert.isNull(usageRows[0].AIUserSettings__c, 'A user with no settings row should have no settings link.');
             Assert.areEqual(200, AIUsageService.getTokensUsedToday(chatUser.Id), 'Today\'s tokens should be read back.');
             Assert.areEqual(2, AIUsageService.getConversationsStartedToday(chatUser.Id), 'Today\'s conversations should be read back.');
         }

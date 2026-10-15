@@ -29,11 +29,6 @@ export const CHAT_STATE = {
   TERMS: "TERMS"
 };
 
-// Mirrors AIAssistApplicationConstants.CHAT_BLOCKED_* (ChatContext.blockedState): why the user cannot send right now.
-export const BLOCKED_STATE = {
-  NO_POLICY: "NO_POLICY"
-};
-
 // Mirrors AIAssistApplicationConstants.USAGE_LIMIT_TYPE_* (ChatContext.usage.limitType): which usage limit the user has reached.
 export const USAGE_LIMIT_TYPE = {
   OPEN: "OPEN"
@@ -292,8 +287,6 @@ export const LABELS = {
   channelBody: "Your admin hasn’t enabled AI Assist in this part of Salesforce for you.",
   noAccessHeading: "AI Assist isn’t set up for you",
   noAccessBody: "Your admin hasn’t given your account access to AI Assist yet. Ask them to switch it on for you.",
-  noPolicyHeading: "You can read your conversations but not send messages",
-  noPolicyBody: "Your admin hasn’t given you an AI Usage Policy yet. Ask them to assign you one.",
   noAgentHeading: "No AI agent is set up here",
   noAgentBody: "There’s no active AI agent for this page yet. Contact your Salesforce admin.",
   spaceHeading: "This chat needs more room",

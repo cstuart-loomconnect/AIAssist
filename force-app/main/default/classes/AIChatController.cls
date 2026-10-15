@@ -32,7 +32,7 @@ public without sharing class AIChatController {
             // [1] Build everything the window needs to open
             AIChatDataStructure.ChatContext context = buildChatContext(recordId, objectApiName, channel, agentKey);
 
-            // [2] Name why the user cannot send right now, and the plan-cap warning, for the window rather than leaving it to work them out
+            // [2] Name why the user cannot send right now, for the window rather than leaving it to work it out
             AIChatStateService.setBlockedState(context);
 
             // [3] Return the context
@@ -57,7 +57,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user may view the conversation
@@ -67,7 +67,7 @@ public without sharing class AIChatController {
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
 
             // [4] Return the page of earlier messages
-            return AIChatConversationService.loadMessagePage(conversationId, beforeMessageId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()), uiSettings);
+            return AIChatConversationService.loadMessagePage(conversationId, beforeMessageId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUsagePolicy()), uiSettings);
 
         } catch (Exception ex) {
 
@@ -88,12 +88,12 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user may view the conversation
             AIConversation__c conversation = AIConversationVisibilityService.getViewableConversation(conversationId);
-            AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+            AIUsagePolicy__c usagePolicy = AIChatStateService.getUsagePolicy();
 
             // [3] Start a message of this user's that was held at the cap on messages in flight, now that a place may be free, because only its sender can start it. Only a conversation with a held message asks, so the other updates do no org-wide work
             Boolean isHeld = AIAssistSettingsService.getSettings().MaxMessagesInFlight__c != null && AIConversationMessageService.hasHeldMessage(conversationId);
@@ -111,7 +111,7 @@ public without sharing class AIChatController {
             conversationUpdate.isProcessing = isHeld || (conversation.ProcessingLockedUntil__c != null && conversation.ProcessingLockedUntil__c > System.now());
 
             // [5] Add the messages newer than the last one the window has
-            conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(userSettings), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));
+            conversationUpdate.messages = AIChatConversationService.loadMessagesAfter(conversationId, afterMessageId, AIChatStateService.buildUserState(usagePolicy), AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings()));
 
             // [6] Say which usage limit the user has reached once the reply is finished, because that is when the tokens are added up. While it is being worked on the window keeps what it has
             if (!conversationUpdate.isProcessing) {
@@ -219,14 +219,14 @@ public without sharing class AIChatController {
         }
     }
 
-    // Try again after a failed reply, and Regenerate on the newest suggestingMessage. The same gates as sendMessage are applied inside the service.
+    // Try again after a failed reply, and Regenerate on the newest reply. The same gates as sendMessage are applied inside the service.
     @AuraEnabled
     public static void retryLatestMessage(Id conversationId) {
 
         try {
 
-            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
-            AIChatStateService.requireSendAccess();
+            // [1] Refuse a user who has no active AI Usage Policy
+            AIChatStateService.requireAccess();
 
             // [2] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
@@ -253,7 +253,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user owns the conversation
@@ -281,7 +281,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user may view the conversation
@@ -291,7 +291,7 @@ public without sharing class AIChatController {
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
 
             // [4] Return the conversation with its latest messages
-            return AIChatConversationService.buildConversationView(conversationId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()), uiSettings);
+            return AIChatConversationService.buildConversationView(conversationId, uiSettings.messagePageSize, AIChatStateService.buildUserState(AIChatStateService.getUsagePolicy()), uiSettings);
 
         } catch (Exception ex) {
 
@@ -312,8 +312,8 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
-            AIChatStateService.requireSendAccess();
+            // [1] Refuse a user who has no active AI Usage Policy
+            AIChatStateService.requireAccess();
 
             // [2] Reopen the conversation, which the service refuses unless its agent allows resuming
             AIChatConversationService.resumeConversation(conversationId);
@@ -340,7 +340,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Return the user's conversation history
@@ -365,7 +365,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Return the shared conversation history
@@ -390,7 +390,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Refuse when feedback is switched off
@@ -418,7 +418,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Save the acknowledgment
@@ -437,14 +437,14 @@ public without sharing class AIChatController {
         }
     }
 
-    // Runs the Workflow Action suggested on a reply, after the window's own confirmation. The dispatcher checks the plan, the user's setting, the assignment and records the evidence.
+    // Runs the Workflow Action suggested on a reply, after the window's own confirmation. The dispatcher checks the application is on, the user's usage policy and the assignment, and records the evidence.
     @AuraEnabled
     public static AIChatDataStructure.ActionResult runSuggestedAction(Id messageId, String inputsJson) {
 
         try {
 
-            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
-            AIChatStateService.requireSendAccess();
+            // [1] Refuse a user who has no active AI Usage Policy
+            AIChatStateService.requireAccess();
 
             // [2] Refuse when inline actions are switched off
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
@@ -472,8 +472,8 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who may not send: no setting and no policy, or a setting with no policy
-            AIChatStateService.requireSendAccess();
+            // [1] Refuse a user who has no active AI Usage Policy
+            AIChatStateService.requireAccess();
 
             // [2] Refuse when inline actions are switched off
             AIChatDataStructure.UiSettings uiSettings = AIChatStateService.buildUiSettings(AIAssistSettingsService.getUiSettings());
@@ -507,7 +507,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user owns the reply that suggested the action
@@ -535,7 +535,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user owns the reply that suggested the action
@@ -563,11 +563,11 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Refuse when the user does not have debug mode
-            if (!AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).debugMode) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
+            if (!AIChatStateService.buildUserState(AIChatStateService.getUsagePolicy()).debugMode) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
             // [3] Return the trace of the reply the user owns
             return AIChatDebugService.getDebugTrace(AIChatConversationService.getOwnedAgentMessage(messageId));
@@ -591,14 +591,14 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
 
             // [3] Return the failure detail, with more for a user with debug mode on
-            return AIChatDebugService.getFailureDetail(conversationId, AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).debugMode);
+            return AIChatDebugService.getFailureDetail(conversationId, AIChatStateService.buildUserState(AIChatStateService.getUsagePolicy()).debugMode);
 
         } catch (Exception ex) {
 
@@ -619,11 +619,11 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Refuse when export is switched off for the user
-            if (!AIChatStateService.buildUserState(AIChatStateService.getUserSettings()).exportEnabled) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
+            if (!AIChatStateService.buildUserState(AIChatStateService.getUsagePolicy()).exportEnabled) throw new AIChatControllerException(Label.AI_Error_Not_Authorised);
 
             // [3] Check the user owns the conversation
             AIChatConversationService.getOwnedConversation(conversationId);
@@ -650,7 +650,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Save the text, which checks the user owns the reply
@@ -675,7 +675,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Return who it is shared with, which checks the user started it
@@ -700,7 +700,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Return the matching users, which checks the user started it
@@ -725,7 +725,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Share it, which checks the user started it
@@ -750,7 +750,7 @@ public without sharing class AIChatController {
 
         try {
 
-            // [1] Refuse a user who has no active AI User Setting and no active AI Usage Policy
+            // [1] Refuse a user who has no active AI Usage Policy
             AIChatStateService.requireAccess();
 
             // [2] Stop sharing it, which checks the user started it
@@ -773,7 +773,7 @@ public without sharing class AIChatController {
     private static void setUsage(Id userId, AIChatDataStructure.ChatContext context) {
 
         // [1] Read the user's limits and how much of each is used
-        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsageLimits(userId);
+        AIUsagePolicy__c usageLimits = AIUsagePolicyService.getUsagePolicy(userId);
         context.usageMeters = AIUsageLimitService.getUsageMeters(userId, usageLimits);
 
         // [2] Say which limit is reached
@@ -789,10 +789,10 @@ public without sharing class AIChatController {
 
         AIAssistSettings__c appSettings = AIAssistSettingsService.getSettings();
         AIAssistUISettings__c uiSettings = AIAssistSettingsService.getUiSettings();
-        AIUserSettings__c userSettings = AIChatStateService.getUserSettings();
+        AIUsagePolicy__c usagePolicy = AIChatStateService.getUsagePolicy();
 
         context.ui = AIChatStateService.buildUiSettings(uiSettings);
-        context.user = AIChatStateService.buildUserState(userSettings);
+        context.user = AIChatStateService.buildUserState(usagePolicy);
         context.ui.newChatsDisabled = context.user.newChatsDisabled;
 
         // [2] Stop when chat is switched off, or switched on in another org (a copied sandbox)
@@ -809,24 +809,21 @@ public without sharing class AIChatController {
             return context;
         }
 
-        // [4] Stop when the user has no active AI User Setting and no active AI Usage Policy, because they may not use AI Assist at all
-        if (userSettings == null) {
+        // [4] Stop when the user has no active AI Usage Policy, because they may not use AI Assist at all
+        if (usagePolicy == null) {
 
             context.state = AIAssistApplicationConstants.CHAT_STATE_NO_ACCESS;
             return context;
         }
 
-        // [5] Note whether the user may send: only a user with an AI Usage Policy can, and one with just an AI User Setting can read
-        context.user.canSend = AIChatStateService.getAccessLevel() == AIAssistApplicationConstants.ACCESS_LEVEL_FULL;
-
-        // [6] Stop when the user's settings do not allow this channel
-        if (!AIChatStateService.isChannelAllowed(userSettings, channel)) {
+        // [5] Stop when the user's usage policy does not allow this channel
+        if (!AIChatStateService.isChannelAllowed(usagePolicy, channel)) {
 
             context.state = AIAssistApplicationConstants.CHAT_STATE_CHANNEL_DISABLED;
             return context;
         }
 
-        // [7] Stop when the user must accept the terms first
+        // [6] Stop when the user must accept the terms first
         context.terms = AIChatStateService.buildTermsState(appSettings);
 
         if (context.terms.required) {
@@ -835,37 +832,37 @@ public without sharing class AIChatController {
             return context;
         }
 
-        // [8] Add the record and the agents offered for it, and pick the agent to open with
+        // [7] Add the record and the agents offered for it, and pick the agent to open with
         context.record = AIChatContextService.buildRecordContext(recordId, objectApiName);
         context.agents = AIChatContextService.getAvailableAgents(context.record.objectApiName);
         context.agent = AIChatContextService.selectAgent(context.agents, agentKey);
 
-        // [9] Stop when no agent is offered
+        // [8] Stop when no agent is offered
         if (context.agent == null) {
 
             context.state = AIAssistApplicationConstants.CHAT_STATE_NO_AGENT;
             return context;
         }
 
-        // [10] The window is ready: add the slash commands the user can use
+        // [9] The window is ready: add the slash commands the user can use
         context.state = AIAssistApplicationConstants.CHAT_STATE_READY;
         context.commands = AIChatCommandService.getAvailableCommands(context.agent.id, context.record);
 
-        // [11] Open the active conversation for this agent and record, if there is one
+        // [10] Open the active conversation for this agent and record, if there is one
         AIConversation__c activeConversation = AIChatConversationService.findActiveConversation(context.agent.id, context.record.recordId);
 
         if (activeConversation != null) {
 
             context.openConversation = AIChatConversationService.buildConversationSummary(activeConversation);
 
-            // [12] Load its messages unless the agent loads them only when the user asks
+            // [11] Load its messages unless the agent loads them only when the user asks
             if (context.agent.loadTrigger != AIAssistApplicationConstants.CONVERSATION_LOAD_TRIGGER_MANUAL_ONLY) context.conversation = AIChatConversationService.buildConversationView(activeConversation.Id, context.ui.messagePageSize, context.user, context.ui);
         }
 
-        // [13] Say how much of each usage limit the user has used, and which they have reached, if any, so the window can show the panel and warn them before they press Send
-        if (context.user.canSend) setUsage(context.user.userId, context);
+        // [12] Say how much of each usage limit the user has used, and which they have reached, if any, so the window can show the panel and warn them before they press Send
+        setUsage(context.user.userId, context);
 
-        // [14] Return the context
+        // [13] Return the context
         return context;
     }
 }

@@ -4,7 +4,7 @@ Class Name: AIUsagePolicyServiceTest
 =================================================================
 =================================================================
 
-Description: Testing utility for AIUsagePolicyService: how a user's own settings row and the usage policies that apply to them combine into what they are allowed.
+Description: Testing utility for AIUsagePolicyService: how the usage policies that apply to a user combine into what they are allowed.
 
 =================================================================
 =================================================================
@@ -18,12 +18,12 @@ Version      Author                   Description
 
 @IsTest private class AIUsagePolicyServiceTest {
 
-    // testScenario1: With no row and no policy the answer is null; an inactive row counts as no row -> null for each.
-    // testScenario2: With policies only, limits take the lowest value, the behavior that blocks most, and the widest visibility -> lowest limits, strictest behavior, widest scope.
+    // testScenario1: Resolving null or an empty list of policies, or looking up a null user -> null for each, and no access.
+    // testScenario2: With several policies, limits take the lowest value, the behavior that blocks most, and the widest visibility -> lowest limits, strictest behavior, widest scope.
     // testScenario3: Capabilities add up: a flag, or a channel, allowed by any policy is allowed, and a policy with no channels opens every channel -> combined channels and flags, null channels when open.
-    // testScenario4: The numeric limits come from the policy only, and the user row's behavior wins where it is set and falls through to the policy where it is blank -> limits from the policy, own behavior wins.
-    // testScenario5: A user row can switch a capability on, but cannot switch off one a policy grants -> row switches export on, policy keeps debug on.
-    // testScenario6: New chats follow the user's row when they have one, otherwise any policy that allows them -> the row's off beats a policy's on, a policy allows when there is no row.
+    // testScenario4: New chats are allowed when any policy allows them -> one allowing policy is enough, none allowing means off.
+    // testScenario5: A user with a policy assigned to them is resolved from that policy and not the default policy -> assigned limits and full access.
+    // testScenario6: A user with no assigned policy is resolved from the default policy, and with every policy switched off has no policy and no access -> default limits, then null and no access.
 
     @TestSetup static void setup() {
 
@@ -37,22 +37,19 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an inactive user row
-            AIUserSettings__c inactiveRow = new AIUserSettings__c(IsActive__c = false, DebugModeEnabled__c = true);
-
-            // [2] Resolve with no row, an empty list and the inactive row
+            // [1] Resolve null, an empty list and a null user
             Test.startTest();
-                AIUserSettings__c nothing = AIUsagePolicyService.resolve(null, null);
-                AIUserSettings__c emptyList = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>());
-                AIUserSettings__c inactiveResult = AIUsagePolicyService.resolve(inactiveRow, null);
-                AIUsagePolicy__c noLimits = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>());
+                AIUsagePolicy__c nothing = AIUsagePolicyService.resolvePolicies(null);
+                AIUsagePolicy__c emptyList = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>());
+                AIUsagePolicy__c noUser = AIUsagePolicyService.getUsagePolicy(null);
+                String noUserAccess = AIUsagePolicyService.getAccessLevel(null);
             Test.stopTest();
 
-            // [3] Check each answer is null
-            Assert.isNull(nothing, 'No row and no policy means no personal limits.');
+            // [2] Check each answer is null and the user has no access
+            Assert.isNull(nothing, 'No policies means no answer.');
             Assert.isNull(emptyList, 'An empty list is the same.');
-            Assert.isNull(inactiveResult, 'An inactive row is ignored.');
-            Assert.isNull(noLimits, 'With no policy there are no limits.');
+            Assert.isNull(noUser, 'No user means no policy.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_NONE, noUserAccess, 'No user means no access.');
         }
     }
 
@@ -72,16 +69,15 @@ Version      Author                   Description
 
             // [2] Resolve the policies together
             Test.startTest();
-                AIUserSettings__c resolved = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ loose, strict, middle });
-                AIUsagePolicy__c limits = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>{ loose, strict, middle });
+                AIUsagePolicy__c resolved = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>{ loose, strict, middle });
             Test.stopTest();
 
             // [3] Check the lowest limits, strictest behavior and widest scope win
-            Assert.areEqual(2, limits.MaxConcurrentConversations__c, 'The lowest.');
-            Assert.areEqual(20, limits.MaxConversationsPer24Hours__c, 'The lowest that is set; a blank limit sets nothing.');
-            Assert.areEqual(100000, limits.MaxTokensPer24Hours__c, 'The lowest.');
-            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, limits.UsageLimitReachedBehavior__c, 'The behavior that blocks most.');
-            Assert.areEqual(AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL, resolved.ConversationVisibilityScope__c, 'The widest scope.');
+            Assert.areEqual(2, resolved.MaxConcurrentConversations__c, 'The lowest concurrent limit wins.');
+            Assert.areEqual(20, resolved.MaxConversationsPer24Hours__c, 'The lowest limit that is set wins; a blank limit sets nothing.');
+            Assert.areEqual(100000, resolved.MaxTokensPer24Hours__c, 'The lowest token limit wins.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, resolved.UsageLimitReachedBehavior__c, 'The behavior that blocks most wins.');
+            Assert.areEqual(AIAssistApplicationConstants.VISIBILITY_SCOPE_ALL, resolved.ConversationVisibilityScope__c, 'The widest scope wins.');
             Assert.isTrue(resolved.IsActive__c, 'The answer is always active.');
         }
     }
@@ -98,22 +94,20 @@ Version      Author                   Description
 
             // [2] Resolve two restricted policies, then a restricted and an unrestricted one
             Test.startTest();
-                AIUserSettings__c both = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ first, second });
-                AIUserSettings__c open = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ first, unrestricted });
+                AIUsagePolicy__c both = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>{ first, second });
+                AIUsagePolicy__c open = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>{ first, unrestricted });
             Test.stopTest();
 
             // [3] Split the combined channels
             Set<String> channels = new Set<String>(both.AllowedChannels__c.split(';'));
 
             // [4] Check channels and flags add up and an open policy allows every channel
-            Assert.isTrue(channels.contains(AIAssistApplicationConstants.CHANNEL_MOBILE) && channels.contains(AIAssistApplicationConstants.CHANNEL_UTILITY_BAR), 'Channels allowed by either policy.');
-
-            Assert.isTrue(both.ShouldCaptureExecutionSteps__c, 'Granted by the first.');
-            Assert.isTrue(both.DebugModeEnabled__c, 'Granted by the second.');
-            Assert.isFalse(both.ConversationExportEnabled__c, 'Granted by neither.');
-
+            Assert.isTrue(channels.contains(AIAssistApplicationConstants.CHANNEL_MOBILE) && channels.contains(AIAssistApplicationConstants.CHANNEL_UTILITY_BAR), 'Channels allowed by either policy are allowed.');
+            Assert.isTrue(both.ShouldCaptureExecutionSteps__c, 'Execution step capture is granted by the first policy.');
+            Assert.isTrue(both.DebugModeEnabled__c, 'Debug mode is granted by the second policy.');
+            Assert.isFalse(both.ConversationExportEnabled__c, 'Export is granted by neither policy.');
             Assert.isNull(open.AllowedChannels__c, 'A policy with no list allows every channel.');
-            Assert.isTrue(open.ConversationExportEnabled__c, 'Granted by that policy.');
+            Assert.isTrue(open.ConversationExportEnabled__c, 'Export is granted by that policy.');
         }
     }
 
@@ -122,22 +116,19 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a policy and a user row that overrides some of its values
-            AIUsagePolicy__c groupPolicy = new AIUsagePolicy__c(MaxConcurrentConversations__c = 3, MaxConversationsPer24Hours__c = 50, MaxTokensPer24Hours__c = 200000, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES);
-            AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY);
+            // [1] Create a policy that allows new chats and one that does not
+            AIUsagePolicy__c allows = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = true);
+            AIUsagePolicy__c blocks = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = false);
 
-            // [2] Resolve the row with the policy
+            // [2] Resolve a mix of policies and a policy that does not allow them
             Test.startTest();
-                AIUsagePolicy__c limits = AIUsagePolicyService.resolveUsageLimits(row, new List<AIUsagePolicy__c>{ groupPolicy });
-                AIUsagePolicy__c limitsWithoutRow = AIUsagePolicyService.resolveUsageLimits(null, new List<AIUsagePolicy__c>{ groupPolicy });
+                AIUsagePolicy__c mixed = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>{ blocks, allows });
+                AIUsagePolicy__c blocked = AIUsagePolicyService.resolvePolicies(new List<AIUsagePolicy__c>{ blocks });
             Test.stopTest();
 
-            // [3] Check the limits come from the policy and the row's behavior wins where it is set
-            Assert.areEqual(200000, limits.MaxTokensPer24Hours__c, 'The numeric limits come from the policy, never from the user\'s row.');
-            Assert.areEqual(3, limits.MaxConcurrentConversations__c, 'The numeric limits come from the policy, never from the user\'s row.');
-            Assert.areEqual(50, limits.MaxConversationsPer24Hours__c, 'The numeric limits come from the policy, never from the user\'s row.');
-            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY, limits.UsageLimitReachedBehavior__c, 'The user\'s own behavior wins.');
-            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_BLOCK_NEW_MESSAGES, limitsWithoutRow.UsageLimitReachedBehavior__c, 'With no row, the behavior comes from the policy.');
+            // [3] Check one allowing policy is enough
+            Assert.isTrue(mixed.IsUserInitiatedChatEnabled__c, 'One allowing policy is enough.');
+            Assert.isFalse(blocked.IsUserInitiatedChatEnabled__c, 'With no allowing policy, new chats are off.');
         }
     }
 
@@ -146,19 +137,23 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a policy that grants capabilities and a row that tries to switch one off
-            AIUsagePolicy__c grants = new AIUsagePolicy__c(DebugModeEnabled__c = true, ShouldCaptureExecutionSteps__c = true);
-            AIUserSettings__c row = new AIUserSettings__c(IsActive__c = true, DebugModeEnabled__c = false, ConversationExportEnabled__c = true);
+            // [1] Create a user and assign a policy with its own limits and capabilities
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
+            AIUsagePolicy__c policyValues = new AIUsagePolicy__c(MaxConcurrentConversations__c = 3, MaxTokensPer24Hours__c = 200000, UsageLimitReachedBehavior__c = AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY, DebugModeEnabled__c = true);
+            AIAssistTestDataFactory.createAIUsagePolicyForUser(chatUser.Id, policyValues);
 
-            // [2] Resolve the row with the policy
+            // [2] Look up the user's policy and access level
             Test.startTest();
-                AIUserSettings__c resolved = AIUsagePolicyService.resolve(row, new List<AIUsagePolicy__c>{ grants });
+                AIUsagePolicy__c resolved = AIUsagePolicyService.getUsagePolicy(chatUser.Id);
+                String accessLevel = AIUsagePolicyService.getAccessLevel(chatUser.Id);
             Test.stopTest();
 
-            // [3] Check the row cannot remove a granted capability
-            Assert.isTrue(resolved.DebugModeEnabled__c, 'An unticked box on the row does not take away what the policy grants.');
-            Assert.isTrue(resolved.ConversationExportEnabled__c, 'A ticked box on the row switches it on for that user.');
-            Assert.isTrue(resolved.ShouldCaptureExecutionSteps__c, 'From the policy.');
+            // [3] Check the assigned policy applies instead of the default
+            Assert.areEqual(3, resolved.MaxConcurrentConversations__c, 'The assigned policy sets the concurrent limit.');
+            Assert.areEqual(200000, resolved.MaxTokensPer24Hours__c, 'The assigned policy sets the token limit.');
+            Assert.areEqual(AIAssistApplicationConstants.USAGE_LIMIT_NOTIFY_ONLY, resolved.UsageLimitReachedBehavior__c, 'The assigned policy sets the behavior.');
+            Assert.isTrue(resolved.DebugModeEnabled__c, 'The assigned policy grants debug mode.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, accessLevel, 'A user with a policy has full access.');
         }
     }
 
@@ -167,25 +162,25 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create a policy that allows new chats, a row that turns them off, and a row that leaves them on
-            AIUsagePolicy__c allows = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = true);
-            AIUsagePolicy__c blocks = new AIUsagePolicy__c(IsUserInitiatedChatEnabled__c = false);
-            AIUserSettings__c pausedRow = new AIUserSettings__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = false);
-            AIUserSettings__c openRow = new AIUserSettings__c(IsActive__c = true, IsUserInitiatedChatEnabled__c = true);
+            // [1] Create a user with no assigned policy
+            User chatUser = AIAssistTestDataFactory.createUsers(1, true)[0];
 
-            // [2] Resolve each combination
+            // [2] Look up the user's policy while the default policy is active
             Test.startTest();
-                AIUserSettings__c rowOffPolicyOn = AIUsagePolicyService.resolve(pausedRow, new List<AIUsagePolicy__c>{ allows });
-                AIUserSettings__c rowOnPolicyOff = AIUsagePolicyService.resolve(openRow, new List<AIUsagePolicy__c>{ blocks });
-                AIUserSettings__c noRowPolicyOn = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ blocks, allows });
-                AIUserSettings__c noRowPolicyOff = AIUsagePolicyService.resolve(null, new List<AIUsagePolicy__c>{ blocks });
+                AIUsagePolicy__c defaultResolved = AIUsagePolicyService.getUsagePolicy(chatUser.Id);
+                String defaultAccess = AIUsagePolicyService.getAccessLevel(chatUser.Id);
             Test.stopTest();
 
-            // [3] Check the row decides when there is one, and the policies decide when there is not
-            Assert.isFalse(rowOffPolicyOn.IsUserInitiatedChatEnabled__c, 'The row turning new chats off beats a policy allowing them.');
-            Assert.isTrue(rowOnPolicyOff.IsUserInitiatedChatEnabled__c, 'The row allowing new chats beats a policy that does not.');
-            Assert.isTrue(noRowPolicyOn.IsUserInitiatedChatEnabled__c, 'With no row, one allowing policy is enough.');
-            Assert.isFalse(noRowPolicyOff.IsUserInitiatedChatEnabled__c, 'With no row and no allowing policy, new chats are off.');
+            // [3] Switch every policy off and look the user up again
+            AIAssistTestDataFactory.deactivateUsagePolicies();
+            AIUsagePolicy__c noPolicy = AIUsagePolicyService.getUsagePolicy(chatUser.Id);
+            String noAccess = AIUsagePolicyService.getAccessLevel(chatUser.Id);
+
+            // [4] Check the default policy covers the user, and without any policy they have none
+            Assert.isNotNull(defaultResolved, 'The default policy applies to a user with none assigned.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_FULL, defaultAccess, 'The default policy gives full access.');
+            Assert.isNull(noPolicy, 'With every policy switched off there is no policy.');
+            Assert.areEqual(AIAssistApplicationConstants.ACCESS_LEVEL_NONE, noAccess, 'With no policy there is no access.');
         }
     }
 }
