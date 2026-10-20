@@ -19,7 +19,6 @@ Step 7: Append a workflow action the user runs later to the end of the saved tra
 
 Version      Author                   Description
 1.0          Chandler Stuart          Initial development
-2.0          Chandler Stuart          One JSON trace on the message replaces a record per step
 */
 
 public without sharing class AIExecutionStepRecorder {
