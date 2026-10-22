@@ -1,0 +1,72 @@
+/* The query text box: code text in a fixed-width font. SLDS has no utility for a code font. */
+.aiadqe-text {
+  font-family: monospace;
+  font-size: 13px;
+  background: var(--aia-surface-soft);
+}
+
+/* The problems list: a bordered box. */
+.aiadqe-problems {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The head of the problems list: a soft grey band with bold text. */
+.aiadqe-problems-head {
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* One problem: a row with a line above it. */
+.aiadqe-problem {
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--aia-line);
+}
+
+/* The text of a problem: dark text that wraps anywhere. */
+.aiadqe-message {
+  overflow-wrap: anywhere;
+  color: var(--aia-ink);
+}
+
+/* The message when there are no problems: muted text. */
+.aiadqe-none {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The severity pills: small rounded labels. SLDS badges have a different size and shape. */
+.aiadqe-pill {
+  display: inline-block;
+  min-width: 64px;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* The Error pill: red. */
+.aiadqe-pill_error {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The Warning pill: orange. */
+.aiadqe-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The note under the problems: a soft blue box with accent text. */
+.aiadqe-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}

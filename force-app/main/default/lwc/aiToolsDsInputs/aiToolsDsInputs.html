@@ -1,0 +1,70 @@
+<template>
+  <!-- Intro: where the inputs come from -->
+  <p class="aiadi-intro">{introText}</p>
+
+  <!-- Inputs: one row for each input -->
+  <template lwc:if={hasInputs}>
+    <div class="aiadi-table-wrap">
+      <table class="slds-table slds-table_cell-buffer aiadi-table">
+        <thead>
+          <tr>
+            <th scope="col">{labels.columnInput}</th>
+            <th scope="col">{labels.columnFilledBy}</th>
+            <th scope="col">{labels.columnType}</th>
+            <th scope="col">{labels.columnRequired}</th>
+            <th scope="col">{labels.columnDescription}</th>
+            <th scope="col"><span class="slds-assistive-text">{labels.removeInput}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template for:each={inputViews} for:item="item">
+            <tr key={item.key}>
+              <td>
+                <template lwc:if={item.canEditName}><lightning-input variant="label-hidden" label={labels.inputName} value={item.name} data-index={item.index} onchange={handleNameChange}></lightning-input></template>
+                <template lwc:else><span class="aiadi-name">{item.name}</span></template>
+              </td>
+              <td><span class={item.pillClass}>{item.filledByLabel}</span></td>
+              <td>
+                <template lwc:if={item.isPage}>{item.type}</template>
+                <template lwc:if={item.isAgent}
+                  ><select class="slds-select" aria-label={labels.inputType} data-index={item.index} onchange={handleTypeChange}>
+                    <template for:each={item.typeChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+                  </select></template
+                >
+              </td>
+              <td>
+                <template lwc:if={item.isPage}>{labels.yes}</template>
+                <template lwc:if={item.isAgent}><lightning-input type="checkbox" variant="label-hidden" label={labels.inputRequired} checked={item.isRequired} data-index={item.index} onchange={handleRequiredChange}></lightning-input></template>
+              </td>
+              <td>
+                <template lwc:if={item.isPage}><span class="aiadi-muted">{labels.pageDescription}</span></template>
+                <template lwc:if={item.isAgent}><lightning-input variant="label-hidden" label={labels.inputDescription} value={item.description} data-index={item.index} onchange={handleDescriptionChange}></lightning-input></template>
+              </td>
+              <td>
+                <template lwc:if={item.canRemove}><lightning-button-icon icon-name="utility:close" variant="bare" alternative-text={labels.removeInput} data-index={item.index} onclick={handleRemoveInput}></lightning-button-icon></template>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </template>
+  <template lwc:else><p class="aiadi-muted slds-p-vertical_small">{emptyText}</p></template>
+
+  <!-- Add input: only for an Apex data source -->
+  <template lwc:if={isApex}
+    ><div class="slds-m-top_medium"><lightning-button label={labels.addInput} onclick={handleAddInput}></lightning-button></div
+  ></template>
+
+  <!-- Schema: the text that is saved, rebuilt from the table -->
+  <div class="aiadi-schema">
+    <div class="aiadi-schema-head slds-grid slds-grid_align-spread">
+      <strong>{labels.schemaTitle}</strong>
+      <span class="aiadi-muted slds-text-body_small">{labels.schemaNote}</span>
+    </div>
+    <pre class="aiadi-code">{schemaText}</pre>
+  </div>
+
+  <!-- Note: what happens to an input that is not declared -->
+  <div class="aiadi-note slds-m-top_small slds-p-around_small">{noteText}</div>
+</template>

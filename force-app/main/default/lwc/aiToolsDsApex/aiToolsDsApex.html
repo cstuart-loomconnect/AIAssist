@@ -1,0 +1,53 @@
+<template>
+  <div class="slds-is-relative">
+    <!-- Busy: shown while the classes load -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Error: shown when the classes could not be read -->
+    <template lwc:if={hasError}>
+      <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">{errorMessage}</div>
+    </template>
+
+    <!-- Classes: a table with one row for each class that implements the interface -->
+    <template lwc:if={hasClasses}>
+      <p class="aiadap-intro">{labels.intro}</p>
+      <div class="aiadap-table-wrap">
+        <table class="slds-table slds-table_cell-buffer aiadap-table">
+          <thead>
+            <tr>
+              <th scope="col"><span class="slds-assistive-text">{labels.chooseClass}</span></th>
+              <th scope="col">{labels.columnClass}</th>
+              <th scope="col">{labels.columnNamespace}</th>
+              <th scope="col">{labels.columnApi}</th>
+              <th scope="col">{labels.columnInputs}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={classViews} for:item="item">
+              <tr key={item.key} class={item.rowClass} data-class-name={item.className} onclick={handleClassPick}>
+                <td><input type="radio" name="apex-class" checked={item.isSelected} aria-label={item.className} tabindex="-1" /></td>
+                <td class={item.nameClass}>{item.className}</td>
+                <td>{item.namespacePrefix}</td>
+                <td>{item.apiVersion}</td>
+                <td>{item.declaredInputNames}</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div class="aiadap-note slds-m-top_small slds-p-around_small">{labels.note}</div>
+    </template>
+
+    <!-- Empty: shown when no class implements the interface -->
+    <template lwc:if={showEmpty}>
+      <div class="aiadap-empty slds-p-around_large slds-text-align_center">
+        <h3 class="aiadap-empty-title slds-m-around_none">{labels.emptyTitle}</h3>
+        <p class="aiadap-empty-text slds-m-vertical_small">{labels.emptyText}</p>
+        <lightning-button variant="neutral" label={labels.switchToSoql} onclick={handleSwitchToSoql}></lightning-button>
+        <lightning-button label={labels.copyInterface} onclick={handleCopyInterface} class="slds-m-left_x-small"></lightning-button>
+      </div>
+    </template>
+  </div>
+</template>

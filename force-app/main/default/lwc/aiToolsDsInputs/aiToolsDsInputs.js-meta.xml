@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 3 of the data source wizard: the inputs of the data source, who fills each one and what the agent is told about it.</description>
+</LightningComponentBundle>

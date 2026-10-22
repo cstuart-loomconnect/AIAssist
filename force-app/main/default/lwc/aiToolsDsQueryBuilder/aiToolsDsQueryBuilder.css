@@ -1,0 +1,137 @@
+/* The row of object and max rows: a gap so they do not touch when the row wraps. */
+.aiadqb-top {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* The object box: grows to take the room the max rows does not need. */
+.aiadqb-object {
+  flex: 1 1 280px;
+}
+
+/* The max rows box: a fixed width. */
+.aiadqb-max-rows {
+  flex: 0 0 150px;
+}
+
+/* A line of help: muted text. */
+.aiadqb-help {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The list of matching objects: a white box that floats under the object box. SLDS combobox lists need markup this component does not use. */
+.aiadqb-object-list {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  list-style: none;
+}
+
+/* One object in the list: the label and the API name side by side. */
+.aiadqb-object-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* An object the pointer is over: a soft grey. */
+.aiadqb-object-item:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The message when no object matches. */
+.aiadqb-object-none {
+  padding: 8px 12px;
+  color: var(--aia-muted);
+}
+
+/* The label of an object or a field: dark text. */
+.aiadqb-object-label {
+  color: var(--aia-ink);
+}
+
+/* An API name: small muted code text. */
+.aiadqb-api {
+  color: var(--aia-muted);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* The box around the fields and the filters: a bordered rounded box. */
+.aiadqb-box {
+  margin-bottom: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The head of a box: a soft grey band with the top corners rounded to match the box. The box does not hide overflow, so a drop-down list can open past its edge. */
+.aiadqb-box-head {
+  border-radius: 6px 6px 0 0;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The search box of the fields: a fixed width. */
+.aiadqb-search {
+  width: 220px;
+}
+
+/* The list of fields: scrolls when there are many. */
+.aiadqb-fields {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* One field: a row with a line under it. */
+.aiadqb-field {
+  gap: 10px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The label of a field: dark text. */
+.aiadqb-field-label {
+  color: var(--aia-ink);
+}
+
+/* The type of a field: muted text on the right. */
+.aiadqb-type {
+  color: var(--aia-muted);
+  font-size: 13px;
+}
+
+/* One filter: a wrapping row of controls with a line under it. */
+.aiadqb-filter {
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The field and value controls of a filter: grow to share the row. */
+.aiadqb-filter-field,
+.aiadqb-filter-value {
+  flex: 1 1 160px;
+}
+
+/* The comparison control: a narrow box. */
+.aiadqb-filter-operator {
+  flex: 0 0 130px;
+}
+
+/* The source control: a medium box. */
+.aiadqb-filter-source {
+  flex: 0 1 190px;
+}

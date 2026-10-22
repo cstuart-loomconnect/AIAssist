@@ -1,0 +1,150 @@
+/* The row of intro text and the new button: a gap so they do not touch when the row wraps. */
+.aiads-top {
+  gap: 16px;
+}
+
+/* The intro sentence: muted text. */
+.aiads-intro {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The row of search and filters: space above and below it. SLDS has no 20px step. */
+.aiads-tools {
+  gap: 16px;
+  margin: 20px 0 16px;
+}
+
+/* The search box: a fixed width so it does not stretch across the page. */
+.aiads-search {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* The filter buttons: one bordered group with square joins. SLDS button groups do not style a selected button like this. */
+.aiads-filters {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--aia-surface);
+}
+
+/* One filter button: plain text with a line between it and the next. */
+.aiads-filter {
+  padding: 12px 18px;
+  background: var(--aia-surface);
+  border: 0;
+  border-right: 1px solid var(--aia-line-strong);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The last filter button has no line after it, because the group already has an edge. */
+.aiads-filter:last-child {
+  border-right: 0;
+}
+
+/* A filter button the pointer is over: a soft grey. */
+.aiads-filter:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* A filter button reached by keyboard: an accent outline. */
+.aiads-filter:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: -2px;
+}
+
+/* The filter that is on: accent colour with white text. */
+.aiads-filter_selected,
+.aiads-filter_selected:hover {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aiads-table-wrap {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The table head: a soft grey band with bold text. */
+.aiads-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* A row of the table: clickable. */
+.aiads-row {
+  cursor: pointer;
+}
+
+/* A row the pointer is over: a soft grey. */
+.aiads-row:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The name of a data source: bold dark text. */
+.aiads-name {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The pills for the last test and the status: small rounded labels. SLDS badges have a different size and shape. */
+.aiads-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A pill for a good result: green. */
+.aiads-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* A pill for a partial result: orange. */
+.aiads-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A pill for a failed result: red. */
+.aiads-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* A pill for no result or an inactive data source: grey. */
+.aiads-pill_neutral {
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}
+
+/* The message when no row matches: muted text. */
+.aiads-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The first load: a tall box with a spinner and the words, so an empty table is not mistaken for no data. */
+.aiads-loading {
+  min-height: 170px;
+  padding-top: 118px;
+  text-align: center;
+}
+
+.aiads-loading-text {
+  margin: 0;
+  color: var(--aia-muted);
+}

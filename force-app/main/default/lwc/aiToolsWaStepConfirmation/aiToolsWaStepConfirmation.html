@@ -1,0 +1,56 @@
+<template>
+  <!-- Screen flow: no separate confirmation, because pressing Finish is the confirmation -->
+  <template lwc:if={isScreenFlow}>
+    <div class="aitwa-note aitwa-note_info">{labels.screenFlowNote}</div>
+  </template>
+
+  <!-- Confirmation: the switch, the message and the inputs on the left, the preview on the right -->
+  <template lwc:else>
+    <div class="slds-grid slds-wrap aitwa-layout">
+      <!-- Left column: the switch, the message and the chips -->
+      <div class="aitwa-main">
+        <!-- Switch: Requires confirmation, locked on for a write -->
+        <div class="slds-grid slds-grid_vertical-align-center aitwa-switch">
+          <lightning-input type="toggle" variant="label-hidden" label={labels.requiresConfirmation} checked={isRequired} disabled={isLocked} onchange={handleRequiredChange}></lightning-input>
+          <span class="aitwa-switch-label">{labels.requiresConfirmation}</span>
+          <template lwc:if={isLocked}><span class="aitwa-pill aitwa-pill_locked">{labels.lockedOn}</span></template>
+        </div>
+
+        <!-- Message and chips: only when the user confirms -->
+        <template lwc:if={showConfirmationFields}>
+          <lightning-textarea label={labels.message} required value={draft.confirmationMessage} onchange={handleMessageChange}></lightning-textarea>
+          <p class="aitwa-help">{labels.messageHelp}</p>
+
+          <div class="aitwa-chips-title">{labels.showInputs}</div>
+          <template lwc:if={hasChips}>
+            <div class="aitwa-chips">
+              <template for:each={chipViews} for:item="chip">
+                <button key={chip.key} type="button" class={chip.chipClass} data-index={chip.index} disabled={chip.isLocked} onclick={handleChipClick}>{chip.name}<template lwc:if={chip.isSelected}> {chip.tick}</template></button>
+              </template>
+            </div>
+          </template>
+          <template lwc:else><p class="aitwa-help">{labels.noInputs}</p></template>
+        </template>
+      </div>
+
+      <!-- Right column: what the user will see in the chat -->
+      <template lwc:if={showConfirmationFields}>
+        <div class="aitwa-side">
+          <div class="aitwa-side-title">{labels.previewTitle}</div>
+          <div class="aitwa-preview">
+            <div class="aitwa-card">
+              <div class="aitwa-card-head">{previewHead}</div>
+              <div class="aitwa-card-body">
+                <p class="aitwa-card-message">{draft.confirmationMessage}</p>
+                <template for:each={previewRows} for:item="row">
+                  <div key={row.key} class="slds-grid aitwa-row"><span class="aitwa-row-label">{row.label}</span><span>{row.value}</span></div>
+                </template>
+                <div class="aitwa-buttons"><span class="aitwa-fake-button">{labels.previewCancel}</span><span class="aitwa-fake-button aitwa-fake-button_brand">{labels.previewConfirm}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+</template>

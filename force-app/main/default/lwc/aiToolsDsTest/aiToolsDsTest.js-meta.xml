@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 4 of the data source wizard: run the data source for a record, as the admin or as another user, and see what comes back.</description>
+</LightningComponentBundle>
