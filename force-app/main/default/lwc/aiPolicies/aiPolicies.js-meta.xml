@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>AI Policies</masterLabel>
+    <description
+  >Usage limits and who they apply to: a list of policies, the settings of the chosen policy and the users and permission sets it is assigned to.</description>
+    <targets>
+        <target>lightning__Tab</target>
+    </targets>
+</LightningComponentBundle>

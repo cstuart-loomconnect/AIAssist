@@ -1,0 +1,63 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aipad-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aipad-container">
+      <!-- Title -->
+      <header class="slds-modal__header">
+        <h2 id="aipad-title" class="slds-modal__title slds-hyphenate">{labels.title}</h2>
+      </header>
+
+      <!-- Content: the type switch, the search box, the matches and a warning -->
+      <div class="slds-modal__content slds-p-around_medium aipad-content">
+        <!-- Type: assign to a user or to a permission set -->
+        <p class="aipad-label">{labels.assignTo}</p>
+        <div class="aipad-types slds-grid slds-m-bottom_small">
+          <template for:each={typeButtons} for:item="typeButton">
+            <button key={typeButton.value} type="button" class={typeButton.buttonClass} data-value={typeButton.value} aria-pressed={typeButton.isSelected} onclick={handleTypeClick}>{typeButton.label}</button>
+          </template>
+        </div>
+
+        <!-- Search: type part of a name -->
+        <label class="aipad-label" for="aipad-search">{searchLabel}</label>
+        <input id="aipad-search" type="text" class="slds-input" value={searchText} oninput={handleSearchInput} />
+
+        <!-- Hints: how to start, and that a search is running -->
+        <template lwc:if={isSearching}><p class="aipad-muted slds-m-top_x-small slds-m-bottom_none">{labels.searching}</p></template>
+        <template lwc:elseif={showNoMatches}><p class="aipad-muted slds-m-top_x-small slds-m-bottom_none">{labels.noMatches}</p></template>
+        <template lwc:elseif={hasSearched}></template>
+        <template lwc:else><p class="aipad-muted slds-m-top_x-small slds-m-bottom_none">{labels.typeMore}</p></template>
+
+        <!-- Matches: one row for each user or permission set, with what they get today -->
+        <template lwc:if={showOptions}>
+          <div class="aipad-options slds-m-top_small">
+            <template for:each={optionViews} for:item="option">
+              <label key={option.key} class={option.optionClass}>
+                <input type="radio" name="aipad-assignee" value={option.assigneeId} checked={option.isSelected} disabled={option.isDisabled} onchange={handleOptionChange} />
+                <span class="aipad-option-text">
+                  <span class="aipad-strong">{option.name}</span>
+                  <span class="aipad-muted slds-text-body_small">{option.detail}{option.currentLabel}<strong>{option.currentPolicyName}</strong>{option.defaultSuffix}</span>
+                </span>
+                <template lwc:if={option.showHasPolicyPill}><span class="aipad-pill">{labels.alreadyHasPolicy}</span></template>
+                <template lwc:if={option.showOnThisPolicyPill}><span class="aipad-pill aipad-pill_muted">{labels.alreadyOnThisPolicy}</span></template>
+              </label>
+            </template>
+          </div>
+        </template>
+
+        <!-- Warning: what it means that the pick already has a policy -->
+        <template lwc:if={hasWarning}><p class="aipad-note aipad-note_warning slds-m-top_small slds-p-around_small">{warningMessage}</p></template>
+
+        <!-- Error: the reason the search or the assignment failed -->
+        <template lwc:if={hasError}><p class="aipad-note aipad-note_blocked slds-m-top_small slds-p-around_small" role="alert">{shownError}</p></template>
+      </div>
+
+      <!-- Buttons: Cancel and Assign -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={confirmLabel} onclick={handleConfirm} disabled={isConfirmDisabled} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

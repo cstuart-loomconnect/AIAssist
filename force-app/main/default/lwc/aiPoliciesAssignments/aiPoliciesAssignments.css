@@ -1,0 +1,80 @@
+/* A box on the Assignments tab: bordered with rounded corners. SLDS has no utility for a bordered rounded box in this colour. */
+.aipa-box {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The head of a box: a soft grey bar. The 10px 16px padding is not an SLDS step. */
+.aipa-box-head {
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The title of a box: bold dark text. */
+.aipa-box-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The table header cells: a soft grey bar with muted bold text. */
+.aipa-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-muted);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* The name of an assignee: bold dark text. */
+.aipa-name {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Muted text under a name and in the notes. */
+.aipa-caption {
+  color: var(--aia-muted);
+}
+
+/* The Remove button sits on the right. */
+.aipa-actions {
+  text-align: right;
+}
+
+/* The type pill: a small rounded label. SLDS badges have a different size and shape. */
+.aipa-pill {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The permission set pill: accent colour on a tint. */
+.aipa-pill_permission-set {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The user pill: grey. */
+.aipa-pill_user {
+  background: var(--aia-bg);
+  color: var(--aia-muted);
+}
+
+/* The three steps sit on one line with a gap, and wrap on a narrow screen. The 10px gap is not an SLDS step. */
+.aipa-steps {
+  gap: 10px;
+}
+
+/* One step: a dark rounded label with white text. */
+.aipa-step {
+  padding: 6px 12px;
+  background: var(--aia-ink);
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}

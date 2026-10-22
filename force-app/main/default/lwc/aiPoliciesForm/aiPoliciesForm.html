@@ -1,0 +1,75 @@
+<template>
+  <div class="aipf-form">
+    <!-- Name and switches: the name and description, then the Active and Default switches -->
+    <div class="slds-grid slds-wrap slds-gutters_small slds-grid_vertical-align-end slds-m-bottom_medium">
+      <!-- Name: what people see in the list -->
+      <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4 slds-m-bottom_small">
+        <label class="aipf-label" for="aipf-name"><span class="aipf-required">{labels.required}</span>{labels.name}</label>
+        <input id="aipf-name" type="text" class="slds-input" data-key="Name" maxlength={nameMaxLength} value={nameValue} oninput={handleTextInput} />
+      </div>
+      <!-- Description: what the policy is for -->
+      <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small">
+        <label class="aipf-label" for="aipf-description">{labels.description}</label>
+        <input id="aipf-description" type="text" class="slds-input" data-key="Description__c" maxlength={descriptionMaxLength} value={descriptionValue} oninput={handleTextInput} />
+      </div>
+      <!-- Switches: Active and Default -->
+      <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4 slds-grid slds-grid_vertical-align-center slds-m-bottom_small">
+        <lightning-input type="toggle" variant="label-hidden" label={labels.active} checked={isActive} data-key="IsActive__c" message-toggle-active="" message-toggle-inactive="" onchange={handleToggleChange}></lightning-input>
+        <span class="aipf-switch-label slds-m-horizontal_x-small">{labels.active}</span>
+        <lightning-input type="toggle" variant="label-hidden" label={labels.defaultLabel} checked={isDefault} data-key="IsDefault__c" message-toggle-active="" message-toggle-inactive="" onchange={handleToggleChange}></lightning-input>
+        <span class="aipf-switch-label slds-m-left_x-small">{labels.defaultLabel}</span>
+      </div>
+    </div>
+
+    <!-- Sections: each is a bordered box with a soft grey head and a row for every setting -->
+    <template for:each={sectionViews} for:item="section">
+      <div key={section.key} class="aipf-section slds-m-bottom_medium">
+        <div class="aipf-section-head">{section.label}</div>
+        <template for:each={section.rows} for:item="row">
+          <div key={row.key} class="aipf-row slds-grid slds-wrap slds-grid_vertical-align-center slds-grid_align-spread">
+            <!-- Segmented control: a full width row, with the help of the chosen choice under it -->
+            <template lwc:if={row.isSegments}>
+              <div class="slds-size_1-of-1">
+                <div class="aipf-segments slds-grid">
+                  <template for:each={row.segments} for:item="segment">
+                    <button key={segment.value} type="button" class={segment.segmentClass} data-key={row.key} data-value={segment.value} aria-pressed={segment.isSelected} onclick={handleSegmentClick}>{segment.label}</button>
+                  </template>
+                </div>
+                <p class="aipf-help slds-m-top_x-small slds-m-bottom_none">{row.segmentHelp}</p>
+              </div>
+            </template>
+            <!-- Other settings: the label, help and field name on the left and the control on the right -->
+            <template lwc:else>
+              <div class="aipf-row-text">
+                <div class="aipf-row-label">{row.label}</div>
+                <template lwc:if={row.hasHelp}><div class="aipf-help">{row.help}</div></template>
+                <div class="aipf-api-name">{row.apiName}</div>
+              </div>
+              <div class="aipf-row-control">
+                <template lwc:if={row.isNumber}><input type="text" inputmode="numeric" class="slds-input aipf-number" aria-label={row.label} placeholder={labels.blankHelp} data-key={row.key} value={row.numberValue} oninput={handleTextInput} /></template>
+                <template lwc:if={row.isToggle}><lightning-input type="toggle" variant="label-hidden" label={row.label} checked={row.isChecked} data-key={row.key} message-toggle-active="" message-toggle-inactive="" onchange={handleToggleChange}></lightning-input></template>
+                <template lwc:if={row.isSelect}>
+                  <select class="slds-select" aria-label={row.label} data-key={row.key} onchange={handleSelectChange}>
+                    <template for:each={row.selectOptions} for:item="option">
+                      <option key={option.value} value={option.value} selected={option.isSelected}>{option.label}</option>
+                    </template>
+                  </select>
+                </template>
+                <template lwc:if={row.isMulti}><lightning-checkbox-group name={row.key} label={row.label} variant="label-hidden" options={row.multiOptions} value={row.multiValue} onchange={handleChannelsChange}></lightning-checkbox-group></template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- Error: the reason the policy was not saved -->
+    <template lwc:if={hasError}><p class="aipf-error slds-m-bottom_small slds-p-around_small" role="alert">{shownError}</p></template>
+
+    <!-- Buttons: throw the draft away, or save it -->
+    <div class="slds-grid slds-grid_align-end">
+      <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+      <lightning-button variant="brand" label={saveLabel} onclick={handleSave} disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+    </div>
+  </div>
+</template>

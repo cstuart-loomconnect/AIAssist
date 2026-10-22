@@ -6,8 +6,8 @@ Class Name: AIUsagePolicyService
 
 Description: Works out what one user is allowed, from the usage policies that apply to them.
 
-Step 1: Find the usage policies that apply to the user, in system mode: those assigned to them or to a permission set they hold, otherwise the default policies
-Step 2: Combine them into one AIUsagePolicy__c that is never saved: strictest limits, widest capabilities
+Step 1: Find the usage policies that could apply to the user, in system mode, and pick the winner: their own assignments, then their permission sets (the strictest policy wins), then the default policies
+Step 2: Combine the winners into one AIUsagePolicy__c that is never saved: strictest limits, widest capabilities
 Step 3: Return that policy, or null when no policy applies
 Step 4: Say what the user may do at all: full use when a policy applies, none when it does not
 
@@ -19,6 +19,15 @@ Version      Author                   Description
 */
 
 public without sharing class AIUsagePolicyService {
+
+    // One policy that could apply to a user, where it came from, and whether it is the one that applies.
+    public class PolicyCandidate {
+
+        public String tier; // User, Permission Set or Default.
+        public String assigneeName; // The API name of the permission set for a Permission Set candidate, blank otherwise.
+        public AIUsagePolicy__c policy;
+        public Boolean isWinner = false;
+    }
 
     // What this user is allowed: the usage policies that apply to them, combined. Null when no policy applies, which means the user has no access.
     public static AIUsagePolicy__c getUsagePolicy(Id userId) {
@@ -197,27 +206,135 @@ public without sharing class AIUsagePolicyService {
         return heldNames;
     }
 
-    // The active policies that apply to a user: those assigned to them or to a permission set they hold, or, when there are none, the default policies.
+    // The active policies that apply to a user: the winners among the candidates.
     private static List<AIUsagePolicy__c> getUsagePoliciesForUser(Id userId) {
 
         // [1] Nothing to look up without a user
         if (userId == null) return new List<AIUsagePolicy__c>();
 
-        // [2] Find the permission sets the user holds
-        Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
+        // [2] Keep the policy of each winning candidate once
+        List<AIUsagePolicy__c> policies = new List<AIUsagePolicy__c>();
+        Set<Id> addedIds = new Set<Id>();
 
-        // [3] Find the policies assigned to the user, or to a permission set they hold
-        Set<Id> policyIds = new Set<Id>();
+        for (PolicyCandidate candidate : findPolicyCandidates(userId, false)) {
 
-        for (AIUsagePolicyAssignment__c assignment : [SELECT AIUsagePolicy__c FROM AIUsagePolicyAssignment__c WHERE IsActive__c = TRUE AND AIUsagePolicy__r.IsActive__c = TRUE AND ((AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_USER AND User__c = :userId) OR (AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET AND PermissionSetName__c IN :heldPermissionSets)) WITH SYSTEM_MODE LIMIT 200]) policyIds.add(assignment.AIUsagePolicy__c);
-
-        // [4] Nothing assigned, so the default policies cover the user instead
-        if (policyIds.isEmpty()) {
-
-            return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND IsDefault__c = TRUE WITH SYSTEM_MODE LIMIT 200];
+            if (candidate.isWinner && addedIds.add(candidate.policy.Id)) policies.add(candidate.policy);
         }
 
-        // [5] Return the active policies assigned to the user
-        return [SELECT Id, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND Id IN :policyIds WITH SYSTEM_MODE LIMIT 200];
+        return policies;
+    }
+
+    // Every active policy that could apply to a user, each marked as a winner or not. The user's own assignments come first, then the assignments to their permission sets, then the default policies. The first group that has anything wins, and inside the user and permission set groups the strictest policy is the only winner. Default policies all win together.
+    public static List<PolicyCandidate> getPolicyCandidates(Id userId) {
+
+        // [1] Hand the work on, asking for the full list
+        return findPolicyCandidates(userId, true);
+    }
+
+    // The candidates for a user. The default policies are only read when they are needed to cover the user, unless the full list is asked for, which saves queries on every message.
+    private static List<PolicyCandidate> findPolicyCandidates(Id userId, Boolean isFullList) {
+
+        // [1] Nothing to look up without a user
+        List<PolicyCandidate> candidates = new List<PolicyCandidate>();
+        if (userId == null) return candidates;
+
+        // [2] Find the active assignments of the user and of the permission sets they hold
+        Set<String> heldPermissionSets = getHeldPermissionSetNames(userId);
+        List<AIUsagePolicyAssignment__c> assignments = [SELECT AIUsagePolicy__c, AssigneeType__c, PermissionSetName__c FROM AIUsagePolicyAssignment__c WHERE IsActive__c = TRUE AND AIUsagePolicy__r.IsActive__c = TRUE AND ((AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_USER AND User__c = :userId) OR (AssigneeType__c = :AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET AND PermissionSetName__c IN :heldPermissionSets)) WITH SYSTEM_MODE LIMIT 200];
+
+        // [3] Read the policies those assignments point to
+        Set<Id> policyIds = new Set<Id>();
+
+        for (AIUsagePolicyAssignment__c assignment : assignments) policyIds.add(assignment.AIUsagePolicy__c);
+
+        Map<Id, AIUsagePolicy__c> policiesById = policyIds.isEmpty() ? new Map<Id, AIUsagePolicy__c>() : new Map<Id, AIUsagePolicy__c>([SELECT Id, Name, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND Id IN :policyIds WITH SYSTEM_MODE LIMIT 200]);
+
+        // [4] Build a candidate for each assignment, in the user group or the permission set group
+        List<PolicyCandidate> userCandidates = new List<PolicyCandidate>();
+        List<PolicyCandidate> permissionSetCandidates = new List<PolicyCandidate>();
+
+        for (AIUsagePolicyAssignment__c assignment : assignments) {
+
+            AIUsagePolicy__c policy = policiesById.get(assignment.AIUsagePolicy__c);
+            if (policy == null) continue;
+
+            Boolean isUserAssignment = assignment.AssigneeType__c == AIAssistApplicationConstants.ASSIGNEE_TYPE_USER;
+            PolicyCandidate candidate = new PolicyCandidate();
+            candidate.tier = isUserAssignment ? AIAssistApplicationConstants.ASSIGNEE_TYPE_USER : AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET;
+            candidate.assigneeName = isUserAssignment ? null : assignment.PermissionSetName__c;
+            candidate.policy = policy;
+
+            if (isUserAssignment) userCandidates.add(candidate);
+            else permissionSetCandidates.add(candidate);
+        }
+
+        // [5] Read the default policies, which cover the user only when nothing is assigned
+        List<PolicyCandidate> defaultCandidates = new List<PolicyCandidate>();
+        Boolean isCovered = !userCandidates.isEmpty() || !permissionSetCandidates.isEmpty();
+        List<AIUsagePolicy__c> defaultPolicies = isCovered && !isFullList ? new List<AIUsagePolicy__c>() : [SELECT Id, Name, AllowedChannels__c, ConversationExportEnabled__c, ConversationVisibilityScope__c, DebugModeEnabled__c, MaxConcurrentConversations__c, MaxConversationsPer24Hours__c, MaxTokensPer24Hours__c, UsageLimitReachedBehavior__c, IsUserInitiatedChatEnabled__c, ShouldCaptureExecutionSteps__c FROM AIUsagePolicy__c WHERE IsActive__c = TRUE AND IsDefault__c = TRUE WITH SYSTEM_MODE ORDER BY Name LIMIT 200];
+
+        for (AIUsagePolicy__c defaultPolicy : defaultPolicies) {
+
+            PolicyCandidate candidate = new PolicyCandidate();
+            candidate.tier = AIAssistApplicationConstants.POLICY_TIER_DEFAULT;
+            candidate.policy = defaultPolicy;
+            defaultCandidates.add(candidate);
+        }
+
+        // [6] The user group wins when it has anything, otherwise the permission set group, otherwise the defaults
+        List<PolicyCandidate> winningGroup = !userCandidates.isEmpty() ? userCandidates : permissionSetCandidates;
+        if (winningGroup.isEmpty()) winningGroup = defaultCandidates;
+
+        // [7] Inside the user and permission set groups only the strictest policy wins. The defaults all win together.
+        List<AIUsagePolicy__c> groupPolicies = new List<AIUsagePolicy__c>();
+
+        for (PolicyCandidate candidate : winningGroup) groupPolicies.add(candidate.policy);
+
+        AIUsagePolicy__c strictest = getStrictestPolicy(groupPolicies);
+        Boolean isDefaultGroup = winningGroup === defaultCandidates;
+
+        for (PolicyCandidate candidate : winningGroup) candidate.isWinner = isDefaultGroup || candidate.policy.Id == strictest.Id;
+
+        candidates.addAll(userCandidates);
+        candidates.addAll(permissionSetCandidates);
+        candidates.addAll(defaultCandidates);
+
+        return candidates;
+    }
+
+    // The strictest of the policies, or null when there are none. The answer never changes for the same policies.
+    public static AIUsagePolicy__c getStrictestPolicy(List<AIUsagePolicy__c> policies) {
+
+        // [1] Keep the strictest policy seen so far
+        AIUsagePolicy__c strictest = null;
+
+        for (AIUsagePolicy__c policy : policies) {
+
+            if (strictest == null || isStricter(policy, strictest)) strictest = policy;
+        }
+
+        return strictest;
+    }
+
+    // Says whether the first policy is stricter than the second: the lower daily token limit, then the lower daily conversation limit, then the lower open conversation limit. A blank limit means no limit, so it is the least strict. A full tie goes to the first name, then the lower Id, so the answer never changes.
+    private static Boolean isStricter(AIUsagePolicy__c first, AIUsagePolicy__c second) {
+
+        // [1] Compare each limit in turn
+        List<Decimal> firstLimits = new List<Decimal>{first.MaxTokensPer24Hours__c, first.MaxConversationsPer24Hours__c, first.MaxConcurrentConversations__c};
+        List<Decimal> secondLimits = new List<Decimal>{second.MaxTokensPer24Hours__c, second.MaxConversationsPer24Hours__c, second.MaxConcurrentConversations__c};
+
+        for (Integer index = 0; index < firstLimits.size(); index++) {
+
+            Decimal firstValue = firstLimits[index] == null ? AIAssistApplicationConstants.POLICY_NO_LIMIT_RANK : firstLimits[index];
+            Decimal secondValue = secondLimits[index] == null ? AIAssistApplicationConstants.POLICY_NO_LIMIT_RANK : secondLimits[index];
+            if (firstValue != secondValue) return firstValue < secondValue;
+        }
+
+        // [2] Break a tie by name, then by Id
+        String firstName = first.Name == null ? '' : first.Name;
+        String secondName = second.Name == null ? '' : second.Name;
+        if (firstName != secondName) return firstName < secondName;
+
+        return String.valueOf(first.Id) < String.valueOf(second.Id);
     }
 }
