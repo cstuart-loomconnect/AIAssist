@@ -55,6 +55,30 @@ public without sharing class AIAssistApplicationConstants {
     // AIAgentManager.invokeTool - handed to the model in place of a bare "[]" so it can tell a genuine no-match apart from a failure and stop retrying.
     public static final String TOOL_RESULT_NO_RECORDS_FOUND = 'No records found.';
 
+    // AIWorkflowAction__c.LastTestStatus__c, and the extra state the AI Tools tab works out for the list
+    public static final String WORKFLOW_TEST_STATUS_PASSED = 'Passed';
+    public static final String WORKFLOW_TEST_STATUS_FAILED = 'Failed';
+    public static final String WORKFLOW_ATTENTION_FLOW_INACTIVE = 'Flow inactive';
+    public static final String WORKFLOW_ATTENTION_FLOW_CHANGED = 'Flow changed';
+
+    // AIWorkflowAction__c.InputSchema__c keys the AI Tools tab writes and AIWorkflowActionDispatcher.applyServerFilledInputs reads. The value of x-source says who fills the input; x-value is the fixed value; x-confirm marks an input shown to the user at the confirmation; x-callouts is what a class says it does that cannot be rolled back
+    public static final String WORKFLOW_SCHEMA_SOURCE_KEY = 'x-source';
+    public static final String WORKFLOW_SCHEMA_VALUE_KEY = 'x-value';
+    public static final String WORKFLOW_SCHEMA_CONFIRM_KEY = 'x-confirm';
+    public static final String WORKFLOW_SCHEMA_CALLOUTS_KEY = 'x-callouts';
+    public static final String WORKFLOW_INPUT_SOURCE_PAGE = 'page';
+    public static final String WORKFLOW_INPUT_SOURCE_USER = 'user';
+    public static final String WORKFLOW_INPUT_SOURCE_FIXED = 'fixed';
+
+    // FlowDefinitionView.ProcessType: an autolaunched Flow, and a Screen Flow
+    public static final String FLOW_PROCESS_TYPE_AUTOLAUNCHED = 'AutolaunchedFlow';
+    public static final String FLOW_PROCESS_TYPE_SCREEN = 'Flow';
+
+    // AIToolsWorkflowActionEditorService
+    public static final String INTERFACE_WORKFLOW_ACTION_EXECUTOR = 'IAIWorkflowActionExecutor';
+    public static final Integer WORKFLOW_LIST_MAX_RESULTS = 500;
+    public static final Integer WORKFLOW_FLOW_LIST_MAX_RESULTS = 200;
+
     // AIWorkflowAction__c.ActionType__c
     public static final String WORKFLOW_ACTION_TYPE_APEX = 'Apex';
     public static final String WORKFLOW_ACTION_TYPE_FLOW = 'Flow';
@@ -368,6 +392,17 @@ public without sharing class AIAssistApplicationConstants {
     public static final String PII_SYNC_STATUS_FAILED = 'Failed';
     public static final Integer DEFAULT_MAX_PII_FIELDS_TO_QUERY = 200;
     public static final Integer MAX_PII_REGISTRIES_PER_RUN = 20; // One queueable syncs them all, so this bounds its queries and DML.
+    public static final Integer MAX_PII_FIELDS_TO_QUERY_LIMIT = 500; // The AIPIIRegistry__c.MaxFieldsToQueryRange validation rule.
+    public static final Integer DEFAULT_PII_FIELDS_TO_QUERY_NEW_OBJECT = 100; // What the AI PII Registry tab offers for a new object.
+    public static final Integer PII_REGISTRY_LIST_MAX_RESULTS = 200;
+    public static final Integer PII_OBJECT_SEARCH_MIN_LENGTH = 2;
+    public static final Integer PII_OBJECT_SEARCH_MAX_RESULTS = 25;
+    public static final Integer PII_MASKING_TEST_MAX_FIELDS = 100; // Most PII fields one test reads from the record.
+    public static final String PII_RULE_NOT_APPLIED = 'Redacted'; // What the Masking column shows for a type with no rule.
+    public static final String PII_REDACT_REASON_NO_RULE = 'NoRule'; // Why the masking test redacted a value.
+    public static final String PII_REDACT_REASON_NOT_APPLIED = 'NotApplied';
+    public static final String PII_REDACT_REASON_EXHAUSTED = 'Exhausted';
+    public static final String PII_REDACT_SUFFIX = ' · redact'; // Added to the strategy when the rule also redacts.
     public static final Integer HOUSEKEEPING_BATCH_SIZE = 200;
     public static final Integer HELD_MESSAGE_TIMEOUT_MINUTES = 5; // How long a message waits for a place under the cap on messages in flight before it is failed.
     public static final Integer HELD_MESSAGE_SWEEP_SIZE = 20; // How many are failed in one go: each tells its chat window.
@@ -449,5 +484,73 @@ public without sharing class AIAssistApplicationConstants {
     public static final String SETTINGS_NAME_UI = 'AIAssistUISettings__c';
     public static final Integer SETTINGS_OWNER_SEARCH_MIN_LENGTH = 2;
     public static final Integer SETTINGS_OWNER_SEARCH_MAX_RESULTS = 25;
-    public static final Integer SETTINGS_POLICY_LIST_MAX_RESULTS = 200;
+
+    // AIPoliciesEditorService, AIPoliciesAssignmentService, AIPoliciesCheckService and AIUsagePolicyService - the AI Policies tab and the policy a user gets.
+    public static final Integer POLICIES_LIST_MAX_RESULTS = 200;
+    public static final Integer POLICIES_USER_SEARCH_MAX_RESULTS = 10;
+    public static final Decimal POLICY_NO_LIMIT_RANK = 9999999999999999999999.0; // A blank limit means no limit, so it ranks as the least strict.
+    public static final String POLICY_TIER_DEFAULT = 'Default';
+    public static final String POLICY_OUTCOME_WINS = 'Wins';
+    public static final String POLICY_OUTCOME_IGNORED = 'Ignored';
+    public static final String POLICY_OUTCOME_NOT_NEEDED = 'Not needed';
+    public static final String POLICY_OUTCOME_APPLIES = 'Applies';
+
+    // AIToolsEditorService - the data sources on the AI Tools tab.
+    public static final Integer TOOLS_LIST_MAX_RESULTS = 200;
+    public static final String TOOLS_TEST_STATUS_PASSED = 'Passed'; // AIDataSource__c.LastTestStatus__c
+    public static final String TOOLS_TEST_STATUS_PARTIAL = 'Partial';
+    public static final String TOOLS_TEST_STATUS_FAILED = 'Failed';
+    public static final String TOOLS_PROBLEM_ERROR = 'Error';
+    public static final String TOOLS_PROBLEM_WARNING = 'Warning';
+    public static final Integer TOOLS_SOQL_MAX_LIMIT = 200;
+    public static final Integer TOOLS_SOQL_DEFAULT_LIMIT = 20;
+    public static final String TOOLS_BIND_RECORD_ID = 'recordId'; // The bind AIDataSourceDispatcher fills from the open record.
+    public static final String TOOLS_INPUT_SOURCE_KEY = 'x-source'; // InputSchema__c property key that says who fills the input.
+    public static final String TOOLS_INPUT_SOURCE_PAGE = 'page';
+    public static final String TOOLS_DATA_SOURCE_INTERFACE = 'IAIDataSourceExecutor';
+
+    // AIPromptTemplateService and AIPromptTemplatesEditorService - the sections of the system prompt, in the order the model receives them, and the AI Prompt Templates tab.
+    public static final String PROMPT_SECTION_PERSONA = 'Persona'; // AIAgent__c.AIAgentPersona__c
+    public static final String PROMPT_SECTION_CONTEXT = 'Context'; // AIPromptTemplate__c.AISystemContext__c
+    public static final String PROMPT_SECTION_TONE = 'Tone'; // AIPromptTemplate__c.AITone__c
+    public static final String PROMPT_SECTION_INSTRUCTIONS = 'Instructions'; // AIPromptTemplate__c.AIPrompt__c
+    public static final String PROMPT_SECTION_NEVER = 'Never'; // AIPromptTemplate__c.AIExclusionRules__c
+    public static final String PROMPT_SECTION_RESPONSE_LENGTH = 'Response length'; // AIPromptTemplate__c.MaxResponseLength__c
+    public static final String PROMPT_SECTION_RESPONSE_LENGTH_TEXT = 'Keep replies under {0} words.';
+    public static final String PROMPT_SECTION_HEADING_PREFIX = '## ';
+    public static final String PROMPT_MERGE_AGENT_NAME = '{!Agent.Name}';
+    public static final String PROMPT_MERGE_USER_FIRST_NAME = '{!User.FirstName}';
+    public static final String PROMPT_MERGE_RECORD_OBJECT_LABEL = '{!Record.ObjectLabel}';
+    public static final String PROMPT_MERGE_RECORD_NAME = '{!Record.Name}';
+    public static final String PROMPT_MERGE_TODAY = '{!Today}';
+    public static final String PROMPT_MERGE_ORG_NAME = '{!Org.Name}';
+    public static final String PROMPT_MERGE_PATTERN = '\\{![^{}]*\\}'; // Anything shaped like a merge field, known or not.
+    public static final String PROMPT_PREVIEW_SAMPLE_AGENT_NAME = '[Agent name]'; // What {!Agent.Name} shows in the preview when no agent was picked.
+    public static final String PROMPT_PREVIEW_SAMPLE_RECORD_NAME = '[Record name]'; // What {!Record.Name} shows in the preview when no record was picked.
+    public static final String PROMPT_PREVIEW_SAMPLE_OBJECT_LABEL = '[Record]'; // What {!Record.ObjectLabel} shows in the preview when the agent has no object.
+    public static final String PROMPT_FIELD_NAME = 'templateName'; // AIPromptTemplatesDataStructure.FieldProblem.fieldName values.
+    public static final String PROMPT_FIELD_DEVELOPER_NAME = 'developerName';
+    public static final String PROMPT_FIELD_MAX_RESPONSE_LENGTH = 'maxResponseLength';
+    public static final String PROMPT_FIELD_SYSTEM_CONTEXT = 'systemContext';
+    public static final String PROMPT_FIELD_TONE = 'tone';
+    public static final String PROMPT_FIELD_PROMPT = 'prompt';
+    public static final String PROMPT_FIELD_EXCLUSION_RULES = 'exclusionRules';
+    public static final String PROMPT_TEST_STATUS_PASSED = 'Passed'; // AIPromptTestMessage__c.LastRunStatus__c
+    public static final String PROMPT_TEST_STATUS_FAILED = 'Failed';
+    public static final String PROMPT_VERDICT_BETTER = 'Better'; // AIPromptTestMessage__c.SavedVerdict__c and EditedVerdict__c
+    public static final String PROMPT_VERDICT_WORSE = 'Worse';
+    public static final String PROMPT_VERDICT_SIDE_SAVED = 'saved';
+    public static final String PROMPT_VERDICT_SIDE_EDITED = 'edited';
+    public static final Integer PROMPT_TEST_MESSAGE_MAX_LENGTH = 4000;
+    public static final Integer PROMPT_TEST_MESSAGES_MAX_PER_TEMPLATE = 25;
+    public static final Integer PROMPT_TEMPLATE_LIST_MAX_RESULTS = 200;
+
+    // The AI Agent Models tab. The connection test sends one short message and asks for a short reply, so it uses only a few tokens.
+    public static final Integer MODEL_LIST_MAX_RESULTS = 200;
+    public static final Integer MODEL_TEST_MAX_OUTPUT_TOKENS = 64;
+    public static final String MODEL_TEST_MESSAGE = 'Reply with OK';
+    public static final String MODEL_TEST_INSTRUCTIONS = 'This is a connection test. Answer as briefly as you can.';
+    public static final Decimal MODEL_TEMPERATURE_MAX = 2;
+    public static final Decimal MODEL_TEMPERATURE_MAX_ANTHROPIC = 1;
+    public static final Integer PROMPT_TRY_IT_MAX_OUTPUT_TOKENS = 1024;
 }

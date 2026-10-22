@@ -1,0 +1,174 @@
+REVIEW PLAN - NEW LWCs AND APEX CLASSES (branch integration-testing, 2026-10-22)
+
+How to use this: each section is one tab (or one shared layer) and can be reviewed on its own.
+Within a section, read in this order: Apex DataStructure -> Controller -> EditorService/other
+services -> parent LWC -> child LWCs -> tests. "Lines" are js+html+css for an LWC and .cls for a
+class. Every Apex class has a matching *Test class unless noted.
+
+Review order suggestion: 1 (smallest, sets the pattern every other tab copies), then 2, 6, 3, 4, 5, 7.
+
+------------------------------------------------------------------------------------------
+1. AI MODELS TAB  (small - about 2.1k LWC lines, 1.2k Apex)  [independent, review first]
+------------------------------------------------------------------------------------------
+LWC
+  aiModels (758)                  tab page, list, activation
+  aiModelsForm (899)              create / edit form
+  aiModelsSwitchOffDialog (354)   switching a model off moves agents
+Apex
+  AIModelsDataStructure (116)
+  AIModelsController (119)
+  AIModelsEditorService (396)     save, activate, switch off
+  AIModelsConnectionTestService (50)   test on activation
+Tests: AIModelsControllerTest, AIModelsEditorServiceTest, AIModelsConnectionTestServiceTest
+
+------------------------------------------------------------------------------------------
+2. AI POLICIES TAB  (about 3.6k LWC lines, 1.8k Apex)  [independent]
+------------------------------------------------------------------------------------------
+LWC
+  aiPolicies (927)                tab page, list
+  aiPoliciesForm (697)            create / edit policy, limits
+  aiPoliciesAssignDialog (604)    assign users / groups
+  aiPoliciesAssignments (325)     assignments list
+  aiPoliciesCheckUser (538)       "which policy applies to this user"
+  aiPoliciesDeleteDialog (470)
+Apex
+  AIPoliciesDataStructure (108)
+  AIPoliciesController (199)
+  AIPoliciesEditorService (345)   RENAMED from AIAssistPolicyEditorService - review as a rename + changes
+  AIPoliciesAssignmentService (354)
+  AIPoliciesCheckService (127)
+  AIUsagePolicyService (340)      EXISTING, modified - enforcement side of policies
+Tests: one *Test per class above
+Also check: aiAssistUsagePolicies LWC (old policy editor, still present and modified) - confirm
+whether it is now superseded by aiPolicies and should be deleted.
+
+------------------------------------------------------------------------------------------
+3. AI TOOLS TAB - DATA SOURCES  (largest LWC group, about 8k lines, 2.2k Apex)
+------------------------------------------------------------------------------------------
+LWC (shell)
+  aiTools (139)                   tab container, switches data sources / workflow actions
+  aiToolsDataSources (613)        list
+  aiToolsDataSourceWizard (1086)  wizard host, review this before the Ds* steps
+LWC (wizard steps / pieces)
+  aiToolsDsType (218)             pick Query or Apex
+  aiToolsDsDetails (465)
+  aiToolsDsInputs (467)
+  aiToolsDsQuery (968)            SOQL template step
+  aiToolsDsQueryBuilder (683)
+  aiToolsDsQueryEditor (245)
+  aiToolsDsApex (377)             Apex class step
+  aiToolsDsTest (740)             test run, writes LastTestStatus__c
+  aiToolsDsSaveDialog (183)
+Apex
+  AIToolsDataStructure (164)
+  AIToolsController (228)
+  AIToolsEditorService (395)
+  AISoqlTemplateValidator (525)   biggest and most security-sensitive class here (SOQL injection)
+  AIDataSourceInputBinder (165)
+  AIDataSourceTestService (312)
+  AIDataSourceTestStub (31)
+  IAIDataSourceInputDescriber (23)
+  AIDataSourceDispatcher (90)     EXISTING, modified
+Tests: one *Test per class (no test for the stub or interface)
+Suggested split if this is too big: 3a = Apex + aiTools/aiToolsDataSources/Wizard;
+3b = the Ds* step components.
+
+------------------------------------------------------------------------------------------
+4. AI TOOLS TAB - WORKFLOW ACTIONS  (about 4.7k LWC lines, 1.7k Apex)
+------------------------------------------------------------------------------------------
+LWC
+  aiToolsWorkflowActions (622)    list
+  aiToolsWaWizard (999)           wizard host
+  aiToolsWaStepType (269)
+  aiToolsWaStepSource (578)       Flow / Apex / Screen Flow source
+  aiToolsWaStepDetails (349)
+  aiToolsWaStepInputs (820)
+  aiToolsWaStepTest (563)         test run, writes TestedFlowVersion__c
+  aiToolsWaStepConfirmation (536)
+Apex
+  AIToolsWorkflowActionDataStructure (118)
+  AIToolsWorkflowActionController (180)
+  AIToolsWorkflowActionEditorService (429)
+  AIToolsWorkflowActionTestService (227)
+  AIWorkflowActionTestStub (55)
+  IAIWorkflowActionInputDescriber (25)
+  AIWorkflowActionDispatcher (437)  EXISTING, modified
+Tests: one *Test per class (dispatcher test is 1059 lines, skim it)
+
+------------------------------------------------------------------------------------------
+5. PROMPT TEMPLATES TAB  (about 4.5k LWC lines, 2k Apex)
+------------------------------------------------------------------------------------------
+LWC
+  aiPromptTemplates (494)         tab page
+  aiPromptTemplatesList (309)
+  aiPromptTemplatesDetail (370)
+  aiPromptTemplatesSection (268)
+  aiPromptTemplatesEditor (987)   biggest component
+  aiPromptTemplatesPreview (255)
+  aiPromptTemplatesTryIt (892)    writes AIPromptTestMessage__c (new object)
+  aiPromptTemplatesUsedBy (285)
+  aiPromptTemplatesPublishDialog (312)
+  aiPromptTemplatesArchiveDialog (335)
+Apex
+  AIPromptTemplatesDataStructure (183)
+  AIPromptTemplatesController (332)
+  AIPromptTemplatesEditorService (663)
+  AIPromptTemplatesTryItService (123)
+  AIPromptMergeFieldService (223)
+  AIPromptTemplateService (159)           EXISTING, modified
+  AIPromptTemplateTriggerHandler (182)    EXISTING, modified
+Tests: one *Test per class
+
+------------------------------------------------------------------------------------------
+6. PII REGISTRY TAB  (about 3.2k LWC lines, 2k Apex)  [independent]
+------------------------------------------------------------------------------------------
+LWC
+  aiPiiRegistry (916)             tab page
+  aiPiiRegistryFields (435)
+  aiPiiRegistryDetail (707)
+  aiPiiRegistryAddDialog (549)
+  aiPiiRegistryUnprotected (233)  fields with no protection
+  aiPiiRegistryTest (324)         masking test
+Apex (new)
+  AIPiiRegistryDataStructure (107)
+  AIPiiRegistryController (199)
+  AIPiiRegistryEditorService (378)
+  AIPiiRegistryCoverageService (184)
+  AIPiiRegistryMaskingTestService (92)
+Apex (existing, modified - runtime behaviour changed, review carefully)
+  AIPiiFieldRegistry (66)
+  AIPiiPseudonymizationService (265)
+  AIPiiRegistrySyncWorker (121)
+  AIPiiRegistrySyncDispatcher test only (234)
+Tests: one *Test per class
+Metadata: AIPIIFieldMetadata__c.IsOverridden__c (new field)
+
+------------------------------------------------------------------------------------------
+7. SETTINGS TAB  (already deployed to ai_ui_build; modified since)
+------------------------------------------------------------------------------------------
+LWC
+  aiAssistSettings (341), aiAssistSettingsField, aiAssistSettingsForm (515), aiAssistSettingsPanel (800)
+Apex
+  AIAssistSettingsController (103), AIAssistSettingsDataStructure (46)  both modified
+  AIAssistSettingsEditorService (579), AIAssistSettingsService (116)    unchanged
+Also in this group: aiAgentWizard (agent wizard) and aiChatScreenFlowModal (Screen Flow modal) -
+both are real components, just not line-counted here.
+
+------------------------------------------------------------------------------------------
+8. CHAT RUNTIME / SHARED (modified, not new)  [review last, as a diff only]
+------------------------------------------------------------------------------------------
+  AIChatController, AIMessageProcessingQueueable, AIAgentManager,
+  AIAssistApplicationConstants, AIAssistTestDataFactory (shared by all tests)
+  Chat LWCs (aiAssistChat, aiChat*) are the earlier port - only review if git diff shows changes.
+
+------------------------------------------------------------------------------------------
+OTHER ITEMS TO GLANCE AT (not code)
+------------------------------------------------------------------------------------------
+  Tabs: AIModelsTab, AIPiiRegistryTab, AIPoliciesTab, AIPromptTemplatesTab, AIToolsTab
+  Application: AIAssist.app-meta.xml (modified)
+  New object: AIPromptTestMessage__c
+  New fields: AIAgent__c.AIPromptTemplate__c, AIDataSource__c and AIWorkflowAction__c
+              LastTestStatus__c / LastTestedOn__c, AIWorkflowAction__c.TestedFlowVersion__c,
+              AIConversation__c.StatusDisplay__c, AIFeedback__c.RatingDisplay__c/ReasonDisplay__c
+  List views on AIConversation__c, AIFeedback__c, AIPlatformLog__c
+  docs/known-issues.txt (new)

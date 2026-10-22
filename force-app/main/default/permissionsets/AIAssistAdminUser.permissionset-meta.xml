@@ -27,6 +27,42 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>AIToolsWorkflowActionController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIToolsController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPiiRegistryController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPiiRegistryEditorService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPiiRegistryCoverageService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPiiRegistryMaskingTestService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPiiRegistryDataStructure</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIModelsController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>AIPoliciesController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>AIChatController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -79,6 +115,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIAgent__c.AIModelConfiguration__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIAgent__c.AIPromptTemplate__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -312,6 +353,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>AIConversation__c.StatusDisplay__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>AIDataSource__c.ApexClassName__c</field>
         <readable>true</readable>
@@ -334,6 +380,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIDataSource__c.IsActive__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIDataSource__c.LastTestStatus__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIDataSource__c.LastTestedOn__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -374,6 +430,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>AIFeedback__c.Rating__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIFeedback__c.ReasonDisplay__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIFeedback__c.RatingDisplay__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -449,6 +515,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>AIPIIFieldMetadata__c.FieldLabel__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>AIPIIFieldMetadata__c.IsOverridden__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -642,6 +713,41 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.EditedVerdict__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.LastEditedReply__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.LastRunOn__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.LastRunStatus__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.LastSavedReply__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.MessageBody__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIPromptTestMessage__c.SavedVerdict__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>AITermsAcknowledgment__c.AcknowledgedDate__c</field>
         <readable>true</readable>
@@ -816,6 +922,21 @@
         <field>AIWorkflowAction__c.TargetObject__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIWorkflowAction__c.LastTestStatus__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIWorkflowAction__c.LastTestedOn__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>AIWorkflowAction__c.TestedFlowVersion__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>AI Assist Admin</label>
     <objectPermissions>
@@ -970,6 +1091,15 @@
     </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>AIPromptTestMessage__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
         <allowEdit>false</allowEdit>
         <allowRead>true</allowRead>
@@ -1063,7 +1193,15 @@
         <visibility>Available</visibility>
     </tabSettings>
     <tabSettings>
+        <tab>AIPromptTemplatesTab</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
         <tab>AITermsAcknowledgment__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>AIPoliciesTab</tab>
         <visibility>Available</visibility>
     </tabSettings>
     <tabSettings>
@@ -1072,6 +1210,10 @@
     </tabSettings>
     <tabSettings>
         <tab>AIWorkflowAction__c</tab>
+        <visibility>Available</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>AIPiiRegistryTab</tab>
         <visibility>Available</visibility>
     </tabSettings>
 </PermissionSet>
