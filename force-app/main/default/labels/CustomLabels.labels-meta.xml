@@ -558,9 +558,9 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription
-    >Prompt Template: a second active default for one Agent.</shortDescription>
+    >Prompt Template: a second active default.</shortDescription>
         <value
-    >This Agent already has an active default Prompt Template. Untick Is Default on the other one first.</value>
+    >Another Prompt Template is already the active default. Untick Is Default on it first.</value>
     </labels>
     <labels>
         <fullName>AI_Error_Generic</fullName>
@@ -1418,7 +1418,7 @@
         <value>Only AI Assist administrators can change these settings.</value>
     </labels>
     <labels>
-        <fullName>AI_Settings_Policy_Error_Limit</fullName>
+        <fullName>AI_Policies_Error_Limit</fullName>
         <categories>AI Assist,Settings</categories>
         <language>en_US</language>
         <protected>false</protected>
@@ -1428,7 +1428,7 @@
     >{0} must be a whole number above zero. Leave it blank for no limit.</value>
     </labels>
     <labels>
-        <fullName>AI_Settings_Policy_Error_Assignee</fullName>
+        <fullName>AI_Policies_Error_Assignee</fullName>
         <categories>AI Assist,Settings</categories>
         <language>en_US</language>
         <protected>false</protected>
@@ -1438,7 +1438,7 @@
     >Choose a user or a permission set to assign the policy to.</value>
     </labels>
     <labels>
-        <fullName>AI_Settings_Policy_Error_Permission_Set</fullName>
+        <fullName>AI_Policies_Error_Permission_Set</fullName>
         <categories>AI Assist,Settings</categories>
         <language>en_US</language>
         <protected>false</protected>
@@ -1448,7 +1448,7 @@
     >No permission set or permission set group has that name. Use the API name.</value>
     </labels>
     <labels>
-        <fullName>AI_Settings_Policy_Error_Duplicate</fullName>
+        <fullName>AI_Policies_Error_Duplicate</fullName>
         <categories>AI Assist,Settings</categories>
         <language>en_US</language>
         <protected>false</protected>
@@ -1552,5 +1552,952 @@
         <protected>false</protected>
         <shortDescription>Settings: unknown settings name.</shortDescription>
         <value>These settings cannot be changed here.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Not_Found</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action not found.</shortDescription>
+        <value>This workflow action no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action: value missing.</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Type_Invalid</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action: type not allowed.</shortDescription>
+        <value
+    >Choose Apex class, Autolaunched flow or Screen flow, and Read only or Write.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Source_Invalid</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action: class or flow not usable.</shortDescription>
+        <value
+    >Choose an Apex class that implements IAIWorkflowActionExecutor, or an active flow of the right kind.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Duplicate</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action: API name already used.</shortDescription>
+        <value>Another workflow action already uses that API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Flow_Inactive</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: flow not active.</shortDescription>
+        <value>The flow has no active version, so it cannot run.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Rollback_Sandbox</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: no roll back only in a sandbox.</shortDescription>
+        <value>Roll back can only be switched off in a sandbox.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Callouts_Sandbox</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: class cannot be rolled back.</shortDescription>
+        <value
+    >This class says it does things that cannot be rolled back (such as sending email). It can only be tested in a sandbox.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Screen_Flow_No_Test</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action test: screen flow.</shortDescription>
+        <value
+    >A screen flow needs a person to finish it, so it cannot be tested here. Try it in the chat.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Record_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: record needed.</shortDescription>
+        <value
+    >Choose a record to test with: this action works on the open record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_ReadOnly_Changed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: a Read Only action changed records.</shortDescription>
+        <value
+    >This action is set to Read Only but it changed {0} record(s). Set it to Write, or change what it does.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Test_Failed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action test: failed.</shortDescription>
+        <value>The test failed: {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Name_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: name and description required.</shortDescription>
+        <value
+    >Give the data source a name and a description for the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Developer_Name</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: API name format.</shortDescription>
+        <value
+    >The API name must start with a letter and use only letters, numbers and underscores.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Source_Type</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: source type missing.</shortDescription>
+        <value
+    >Choose whether the data source is a SOQL query or an Apex class.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Query_Invalid</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has errors.</shortDescription>
+        <value>Fix the errors in the query before saving.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_No_Template</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: no SOQL template.</shortDescription>
+        <value>Write or build a query first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Apex_Class</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: no Apex class.</shortDescription>
+        <value
+    >Choose an Apex class that implements IAIDataSourceExecutor.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Class_Not_Executor</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: class is not an executor.</shortDescription>
+        <value
+    >Apex class {0} was not found or does not implement IAIDataSourceExecutor.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Not_Found</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: data source gone.</shortDescription>
+        <value>That data source no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Test_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: test needed before saving a data source agents use.</shortDescription>
+        <value
+    >Agents use this data source, so it must pass a test before the change is saved.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Record_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: bound test needs a record.</shortDescription>
+        <value
+    >Pick a record to test with: this data source needs the record the user has open.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Object</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object unknown.</shortDescription>
+        <value>That object does not exist or you cannot read it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Timeout</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query too slow.</shortDescription>
+        <value>Query timed out; add an indexed filter such as AccountId.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Too_Many_Rows</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: more rows matched than returned.</shortDescription>
+        <value
+    >Too many rows: {0} matched; only {1} returned. Add a filter.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Warning_Count_Failed</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: could not count matching rows.</shortDescription>
+        <value
+    >The rows that matched could not be counted, so the result may be cut short.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Only_Select</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query is not a SELECT.</shortDescription>
+        <value>Only SELECT is allowed. Remove {0}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Shape</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has no SELECT FROM.</shortDescription>
+        <value>Write a query like SELECT Id, Name FROM Account.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Object_Bind</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object name is a bind.</shortDescription>
+        <value>The object name cannot be a bind.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Object_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object unknown in the query.</shortDescription>
+        <value>No object {0}, or you cannot read it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Subquery_Depth</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: sub-query too deep.</shortDescription>
+        <value>Sub-queries more than 1 level deep are not allowed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: field unknown.</shortDescription>
+        <value>No field {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Suggest</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: field unknown with a suggestion.</shortDescription>
+        <value>No field {0} on {1}. Did you mean {2}?</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Hidden</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: field not readable.</shortDescription>
+        <value>You cannot read {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Relationship_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: relationship unknown.</shortDescription>
+        <value>No relationship {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_No_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has no LIMIT.</shortDescription>
+        <value
+    >No LIMIT. Max rows ({0}) is added as the LIMIT automatically; remove any LIMIT over 200.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Limit_Too_High</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: LIMIT over the most allowed.</shortDescription>
+        <value>LIMIT {0} is over 200. Lower it to 200 or less.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Hard_Coded_Id</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: record id typed into the query.</shortDescription>
+        <value
+    >A hard-coded record ID won't exist in other orgs. Use a bind instead.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Record_Id_Unbound</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: recordId used by an unbound data source.</shortDescription>
+        <value
+    >The bind :recordId is only filled for a data source bound to the open record. Make this one bound, or use a different input name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Record_Id_Unused</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: bound data source never uses recordId.</shortDescription>
+        <value
+    >This data source is bound to the open record, but the query never uses :recordId.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: fix button.</shortDescription>
+        <value>Fix</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Add_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: add LIMIT fix button.</shortDescription>
+        <value>Add LIMIT {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Use_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: lower LIMIT fix button.</shortDescription>
+        <value>Use LIMIT 200</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Turn_Into_Input</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: hard-coded id fix button.</shortDescription>
+        <value>Turn into input</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Name_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: name missing.</shortDescription>
+        <value>Enter a name for the template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: API name missing.</shortDescription>
+        <value>Enter an API name for the template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Format</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: API name has the wrong shape.</shortDescription>
+        <value
+    >Use letters, numbers and underscores only, starting with a letter (DeveloperNameFormat).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Taken</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: API name already used.</shortDescription>
+        <value>Another template already uses this API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Max_Length</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: response length is not positive.</shortDescription>
+        <value>Must be more than 0 (MaxResponseLengthPositive).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Instructions_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: instructions missing.</shortDescription>
+        <value
+    >Instructions are required for an active template (ActiveRequiresPrompt).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Unknown_Merge_Field</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: merge field not recognised.</shortDescription>
+        <value>Unknown merge field {0}. Use one from the Insert bar.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Not_Found</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: template not found.</shortDescription>
+        <value
+    >That template could not be found. It may have been deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Default_Cannot_Archive</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: default cannot be archived.</shortDescription>
+        <value
+    >The default template can&apos;t be archived. Make another template the default first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Default_Must_Be_Active</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: default must be active.</shortDescription>
+        <value
+    >Only an active template can be the default. Activate it first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Move_Target_Invalid</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: move target not usable.</shortDescription>
+        <value>An agent can only be moved to another active template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Message_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: test message missing.</shortDescription>
+        <value>Type a message to try.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Message_Too_Long</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: test message too long.</shortDescription>
+        <value>A test message can be up to 4,000 characters.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Too_Many_Messages</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: too many saved messages.</shortDescription>
+        <value
+    >A template can have up to 25 saved test messages. Delete one first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Agent_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: agent missing.</shortDescription>
+        <value>Pick an agent to run the message as.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Agent_No_Model</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: agent has no model.</shortDescription>
+        <value
+    >That agent has no model configuration, so there is nothing to run the message on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Run_Failed</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: model gave no reply.</shortDescription>
+        <value
+    >The model did not reply. Check the agent&apos;s model configuration and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Verdict</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: verdict not valid.</shortDescription>
+        <value>Mark a reply as Better or Worse.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Save_First</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: template not saved yet.</shortDescription>
+        <value>Save the template before saving test messages for it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Name_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: name required.</shortDescription>
+        <value>Give the model a name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Model_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: model required.</shortDescription>
+        <value>Enter the provider's model ID.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Credential_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: credential required.</shortDescription>
+        <value>Pick the named credential the provider is called through.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Credential_Format</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: credential format.</shortDescription>
+        <value
+    >The named credential must be the API name of a named credential: letters, numbers and underscores only.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Provider_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: provider invalid.</shortDescription>
+        <value>Pick a provider this package supports.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Environment_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: environment required.</shortDescription>
+        <value>Enter the environment ID. Anthropic Agent needs one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Path_Format</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: path format.</shortDescription>
+        <value
+    >The API path must start with a single / and contain only path characters: no host name, spaces, &quot;..&quot; or &quot;//&quot;.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Tokens_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: tokens invalid.</shortDescription>
+        <value>Max output tokens must be a whole number of 1 or more.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Temperature_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: temperature invalid.</shortDescription>
+        <value
+    >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Not_Found</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: not found.</shortDescription>
+        <value>That model could not be found. It may have been deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Move_Target_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: move target invalid.</shortDescription>
+        <value>An agent can only be moved to another active model.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Move_Missing</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: move missing.</shortDescription>
+        <value
+    >Pick a model for every agent before switching this model off.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Switch_Off_Has_Agents</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: switch off has agents.</shortDescription>
+        <value
+    >Active agents use this model. Switch it off from the toggle, which moves them first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Test_Agent_Name</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Models: name of the stand-in agent in a connection test.</shortDescription>
+        <value>Connection test</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Last_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the only default policy switched off.</shortDescription>
+        <value
+    >A default policy is needed. Make another policy the default instead of switching this one off.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Delete_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the default policy deleted.</shortDescription>
+        <value
+    >The default policy can't be deleted. To delete it, make another policy the default first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Move_To</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: no policy to move the people to.</shortDescription>
+        <value
+    >Choose another policy to move the people to before deleting this one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Tokens_A_Day</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a daily token limit in a sentence.</shortDescription>
+        <value>{0} tokens a day</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_No_Token_Limit</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: no daily token limit in a sentence.</shortDescription>
+        <value>no daily token limit</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Warning_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a permission set that already has a policy.</shortDescription>
+        <value
+    >{0} is already assigned to the {1} policy. Adding it here means its {2} users match two policies, so the stricter one applies: {3} ({4}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Warning_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a user who already has a user assignment.</shortDescription>
+        <value
+    >{0} already has a user assignment to the {1} policy. Adding it here means two user assignments match, so the stricter one applies: {2} ({3}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the user assignment source.</shortDescription>
+        <value>User assignment</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a permission set source.</shortDescription>
+        <value>Permission set · {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the default source.</shortDescription>
+        <value>Default</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a user assignment applies.</shortDescription>
+        <value
+    >They have a user assignment, which comes before permission sets and the default policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_User_Several</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, several user assignments.</shortDescription>
+        <value
+    >No more than one policy can apply. They have {0} user assignments with different policies; the stricter one wins.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a permission set applies.</shortDescription>
+        <value
+    >No user assignment. Their permission set gives them this policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Permission_Set_Several</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, several permission sets.</shortDescription>
+        <value
+    >No user assignment. Matches {0} permission sets with different policies; the stricter one wins.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the default applies.</shortDescription>
+        <value
+    >No user assignment and no permission set assignment, so the default policy applies.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_None</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, nothing applies.</shortDescription>
+        <value
+    >No policy applies to this user, so they cannot use AI Assist.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Hint</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a policy was ignored.</shortDescription>
+        <value
+    >If this user should get {0}, add a user assignment for them, or remove the assignment that wins ({1}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: object not found.</shortDescription>
+        <value
+    >That object could not be found in the registry. It may have been removed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Field_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: field not found.</shortDescription>
+        <value>That field could not be found. Sync the object again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Object_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: object cannot be added.</shortDescription>
+        <value
+    >That object does not exist in this org, or it cannot be queried.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Object_Exists</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: object already added.</shortDescription>
+        <value>That object is already in the registry.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Limit_Reached</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: registry is full.</shortDescription>
+        <value
+    >The registry already holds {0} objects, the most Maximum PII Registry Objects allows. Raise it in AI Settings to add more.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Max_Fields_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: max fields not valid.</shortDescription>
+        <value>Max fields to query must be a whole number from 1 to 500.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Sync_Running</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: sync already running.</shortDescription>
+        <value
+    >This object is already queued or syncing. Wait for it to finish.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Type_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: type not offered.</shortDescription>
+        <value>That PII type is not one the registry offers.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Test_Record_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: test record not valid.</shortDescription>
+        <value>Pick a record of the object you are testing.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Test_Record_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: test record not found.</shortDescription>
+        <value
+    >That record could not be read. Check that it exists and that you can see it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_No_Rule</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: redacted, no rule.</shortDescription>
+        <value>Redacted: no active rule for this type</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_Strategy</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: redacted, strategy not applied.</shortDescription>
+        <value>Redacted: {0} is not applied yet</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_Exhausted</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: redacted, list used up.</shortDescription>
+        <value>Redacted: every substitute value is already used</value>
     </labels>
 </CustomLabels>

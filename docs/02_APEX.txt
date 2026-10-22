@@ -77,6 +77,15 @@ Sections are in call order, lowest layer first, so a class is checked after the 
   [ ] Test: AIPiiPseudonymizationServiceTest
 [ ] AIPiiMappingService (inherited sharing, 219 lines): Remembers, per conversation, which fake value stands in for which real value, so the model sees consistent stand-ins and its reply can be turned back into real values
   [ ] Test: AIPiiMappingServiceTest
+[ ] AIPiiRegistryController (without sharing, 8 AuraEnabled methods): The Apex controller behind the AI PII Registry tab; shows a package refusal as it is and logs anything else once.
+  [ ] Test: AIPiiRegistryControllerTest
+[ ] AIPiiRegistryEditorService (without sharing): Reads the registry with field and PII counts, adds an object and queues its sync, switches an object on or off, and saves or resets a field override. Needs the Manage Settings permission.
+  [ ] Test: AIPiiRegistryEditorServiceTest
+[ ] AIPiiRegistryCoverageService (without sharing): Lists the objects active data sources read that have no registry, and searches the org's objects for the Add object dialog.
+  [ ] Test: AIPiiRegistryCoverageServiceTest
+[ ] AIPiiRegistryMaskingTestService (without sharing): Shows what AIPiiPseudonymizationService.previewMasking would send for a real record, saving, tallying and logging nothing.
+  [ ] Test: AIPiiRegistryMaskingTestServiceTest
+[ ] AIPiiRegistryDataStructure (without sharing): The shapes the AI PII Registry tab sends to and receives from Apex.
 
 
 2.8 DATA SOURCES
