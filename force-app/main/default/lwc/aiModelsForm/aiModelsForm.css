@@ -1,0 +1,178 @@
+/* The form card: a bordered white box with rounded corners. SLDS has no utility for a bordered rounded card in this colour. */
+.aiamf-card-box {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The band on top of the card: dark ink with white text. The 12px 16px padding is not an SLDS step. */
+.aiamf-band {
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The model name in the band: white, bold. */
+.aiamf-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The word beside the toggle: white. */
+.aiamf-toggle-label {
+  font-size: 13px;
+  color: var(--aia-surface);
+}
+
+/* A small heading above a group of fields: bold dark text. */
+.aiamf-section-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The provider cards sit side by side with a gap, and wrap on a narrow screen. SLDS has no 12px gap utility. */
+.aiamf-cards {
+  gap: 12px;
+}
+
+/* One provider card: a bordered box that grows to share the row. */
+.aiamf-card {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A provider card the pointer is over: a soft grey. */
+.aiamf-card:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* A provider card reached by keyboard: an accent outline. */
+.aiamf-card:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* The chosen provider card: an accent border on a tint. */
+.aiamf-card_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The provider name on a card: bold dark text. */
+.aiamf-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The line under the provider name: muted text. */
+.aiamf-card-text {
+  color: var(--aia-muted);
+}
+
+/* A required field is marked with a red star. */
+.aiamf-required {
+  color: var(--aia-danger);
+}
+
+/* Model IDs, paths and header names are shown in a fixed width font so they are easy to read exactly. */
+.aiamf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+/* The help under a field: muted text. */
+.aiamf-help {
+  color: var(--aia-muted);
+}
+
+/* The connection test box: a bordered box with a soft grey top bar. */
+.aiamf-test {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The top bar of the connection test: grey, with a line under it. */
+.aiamf-test-head {
+  padding: 8px 12px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The title of the connection test: bold dark text. */
+.aiamf-test-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A short note under the result: muted text. */
+.aiamf-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The result of a test or a refused call: a rounded box in a tint with a line round it. */
+.aiamf-result {
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* A test that passed: green. */
+.aiamf-result_success {
+  background: var(--aia-success-tint);
+  border-color: var(--aia-success);
+  color: var(--aia-success);
+}
+
+/* A test that failed, or a call that was refused: red. */
+.aiamf-result_failure {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* The headline and detail of a result sit together with no gap under them. */
+.aiamf-result-headline {
+  margin: 0;
+}
+
+/* The list of things to check after a failure: muted text with bullets. */
+.aiamf-hints {
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--aia-ink-soft);
+  list-style: disc;
+}
+
+/* The bar at the bottom of the card: grey, with a line over it. */
+.aiamf-footer {
+  gap: 12px;
+  background: var(--aia-surface-soft);
+  border-top: 1px solid var(--aia-line);
+}
+
+/* The used by line in the footer: muted text. */
+.aiamf-used-by {
+  font-size: 13px;
+  color: var(--aia-muted);
+}
