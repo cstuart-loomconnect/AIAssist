@@ -693,8 +693,9 @@ Version      Author                   Description
 
             // [6] Check the persona, the never retried failures and the retried rate limit
             Assert.isTrue(reply.isSuccessful, 'The first turn replied.');
-            Assert.isTrue(firstBody.contains('Persona: A patient mortgage adviser.'), 'The persona is in the system prompt: ' + firstBody);
-            Assert.isTrue(firstBody.indexOf('Persona:') < firstBody.indexOf('Be brief.'), 'The persona comes before the template.');
+            Assert.isTrue(firstBody.contains('## Persona\\nA patient mortgage adviser.'), 'The persona is in the system prompt under its heading: ' + firstBody);
+            Assert.isTrue(firstBody.contains('## Instructions\\nBe brief.'), 'The instructions are under their heading: ' + firstBody);
+            Assert.isTrue(firstBody.indexOf('## Persona') < firstBody.indexOf('Be brief.'), 'The persona comes before the template.');
 
             Assert.areEqual(AIAssistApplicationConstants.FAILURE_REASON_AUTHENTICATION_FAILED, rejected.failureReason, 'A 401 is a rejected credential.');
             Assert.isFalse(rejected.isRetryable, 'A rejected credential is not retried.');
@@ -737,7 +738,7 @@ Version      Author                   Description
 
             AIConversation__c conversation = AIAssistTestDataFactory.createAIConversations(agent.Id, null, 1, true)[0];
             List<AIConversationMessage__c> history = AIAssistTestDataFactory.createAIConversationMessages(conversation.Id, AIAssistApplicationConstants.SENDER_USER, null, 1, false);
-            templates = [SELECT Id, Name, DeveloperName__c, Description__c, IsDefault__c, AISystemContext__c, AIPrompt__c, AITone__c, AIExclusionRules__c, Version__c FROM AIPromptTemplate__c WHERE Id IN :templates ORDER BY DeveloperName__c NULLS FIRST];
+            templates = [SELECT Id, Name, DeveloperName__c, Description__c, IsDefault__c, AISystemContext__c, AIPrompt__c, AITone__c, AIExclusionRules__c, MaxResponseLength__c, Version__c FROM AIPromptTemplate__c WHERE Id IN :templates ORDER BY DeveloperName__c NULLS FIRST];
             AIPromptTemplate__c chosenTemplate = templates[2];
 
             // [2] Script the model picking a template, then answering
