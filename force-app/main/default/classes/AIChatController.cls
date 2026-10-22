@@ -167,10 +167,10 @@ public without sharing class AIChatController {
                 // [4] Add the command's hidden instructions after what the user typed
                 if (String.isNotBlank(command.PromptText__c)) messageBody = trimmedText + AIAssistApplicationConstants.CHAT_COMMAND_PROMPT_SEPARATOR + command.PromptText__c;
 
-                // [5] Find the prompt template the command asks for, and refuse the command when that template is missing, inactive or another agent's
+                // [5] Find the prompt template the command asks for, and refuse the command when that template is missing or inactive
                 if (String.isNotBlank(command.PromptTemplateDeveloperName__c)) {
 
-                    AIPromptTemplate__c commandPromptTemplate = AIPromptTemplateService.findActiveTemplate(request.agentId, command.PromptTemplateDeveloperName__c);
+                    AIPromptTemplate__c commandPromptTemplate = AIPromptTemplateService.findActiveTemplate(command.PromptTemplateDeveloperName__c);
 
                     if (commandPromptTemplate == null) {
 

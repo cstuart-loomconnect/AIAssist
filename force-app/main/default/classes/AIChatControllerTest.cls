@@ -710,22 +710,23 @@ Version      Author                   Description
             AIChatDataStructure.ConversationUpdate viewerUpdate;
             AIChatDataStructure.MessagePage viewerEarlier;
 
-            // [2] Share it as the starter, then use it as the user it is shared with
+            // [2] Share it as the starter. The shared user's calls come after, outside the timed block, because each call is its own request in real use and all of them together would pass the 100 query limit of one test block
             Test.startTest();
                 before = AIChatController.getConversationShares(conversation.Id);
                 found = AIChatController.searchShareableUsers(conversation.Id, 'Zqshare');
                 shared = AIChatController.shareConversation(conversation.Id, users[0].Id);
                 after = AIChatController.getConversationShares(conversation.Id);
                 ownerView = AIChatController.openConversation(conversation.Id);
-
-                System.runAs(users[0]) {
-
-                    viewerHistory = AIChatController.getSharedConversationHistory();
-                    viewerView = AIChatController.openConversation(conversation.Id);
-                    viewerUpdate = AIChatController.getConversationUpdate(conversation.Id, null);
-                    viewerEarlier = AIChatController.getEarlierMessages(conversation.Id, reply.Id);
-                }
             Test.stopTest();
+
+            // [2b] Use it as the user it is shared with
+            System.runAs(users[0]) {
+
+                viewerHistory = AIChatController.getSharedConversationHistory();
+                viewerView = AIChatController.openConversation(conversation.Id);
+                viewerUpdate = AIChatController.getConversationUpdate(conversation.Id, null);
+                viewerEarlier = AIChatController.getEarlierMessages(conversation.Id, reply.Id);
+            }
 
             // [3] Check the starter's side
             Assert.isTrue(before.isEmpty(), 'Nothing should be shared at first.');
