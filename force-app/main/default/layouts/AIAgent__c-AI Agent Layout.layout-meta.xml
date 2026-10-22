@@ -35,6 +35,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>AIPromptTemplate__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>AccessMode__c</field>
             </layoutItems>
         </layoutColumns>
@@ -179,13 +183,6 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
-    <relatedLists>
-        <fields>NAME</fields>
-        <fields>IsActive__c</fields>
-        <fields>MaxResponseLength__c</fields>
-        <fields>LAST_UPDATE</fields>
-        <relatedList>AIPromptTemplate__c.AIAgent__c</relatedList>
-    </relatedLists>
     <relatedLists>
         <fields>NAME</fields>
         <fields>AIDataSource__c</fields>

@@ -1,0 +1,99 @@
+/* The red banner above the form: a soft red bar with red text. SLDS alerts have a different shape and colour. */
+.aipt-banner {
+  background: var(--aia-danger-tint);
+  border: 1px solid var(--aia-danger);
+  border-radius: 4px;
+  color: var(--aia-danger);
+}
+
+/* The three fields: a gap between them. The name and API name share the width and the max length is narrower. */
+.aipt-fields {
+  gap: 16px;
+}
+
+.aipt-fields > .slds-form-element {
+  flex: 1 1 220px;
+}
+
+.aipt-fields > .slds-form-element:last-child {
+  flex: 0 1 220px;
+}
+
+/* The API name: a monospace font, as it is a code name. */
+.aipt-code-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* A locked API name: a soft grey background. */
+.aipt-code-input_locked {
+  background: var(--aia-surface-soft);
+}
+
+/* The two columns: the sections beside the preview, with a gap. They stack on a narrow screen. */
+.aipt-columns {
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.aipt-column-main {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.aipt-column-side {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* The Insert bar: a soft grey box with a border, a gap between the chips and a space under it. */
+.aipt-insert {
+  gap: 6px;
+  margin-bottom: 12px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The word Insert: muted text. */
+.aipt-insert-label {
+  color: var(--aia-muted);
+}
+
+/* One merge field chip: a rounded tint with monospace accent text. SLDS pills have a different look. */
+.aipt-chip {
+  padding: 2px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* A chip under the pointer: a little darker. */
+.aipt-chip:hover {
+  background: var(--aia-line);
+}
+
+/* A space under each section card. */
+.aipt-section-slot {
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* The footer: a line above it and a soft grey background, with a gap between the text and the buttons. */
+.aipt-footer {
+  gap: 12px;
+  border-top: 1px solid var(--aia-line);
+}
+
+/* The status text in the footer: muted. */
+.aipt-footer-text {
+  color: var(--aia-muted);
+}
+
+/* The explanation under a field. SLDS help text is red or dark, so this keeps it muted. */
+.aipt-field-help {
+  color: var(--aia-muted);
+}

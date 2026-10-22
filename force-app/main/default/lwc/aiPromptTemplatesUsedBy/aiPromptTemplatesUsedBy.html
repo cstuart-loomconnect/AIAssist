@@ -1,0 +1,42 @@
+<template>
+  <!-- Panel: the agents, or a hint when there are none -->
+  <div class="slds-is-relative slds-p-vertical_small">
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Table: one row for each agent -->
+    <template lwc:if={hasAgents}>
+      <div class="aipt-table-wrap">
+        <table class="aipt-table slds-table slds-table_cell-buffer">
+          <thead>
+            <tr>
+              <th scope="col">{labels.columnAgent}</th>
+              <th scope="col">{labels.columnUsers}</th>
+              <th scope="col">{labels.columnOpen}</th>
+              <th scope="col">{labels.columnStatus}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={agentViews} for:item="agent">
+              <tr key={agent.key}>
+                <td><span class="aipt-strong">{agent.agentName}</span> <span class="aipt-muted slds-text-body_small">{agent.fallbackText}</span></td>
+                <td>{agent.userCount}</td>
+                <td>{agent.openCount}</td>
+                <td><span class={agent.statusClass}>{agent.statusLabel}</span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
+    <!-- Empty: shown when no agent uses the template -->
+    <template lwc:if={showEmpty}>
+      <p class="aipt-muted slds-p-vertical_small">{labels.empty}</p>
+    </template>
+
+    <!-- Note: what the default template is for -->
+    <p class="aipt-muted slds-text-body_small slds-m-top_small">{labels.fallbackNote}</p>
+  </div>
+</template>

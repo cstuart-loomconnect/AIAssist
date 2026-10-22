@@ -1,0 +1,47 @@
+<template>
+  <!-- Card: a white box with a dark header and the tabs under it -->
+  <div class="aipt-card">
+    <!-- Header: the name, the pills and the buttons that fit this template -->
+    <div class="aipt-card-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <div class="slds-grid slds-grid_vertical-align-center slds-wrap aipt-card-title-group">
+        <h2 class="aipt-card-title slds-m-around_none">{templateName}</h2>
+        <template for:each={pillViews} for:item="pill">
+          <span key={pill.key} class={pill.pillClass}>{pill.label}</span>
+        </template>
+      </div>
+      <div class="slds-grid aipt-card-buttons">
+        <template lwc:if={canMakeDefault}>
+          <button type="button" class="slds-button aipt-header-button" onclick={handleMakeDefault}>{labels.makeDefault}</button>
+        </template>
+        <template lwc:if={canActivate}>
+          <button type="button" class="slds-button aipt-header-button" onclick={handleActivate}>{labels.activate}</button>
+        </template>
+        <template lwc:if={canArchive}>
+          <button type="button" class="slds-button aipt-header-button" onclick={handleArchive}>{labels.archive}</button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Tabs: Edit always, Try it and Used by once the template is saved -->
+    <div class="slds-p-around_medium">
+      <lightning-tabset active-tab-value={activeTab} onactive={handleTabActive}>
+        <!-- Edit: the fields, sections and preview -->
+        <lightning-tab label={labels.tabEdit} value={tabEdit}>
+          <c-ai-prompt-templates-editor saved-template={savedTemplate} draft={draft} ondraftchange={handleDraftChange} ondiscard={handleDiscard} onsaved={handleSaved}></c-ai-prompt-templates-editor>
+        </lightning-tab>
+        <!-- Try it: runs a message on the saved and the edited wording -->
+        <template lwc:if={isSaved}>
+          <lightning-tab label={labels.tabTryIt} value={tabTryIt}>
+            <c-ai-prompt-templates-try-it saved-template={savedTemplate} draft={draft}></c-ai-prompt-templates-try-it>
+          </lightning-tab>
+        </template>
+        <!-- Used by: the agents that answer with this template -->
+        <template lwc:if={isSaved}>
+          <lightning-tab label={usedByLabel} value={tabUsedBy}>
+            <c-ai-prompt-templates-used-by template-id={templateId}></c-ai-prompt-templates-used-by>
+          </lightning-tab>
+        </template>
+      </lightning-tabset>
+    </div>
+  </div>
+</template>

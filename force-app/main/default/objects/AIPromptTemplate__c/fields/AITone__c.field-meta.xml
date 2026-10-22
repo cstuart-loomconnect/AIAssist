@@ -6,8 +6,8 @@
     <inlineHelpText
   >Describe how the AI should sound when this template is active - for example, how formal, warm, or direct it should be</inlineHelpText>
     <label>AI Tone</label>
-    <required>false</required>
-    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
-    <type>TextArea</type>
+    <length>4000</length>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
 </CustomField>

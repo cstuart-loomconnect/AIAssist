@@ -1,0 +1,48 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aipt-archive-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aipt-container">
+      <!-- Title: which template is archived -->
+      <header class="slds-modal__header">
+        <h2 id="aipt-archive-title" class="slds-modal__title slds-hyphenate">{title}</h2>
+      </header>
+
+      <!-- Content: where each agent goes, and the note about the default template -->
+      <div class="slds-modal__content slds-p-around_medium aipt-content">
+        <template lwc:if={hasAgents}>
+          <p class="slds-m-bottom_small"><strong>{messageParts.templateName}</strong>{messageParts.beforeName}<strong>{messageParts.defaultName}</strong>.</p>
+          <table class="aipt-table slds-table slds-table_bordered slds-table_cell-buffer">
+            <thead>
+              <tr>
+                <th scope="col">{labels.columnAgent}</th>
+                <th scope="col">{labels.columnMoveTo}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={agentViews} for:item="agent">
+                <tr key={agent.key}>
+                  <td class="aipt-strong">{agent.agentName}</td>
+                  <td><lightning-combobox variant="label-hidden" label={labels.columnMoveTo} placeholder={labels.defaultOption} options={moveOptions} value={agent.value} data-agent-id={agent.agentId} onchange={handleMoveChange}></lightning-combobox></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+        <template lwc:else>
+          <p class="aipt-muted">{labels.noAgents}</p>
+        </template>
+
+        <!-- Note: the default template can never be archived -->
+        <p class={noteClass}>{labels.defaultNote}</p>
+      </div>
+
+      <!-- Buttons: Cancel and the archive button -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={confirmLabel} onclick={handleConfirm} disabled={isConfirmDisabled} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

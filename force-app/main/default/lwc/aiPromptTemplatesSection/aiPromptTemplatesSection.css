@@ -1,0 +1,69 @@
+/* The section card: white with a soft border. SLDS has no utility for a bordered box in this colour. */
+.aipt-section {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* A section with a problem: a red border. */
+.aipt-section_problem {
+  border-color: var(--aia-danger);
+}
+
+/* The title row: a soft grey bar with a line under it. */
+.aipt-section-head {
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The title: bold dark text. */
+.aipt-section-title {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The hint: muted text. */
+.aipt-section-hint {
+  color: var(--aia-muted);
+}
+
+/* The text box: no border of its own, a monospace font and a tall resize-only-down box. SLDS textareas have a border and a proportional font. */
+.aipt-section-text {
+  display: block;
+  width: 100%;
+  min-height: 110px;
+  padding: 12px;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--aia-ink);
+}
+
+/* The text box of a section with a problem: it keeps its look. */
+.aipt-section-text_problem {
+  background: var(--aia-surface);
+}
+
+/* The problem message: red text on a soft red bar. */
+.aipt-section-message {
+  margin: 0;
+  background: var(--aia-danger-tint);
+  border-top: 1px solid var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* Explains what to write in the section. SLDS has no utility for this muted colour token. */
+.aipt-section-help {
+  color: var(--aia-muted);
+}
+
+/* The example shown in an empty box: pale and italic so it cannot be mistaken for saved text. SLDS has no utility for placeholder styling. */
+.aipt-section-text::placeholder {
+  color: var(--aia-muted);
+  font-style: italic;
+  opacity: 0.55;
+}

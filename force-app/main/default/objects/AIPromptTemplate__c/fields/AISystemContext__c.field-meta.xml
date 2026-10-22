@@ -6,9 +6,9 @@
     <inlineHelpText
   >Describe the scenario this template is for and the record conditions that should trigger it, so both admins and the AI understand when this variant applies.</inlineHelpText>
     <label>AI System Context</label>
-    <required>false</required>
     <securityClassification>Confidential</securityClassification>
-    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
-    <type>TextArea</type>
+    <length>4000</length>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
 </CustomField>

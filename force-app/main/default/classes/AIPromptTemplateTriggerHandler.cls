@@ -4,11 +4,11 @@ Class Name: AIPromptTemplateTriggerHandler
 =================================================================
 =================================================================
 
-Description: Keeps AI Prompt Templates consistent: the version follows the wording, and an Agent has one active default.
+Description: Keeps AI Prompt Templates consistent: the version follows the wording, and there is one active default.
 
-Step 1: Find the templates whose prompt, system context, tone or exclusion rules changed
+Step 1: Find the templates whose prompt, system context, tone, exclusion rules or response length changed
 Step 2: Raise the version of each changed template by one
-Step 3: Refuse a template that would make a second active default for the same Agent
+Step 3: Refuse a template that would make a second active default
 
 =================================================================
 =================================================================
@@ -21,11 +21,11 @@ public without sharing class AIPromptTemplateTriggerHandler {
 
     public class AIPromptTemplateTriggerHandlerException extends Exception {}
 
-    // The active defaults in one save, by Agent: how many already were a default, and the ones becoming one.
+    // The active defaults in one save: how many already were a default, and the ones becoming one.
     private class DefaultsInSave {
 
-        Map<Id, Integer> unchangedCountByAgentId = new Map<Id, Integer>();
-        Map<Id, List<AIPromptTemplate__c>> newDefaultsByAgentId = new Map<Id, List<AIPromptTemplate__c>>();
+        Integer unchangedCount = 0;
+        List<AIPromptTemplate__c> newDefaults = new List<AIPromptTemplate__c>();
     }
 
     private static Boolean isBeforeUpdateHandlerRunning = false;
@@ -65,7 +65,7 @@ public without sharing class AIPromptTemplateTriggerHandler {
         }
     }
 
-    // Runs before a template is inserted or updated and refuses one that would be a second active default for its Agent. The one default is what answers when nothing else was chosen, so two would make that answer depend on the order they were saved. The templates in the save are the final word on themselves, so moving the default (untick one, tick another) works in a single save. oldTemplatesById is null on insert.
+    // Runs before a template is inserted or updated and refuses one that would be a second active default. The one default is what answers for an agent with no template of its own, so two would make that answer depend on the order they were saved. The templates in the save are the final word on themselves, so moving the default (untick one, tick another) works in a single save. oldTemplatesById is null on insert.
     public static void handleBeforeSave(List<AIPromptTemplate__c> newTemplates, Map<Id, AIPromptTemplate__c> oldTemplatesById) {
 
         try {
@@ -79,30 +79,28 @@ public without sharing class AIPromptTemplateTriggerHandler {
             // [3] Sort the active defaults in this save into those that already were one and those that are becoming one, so a save that adds no default costs no query
             DefaultsInSave defaultsInSave = getDefaultsInSave(newTemplates, oldTemplatesById);
 
-            if (defaultsInSave.newDefaultsByAgentId.isEmpty()) return;
+            if (defaultsInSave.newDefaults.isEmpty()) return;
 
-            // [4] Within this save, refuse every new default once its Agent already has one, keeping the first
-            Map<Id, AIPromptTemplate__c> survivingDefaultByAgentId = new Map<Id, AIPromptTemplate__c>();
+            // [4] Within this save, refuse every new default once there is already one, keeping the first
+            Integer defaultsKept = defaultsInSave.unchangedCount;
+            AIPromptTemplate__c survivingDefault;
 
-            for (Id agentId : defaultsInSave.newDefaultsByAgentId.keySet()) {
+            for (AIPromptTemplate__c newDefault : defaultsInSave.newDefaults) {
 
-                Integer defaultsKept = defaultsInSave.unchangedCountByAgentId.containsKey(agentId) ? defaultsInSave.unchangedCountByAgentId.get(agentId) : 0;
+                if (defaultsKept > 0) {
 
-                for (AIPromptTemplate__c newDefault : defaultsInSave.newDefaultsByAgentId.get(agentId)) {
+                    newDefault.addError(Label.AI_Error_Prompt_Template_Default_Exists);
 
-                    if (defaultsKept > 0) {
+                } else {
 
-                        newDefault.addError(Label.AI_Error_Prompt_Template_Default_Exists);
-
-                    } else {
-
-                        survivingDefaultByAgentId.put(agentId, newDefault);
-                        defaultsKept++;
-                    }
+                    survivingDefault = newDefault;
+                    defaultsKept++;
                 }
             }
 
-            // [5] Refuse a surviving new default when its Agent has another active default saved outside this save
+            // [5] Refuse the surviving new default when another active default was saved outside this save
+            if (survivingDefault == null) return;
+
             Set<Id> savedIds = new Set<Id>();
 
             for (AIPromptTemplate__c newTemplate : newTemplates) {
@@ -110,19 +108,14 @@ public without sharing class AIPromptTemplateTriggerHandler {
                 if (newTemplate.Id != null) savedIds.add(newTemplate.Id);
             }
 
-            if (survivingDefaultByAgentId.isEmpty()) return;
-
-            for (AIPromptTemplate__c existingDefault : [SELECT AIAgent__c FROM AIPromptTemplate__c WHERE AIAgent__c IN :survivingDefaultByAgentId.keySet() AND IsDefault__c = TRUE AND IsActive__c = TRUE AND Id NOT IN :savedIds WITH SYSTEM_MODE]) {
-
-                survivingDefaultByAgentId.get(existingDefault.AIAgent__c).addError(Label.AI_Error_Prompt_Template_Default_Exists);
-            }
+            if (![SELECT Id FROM AIPromptTemplate__c WHERE IsDefault__c = TRUE AND IsActive__c = TRUE AND Id NOT IN :savedIds WITH SYSTEM_MODE LIMIT 1].isEmpty()) survivingDefault.addError(Label.AI_Error_Prompt_Template_Default_Exists);
 
         } catch (Exception ex) {
             AIPlatformLogManager.logException(ex, 'AIPromptTemplateTriggerHandler', 'handleBeforeSave');
         }
     }
 
-    // Sorts the templates in the save that are an active default after it: those that already were one on the same Agent (counted), and those becoming one (new, or newly ticked, activated or moved to another Agent), grouped by Agent.
+    // Sorts the templates in the save that are an active default after it: those that already were one (counted), and those becoming one (new, newly ticked or newly activated).
     private static DefaultsInSave getDefaultsInSave(List<AIPromptTemplate__c> newTemplates, Map<Id, AIPromptTemplate__c> oldTemplatesById) {
 
         // [1] Start with empty results
@@ -131,26 +124,19 @@ public without sharing class AIPromptTemplateTriggerHandler {
         // [2] Sort each active default by whether it already was one
         for (AIPromptTemplate__c newTemplate : newTemplates) {
 
-            if (newTemplate.IsDefault__c != true || newTemplate.IsActive__c != true || newTemplate.AIAgent__c == null) continue;
+            if (newTemplate.IsDefault__c != true || newTemplate.IsActive__c != true) continue;
 
             AIPromptTemplate__c oldTemplate = oldTemplatesById == null || newTemplate.Id == null ? null : oldTemplatesById.get(newTemplate.Id);
-            Boolean wasActiveDefaultOnSameAgent = oldTemplate != null && oldTemplate.IsDefault__c == true && oldTemplate.IsActive__c == true && oldTemplate.AIAgent__c == newTemplate.AIAgent__c;
+            Boolean wasActiveDefault = oldTemplate != null && oldTemplate.IsDefault__c == true && oldTemplate.IsActive__c == true;
 
-            if (wasActiveDefaultOnSameAgent) {
-
-                defaultsInSave.unchangedCountByAgentId.put(newTemplate.AIAgent__c, (defaultsInSave.unchangedCountByAgentId.containsKey(newTemplate.AIAgent__c) ? defaultsInSave.unchangedCountByAgentId.get(newTemplate.AIAgent__c) : 0) + 1);
-                continue;
-            }
-
-            if (!defaultsInSave.newDefaultsByAgentId.containsKey(newTemplate.AIAgent__c)) defaultsInSave.newDefaultsByAgentId.put(newTemplate.AIAgent__c, new List<AIPromptTemplate__c>());
-
-            defaultsInSave.newDefaultsByAgentId.get(newTemplate.AIAgent__c).add(newTemplate);
+            if (wasActiveDefault) defaultsInSave.unchangedCount++;
+            else defaultsInSave.newDefaults.add(newTemplate);
         }
 
         return defaultsInSave;
     }
 
-    // Gets the templates whose prompt, system context, tone or exclusion rules just changed.
+    // Gets the templates whose prompt, system context, tone, exclusion rules or response length just changed.
     private static Map<Id, AIPromptTemplate__c> getTemplatesWithChangedWording(Map<Id, AIPromptTemplate__c> oldTemplatesById, Map<Id, AIPromptTemplate__c> newTemplatesById) {
 
         // [1] Start with an empty result
@@ -166,7 +152,7 @@ public without sharing class AIPromptTemplateTriggerHandler {
 
             if (oldTemplate == null) continue;
 
-            Boolean hasWordingChanged = newTemplate.AIPrompt__c != oldTemplate.AIPrompt__c || newTemplate.AISystemContext__c != oldTemplate.AISystemContext__c || newTemplate.AITone__c != oldTemplate.AITone__c || newTemplate.AIExclusionRules__c != oldTemplate.AIExclusionRules__c;
+            Boolean hasWordingChanged = newTemplate.AIPrompt__c != oldTemplate.AIPrompt__c || newTemplate.AISystemContext__c != oldTemplate.AISystemContext__c || newTemplate.AITone__c != oldTemplate.AITone__c || newTemplate.AIExclusionRules__c != oldTemplate.AIExclusionRules__c || newTemplate.MaxResponseLength__c != oldTemplate.MaxResponseLength__c;
 
             if (hasWordingChanged) {
                 templatesWithChangedWordingById.put(newTemplate.Id, newTemplate);
@@ -176,7 +162,7 @@ public without sharing class AIPromptTemplateTriggerHandler {
         return templatesWithChangedWordingById;
     }
 
-    // Raises Version__c by one whenever the wording the model is given changes, so every reply can say which version produced it. A change to anything else leaves it alone.
+    // Raises Version__c by one whenever the wording the model is given (or the length it is asked to keep to) changes, so every reply can say which version produced it. A change to anything else leaves it alone.
     private static void raiseVersionOfChangedTemplates(Map<Id, AIPromptTemplate__c> oldTemplatesById, Map<Id, AIPromptTemplate__c> templatesWithChangedWordingById) {
 
         try {

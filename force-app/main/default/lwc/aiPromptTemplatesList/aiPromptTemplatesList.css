@@ -1,0 +1,88 @@
+/* The card: white with a soft border and rounded corners. SLDS has no utility for a bordered card in this colour. */
+.aipt-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The New template button: it fills the width of the card. */
+.aipt-new-button {
+  display: block;
+}
+
+.aipt-new-button::part(button) {
+  width: 100%;
+}
+
+/* The rows: a line above the first one to split them from the search box. */
+.aipt-rows {
+  border-top: 1px solid var(--aia-line);
+}
+
+/* One row: a reset button that fills the width, with a line under it and a clear space for the accent border. */
+.aipt-row {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--aia-line);
+  border-left: 3px solid transparent;
+  background: var(--aia-surface);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A row under the pointer: a soft grey. */
+.aipt-row:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The picked row: a tint and the accent border on the left. */
+.aipt-row_selected {
+  background: var(--aia-accent-tint);
+  border-left-color: var(--aia-accent);
+}
+
+/* The name of a template: bold dark text. */
+.aipt-row-name {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The name of the picked template: the accent colour. */
+.aipt-row_selected .aipt-row-name {
+  color: var(--aia-accent);
+}
+
+/* The second line of a row: muted text. */
+.aipt-row-detail {
+  color: var(--aia-muted);
+}
+
+/* The pills: small rounded labels. SLDS badges have a different size and shape. */
+.aipt-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Live or default: green. */
+.aipt-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* Inactive: grey with a thin line. */
+.aipt-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}
+
+/* The message when the search finds nothing: muted text. */
+.aipt-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}

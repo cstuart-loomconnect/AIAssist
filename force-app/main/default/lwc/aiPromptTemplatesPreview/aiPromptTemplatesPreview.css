@@ -1,0 +1,50 @@
+/* The title of the panel: bold dark text. */
+.aipt-preview-title {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The token count: muted text. */
+.aipt-preview-tokens {
+  color: var(--aia-muted);
+}
+
+/* The dark panel: a code-style look with a monospace font. SLDS has no dark code panel. */
+.aipt-panel {
+  background: var(--aia-code-bg, #1c1e26);
+  color: var(--aia-code-text, #e8e9ee);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* A section in the panel: a space under it so the next heading stands apart. */
+.aipt-panel-section {
+  margin-bottom: 16px;
+}
+
+.aipt-panel-section:last-child {
+  margin-bottom: 0;
+}
+
+/* A section heading: blue-ish text. */
+.aipt-panel-heading {
+  color: var(--aia-code-heading, #8fa3ff);
+}
+
+/* The text of a section: it keeps the line breaks the admin typed and wraps long lines. */
+.aipt-panel-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A merge field that was filled in: orange text. */
+.aipt-segment_value {
+  color: var(--aia-code-value, #f2b25c);
+}
+
+/* The footnote: muted text. */
+.aipt-preview-footnote {
+  color: var(--aia-muted);
+}
