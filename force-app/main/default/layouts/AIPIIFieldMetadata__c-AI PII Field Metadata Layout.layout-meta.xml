@@ -62,6 +62,10 @@
                 <behavior>Readonly</behavior>
                 <field>IsPII__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>IsOverridden__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

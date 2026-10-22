@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Which fields are masked before anything reaches the AI provider: add objects, review the fields, override them and test the masking.</description>
+    <label>AI PII Registry</label>
+    <lwcComponent>aiPiiRegistry</lwcComponent>
+    <motif>Custom33: Desk</motif>
+</CustomTab>

@@ -1,0 +1,138 @@
+/* The pane card: a bordered white box with rounded corners. SLDS has no utility for a bordered rounded card in this colour. */
+.aiprd-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The band on top of the card: dark ink with white text. The 12px gap and 12px 16px padding are not SLDS steps. */
+.aiprd-band {
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The name, the chip and the limit sit on one line with a gap. */
+.aiprd-band-left {
+  gap: 10px;
+}
+
+/* The object name in the band: white, bold. */
+.aiprd-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The field limit in the band: soft white. */
+.aiprd-limit {
+  color: #d5d7de;
+}
+
+/* The word beside the toggle: white. */
+.aiprd-toggle-label {
+  font-size: 13px;
+  color: var(--aia-surface);
+}
+
+/* The Sync now button: a white outline on the dark band, because lightning-button has no variant for a dark background. */
+.aiprd-sync {
+  color: var(--aia-surface);
+  background: transparent;
+  border: 1px solid #d5d7de;
+  border-radius: 4px;
+}
+
+/* The Sync now button when it cannot be used: dimmed. */
+.aiprd-sync:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The chip beside the object name: a small rounded label that does not shrink. SLDS badges have a different size and shape. */
+.aiprd-chip {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The Synced chip: green. */
+.aiprd-chip_synced {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* The Failed chip: red. */
+.aiprd-chip_failed {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The Queued and Syncing chip: the accent colour. */
+.aiprd-chip_queued {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The chip of an object that has not been synced: grey. */
+.aiprd-chip_not-synced {
+  background: var(--aia-bg);
+  color: var(--aia-muted);
+}
+
+/* The strip behind the tab names: a soft grey bar with a border. */
+.aiprd-tabs {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  padding: 0 12px;
+}
+
+/* A tab name is a button, so the browser's own button look is taken off. */
+.aiprd-tab-button {
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A note in the pane: a rounded box. */
+.aiprd-note {
+  margin-bottom: 0;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+/* A note that warns: orange on a tint. */
+.aiprd-note_warning {
+  background: var(--aia-warning-tint);
+  border-color: var(--aia-warning);
+  color: var(--aia-warning);
+}
+
+/* A note that blocks or refuses: red box with red text. */
+.aiprd-note_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* The field limit box on a failed sync: narrow, because it holds a number. */
+.aiprd-raise {
+  max-width: 260px;
+}
+
+/* A line of help under a control, and the waiting messages: muted text. */
+.aiprd-hint {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The room the spinner needs while the fields load. */
+.aiprd-loading {
+  min-height: 3rem;
+}

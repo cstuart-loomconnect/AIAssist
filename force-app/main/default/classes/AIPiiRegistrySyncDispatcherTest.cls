@@ -45,7 +45,7 @@ Version      Author                   Description
 
             AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, ACCOUNT, false)[0];
             registry.IsActive__c = true;
-            registry.MaxFieldsToQuery__c = 5;
+            registry.MaxFieldsToQuery__c = 500;
             insert registry;
 
             Integer dispatched;

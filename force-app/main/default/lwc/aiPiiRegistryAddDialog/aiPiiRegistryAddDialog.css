@@ -1,0 +1,105 @@
+/* The dialog box: a fixed width that shrinks on a narrow screen. SLDS modal sizes are wider than this. */
+.aipra-container {
+  width: 40rem;
+  max-width: 90vw;
+}
+
+/* The content: room for the list of matches so the box does not jump as the search runs. */
+.aipra-content {
+  min-height: 22rem;
+}
+
+/* The list of matches: a bordered rounded box that scrolls when there are many. SLDS has no utility for this look. */
+.aipra-list {
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* One object in the list: a radio button, its name and where it is used, on one line. */
+.aipra-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--aia-line);
+  cursor: pointer;
+}
+
+/* The last object has no line under it, because the box already has an edge. */
+.aipra-option:last-child {
+  border-bottom: 0;
+}
+
+/* An object the pointer is over: a soft grey. */
+.aipra-option:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The chosen object: a tint. */
+.aipra-option_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* The name and the API name of an object take the room left over. */
+.aipra-option-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The label of an object: bold dark text. */
+.aipra-option-name {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The API name and field count of an object: small fixed-width text in a muted colour. */
+.aipra-option-detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The Used by pill: orange, because it says the object is read by agents. SLDS badges have a different size and shape. */
+.aipra-used {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A line of help under a control: muted text. */
+.aipra-hint {
+  margin: 4px 0 0;
+  color: var(--aia-muted);
+}
+
+/* A line of help that warns: orange text. */
+.aipra-hint_warning {
+  color: var(--aia-warning);
+}
+
+/* A note in the dialog: a rounded box. */
+.aipra-note {
+  margin-bottom: 0;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+/* A note that informs: accent colour on a tint. */
+.aipra-note_info {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-line);
+  color: var(--aia-accent);
+}
+
+/* A note that refuses: red box with red text. */
+.aipra-note_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}

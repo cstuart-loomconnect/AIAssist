@@ -1,0 +1,58 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aipra-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aipra-container">
+      <!-- Title: asks which object to add -->
+      <header class="slds-modal__header">
+        <h2 id="aipra-title" class="slds-modal__title slds-hyphenate">{labels.title}</h2>
+      </header>
+
+      <!-- Content: the object search, the list of matches, the field limit and a note -->
+      <div class="slds-modal__content slds-p-around_medium aipra-content">
+        <lightning-input label={labels.objectLabel} placeholder={labels.objectPlaceholder} value={query} autocomplete="off" onchange={handleQueryChange}></lightning-input>
+
+        <!-- Matches: one row for each object found -->
+        <div class="aipra-results slds-m-top_small slds-is-relative">
+          <template lwc:if={isSearching}><lightning-spinner size="x-small" alternative-text={labels.searching}></lightning-spinner></template>
+          <template lwc:if={showSearchHint}><p class="aipra-hint slds-text-body_small slds-m-bottom_none">{labels.searchHint}</p></template>
+          <template lwc:if={showNoMatches}><p class="aipra-hint slds-text-body_small slds-m-bottom_none">{labels.noMatches}</p></template>
+          <template lwc:if={hasSearchError}><p class="aipra-note aipra-note_blocked slds-p-around_small" role="alert">{searchErrorMessage}</p></template>
+          <template lwc:if={hasOptions}>
+            <div class="aipra-list" role="radiogroup">
+              <template for:each={optionViews} for:item="option">
+                <label key={option.key} class={option.optionClass}>
+                  <input type="radio" name="aipra-object" value={option.objectApiName} checked={option.isSelected} data-name={option.objectApiName} onchange={handleOptionPick} />
+                  <span class="aipra-option-text slds-grid slds-grid_vertical">
+                    <span class="aipra-option-name">{option.objectLabel}</span>
+                    <span class="aipra-option-detail">{option.detail}</span>
+                  </span>
+                  <template lwc:if={option.hasUsedBy}><span class="aipra-used">{option.usedByText}</span></template>
+                </label>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- Limit: how many fields to read -->
+        <div class="slds-m-top_medium">
+          <lightning-input type="number" label={labels.maxFieldsLabel} value={maxFields} min="1" max="500" step="1" onchange={handleMaxFieldsChange}></lightning-input>
+          <p class={fieldHintClass}>{fieldHintText}</p>
+        </div>
+
+        <!-- Note: the fields are classified after the object is added -->
+        <p class="aipra-note aipra-note_info slds-m-top_medium slds-p-around_small">{labels.backgroundNote}</p>
+
+        <!-- Error: the reason the object was refused -->
+        <template lwc:if={hasErrorMessage}><p class="aipra-note aipra-note_blocked slds-m-top_small slds-p-around_small" role="alert">{errorMessage}</p></template>
+      </div>
+
+      <!-- Buttons: Cancel and Add and sync -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={addLabel} onclick={handleAdd} disabled={isAddDisabled} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

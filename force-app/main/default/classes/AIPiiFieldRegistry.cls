@@ -8,7 +8,7 @@ Description: Read-only lookup of which fields are personal data, and of what typ
 
 Step 1: Read the PII field metadata for an object from AIPIIFieldMetadata__c, once per object per transaction
 Step 2: Cache the field API name to PII type map for that object
-Step 3: Answer type and is-PII questions from the cache, with no PII for an object that has no synced registry
+Step 3: Answer type and is-PII questions from the cache, with no PII for an object that has no registry, or whose registry is switched off
 
 =================================================================
 =================================================================
@@ -41,7 +41,7 @@ public without sharing class AIPiiFieldRegistry {
         return getFieldTypes(objectApiName).containsKey(fieldApiName);
     }
 
-    // Returns field API name -> PII type for every PII field of the object. Bulk-friendly: one query per distinct object per transaction. The metadata is configuration the end user cannot read (only Admin and Super User are granted AIPIIFieldMetadata__c), and the package reads it on their behalf, so the query is explicit system mode.
+    // Returns field API name -> PII type for every PII field of the object, from its active registry. Bulk-friendly: one query per distinct object per transaction. The metadata is configuration the end user cannot read (only Admin and Super User are granted AIPIIFieldMetadata__c), and the package reads it on their behalf, so the query is explicit system mode.
     public static Map<String, String> getFieldTypes(String objectApiName) {
 
         // [1] Nothing to look up - no object
@@ -52,7 +52,7 @@ public without sharing class AIPiiFieldRegistry {
 
             Map<String, String> fieldTypesByFieldApiName = new Map<String, String>();
 
-            for (AIPIIFieldMetadata__c fieldMetadata : [SELECT FieldAPIName__c, PIIFieldType__c FROM AIPIIFieldMetadata__c WHERE PIIRegistry__r.ObjectAPIName__c = :objectApiName AND IsPII__c = TRUE WITH SYSTEM_MODE]) {
+            for (AIPIIFieldMetadata__c fieldMetadata : [SELECT FieldAPIName__c, PIIFieldType__c FROM AIPIIFieldMetadata__c WHERE PIIRegistry__r.ObjectAPIName__c = :objectApiName AND PIIRegistry__r.IsActive__c = TRUE AND IsPII__c = TRUE WITH SYSTEM_MODE]) {
 
                 fieldTypesByFieldApiName.put(fieldMetadata.FieldAPIName__c, fieldMetadata.PIIFieldType__c);
             }

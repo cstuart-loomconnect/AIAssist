@@ -1,0 +1,52 @@
+<template>
+  <!-- Picker: the record to test, and the button that runs the masking -->
+  <div class="aiprt-picker slds-grid slds-grid_vertical-align-end slds-wrap">
+    <div class="aiprt-record">
+      <lightning-record-picker label={testOnLabel} placeholder={labels.recordPlaceholder} object-api-name={objectApiName} onchange={handleRecordPick}></lightning-record-picker>
+    </div>
+    <lightning-button variant="brand-outline" label={labels.runMasking} disabled={isRunDisabled} onclick={handleRun}></lightning-button>
+  </div>
+
+  <!-- Error: shown when the test could not run -->
+  <template lwc:if={hasErrorMessage}><p class="aiprt-note aiprt-note_blocked slds-m-top_small slds-p-around_small" role="alert">{errorMessage}</p></template>
+
+  <!-- Running: shown while Apex runs the test -->
+  <template lwc:if={isRunning}>
+    <div class="slds-is-relative aiprt-running">
+      <lightning-spinner size="small" alternative-text={labels.running}></lightning-spinner>
+    </div>
+  </template>
+
+  <!-- Result: what the provider would get for each PII field -->
+  <template lwc:if={hasRows}>
+    <div class="aiprt-table-wrap slds-m-top_medium">
+      <table class="aiprt-table slds-table slds-table_cell-buffer">
+        <thead>
+          <tr>
+            <th scope="col">{labels.columnField}</th>
+            <th scope="col">{labels.columnReal}</th>
+            <th scope="col">{labels.columnSent}</th>
+            <th scope="col">{labels.columnRule}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template for:each={resultRows} for:item="row">
+            <tr key={row.key}>
+              <td>{row.fieldLabel}</td>
+              <td><span class="aiprt-code">{row.realValue}</span></td>
+              <td><span class="aiprt-code">{row.sentValue}</span></td>
+              <td><span class="aiprt-muted">{row.ruleText}</span></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </template>
+
+  <!-- Nothing to mask: the record has no values in the PII fields -->
+  <template lwc:if={hasNoRows}><p class="aiprt-muted slds-m-top_medium">{labels.noRows}</p></template>
+
+  <!-- Notes: how the reply is unmasked, and that a test saves nothing -->
+  <p class="aiprt-note aiprt-note_success slds-m-top_medium slds-p-around_small">{labels.unmasked}</p>
+  <p class="aiprt-muted slds-text-body_small slds-m-top_small slds-m-bottom_none">{labels.nothingSaved}</p>
+</template>
