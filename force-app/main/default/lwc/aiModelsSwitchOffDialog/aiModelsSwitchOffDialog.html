@@ -1,0 +1,61 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aiamd-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aiamd-container">
+      <!-- Title: asks whether to switch the model off -->
+      <header class="slds-modal__header">
+        <h2 id="aiamd-title" class="slds-modal__title slds-hyphenate">{labels.title}</h2>
+      </header>
+
+      <!-- Content: what happens to the agents, where each one goes, and a note about open conversations -->
+      <div class="slds-modal__content slds-p-around_medium aiamd-content">
+        <p class="slds-m-bottom_small"><strong>{messageParts.modelName}</strong>{messageParts.afterName}</p>
+
+        <!-- Agents: one row for each active agent, with a Move to box -->
+        <template lwc:if={hasAgents}>
+          <table class="aiamd-table slds-table slds-table_bordered slds-table_cell-buffer">
+            <thead>
+              <tr>
+                <th scope="col">{labels.columnAgent}</th>
+                <th scope="col">{labels.columnUsers}</th>
+                <th scope="col">{labels.columnMoveTo}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={agentViews} for:item="agent">
+                <tr key={agent.key}>
+                  <td class="aiamd-strong">{agent.agentName}</td>
+                  <td>{agent.userCount}</td>
+                  <td>
+                    <select class="slds-select" aria-label={labels.columnMoveTo} data-agent-id={agent.agentId} onchange={handleMoveChange}>
+                      <template for:each={agent.agentOptions} for:item="option">
+                        <option key={option.value} value={option.value} selected={option.isSelected}>{option.label}</option>
+                      </template>
+                    </select>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+
+        <!-- No other model: shown when agents have nowhere to go -->
+        <template lwc:if={hasNoOtherModel}><p class="aiamd-note aiamd-note_blocked slds-m-top_small slds-p-around_small">{labels.noOtherModel}</p></template>
+
+        <!-- Note: what happens to conversations that are open -->
+        <p class="aiamd-note aiamd-note_info slds-m-top_small slds-p-around_small">{labels.openConversations}</p>
+
+        <!-- Error: the reason the switch off was refused -->
+        <template lwc:if={hasErrorMessage}><p class="aiamd-note aiamd-note_blocked slds-m-top_small slds-p-around_small" role="alert">{errorMessage}</p></template>
+      </div>
+
+      <!-- Buttons: Cancel and the switch off button -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={confirmLabel} onclick={handleConfirm} disabled={isConfirmDisabled} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

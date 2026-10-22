@@ -1,0 +1,75 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the body -->
+  <div class="aiam-page">
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div class="aiam-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <h1 class="aiam-title slds-m-around_none">{labels.title}</h1>
+      <span class="aiam-subtitle slds-text-body_small">{labels.subtitle}</span>
+    </div>
+
+    <!-- Body: the intro, the model list and the editor on a white card -->
+    <div class="aiam-body slds-is-relative slds-p-around_medium">
+      <!-- Busy: shown while the list loads or a change is being made -->
+      <template lwc:if={isBusy}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- Intro: what a model is and where agents pick it -->
+      <p class="aiam-intro slds-m-bottom_small">{labels.intro}</p>
+
+      <!-- Layout: the model list on the left and the editor on the right -->
+      <div class="aiam-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+        <!-- List: one bordered row for each model, and a button to create one -->
+        <div class="aiam-list slds-grid slds-grid_vertical">
+          <!-- List head: the button that starts a new model -->
+          <div class="aiam-list-head">
+            <button type="button" class="slds-button slds-button_brand slds-size_1-of-1" onclick={handleNewModel}>{labels.newModel}</button>
+          </div>
+          <!-- Models: the name, the Active, Inactive or Draft pill, and the provider and agent count of each -->
+          <template for:each={modelItems} for:item="item">
+            <button key={item.key} type="button" class={item.itemClass} data-key={item.key} onclick={handleModelSelect}>
+              <span class="aiam-item-top slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+                <span class="aiam-name">{item.name}</span>
+                <span class={item.pillClass}>{item.pillLabel}</span>
+              </span>
+              <span class="aiam-detail slds-text-body_small">{item.detail}</span>
+            </button>
+          </template>
+          <!-- No models: shown when the load is done and the list is empty -->
+          <template lwc:if={showNoModels}><p class="aiam-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.noModels}</p></template>
+        </div>
+
+        <!-- Editor: the chosen model -->
+        <div class="aiam-editor">
+          <!-- Choose one: shown until a model is picked -->
+          <template lwc:if={showChooseOne}><p class="aiam-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.chooseOne}</p></template>
+          <!-- Model: the form, built again whenever the model or its saved values change -->
+          <template lwc:if={hasSelection}>
+            <template for:each={formKeyItems} for:item="item">
+              <c-ai-models-form
+                key={item.key}
+                model={formModel}
+                providers={providers}
+                credentials={credentials}
+                test-result={testResult}
+                is-testing={isTesting}
+                is-saving={isSaving}
+                error-message={errorMessage}
+                onconnectionedit={handleConnectionEdit}
+                ontest={handleTest}
+                onsave={handleSave}
+                oncancel={handleCancel}
+                onswitchoff={handleSwitchOffRequest}
+              ></c-ai-models-form>
+            </template>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Switch off dialog: asks where the active agents of the model move to -->
+    <template lwc:if={isSwitchOffOpen}>
+      <c-ai-models-switch-off-dialog model-name={switchOffModelName} options={switchOffOptions} is-saving={isSwitchOffSaving} error-message={switchOffErrorMessage} oncancel={handleSwitchOffCancel} onconfirm={handleSwitchOffConfirm}></c-ai-models-switch-off-dialog>
+    </template>
+  </div>
+</template>
