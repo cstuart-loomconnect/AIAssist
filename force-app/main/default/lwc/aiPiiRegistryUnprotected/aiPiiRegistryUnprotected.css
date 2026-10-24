@@ -1,0 +1,33 @@
+/* The warning banner: orange text on a tint with a rounded border. SLDS has no utility for this warm warning colour. */
+.aipru-banner {
+  background: var(--aia-warning-tint);
+  border: 1px solid var(--aia-warning);
+  border-radius: 4px;
+  color: var(--aia-warning);
+}
+
+/* The table sits in a bordered rounded box that scrolls sideways on a narrow screen. SLDS has no utility for this look. */
+.aipru-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The table head: a soft grey bar with bold text. */
+.aipru-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* An object name: bold dark text. */
+.aipru-strong {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* The note under the table: muted text. */
+.aipru-footnote {
+  color: var(--aia-muted);
+}

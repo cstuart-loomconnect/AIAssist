@@ -1,0 +1,74 @@
+<template>
+  <!-- Card: a bordered white box with a dark band on top -->
+  <div class="aiprd-card slds-is-relative">
+    <!-- Band: the object name, its sync chip and field limit on the left, and the Active switch and Sync now button on the right -->
+    <div class="aiprd-band slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <div class="aiprd-band-left slds-grid slds-grid_vertical-align-center slds-wrap">
+        <h2 class="aiprd-heading slds-m-around_none">{objectName}</h2>
+        <span class={chipClass}>{chipLabel}</span>
+        <span class="aiprd-limit slds-text-body_small">{maxFieldsText}</span>
+      </div>
+      <div class="aiprd-band-right slds-grid slds-grid_vertical-align-center">
+        <span class="aiprd-toggle-label slds-m-right_x-small">{labels.active}</span>
+        <lightning-input type="toggle" variant="label-hidden" label={labels.active} checked={registry.isActive} message-toggle-active="" message-toggle-inactive="" disabled={isSaving} onchange={handleActiveChange}></lightning-input>
+        <button type="button" class="aiprd-sync slds-button slds-m-left_small" disabled={isSyncDisabled} onclick={handleSyncNow}>{labels.syncNow}</button>
+      </div>
+    </div>
+
+    <!-- Body: notes, the two tabs and what the chosen tab shows -->
+    <div class="aiprd-content slds-p-around_medium">
+      <!-- Switched off: this object's fields are not masked -->
+      <template lwc:if={isInactive}><p class="aiprd-note aiprd-note_warning slds-m-bottom_small slds-p-around_small" role="alert">{inactiveText}</p></template>
+
+      <!-- Error: the reason the last change was refused -->
+      <template lwc:if={hasErrorMessage}><p class="aiprd-note aiprd-note_blocked slds-m-bottom_small slds-p-around_small" role="alert">{errorMessage}</p></template>
+
+      <!-- Tabs: Fields and Test masking -->
+      <div class="aiprd-tabs slds-tabs_default slds-m-bottom_medium">
+        <ul class="slds-tabs_default__nav" role="tablist">
+          <li class={fieldsTabClass} role="presentation"><button type="button" class="aiprd-tab-button slds-tabs_default__link" role="tab" aria-selected={fieldsTabSelected} data-tab="fields" onclick={handleTabClick}>{labels.tabFields}</button></li>
+          <li class={testTabClass} role="presentation"><button type="button" class="aiprd-tab-button slds-tabs_default__link" role="tab" aria-selected={testTabSelected} data-tab="test" onclick={handleTabClick}>{labels.tabTest}</button></li>
+        </ul>
+      </div>
+
+      <!-- Fields tab: the failure, a waiting note, or the fields -->
+      <template lwc:if={isFieldsTab}>
+        <!-- Failed: why the last sync failed, and how to put it right -->
+        <template lwc:if={isFailed}>
+          <p class="aiprd-note aiprd-note_blocked slds-p-around_small" role="alert"><strong>{failedLead}</strong>{failedRest}</p>
+          <template lwc:if={canRaiseLimit}>
+            <div class="aiprd-raise slds-m-top_medium">
+              <lightning-input type="number" label={labels.maxFieldsLabel} value={raiseMaxFields} min="1" max="500" step="1" onchange={handleMaxFieldsInput}></lightning-input>
+              <p class="aiprd-hint slds-text-body_small slds-m-top_xx-small">{raiseHint}</p>
+            </div>
+          </template>
+          <template lwc:if={isLimitLargest}><p class="aiprd-hint slds-text-body_small slds-m-top_small">{largestHint}</p></template>
+          <div class="aiprd-actions slds-grid slds-m-top_small">
+            <lightning-button variant="brand" label={raiseLabel} disabled={isSyncDisabled} onclick={handleRaiseAndSync}></lightning-button>
+            <lightning-button label={labels.viewLog} class="slds-m-left_small" onclick={handleViewLog}></lightning-button>
+          </div>
+          <p class="aiprd-note aiprd-note_warning slds-m-top_medium slds-p-around_small">{unmaskedText}</p>
+        </template>
+
+        <!-- Waiting: the sync has not finished -->
+        <template lwc:if={isRunning}><p class="aiprd-hint">{waitingText}</p></template>
+        <template lwc:if={isNeverSynced}><p class="aiprd-hint">{labels.neverSynced}</p></template>
+
+        <!-- Fields: the table of the object's fields -->
+        <template lwc:if={showFields}>
+          <template lwc:if={isLoading}>
+            <div class="slds-is-relative aiprd-loading">
+              <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+            </div>
+          </template>
+          <c-ai-pii-registry-fields fields={fields} type-options={typeOptions} is-saving={isSaving} onfieldoverride={handleFieldOverride} onfieldreset={handleFieldReset}></c-ai-pii-registry-fields>
+        </template>
+      </template>
+
+      <!-- Test masking tab: what the provider would get for a real record -->
+      <template lwc:if={isTestTab}>
+        <c-ai-pii-registry-test registry-id={registry.registryId} object-api-name={registry.objectApiName}></c-ai-pii-registry-test>
+      </template>
+    </div>
+  </div>
+</template>

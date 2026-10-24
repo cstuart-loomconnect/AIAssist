@@ -11,6 +11,7 @@ Step 2: Reuse the stand-in already paired with the value in the conversation, us
 Step 3: Otherwise pick an unused substitute from the field type's AIPiiDataMaskingRule__mdt, or a generic REDACTED value
 Step 4: Remember the pairing and tally what was masked, by object and field
 Step 5: Turn a reply's stand-ins back into real values with restore(), and hand over the tallies with takeTallies()
+Step 6: Show what would be sent for a value, with previewMasking(), saving and logging nothing
 
 =================================================================
 =================================================================
@@ -30,6 +31,16 @@ public without sharing class AIPiiPseudonymizationService {
         public String maskingStrategy;
         public Decimal valuesMasked = 0;
         public String outcome = AIAssistApplicationConstants.MASKING_OUTCOME_MASKED;
+    }
+
+    // What the masking test shows for one value: its type and the rule applied, and the stand-in that would be sent.
+    public class MaskingPreview {
+        public String piiFieldType;
+        public String complianceGroup;
+        public String strategy;
+        public Boolean isRuleApplied = false; // False when the value would be redacted.
+        public String redactReason; // A PII_REDACT_REASON value, blank when the rule was applied.
+        public String fakeValue;
     }
 
     private static Map<String, MaskingTally> tallyByKey = new Map<String, MaskingTally>();
@@ -56,17 +67,7 @@ public without sharing class AIPiiPseudonymizationService {
             if (String.isBlank(fieldType)) return realValue;
 
             // [3] Read the masking rules once per transaction, because they do not change mid-conversation
-            if (ruleByFieldType == null) {
-
-                ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>();
-                complianceGroupByFieldType = new Map<String, String>();
-
-                for (AIPiiFieldType__mdt fieldTypeRule : [SELECT PIIFieldType__c, ComplianceGroup__r.MasterLabel, MaskingRule__r.Strategy__c, MaskingRule__r.SubstituteValues__c, MaskingRule__r.IsActive__c FROM AIPiiFieldType__mdt WHERE IsActive__c = TRUE AND MaskingRule__c != NULL WITH SYSTEM_MODE]) {
-
-                    ruleByFieldType.put(fieldTypeRule.PIIFieldType__c, fieldTypeRule.MaskingRule__r);
-                    complianceGroupByFieldType.put(fieldTypeRule.PIIFieldType__c, fieldTypeRule.ComplianceGroup__r == null ? null : fieldTypeRule.ComplianceGroup__r.MasterLabel);
-                }
-            }
+            loadRules();
 
             AIPiiDataMaskingRule__mdt maskingRule = ruleByFieldType.get(fieldType);
             String strategy = maskingRule == null ? null : maskingRule.Strategy__c;
@@ -83,20 +84,11 @@ public without sharing class AIPiiPseudonymizationService {
                     Set<String> valuesInUse = new Set<String>(fakeByReal.values());
                     valuesInUse.addAll(fakeByReal.keySet());
 
-                    // [6] Keep the substitutes from the rule that are not in use
-                    List<String> candidates = new List<String>();
+                    // [6] Pick an unused substitute from the rule at random
+                    fakeValue = pickSubstitute(maskingRule, valuesInUse);
 
-                    for (String candidate : String.isBlank(maskingRule.SubstituteValues__c) ? new List<String>() : maskingRule.SubstituteValues__c.split(',')) {
-
-                        if (String.isNotBlank(candidate) && !valuesInUse.contains(candidate.trim())) candidates.add(candidate.trim());
-                    }
-
-                    // [7] Pick one at random, or log once that the rule has run out of values
-                    if (!candidates.isEmpty()) {
-
-                        fakeValue = candidates[Integer.valueOf(Math.floor(Math.random() * candidates.size()))];
-
-                    } else if (!fieldTypesAlreadyLogged.contains(fieldType)) {
+                    // [7] Log once that the rule has run out of values
+                    if (String.isBlank(fakeValue) && !fieldTypesAlreadyLogged.contains(fieldType)) {
 
                         fieldTypesAlreadyLogged.add(fieldType);
                         AIPlatformLogManager.logCustomMessage('Every substitute value for PII field type "' + fieldType + '" is already used in this conversation. A generic redacted value was used; add more values to the masking rule.', null, 'AIPiiPseudonymizationService', 'pseudonymize', conversationId);
@@ -112,11 +104,7 @@ public without sharing class AIPiiPseudonymizationService {
                 // [9] Fall back to a REDACTED value with a random suffix, so distinct real values never share one fake value
                 if (String.isBlank(fakeValue)) {
 
-                    String digits = '';
-
-                    for (Integer digitIndex = 0; digitIndex < 10; digitIndex++) digits += String.valueOf(Integer.valueOf(Math.floor(Math.random() * 10)));
-
-                    fakeValue = 'REDACTED-' + digits;
+                    fakeValue = buildRedactedValue();
                     strategy = 'Redacted';
                 }
 
@@ -180,5 +168,98 @@ public without sharing class AIPiiPseudonymizationService {
         tallyByKey = new Map<String, MaskingTally>();
 
         return tallies;
+    }
+
+    // Returns what would be sent in place of a value, with nothing saved, logged or counted, so an administrator can see a rule at work. Null when the field is not PII. valuesInUse holds the real and stand-in values the test has used so far, and is added to, so two values never get the same stand-in.
+    public static MaskingPreview previewMasking(String objectApiName, String fieldApiName, String realValue, Set<String> valuesInUse) {
+
+        try {
+
+            // [1] Nothing to preview when a name or the value is missing, or the field is not PII
+            if (String.isBlank(objectApiName) || String.isBlank(fieldApiName) || String.isBlank(realValue)) return null;
+
+            String fieldType = AIPiiFieldRegistry.getFieldType(objectApiName, fieldApiName);
+            if (String.isBlank(fieldType)) return null;
+
+            // [2] Find the rule for the field's type
+            loadRules();
+            AIPiiDataMaskingRule__mdt maskingRule = ruleByFieldType.get(fieldType);
+            Boolean isUsableRule = maskingRule != null && maskingRule.IsActive__c == true;
+
+            MaskingPreview preview = new MaskingPreview();
+            preview.piiFieldType = fieldType;
+            preview.complianceGroup = complianceGroupByFieldType.get(fieldType);
+            preview.strategy = maskingRule == null ? null : maskingRule.Strategy__c;
+
+            // [3] Pick a stand-in from the rule when its strategy is applied, and note why not when it is not
+            if (!isUsableRule) preview.redactReason = AIAssistApplicationConstants.PII_REDACT_REASON_NO_RULE;
+            else if (maskingRule.Strategy__c != AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST) preview.redactReason = AIAssistApplicationConstants.PII_REDACT_REASON_NOT_APPLIED;
+            else preview.fakeValue = pickSubstitute(maskingRule, valuesInUse);
+
+            // [4] Otherwise the value would be redacted, as pseudonymize does
+            preview.isRuleApplied = String.isNotBlank(preview.fakeValue);
+
+            if (!preview.isRuleApplied) {
+
+                if (preview.redactReason == null) preview.redactReason = AIAssistApplicationConstants.PII_REDACT_REASON_EXHAUSTED;
+                preview.fakeValue = buildRedactedValue();
+            }
+
+            // [5] Remember both values for the rest of the test
+            valuesInUse.add(realValue);
+            valuesInUse.add(preview.fakeValue);
+
+            return preview;
+
+        } catch (Exception ex) {
+
+            AIPlatformLogManager.logException(ex, 'AIPiiPseudonymizationService', 'previewMasking');
+            return null;
+        }
+    }
+
+    // Reads the masking rules of each PII field type once per transaction.
+    private static void loadRules() {
+
+        // [1] Already read
+        if (ruleByFieldType != null) return;
+
+        // [2] Keep each type's rule and Compliance Group
+        ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>();
+        complianceGroupByFieldType = new Map<String, String>();
+
+        for (AIPiiFieldType__mdt fieldTypeRule : [SELECT PIIFieldType__c, ComplianceGroup__r.MasterLabel, MaskingRule__r.Strategy__c, MaskingRule__r.SubstituteValues__c, MaskingRule__r.IsActive__c FROM AIPiiFieldType__mdt WHERE IsActive__c = TRUE AND MaskingRule__c != NULL WITH SYSTEM_MODE]) {
+
+            ruleByFieldType.put(fieldTypeRule.PIIFieldType__c, fieldTypeRule.MaskingRule__r);
+            complianceGroupByFieldType.put(fieldTypeRule.PIIFieldType__c, fieldTypeRule.ComplianceGroup__r == null ? null : fieldTypeRule.ComplianceGroup__r.MasterLabel);
+        }
+    }
+
+    // Picks one of the rule's substitute values at random, skipping any already in use. Blank when none is left.
+    private static String pickSubstitute(AIPiiDataMaskingRule__mdt maskingRule, Set<String> valuesInUse) {
+
+        // [1] Keep the substitutes from the rule that are not in use
+        List<String> candidates = new List<String>();
+
+        for (String candidate : String.isBlank(maskingRule.SubstituteValues__c) ? new List<String>() : maskingRule.SubstituteValues__c.split(',')) {
+
+            if (String.isNotBlank(candidate) && !valuesInUse.contains(candidate.trim())) candidates.add(candidate.trim());
+        }
+
+        // [2] Pick one at random
+        if (candidates.isEmpty()) return '';
+
+        return candidates[Integer.valueOf(Math.floor(Math.random() * candidates.size()))];
+    }
+
+    // Builds a REDACTED value with a random suffix, so distinct real values never share one fake value.
+    private static String buildRedactedValue() {
+
+        // [1] Ten random digits
+        String digits = '';
+
+        for (Integer digitIndex = 0; digitIndex < 10; digitIndex++) digits += String.valueOf(Integer.valueOf(Math.floor(Math.random() * 10)));
+
+        return 'REDACTED-' + digits;
     }
 }

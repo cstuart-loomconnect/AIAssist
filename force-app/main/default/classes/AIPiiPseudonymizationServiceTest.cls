@@ -23,6 +23,9 @@ Version      Author                   Description
     // testScenario3: Every substitute is used, or the rule is missing or not a substitute list -> a unique REDACTED value is used instead and the misconfiguration is logged.
     // testScenario4: takeTallies is called after masking -> it returns one tally per object and field with the count of values, the strategy and the compliance group, and clears them.
     // testScenario5: Invalid input is pseudonymized and an unknown value is restored -> invalid input returns blank and an unknown value comes back unchanged.
+    // testScenario6: Values of a PII field are previewed -> each gets a different substitute from its rule, and nothing is saved, tallied or logged.
+    // testScenario7: A value is previewed with no rule, a strategy that is not applied, or a list that is used up -> it is redacted and the reason is given.
+    // testScenario8: A non-PII field, a blank value or a blank name is previewed -> there is no preview.
 
     private static final String CONTACT = 'Contact';
     private static final String EMAIL = 'Email';
@@ -227,6 +230,115 @@ Version      Author                   Description
 
             Assert.areEqual('not-a-fake-value', unknown, 'A value that is not a known substitute comes back unchanged.');
             Assert.isNull(blank, 'A blank value stays blank.');
+        }
+    }
+
+    @IsTest static void testScenario6() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Register the Email field as PII with a substitute list of two values
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, CONTACT, true)[0];
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, EMAIL, AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL, true);
+            AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>{
+                AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => AIAssistTestDataFactory.createAIPiiMaskingRule(AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST, 'one@x.com,two@x.com', true)
+            };
+            AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>{
+                AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL => GDPR
+            };
+            Set<String> valuesInUse = new Set<String>();
+
+            AIPiiPseudonymizationService.MaskingPreview first;
+            AIPiiPseudonymizationService.MaskingPreview second;
+
+            // [2] Preview two different values
+            Test.startTest();
+                first = AIPiiPseudonymizationService.previewMasking(CONTACT, EMAIL, REAL_EMAIL_A, valuesInUse);
+                second = AIPiiPseudonymizationService.previewMasking(CONTACT, EMAIL, REAL_EMAIL_B, valuesInUse);
+            Test.stopTest();
+
+            // [3] Read back what a real masking would have saved
+            Integer mappingCount = [SELECT COUNT() FROM AIPIIMapping__c];
+            Integer logCount = [SELECT COUNT() FROM AIPlatformLog__c];
+            List<AIPiiPseudonymizationService.MaskingTally> tallies = AIPiiPseudonymizationService.takeTallies();
+
+            // [4] Check the stand-ins come from the rule, differ, and nothing was kept
+            Assert.isTrue(first.isRuleApplied, 'The rule was applied.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL, first.piiFieldType, 'The type is reported.');
+            Assert.areEqual(GDPR, first.complianceGroup, 'The group is reported.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST, first.strategy, 'The strategy is reported.');
+            Assert.areNotEqual(first.fakeValue, second.fakeValue, 'Two values never share a stand-in.');
+            Assert.areEqual(0, mappingCount, 'No pairing was saved.');
+            Assert.areEqual(0, logCount, 'Nothing was logged.');
+            Assert.isTrue(tallies.isEmpty(), 'Nothing was tallied.');
+        }
+    }
+
+    @IsTest static void testScenario7() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Register Email, Phone and Address as PII, with no rule, a pattern rule and a list that has one value
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, CONTACT, true)[0];
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, EMAIL, AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL, true);
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, 'Phone', AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE, true);
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, 'MailingStreet', AIAssistApplicationConstants.PII_FIELD_TYPE_ADDRESS, true);
+            AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>{
+                AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE => AIAssistTestDataFactory.createAIPiiMaskingRule(AIAssistApplicationConstants.PII_MASKING_STRATEGY_RANDOMIZE_BY_PATTERN, null, true),
+                AIAssistApplicationConstants.PII_FIELD_TYPE_ADDRESS => AIAssistTestDataFactory.createAIPiiMaskingRule(AIAssistApplicationConstants.PII_MASKING_STRATEGY_SUBSTITUTE_FROM_LIST, '1 Test Street', true)
+            };
+            AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>();
+            Set<String> valuesInUse = new Set<String>{ '1 Test Street' };
+
+            AIPiiPseudonymizationService.MaskingPreview noRule;
+            AIPiiPseudonymizationService.MaskingPreview notApplied;
+            AIPiiPseudonymizationService.MaskingPreview exhausted;
+
+            // [2] Preview a value of each
+            Test.startTest();
+                noRule = AIPiiPseudonymizationService.previewMasking(CONTACT, EMAIL, REAL_EMAIL_A, valuesInUse);
+                notApplied = AIPiiPseudonymizationService.previewMasking(CONTACT, 'Phone', '07700 900000', valuesInUse);
+                exhausted = AIPiiPseudonymizationService.previewMasking(CONTACT, 'MailingStreet', '2 Real Road', valuesInUse);
+            Test.stopTest();
+
+            // [3] Check each was redacted for its own reason
+            Assert.isFalse(noRule.isRuleApplied, 'No rule means redaction.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_REDACT_REASON_NO_RULE, noRule.redactReason, 'The reason is no rule.');
+            Assert.isTrue(noRule.fakeValue.startsWith('REDACTED-'), 'The stand-in is a REDACTED value.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_REDACT_REASON_NOT_APPLIED, notApplied.redactReason, 'The reason is a strategy that is not applied.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_MASKING_STRATEGY_RANDOMIZE_BY_PATTERN, notApplied.strategy, 'The strategy is reported.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_REDACT_REASON_EXHAUSTED, exhausted.redactReason, 'The reason is a list that is used up.');
+        }
+    }
+
+    @IsTest static void testScenario8() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Register the Email field as PII
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, CONTACT, true)[0];
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, EMAIL, AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL, true);
+            AIPiiPseudonymizationService.ruleByFieldType = new Map<String, AIPiiDataMaskingRule__mdt>();
+            AIPiiPseudonymizationService.complianceGroupByFieldType = new Map<String, String>();
+
+            AIPiiPseudonymizationService.MaskingPreview notPii;
+            AIPiiPseudonymizationService.MaskingPreview blankValue;
+            AIPiiPseudonymizationService.MaskingPreview blankName;
+
+            // [2] Preview a field that is not PII, a blank value and a blank field name
+            Test.startTest();
+                notPii = AIPiiPseudonymizationService.previewMasking(CONTACT, 'Title', 'Director', new Set<String>());
+                blankValue = AIPiiPseudonymizationService.previewMasking(CONTACT, EMAIL, '', new Set<String>());
+                blankName = AIPiiPseudonymizationService.previewMasking(CONTACT, '', REAL_EMAIL_A, new Set<String>());
+            Test.stopTest();
+
+            // [3] Check there is no preview for any of them
+            Assert.isNull(notPii, 'A non-PII field has no preview.');
+            Assert.isNull(blankValue, 'A blank value has no preview.');
+            Assert.isNull(blankName, 'A blank field name has no preview.');
         }
     }
 }

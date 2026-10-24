@@ -1,0 +1,31 @@
+<template>
+  <!-- Banner: how many objects have no cover -->
+  <div class="aipru-banner slds-p-around_small" role="alert"><strong>{headline}</strong>{headlineRest}</div>
+
+  <!-- Table: each object, who reads it, the fields sent, and a button that adds it -->
+  <div class="aipru-table-wrap slds-m-top_small">
+    <table class="aipru-table slds-table slds-table_cell-buffer">
+      <thead>
+        <tr>
+          <th scope="col">{labels.columnObject}</th>
+          <th scope="col">{labels.columnReadBy}</th>
+          <th scope="col">{labels.columnFieldsSent}</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <template for:each={rows} for:item="row">
+          <tr key={row.key}>
+            <td class="aipru-strong">{row.objectApiName}</td>
+            <td>{row.readBy}</td>
+            <td>{row.fieldsSent}</td>
+            <td class="slds-text-align_right"><lightning-button variant="brand" label={labels.addToRegistry} data-name={row.objectApiName} onclick={handleAddClick}></lightning-button></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footnote: how the objects were found -->
+  <p class="aipru-footnote slds-text-body_small slds-m-top_small slds-m-bottom_medium">{labels.footnote}</p>
+</template>

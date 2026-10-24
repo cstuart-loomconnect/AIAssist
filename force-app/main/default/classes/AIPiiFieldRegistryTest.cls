@@ -22,6 +22,7 @@ Version      Author                   Description
     // testScenario2: An object with no registry has no PII fields at all, so nothing is masked until a registry has been synced.
     // testScenario3: Blank object or field names return null, false and an empty map without a query.
     // testScenario4: The registry of an object is queried once and cached, however many fields are asked about.
+    // testScenario5: A registry that is switched off has no PII fields, so nothing of that object is masked.
 
     private static final String CONTACT = 'Contact';
     private static final String LEAD = 'Lead';
@@ -140,6 +141,32 @@ Version      Author                   Description
 
             // [4] Check the registry was queried once
             Assert.areEqual(1, queriesUsed, 'Fifty lookups against one object cost one query.');
+        }
+    }
+
+    @IsTest static void testScenario5() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a registry with a PII email field, then switch the registry off
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, CONTACT, false)[0];
+            registry.IsActive__c = false;
+            insert registry;
+            AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, CONTACT, EMAIL, AIAssistApplicationConstants.PII_FIELD_TYPE_EMAIL, true);
+
+            Boolean isEmailPii;
+            String emailType;
+
+            // [2] Look the field up
+            Test.startTest();
+                isEmailPii = AIPiiFieldRegistry.isPii(CONTACT, EMAIL);
+                emailType = AIPiiFieldRegistry.getFieldType(CONTACT, EMAIL);
+            Test.stopTest();
+
+            // [3] Check the switched off registry masks nothing
+            Assert.isFalse(isEmailPii, 'A field of a switched off registry is not treated as PII.');
+            Assert.isNull(emailType, 'And it has no type.');
         }
     }
 }

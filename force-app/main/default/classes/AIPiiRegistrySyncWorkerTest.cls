@@ -18,11 +18,13 @@ Version      Author                   Description
 
 @IsTest private class AIPiiRegistrySyncWorkerTest {
 
-    // testScenario1: A registry's fields are saved keyed by object and field, with label, type and PII flag, and the registry is Synced.
+    // testScenario1: A registry whose limit covers the object saves its fields keyed by object and field, with label, type and PII flag, and is Synced.
     // testScenario2: Running again updates the same rows instead of adding more.
     // testScenario3: An object with no fields to read is still marked Synced, with no rows.
-    // testScenario4: Several registries are synced by one job, and no ids, or ids that are not registries, do nothing.
+    // testScenario4: Several registries are processed by one job, and no ids, or ids that are not registries, do nothing.
     // testScenario5: As a queued job it runs with no callout.
+    // testScenario6: An object with more fields than the limit has its first fields saved, is marked Failed with a time, and the reason is logged once.
+    // testScenario7: A field an administrator overrode keeps its PII choice through a sync, while its label and type are refreshed.
 
     private static final String ACCOUNT = 'Account';
 
@@ -43,7 +45,7 @@ Version      Author                   Description
             AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
 
             AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, ACCOUNT, false)[0];
-            registry.MaxFieldsToQuery__c = 5;
+            registry.MaxFieldsToQuery__c = 500;
             registry.CacheResetDate__c = Datetime.now().dateGmt().addDays(-1);
             insert registry;
 
@@ -57,7 +59,7 @@ Version      Author                   Description
             AIPIIRegistry__c synced = [SELECT SyncStatus__c, LastSynced__c, CacheResetDate__c FROM AIPIIRegistry__c WHERE Id = :registry.Id];
 
             // [4] Check the fields, their keys and the Synced registry
-            Assert.areEqual(5, fields.size(), 'Bounded by the registry\'s maximum.');
+            Assert.isTrue(fields.size() >= 5, 'The fields of the object are saved.');
             Assert.areEqual('Account.' + fields[0].FieldAPIName__c, fields[0].FieldKey__c, 'Keyed by object and field.');
             Assert.isNotNull(fields[0].DataType__c, 'The type is saved.');
 
@@ -144,11 +146,11 @@ Version      Author                   Description
 
             // [3] Read the field count and synced count back
             Integer fieldCount = [SELECT COUNT() FROM AIPIIFieldMetadata__c];
-            Integer syncedCount = [SELECT COUNT() FROM AIPIIRegistry__c WHERE SyncStatus__c = :AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED];
+            Integer failedCount = [SELECT COUNT() FROM AIPIIRegistry__c WHERE SyncStatus__c = :AIAssistApplicationConstants.PII_SYNC_STATUS_FAILED];
 
-            // [4] Check both registries were synced and the bad input did nothing
+            // [4] Check both registries were processed and the bad input did nothing
             Assert.areEqual(4, fieldCount, 'Two fields for each of two objects.');
-            Assert.areEqual(2, syncedCount, 'Both Synced.');
+            Assert.areEqual(2, failedCount, 'Both have more than two fields, so both are Failed.');
         }
     }
 
@@ -174,7 +176,80 @@ Version      Author                   Description
             String syncStatus = [SELECT SyncStatus__c FROM AIPIIRegistry__c WHERE Id = :registry.Id].SyncStatus__c;
 
             // [4] Check the job synced the registry without a callout mock
-            Assert.areEqual(AIAssistApplicationConstants.PII_SYNC_STATUS_SYNCED, syncStatus, 'No callout mock was needed.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_SYNC_STATUS_FAILED, syncStatus, 'The job finished its work without a callout mock; Account has more than two fields.');
+        }
+    }
+
+    @IsTest static void testScenario6() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a registry for Account that reads only three fields
+            AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>();
+            AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
+
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, ACCOUNT, false)[0];
+            registry.MaxFieldsToQuery__c = 3;
+            insert registry;
+
+            // [2] Run the worker for the registry
+            Test.startTest();
+                new AIPiiRegistrySyncWorker(new List<Id>{ registry.Id }).execute(null);
+            Test.stopTest();
+
+            // [3] Read the fields, the registry and the platform log back
+            Integer fieldCount = [SELECT COUNT() FROM AIPIIFieldMetadata__c WHERE PIIRegistry__c = :registry.Id];
+            AIPIIRegistry__c failed = [SELECT SyncStatus__c, LastSynced__c FROM AIPIIRegistry__c WHERE Id = :registry.Id];
+            List<AIPlatformLog__c> logs = [SELECT ClassName__c, MethodName__c FROM AIPlatformLog__c];
+
+            // [4] Check the first fields were kept, the registry Failed with a time, and the reason was logged
+            Assert.areEqual(3, fieldCount, 'Only the first three fields are saved.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_SYNC_STATUS_FAILED, failed.SyncStatus__c, 'The rest of the fields were never checked, so the sync failed.');
+            Assert.isNotNull(failed.LastSynced__c, 'The failed sync has a time.');
+            Assert.areEqual(1, logs.size(), 'One log row says why.');
+            Assert.areEqual('AIPiiRegistrySyncWorker', logs[0].ClassName__c, 'The worker logged it.');
+            Assert.areEqual('execute', logs[0].MethodName__c, 'From execute.');
+        }
+    }
+
+    @IsTest static void testScenario7() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a registry for Account with a field an administrator overrode to PII, and one left automatic
+            AIPiiFieldTypeClassifier.fieldTypes = new List<AIPiiFieldType__mdt>();
+            AIPiiFieldTypeClassifier.complianceGroupsById = new Map<Id, AIPiiComplianceGroup__mdt>();
+
+            AIPIIRegistry__c registry = AIAssistTestDataFactory.createAIPIIRegistries(1, ACCOUNT, false)[0];
+            registry.MaxFieldsToQuery__c = 500;
+            insert registry;
+
+            AIPIIFieldMetadata__c overridden = AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, ACCOUNT, 'Name', AIAssistApplicationConstants.PII_FIELD_TYPE_NAME, false)[0];
+            overridden.IsOverridden__c = true;
+            overridden.FieldLabel__c = 'Old label';
+            overridden.ComplianceGroup__c = 'Chosen group';
+            AIPIIFieldMetadata__c automatic = AIAssistTestDataFactory.createAIPIIFieldMetadata(registry.Id, ACCOUNT, 'Phone', AIAssistApplicationConstants.PII_FIELD_TYPE_PHONE, false)[0];
+            insert new List<AIPIIFieldMetadata__c>{ overridden, automatic };
+
+            // [2] Run the worker for the registry
+            Test.startTest();
+                new AIPiiRegistrySyncWorker(new List<Id>{ registry.Id }).execute(null);
+            Test.stopTest();
+
+            // [3] Read the two fields back
+            AIPIIFieldMetadata__c overriddenAfter = [SELECT FieldLabel__c, IsPII__c, PIIFieldType__c, ComplianceGroup__c, IsOverridden__c FROM AIPIIFieldMetadata__c WHERE Id = :overridden.Id];
+            AIPIIFieldMetadata__c automaticAfter = [SELECT IsPII__c, PIIFieldType__c FROM AIPIIFieldMetadata__c WHERE Id = :automatic.Id];
+
+            // [4] Check the choice survived on the overridden field and the automatic one was classified again
+            Assert.isTrue(overriddenAfter.IsPII__c, 'The overridden field is still PII.');
+            Assert.areEqual(AIAssistApplicationConstants.PII_FIELD_TYPE_NAME, overriddenAfter.PIIFieldType__c, 'Its type is kept.');
+            Assert.areEqual('Chosen group', overriddenAfter.ComplianceGroup__c, 'Its group is kept.');
+            Assert.isTrue(overriddenAfter.IsOverridden__c, 'It stays overridden.');
+            Assert.areNotEqual('Old label', overriddenAfter.FieldLabel__c, 'Its label is refreshed.');
+            Assert.isFalse(automaticAfter.IsPII__c, 'The automatic field is classified again, and Phone has no Data Classification.');
+            Assert.isNull(automaticAfter.PIIFieldType__c, 'So it has no type.');
         }
     }
 }
