@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ReasonDisplay__c</fullName>
+    <description>Reason with an emoji for list views.</description>
+    <formula
+  >CASE(TEXT(Reason__c), "Inaccurate", "⚠️ Inaccurate", "Incomplete", "🧩 Incomplete", "Not Relevant", "🎯 Not relevant", "Too Slow", "🐌 Too slow", "Unsafe Or Inappropriate", "🚫 Unsafe/inappropriate", "Other", "💬 Other", "–")</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Why the response was not helpful.</inlineHelpText>
+    <label>Reason Display</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

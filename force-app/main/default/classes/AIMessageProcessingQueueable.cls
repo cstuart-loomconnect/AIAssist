@@ -127,9 +127,15 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
                 throw new AIMessageProcessingQueueableException(Label.AI_Error_Generic);
             }
 
-            // [9] Load the prompt template: the one the user's slash command asked for, else the agent's default. Having none is fine, and no system prompt is built from a template. The other templates are kept for the model to switch to
+            // [9] Load the prompt template: the one the user's slash command asked for, else the agent's own, else the default. Having none is fine, and no system prompt is built from a template. Its merge fields (agent name, user, open record) are filled in so the model gets the final wording
             AIPromptTemplateService.PromptTemplateChoice promptTemplateChoice = AIPromptTemplateService.getPromptTemplateChoice(agent.Id, getRequestedPromptTemplateId(triggeringMessage.Id));
             AIPromptTemplate__c promptTemplate = promptTemplateChoice.promptTemplate;
+
+            if (promptTemplate != null) {
+
+                Id relatedRecordId = String.isBlank(conversation.RelatedRecordId__c) ? null : (Id) conversation.RelatedRecordId__c;
+                promptTemplate = AIPromptMergeFieldService.buildFilledTemplate(promptTemplate, AIPromptMergeFieldService.buildValues(agent, conversation.RelatedObjectAPIName__c, relatedRecordId, false));
+            }
 
             // [10] Pass what is known about this turn to the outcome service, so it can record usage even if the turn fails
             responseContext.agentId = agent.Id;
