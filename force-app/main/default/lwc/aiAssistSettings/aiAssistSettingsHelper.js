@@ -4,11 +4,11 @@ Component Name: aiAssistSettings
 =================================================================
 =================================================================
 
-Description: The AI Assist Settings tab: change AI Assist Settings and AI Assist UI Settings, and manage AI Usage Policies.
+Description: The AI Assist Settings tab: change AI Assist Settings and AI Assist UI Settings.
 
 Step 1: Load every row of both settings from Apex
-Step 2: Show one tab for AI Assist Settings, one for AI Assist UI Settings and one for AI Usage Policies
-Step 3: Hand each of the two settings tabs to a panel, and show the usage policies in their own component
+Step 2: Show one tab for AI Assist Settings and one for AI Assist UI Settings
+Step 3: Hand each tab to a panel
 Step 4: Load the rows again whenever a panel saves or deletes one
 
 =================================================================

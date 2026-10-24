@@ -1,0 +1,202 @@
+/* The colours of the whole tab, defined once here so every component inside it inherits them. SLDS has no tokens for this warm palette. */
+:host {
+  --aia-accent: #3040c4;
+  --aia-accent-tint: #eef0fb;
+  --aia-ink: #1c1e26;
+  --aia-ink-soft: #3f4350;
+  --aia-muted: #5e6270;
+  --aia-bg: #f6f5f1;
+  --aia-surface: #ffffff;
+  --aia-surface-soft: #fafaf7;
+  --aia-line: #e4e2da;
+  --aia-line-strong: #c9c7bf;
+  --aia-success: #1f6f4a;
+  --aia-success-tint: #e8f3ec;
+  --aia-warning: #9a3412;
+  --aia-warning-tint: #fdf0e6;
+  --aia-danger: #a12121;
+  --aia-danger-tint: #fbe9e9;
+}
+
+/* The page: a warm grey background so the white card stands out, with a rounded border. */
+.aip-page {
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The header band: dark ink with white text. The 12px gap and 14px 20px padding are not SLDS steps. */
+.aip-header {
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The page title: white, a little larger than body text. */
+.aip-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The line of help in the header: soft white. */
+.aip-subtitle {
+  color: #d5d7de;
+}
+
+/* The body is a white card with a soft border, set inside the grey page. SLDS has no utility for a bordered rounded card in this colour. */
+.aip-body {
+  margin: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The sentence above the list and the chosen policy: muted text. */
+.aip-intro {
+  color: var(--aia-muted);
+}
+
+/* The gap between the policy list and the chosen policy. SLDS has no 16px gap utility for a wrapping row. */
+.aip-layout {
+  gap: 16px;
+}
+
+/* The policy list: a bordered box with the New policy button on top, which can shrink and grow beside the chosen policy. */
+.aip-list {
+  flex: 1 1 240px;
+  max-width: 320px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The top of the list: a soft grey bar that holds the New policy button. */
+.aip-list-head {
+  padding: 10px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line-strong);
+}
+
+/* One policy in the list, shown as a bordered row with room for the accent bar. */
+.aip-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--aia-surface);
+  border: 0;
+  border-bottom: 1px solid var(--aia-line-strong);
+  border-left: 4px solid transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* The last policy has no line under it, because the box already has an edge. */
+.aip-item:last-child {
+  border-bottom: 0;
+}
+
+/* A policy the pointer is over: a soft grey. */
+.aip-item:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* A policy reached by keyboard: an accent outline. */
+.aip-item:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: -2px;
+}
+
+/* The chosen policy: a tinted row with an accent bar on the left. */
+.aip-item_selected {
+  background: var(--aia-accent-tint);
+  border-left-color: var(--aia-accent);
+}
+
+/* The name and the pill of a policy sit on one line with a gap. */
+.aip-item-top {
+  gap: 8px;
+}
+
+/* The name of a policy: bold dark text. */
+.aip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The name of the chosen policy: accent colour. */
+.aip-item_selected .aip-name {
+  color: var(--aia-accent);
+}
+
+/* What a policy is assigned to, under its name: muted text that wraps anywhere. */
+.aip-detail {
+  color: var(--aia-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The messages in the list and the chosen policy: muted text. */
+.aip-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The Default pill beside a policy name: a small green rounded label that does not shrink. SLDS badges have a different size and shape. */
+.aip-pill {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The chosen policy grows beside the list. */
+.aip-editor {
+  flex: 3 1 480px;
+  min-width: 0;
+}
+
+/* The chosen policy card: a bordered white box with a dark head. */
+.aip-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The head of the card: dark ink with white text. The 12px gap and 12px 16px padding are not SLDS steps. */
+.aip-card-head {
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The policy name in the head: white, bold. */
+.aip-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The Delete policy button: white text with a soft white outline on the dark head. */
+.aip-delete-button {
+  background: transparent;
+  border: 1px solid #8a8e9b;
+  color: var(--aia-surface);
+}
+
+/* The Delete policy button under the pointer: a slightly lighter dark. */
+.aip-delete-button:hover {
+  background: var(--aia-ink-soft);
+  color: var(--aia-surface);
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIPromptTemplate__c</fullName>
+    <description>The prompt template this test message belongs to.</description>
+    <inlineHelpText
+  >The test message is deleted automatically if the template is deleted.</inlineHelpText>
+    <label>AI Prompt Template</label>
+    <referenceTo>AIPromptTemplate__c</referenceTo>
+    <relationshipLabel>AI Prompt Test Messages</relationshipLabel>
+    <relationshipName>AIPromptTestMessages</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

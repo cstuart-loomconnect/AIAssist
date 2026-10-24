@@ -14,11 +14,11 @@
     <tabs>standard-home</tabs>
     <tabs>AIAgentWizard</tabs>
     <tabs>AIAgent__c</tabs>
-    <tabs>AIDataSource__c</tabs>
-    <tabs>AIWorkflowAction__c</tabs>
-    <tabs>AIPromptTemplate__c</tabs>
-    <tabs>AIModelConfiguration__c</tabs>
-    <tabs>AIUsagePolicy__c</tabs>
+    <tabs>AIToolsTab</tabs>
+    <tabs>AIPromptTemplatesTab</tabs>
+    <tabs>AIModelsTab</tabs>
+    <tabs>AIPoliciesTab</tabs>
+    <tabs>AIPiiRegistryTab</tabs>
     <tabs>AIAssistSettingsTab</tabs>
     <tabs>AIConversation__c</tabs>
     <tabs>AIFeedback__c</tabs>

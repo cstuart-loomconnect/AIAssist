@@ -7,7 +7,7 @@ Component Name: aiAssistSettingsField
 Description: One setting on the Settings tab: a label, help text and the control that fits its type.
 
 Step 1: Show the label, the help text and the field name
-Step 2: Show the control for the field type: switch, number, text, list of codes, choice, dropdown or checkboxes
+Step 2: Show the control for the field type: switch, number, text, list of codes or choice
 Step 3: Tell the form when the value changes
 Step 4: Check the control on request, so the form can refuse a save with a bad value
 
@@ -19,15 +19,15 @@ Version      Author                   Description
 */
 
 import { LightningElement, api } from "lwc";
-import { FIELD_TYPE_TOGGLE, FIELD_TYPE_NUMBER, FIELD_TYPE_TEXT, FIELD_TYPE_URL, FIELD_TYPE_CODES, FIELD_TYPE_CHOICE, FIELD_TYPE_SELECT, FIELD_TYPE_MULTI, EVENT_CHANGE, INPUT_TYPE_TEXT, INPUT_TYPE_URL, CONTROL_SELECTOR, LABELS } from "./aiAssistSettingsFieldSettings";
-import { buildMultiValueList, formatInputValue } from "./aiAssistSettingsFieldHelper";
+import { FIELD_TYPE_TOGGLE, FIELD_TYPE_NUMBER, FIELD_TYPE_TEXT, FIELD_TYPE_URL, FIELD_TYPE_CODES, FIELD_TYPE_CHOICE, EVENT_CHANGE, INPUT_TYPE_TEXT, INPUT_TYPE_URL, CONTROL_SELECTOR, LABELS } from "./aiAssistSettingsFieldSettings";
+import { formatInputValue } from "./aiAssistSettingsFieldHelper";
 
 // One setting on the Settings tab. The form passes the field definition and its current value, and listens for change.
 export default class AiAssistSettingsField extends LightningElement {
 
   // Values passed in by the parent component
   @api field; // { key, label, type, help, unit, required, min, max, blankHelp, dependencyHint, options: [{ label, value }] }
-  @api value; // The current value: true or false, a number, text, or for a multi-select a list or text such as "A;B"
+  @api value; // The current value: true or false, a number or text
   @api apiName; // The field name shown in small text, for example AIAssistSettings__c.MaxMessageLength__c
   @api badgeLabel; // Short text beside the label, or blank for none
 
@@ -68,22 +68,6 @@ export default class AiAssistSettingsField extends LightningElement {
     return isChoiceType;
   }
 
-  get isSelect() {
-
-    // [1] Compare the field type with the dropdown type
-    const isSelectType = this.field.type === FIELD_TYPE_SELECT;
-
-    return isSelectType;
-  }
-
-  get isMulti() {
-
-    // [1] Compare the field type with the checkboxes type
-    const isMultiType = this.field.type === FIELD_TYPE_MULTI;
-
-    return isMultiType;
-  }
-
   get isCodes() {
 
     // [1] Compare the field type with the list of codes type
@@ -108,14 +92,6 @@ export default class AiAssistSettingsField extends LightningElement {
     const inputType = isUrl ? INPUT_TYPE_URL : INPUT_TYPE_TEXT;
 
     return inputType;
-  }
-
-  get multiValue() {
-
-    // [1] The checkbox group needs a list of the chosen values
-    const multiValue = buildMultiValueList(this.value);
-
-    return multiValue;
   }
 
   get isChecked() {

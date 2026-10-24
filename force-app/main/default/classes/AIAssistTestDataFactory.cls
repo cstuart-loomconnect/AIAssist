@@ -107,6 +107,26 @@ public without sharing class AIAssistTestDataFactory {
         return configurations;
     }
 
+    // The form values of a model for the AI Agent Models tab, with a name that is unique and the connection details a test needs. Nothing is saved.
+    public static AIModelsDataStructure.ModelView createAIModelView(String provider, Boolean isActive) {
+
+        // [1] Fill every field of the form
+        AIModelsDataStructure.ModelView view = new AIModelsDataStructure.ModelView();
+        view.modelName = 'AI Assist Test Model ' + uniqueSuffix();
+        view.provider = provider;
+        view.modelIdentifier = 'test-model';
+        view.namedCredential = 'Test_Credential';
+        view.apiPath = '/v1/messages';
+        view.versionHeaderName = 'anthropic-version';
+        view.versionHeaderValue = '2023-06-01';
+        view.environmentId = provider == AIAssistApplicationConstants.AI_PROVIDER_ANTHROPIC_AGENT ? 'env_1' : null;
+        view.maxOutputTokens = 4096;
+        view.temperature = 0.2;
+        view.isActive = isActive;
+
+        return view;
+    }
+
     // With a model configuration: active, open to all users, tracking the provider's own token counts. Without one (null): inactive with no model, the state of a new agent.
     public static List<AIAgent__c> createAIAgents(Integer numberOfAgents, Id modelConfigurationId, Boolean shouldDoInsert) {
 
@@ -135,7 +155,7 @@ public without sharing class AIAssistTestDataFactory {
         return agents;
     }
 
-    // Active, with the prompt the object model requires before a template can be active.
+    // Active, with the prompt the object model requires before a template can be active. When the templates are inserted and an agent is given, the agent is set to answer with the first one.
     public static List<AIPromptTemplate__c> createAIPromptTemplates(Id agentId, Integer numberOfTemplates, Boolean shouldDoInsert) {
 
         // [1] Build each template with the prompt it needs to be active
@@ -143,11 +163,16 @@ public without sharing class AIAssistTestDataFactory {
 
         for (Integer itemIndex = 0; itemIndex < numberOfTemplates; itemIndex++) {
 
-            templates.add(new AIPromptTemplate__c(Name = 'AI Assist Test Prompt Template ' + uniqueSuffix(), AIAgent__c = agentId, IsActive__c = true, AIPrompt__c = 'Answer briefly.'));
+            templates.add(new AIPromptTemplate__c(Name = 'AI Assist Test Prompt Template ' + uniqueSuffix(), IsActive__c = true, AIPrompt__c = 'Answer briefly.'));
         }
 
-        // [2] Insert them when asked, and return them
-        if (shouldDoInsert && !templates.isEmpty()) insert templates;
+        // [2] Insert them when asked, and set the agent to answer with the first one
+        if (shouldDoInsert && !templates.isEmpty()) {
+
+            insert templates;
+
+            if (agentId != null) update new AIAgent__c(Id = agentId, AIPromptTemplate__c = templates[0].Id);
+        }
 
         return templates;
     }
@@ -469,6 +494,18 @@ public without sharing class AIAssistTestDataFactory {
         if (shouldDoInsert) Database.insert(mappings, true, AccessLevel.SYSTEM_MODE);
 
         return mappings;
+    }
+
+    // A PII type the AI PII Registry tab offers, built in memory for AIPiiRegistryEditorService's test seam.
+    public static AIPiiRegistryDataStructure.TypeOption createAIPiiTypeOption(String piiFieldType, String complianceGroup, String maskingText) {
+
+        // [1] Build the option in memory
+        AIPiiRegistryDataStructure.TypeOption option = new AIPiiRegistryDataStructure.TypeOption();
+        option.piiFieldType = piiFieldType;
+        option.complianceGroup = complianceGroup;
+        option.maskingText = maskingText;
+
+        return option;
     }
 
     // Custom metadata cannot be inserted, so the rule is built in memory for AIPiiPseudonymizationService's test seam.

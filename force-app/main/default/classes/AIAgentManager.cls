@@ -38,6 +38,7 @@ public without sharing class AIAgentManager {
         public String suggestedWorkflowActionId;
         public Id selectedPromptTemplateId; // Set only when the model switched to another prompt template, so the reply records the one that produced it.
         public Decimal selectedPromptTemplateVersion;
+        public Integer httpStatusCode; // The status of the last reply from the provider, for the connection test. Null when no reply came back.
         public String externalReference; // Set only when the provider keeps the conversation (the Anthropic Agent API session id), so the caller can save it on the conversation. Null for every other provider.
     }
 
@@ -85,7 +86,7 @@ public without sharing class AIAgentManager {
                 AIProvider.ToolDefinition toolDefinition = new AIProvider.ToolDefinition();
                 toolDefinition.name = dataSource.DeveloperName__c;
                 toolDefinition.description = String.isNotBlank(dataSource.Description__c) ? dataSource.Description__c : (String.isNotBlank(dataSource.OutputDescription__c) ? dataSource.OutputDescription__c : dataSource.DeveloperName__c); // Providers expect a string.
-                toolDefinition.inputSchema = String.isNotBlank(dataSource.InputSchema__c) ? (Map<String, Object>) JSON.deserializeUntyped(dataSource.InputSchema__c) : new Map<String, Object>{'type' => 'object', 'properties' => new Map<String, Object>()};
+                toolDefinition.inputSchema = AIDataSourceInputBinder.getModelInputSchema(dataSource.InputSchema__c);
 
                 toolDefinitions.add(toolDefinition);
             }
@@ -164,6 +165,7 @@ public without sharing class AIAgentManager {
             String calloutErrorMessage = null;
             String calloutFailureReason = AIAssistApplicationConstants.FAILURE_REASON_PROVIDER_ERROR;
             Boolean isCalloutErrorRetryable = true;
+            Integer lastStatusCode = null;
 
             // [12] Send requests until the model gives a final reply or a limit is hit
             for (Integer iteration = 0; iteration < maxToolCallingIterations; iteration++) {
@@ -312,6 +314,7 @@ public without sharing class AIAgentManager {
 
                 // [22] If the status is not a success, end this attempt with a reason the user can be told and a message saying which record to fix. It is only retried when the status is listed in AIAssistSettings__c.RetryableStatusCodes__c and could work next time; a rejected credential, a retired model, an exhausted quota and a bad request never are.
                 Integer statusCode = httpResponse.getStatusCode();
+                lastStatusCode = statusCode;
 
                 if (!buildIntegerSet(settings.AIProviderSuccessStatusCodes__c).contains(statusCode)) {
 
@@ -346,6 +349,7 @@ public without sharing class AIAgentManager {
                     successResult.selectedPromptTemplateId = selectedPromptTemplate == null ? null : selectedPromptTemplate.Id;
                     successResult.selectedPromptTemplateVersion = selectedPromptTemplate == null ? null : selectedPromptTemplate.Version__c;
                     successResult.externalReference = providerSession.id;
+                    successResult.httpStatusCode = lastStatusCode;
 
                     providerStep.stepDetail = 'Final reply.';
 
@@ -532,6 +536,7 @@ public without sharing class AIAgentManager {
                 calloutFailure.outputTokens = outputTokensUsed;
                 calloutFailure.isRetryable = isCalloutErrorRetryable && attemptNumber < maxAttempts;
                 calloutFailure.externalReference = providerSession.id;
+                calloutFailure.httpStatusCode = lastStatusCode;
 
                 return calloutFailure;
             }
@@ -620,24 +625,18 @@ public without sharing class AIAgentManager {
         return 'Masked ' + valuesMasked.intValue() + (valuesMasked == 1 ? ' value' : ' values') + (isRequest ? ' in the request: ' : ' in the data returned: ') + String.join(fieldDescriptions, ', ') + '.';
     }
 
-    // Builds the system prompt: the agent's persona, the prompt template, the templates the model may switch to, the language and the workflow actions it may suggest. Returns null when there is nothing to say.
+    // Builds the system prompt: the agent's persona and the prompt template under their headings, the templates the model may switch to, the language and the workflow actions it may suggest. Returns null when there is nothing to say.
     private static String buildSystemPromptText(AIAgent__c agent, AIPromptTemplate__c promptTemplate, List<AIPromptTemplate__c> routingTemplates, List<AIWorkflowAction__c> availableWorkflowActions) {
 
-        // [1] Start with the agent persona
+        // [1] Add the agent's persona and the prompt template's wording, each under its own heading
         List<String> systemPromptParts = new List<String>();
 
-        if (String.isNotBlank(agent.AIAgentPersona__c)) systemPromptParts.add('Persona: ' + agent.AIAgentPersona__c);
+        for (AIPromptTemplateService.PromptSection promptSection : AIPromptTemplateService.getPromptSections(agent.AIAgentPersona__c, promptTemplate)) {
 
-        // [2] Add the prompt template's wording
-        if (promptTemplate != null) {
-
-            if (String.isNotBlank(promptTemplate.AISystemContext__c)) systemPromptParts.add(promptTemplate.AISystemContext__c);
-            if (String.isNotBlank(promptTemplate.AIPrompt__c)) systemPromptParts.add(promptTemplate.AIPrompt__c);
-            if (String.isNotBlank(promptTemplate.AITone__c)) systemPromptParts.add('Tone: ' + promptTemplate.AITone__c);
-            if (String.isNotBlank(promptTemplate.AIExclusionRules__c)) systemPromptParts.add('Do not: ' + promptTemplate.AIExclusionRules__c);
+            systemPromptParts.add(AIAssistApplicationConstants.PROMPT_SECTION_HEADING_PREFIX + promptSection.heading + '\n' + promptSection.text);
         }
 
-        // [3] List the other templates the model may switch to, with what each is for
+        // [2] List the other templates the model may switch to, with what each is for
         if (routingTemplates != null && !routingTemplates.isEmpty()) {
 
             systemPromptParts.add(AIAssistApplicationConstants.PROMPT_TEMPLATE_PROMPT_INSTRUCTION);
@@ -648,10 +647,10 @@ public without sharing class AIAgentManager {
             }
         }
 
-        // [4] Tell the model to reply in the user's language. Labels are translated by the platform but agent text is not. A turn runs as the user who sent the message, so this is their language.
+        // [3] Tell the model to reply in the user's language. Labels are translated by the platform but agent text is not. A turn runs as the user who sent the message, so this is their language.
         systemPromptParts.add(String.format(AIAssistApplicationConstants.LANGUAGE_PROMPT_INSTRUCTION, new List<String>{UserInfo.getLanguage()}));
 
-        // [5] List the workflow actions the model may suggest (never run) and how to name one
+        // [4] List the workflow actions the model may suggest (never run) and how to name one
         if (availableWorkflowActions != null && !availableWorkflowActions.isEmpty()) {
 
             systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_INSTRUCTION);
@@ -664,7 +663,7 @@ public without sharing class AIAgentManager {
             systemPromptParts.add(AIAssistApplicationConstants.WORKFLOW_ACTION_PROMPT_JSON_INSTRUCTION);
         }
 
-        // [6] Join the prompt and remove blank lines and repeated spaces to save tokens on every pass. Single line breaks stay so authored lists remain readable.
+        // [5] Join the prompt and remove blank lines and repeated spaces to save tokens on every pass. Single line breaks stay so authored lists remain readable.
         return systemPromptParts.isEmpty() ? null : String.join(systemPromptParts, '\n').replaceAll('[ \\t]*\\n\\s*', '\n').replaceAll('[ \\t]+', ' ').trim();
     }
 

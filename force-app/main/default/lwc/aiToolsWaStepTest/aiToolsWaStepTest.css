@@ -1,0 +1,119 @@
+/* The row of fields: a soft grey bordered box with a gap between the fields. SLDS has no utility for this look. */
+.aitwa-fields {
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  border-radius: 8px;
+}
+
+/* One field: it shares the row, and can wrap to a new line. */
+.aitwa-field {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* The record field is wider than the others. */
+.aitwa-field_wide {
+  flex: 2 1 280px;
+}
+
+/* The result banner: a tinted box with a border. */
+.aitwa-banner {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* A passed test: green. */
+.aitwa-banner_passed {
+  background: var(--aia-success-tint);
+  border: 1px solid var(--aia-success);
+  color: var(--aia-success);
+}
+
+/* A failed test: red. */
+.aitwa-banner_failed {
+  background: var(--aia-danger-tint);
+  border: 1px solid var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* The outputs table: a bordered white box. */
+.aitwa-table {
+  margin-bottom: 16px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  background: var(--aia-surface);
+}
+
+/* The header cells: a soft grey bar with bold text. */
+.aitwa-table th {
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The body cells: room around the text and a line above each row. */
+.aitwa-table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--aia-line);
+  color: var(--aia-ink-soft);
+}
+
+/* An output name: a code font. */
+.aitwa-code {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--aia-ink);
+}
+
+/* A note: a tinted box with a border. */
+.aitwa-note {
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* A note that follows another block needs a gap above it. */
+.aitwa-note_top {
+  margin-top: 16px;
+}
+
+/* A warning note: orange. */
+.aitwa-note_warning {
+  background: var(--aia-warning-tint);
+  border: 1px solid var(--aia-warning);
+  color: var(--aia-warning);
+}
+
+/* An information note: the accent tint. */
+.aitwa-note_info {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-accent);
+}
+
+/* The roll back toggle and Run test: on their own line at the bottom right of the box. */
+.aitwa-actions {
+  flex: 1 1 100%;
+  gap: 16px;
+}
+
+/* The toggle and the button keep their own width, so the button text does not wrap. */
+.aitwa-actions lightning-input,
+.aitwa-actions lightning-button {
+  flex: 0 0 auto;
+}
+
+.aitwa-actions lightning-button {
+  white-space: nowrap;
+}
+
+/* The note shown when there is nothing to fill in: muted text. */
+.aitwa-note-inputs {
+  margin: 0;
+  color: var(--aia-muted);
+}

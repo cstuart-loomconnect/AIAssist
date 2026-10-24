@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RatingDisplay__c</fullName>
+    <description>Rating with an emoji for list views.</description>
+    <formula
+  >IF(ISPICKVAL(Rating__c, "Helpful"), "👍 Helpful", IF(ISPICKVAL(Rating__c, "Not Helpful"), "👎 Not helpful", ""))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Helpful or not helpful.</inlineHelpText>
+    <label>Rating Display</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,29 @@
+<template>
+  <!-- Names: the name the admins see and the API name -->
+  <div class="slds-grid slds-wrap aitwa-names">
+    <div class="aitwa-name"><lightning-input label={labels.name} required max-length={nameMaxLength} value={draft.actionName} onchange={handleNameChange}></lightning-input></div>
+    <div class="aitwa-name aitwa-code"><lightning-input label={labels.apiName} required max-length={apiNameMaxLength} value={draft.developerName} onchange={handleApiNameChange}></lightning-input></div>
+  </div>
+
+  <!-- Description: what the agent reads to decide when to suggest the action -->
+  <lightning-textarea label={labels.description} required value={draft.description} onchange={handleDescriptionChange}></lightning-textarea>
+  <p class="aitwa-help">{labels.descriptionHelp}</p>
+
+  <!-- What comes back: what the action returns, for the agent -->
+  <lightning-textarea label={labels.outputDescription} value={draft.outputDescription} onchange={handleOutputDescriptionChange}></lightning-textarea>
+
+  <!-- Summary: what the admin built, one line for each fact -->
+  <div class="aitwa-box">
+    <div class="aitwa-box-head">{labels.summary}</div>
+    <template for:each={summaryRows} for:item="row">
+      <div key={row.key} class="slds-grid aitwa-summary-row"><span class="aitwa-summary-label">{row.label}</span><span>{row.value}</span></div>
+    </template>
+  </div>
+
+  <!-- Active: whether agents can use the action -->
+  <div class="slds-grid slds-grid_vertical-align-center aitwa-active">
+    <lightning-input type="toggle" variant="label-hidden" label={labels.active} checked={draft.isActive} onchange={handleActiveChange}></lightning-input>
+    <strong class="aitwa-active-label">{labels.active}</strong>
+    <span class="aitwa-help aitwa-help_inline">{labels.activeHelp}</span>
+  </div>
+</template>

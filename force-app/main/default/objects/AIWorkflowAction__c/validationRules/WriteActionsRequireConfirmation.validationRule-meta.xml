@@ -3,10 +3,10 @@
     <fullName>WriteActionsRequireConfirmation</fullName>
     <active>true</active>
     <description
-  >Safety control: a Write action can never run without the user explicitly confirming it.</description>
+  >Safety control: a Write action can never run without the user explicitly confirming it. A Screen Flow is exempt, because the user pressing Finish in the window is the confirmation.</description>
     <errorConditionFormula
-  >AND(ISPICKVAL(ExecutionType__c, &quot;Write&quot;), NOT(RequiresConfirmation__c))</errorConditionFormula>
+  >AND(ISPICKVAL(ExecutionType__c, &quot;Write&quot;), NOT(RequiresConfirmation__c), NOT(ISPICKVAL(ActionType__c, &quot;Screen Flow&quot;)))</errorConditionFormula>
     <errorDisplayField>RequiresConfirmation__c</errorDisplayField>
     <errorMessage
-  >Actions that change data (Execution Type = Write) must require user confirmation.</errorMessage>
+  >Actions that change data (Execution Type = Write) must require user confirmation, unless they are a Screen Flow.</errorMessage>
 </ValidationRule>

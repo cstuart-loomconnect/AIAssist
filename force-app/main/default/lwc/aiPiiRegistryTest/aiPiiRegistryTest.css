@@ -1,0 +1,63 @@
+/* The record picker and the button sit on one line with a gap, and wrap on a narrow screen. SLDS has no 12px gap utility. */
+.aiprt-picker {
+  gap: 12px;
+}
+
+/* The record picker: wide enough to search in, and it shrinks on a narrow screen. */
+.aiprt-record {
+  flex: 1 1 260px;
+}
+
+/* The room the spinner needs while the test runs. */
+.aiprt-running {
+  min-height: 3rem;
+}
+
+/* The result table sits in a bordered rounded box that scrolls sideways on a narrow screen. SLDS has no utility for this look. */
+.aiprt-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The table head: a soft grey bar with bold text. */
+.aiprt-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* A value and its stand-in: small fixed-width text. */
+.aiprt-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* The rule, and the notes under the table: muted text. */
+.aiprt-muted {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* A note in the tab: a rounded box. */
+.aiprt-note {
+  margin-bottom: 0;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+/* A note that confirms: green on a tint. */
+.aiprt-note_success {
+  background: var(--aia-success-tint);
+  border-color: var(--aia-success);
+  color: var(--aia-success);
+}
+
+/* A note that refuses: red box with red text. */
+.aiprt-note_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}

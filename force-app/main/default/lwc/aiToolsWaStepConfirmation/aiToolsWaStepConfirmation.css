@@ -1,0 +1,178 @@
+/* The step: the form and the preview side by side, sharing the width. The 24px gap is not an SLDS step. */
+.aitwa-layout {
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* The form column grows and can shrink beside the preview. */
+.aitwa-main {
+  flex: 3 1 420px;
+  min-width: 0;
+}
+
+/* The preview column shares the width with the form. */
+.aitwa-side {
+  flex: 2 1 320px;
+  min-width: 0;
+}
+
+/* The row with the switch: a gap between the switch, its label and the pill. */
+.aitwa-switch {
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* The label beside the switch: bold dark text. */
+.aitwa-switch-label {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The Locked on pill: small, rounded and orange. SLDS badges have a different shape. */
+.aitwa-pill {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aitwa-pill_locked {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* Help text under the message box: muted text. */
+.aitwa-help {
+  margin: 4px 0 16px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The title above the chips: bold dark text. */
+.aitwa-chips-title {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The chips sit in a row that wraps. */
+.aitwa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* One chip: a small rounded button. SLDS pills are not buttons that stay chosen. */
+.aitwa-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--aia-line);
+  border-radius: 16px;
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* A chosen chip: the accent tint with an accent label. */
+.aitwa-chip_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+  color: var(--aia-accent);
+}
+
+/* A chip the server fills in: grey, and it cannot be chosen. */
+.aitwa-chip_locked {
+  cursor: default;
+  opacity: 0.8;
+}
+
+/* The preview heading: bold dark text. */
+.aitwa-side-title {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The grey box around the preview card. */
+.aitwa-preview {
+  padding: 16px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  border-radius: 8px;
+}
+
+/* The preview card: white with a border. */
+.aitwa-card {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The card header: an orange tint with bold orange text. */
+.aitwa-card-head {
+  padding: 10px 16px;
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+  font-weight: 600;
+}
+
+.aitwa-card-body {
+  padding: 14px 16px;
+}
+
+/* The message in the card: dark text. */
+.aitwa-card-message {
+  margin: 0 0 10px;
+  color: var(--aia-ink);
+}
+
+/* One value in the card: a muted label and the value. */
+.aitwa-row {
+  gap: 16px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.aitwa-row-label {
+  min-width: 70px;
+  color: var(--aia-muted);
+}
+
+/* The card buttons: drawn, not clickable, and pushed to the right. */
+.aitwa-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.aitwa-fake-button {
+  padding: 6px 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  background: var(--aia-surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aitwa-fake-button_brand {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A note: a tinted box with a border. */
+.aitwa-note {
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* An information note: the accent tint. */
+.aitwa-note_info {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-accent);
+}

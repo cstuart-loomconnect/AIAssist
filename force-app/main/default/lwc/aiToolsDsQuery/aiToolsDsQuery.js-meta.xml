@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 2 of the data source wizard for a SOQL data source: build the query visually or write it, with the problems found and the binds it uses.</description>
+</LightningComponentBundle>

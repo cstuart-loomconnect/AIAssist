@@ -1,0 +1,49 @@
+<template>
+  <div class="slds-is-relative aiadq-wrap">
+    <!-- Busy: shown while the objects or the fields load -->
+    <template lwc:if={isLoading}><lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner></template>
+
+    <!-- Toolbar: the two modes, a note about switching, and the max rows in write mode -->
+    <div class="aiadq-toolbar slds-grid slds-grid_vertical-align-center slds-wrap">
+      <div class="aiadq-modes slds-grid">
+        <button type="button" class={visualButtonClass} disabled={isVisualDisabled} onclick={handleVisualClick}>{labels.visualBuilder}</button>
+        <button type="button" class={writeButtonClass} onclick={handleWriteClick}>{labels.writeSoql}</button>
+      </div>
+      <span class="aiadq-note slds-text-body_small slds-col">{switchNote}</span>
+      <template lwc:if={isWriteMode}>
+        <lightning-input type="number" label={labels.maxRows} value={draft.maxRows} min="1" max="200" step="1" onchange={handleMaxRowsChange} class="aiadq-max-rows"></lightning-input>
+      </template>
+    </div>
+
+    <!-- Error: shown when the objects, the fields or the check could not be read -->
+    <template lwc:if={hasError}>
+      <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">{errorMessage}</div>
+    </template>
+
+    <!-- Visual builder: the controls on the left and the generated query on the right -->
+    <template lwc:if={isVisualMode}>
+      <div class="aiadq-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+        <div class="aiadq-builder">
+          <template lwc:if={hasBuilder}
+            ><c-ai-tools-ds-query-builder builder={draft.builder} object-options={objectOptions} field-options={fieldOptions} max-rows={draft.maxRows} is-bound={isBound} onbuilderchange={handleBuilderChange} onmaxrowschange={handleBuilderMaxRows}></c-ai-tools-ds-query-builder
+          ></template>
+        </div>
+
+        <!-- Generated query: the text the builder wrote, whether it is valid and what it runs with -->
+        <div class="aiadq-preview">
+          <h3 class="aiadq-preview-title slds-m-around_none">{labels.generated}</h3>
+          <pre class="aiadq-code"><template lwc:if={hasGenerated}><template for:each={generatedParts} for:item="part"><span key={part.key} class={part.cssClass}>{part.text}</span></template></template><template lwc:else>{labels.noQuery}</template></pre>
+          <template lwc:if={isValid}><div class="aiadq-valid slds-m-top_small slds-p-around_small">{validMessage}</div></template>
+          <template lwc:if={hasErrors}><div class="aiadq-invalid slds-m-top_small slds-p-around_small">{labels.invalid}</div></template>
+          <template lwc:if={isChecking}><p class="aiadq-note slds-text-body_small slds-m-top_xx-small">{labels.checking}</p></template>
+          <p class="aiadq-note slds-text-body_small slds-m-top_small">{labels.runsNote}</p>
+        </div>
+      </div>
+    </template>
+
+    <!-- Editor: the query as text, with the problems found -->
+    <template lwc:if={isWriteMode}>
+      <c-ai-tools-ds-query-editor soql-template={draft.soqlTemplate} problems={problems} onsqlchange={handleSqlChange} onfix={handleFix}></c-ai-tools-ds-query-editor>
+    </template>
+  </div>
+</template>

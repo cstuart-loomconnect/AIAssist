@@ -1,0 +1,320 @@
+<template>
+  <!-- Form: a bordered card with a dark band on top -->
+  <div class="aiamf-card-box">
+    <!-- Band: the model name on the left and the Active toggle on the right -->
+    <div
+      class="aiamf-band slds-grid slds-grid_vertical-align-center slds-grid_align-spread"
+    >
+      <h3 class="aiamf-heading slds-m-around_none">{heading}</h3>
+      <div class="aiamf-toggle slds-grid slds-grid_vertical-align-center">
+        <span class="aiamf-toggle-label slds-m-right_x-small"
+          >{labels.active}</span
+        >
+        <lightning-input
+          type="toggle"
+          variant="label-hidden"
+          label={labels.active}
+          checked={draft.isActive}
+          message-toggle-active=""
+          message-toggle-inactive=""
+          onchange={handleActiveChange}
+        ></lightning-input>
+      </div>
+    </div>
+
+    <div class="slds-p-around_medium">
+      <!-- Provider: one card for each provider; the chosen card has an accent border -->
+      <p class="aiamf-section-label slds-m-bottom_x-small">{labels.provider}</p>
+      <div class="aiamf-cards slds-grid slds-wrap slds-m-bottom_medium">
+        <template for:each={providerCards} for:item="card">
+          <button
+            key={card.key}
+            type="button"
+            class={card.cardClass}
+            data-provider={card.provider}
+            aria-pressed={card.isSelected}
+            onclick={handleProviderSelect}
+          >
+            <span class="aiamf-card-title">{card.title}</span>
+            <span class="aiamf-card-text slds-text-body_small"
+              >{card.description}</span
+            >
+          </button>
+        </template>
+      </div>
+
+      <!-- Fields: two columns that become one on a narrow screen -->
+      <div class="slds-grid slds-wrap slds-gutters_small">
+        <!-- Name: what agents and admins call the model -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-name"
+              ><span class="aiamf-required">* </span>{labels.name}</label
+            >
+            <input
+              id="aiamf-name"
+              type="text"
+              class="slds-input"
+              data-field="modelName"
+              value={draft.modelName}
+              oninput={handleFieldChange}
+            />
+          </div>
+        </div>
+        <!-- Model: the provider's own model ID -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-model"
+              ><span class="aiamf-required">* </span>{labels.model}</label
+            >
+            <input
+              id="aiamf-model"
+              type="text"
+              class="slds-input aiamf-mono"
+              data-field="modelIdentifier"
+              placeholder={labels.modelPlaceholder}
+              value={draft.modelIdentifier}
+              oninput={handleFieldChange}
+            />
+            <div class="aiamf-help slds-form-element__help">
+              {labels.modelHelp}
+            </div>
+          </div>
+        </div>
+        <!-- Named credential: picked from the credentials in Setup -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-credential"
+              ><span class="aiamf-required">* </span
+              >{labels.namedCredential}</label
+            >
+            <div class="slds-select_container">
+              <select
+                id="aiamf-credential"
+                class="slds-select"
+                data-field="namedCredential"
+                onchange={handleFieldChange}
+              >
+                <option value="">{labels.namedCredentialPlaceholder}</option>
+                <template for:each={credentialOptions} for:item="option">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    selected={option.isSelected}
+                  >
+                    {option.label}
+                  </option>
+                </template>
+              </select>
+            </div>
+            <div class="aiamf-help slds-form-element__help">
+              {labels.namedCredentialHelp}
+            </div>
+          </div>
+        </div>
+        <!-- API path: where on the provider the message is sent -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-path"
+              >{labels.apiPath}</label
+            >
+            <input
+              id="aiamf-path"
+              type="text"
+              class="slds-input aiamf-mono"
+              data-field="apiPath"
+              value={draft.apiPath}
+              oninput={handleFieldChange}
+            />
+          </div>
+        </div>
+        <!-- Environment ID: only for a provider that runs agents in an environment -->
+        <template lwc:if={showEnvironmentId}>
+          <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
+            <div class="slds-form-element">
+              <label class="slds-form-element__label" for="aiamf-environment"
+                ><span class="aiamf-required">* </span
+                >{labels.environmentId}</label
+              >
+              <input
+                id="aiamf-environment"
+                type="text"
+                class="slds-input aiamf-mono"
+                data-field="environmentId"
+                value={draft.environmentId}
+                oninput={handleFieldChange}
+              />
+              <div class="aiamf-help slds-form-element__help">
+                {labels.environmentIdHelp}
+              </div>
+            </div>
+          </div>
+        </template>
+        <!-- Version header: the name and value some providers need on every call -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-version-header"
+              >{labels.versionHeader}</label
+            >
+            <input
+              id="aiamf-version-header"
+              type="text"
+              class="slds-input aiamf-mono"
+              data-field="versionHeaderName"
+              value={draft.versionHeaderName}
+              oninput={handleFieldChange}
+            />
+          </div>
+        </div>
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-version-value"
+              >{labels.versionValue}</label
+            >
+            <input
+              id="aiamf-version-value"
+              type="text"
+              class="slds-input aiamf-mono"
+              data-field="versionHeaderValue"
+              value={draft.versionHeaderValue}
+              oninput={handleFieldChange}
+            />
+          </div>
+        </div>
+        <!-- Max output tokens and temperature: how long and how varied a reply may be -->
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-tokens"
+              >{labels.maxOutputTokens}</label
+            >
+            <input
+              id="aiamf-tokens"
+              type="number"
+              min="1"
+              step="1"
+              class="slds-input"
+              data-field="maxOutputTokens"
+              value={draft.maxOutputTokens}
+              oninput={handleFieldChange}
+            />
+          </div>
+        </div>
+        <div
+          class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small"
+        >
+          <div class="slds-form-element">
+            <label class="slds-form-element__label" for="aiamf-temperature"
+              >{labels.temperature}</label
+            >
+            <input
+              id="aiamf-temperature"
+              type="number"
+              min="0"
+              step="0.1"
+              class="slds-input"
+              data-field="temperature"
+              value={draft.temperature}
+              oninput={handleFieldChange}
+            />
+            <div class="aiamf-help slds-form-element__help">
+              {temperatureHelp}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connection test: sends one short message and shows what came back -->
+      <div class="aiamf-test slds-m-top_small">
+        <div
+          class="aiamf-test-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread"
+        >
+          <span class="aiamf-test-title">{labels.testTitle}</span>
+          <lightning-button
+            variant="neutral"
+            label={testButtonLabel}
+            onclick={handleTest}
+            disabled={isWorking}
+          ></lightning-button>
+        </div>
+        <div class="aiamf-test-body slds-p-around_small">
+          <!-- Testing: shown while the test runs -->
+          <template lwc:if={isTesting}
+            ><p class="aiamf-note">{labels.testing}</p></template
+          >
+          <!-- Result: green when it passed, red when it failed -->
+          <template lwc:if={testView}>
+            <div class={testView.boxClass}>
+              <p class="aiamf-result-headline">
+                <strong>{testView.headline}</strong> {testView.detail}
+              </p>
+            </div>
+            <!-- Hints: what to check after a failure -->
+            <template lwc:if={testView.hasHints}>
+              <ul class="aiamf-hints slds-m-top_x-small">
+                <template for:each={testView.hints} for:item="hint">
+                  <li key={hint.key}>{hint.text}</li>
+                </template>
+              </ul>
+            </template>
+          </template>
+          <!-- Notes: what a test sends, or what a failed test means for saving -->
+          <template lwc:if={showTestNote}
+            ><p class="aiamf-note slds-m-top_x-small">
+              {labels.testNote}
+            </p></template
+          >
+          <template lwc:if={showTestFailureNote}
+            ><p class="aiamf-note slds-m-top_x-small">
+              {labels.testStillSave}
+            </p></template
+          >
+        </div>
+      </div>
+
+      <!-- Error: the reason a call was refused -->
+      <template lwc:if={hasErrorMessage}>
+        <div
+          class="aiamf-result aiamf-result_failure slds-m-top_small"
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      </template>
+    </div>
+
+    <!-- Footer: how many agents use the model, then Cancel and Save -->
+    <div
+      class="aiamf-footer slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"
+    >
+      <span class="aiamf-used-by">{usedByText}</span>
+      <div>
+        <lightning-button
+          label={labels.cancel}
+          onclick={handleCancel}
+          disabled={isWorking}
+        ></lightning-button>
+        <lightning-button
+          variant="brand"
+          label={saveLabel}
+          onclick={handleSave}
+          disabled={isWorking}
+          class="slds-m-left_x-small"
+        ></lightning-button>
+      </div>
+    </div>
+  </div>
+</template>

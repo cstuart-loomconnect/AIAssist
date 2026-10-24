@@ -64,14 +64,15 @@ Presentation and platform:
 1.2.2 AIAgent__c (AI Agent)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depends on: AIModelConfiguration__c.
+Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depends on: AIModelConfiguration__c, AIPromptTemplate__c (a template no longer depends on an agent, so the order of the sections here is only for reading).
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (20):
+Fields (21):
 
 [ ] AIAgentPersona__c (TextArea)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
+[ ] AIPromptTemplate__c (Lookup to AIPromptTemplate__c): the template this agent answers with; blank, or an inactive template, means the default template
 [ ] AccessMode__c (Picklist)
 [ ] AllowConversationResume__c (Checkbox)
 [ ] ConversationLoadTrigger__c (Picklist)
@@ -120,29 +121,28 @@ Trigger and handler:
 1.2.3 AIPromptTemplate__c (AI Prompt Template)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Depends on: AIAgent__c.
+Sharing: ReadWrite (external Private). Name field: Text. Field history: on. Templates are shared: any number of agents point at one through AIAgent__c.AIPromptTemplate__c. Edited on the AI Prompt Templates tab (aiPromptTemplates).
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (11):
+Fields (10):
 
-[ ] AIAgent__c (Lookup to AIAgent__c, required)
-[ ] AIExclusionRules__c (TextArea)
-[ ] AIPrompt__c (LongTextArea)
-[ ] AISystemContext__c (TextArea)
-[ ] AITone__c (TextArea)
-[ ] DeveloperName__c (Text, unique, external id): the name a slash command and the model use to pick this template
-[ ] Description__c (TextArea): tells the model when to pick this template, so a template without one is never offered to it
-[ ] IsActive__c (Checkbox)
-[ ] IsDefault__c (Checkbox): the template used when none is chosen; one active default per Agent
-[ ] MaxResponseLength__c (Number)
-[ ] Version__c (Number)
+[ ] AIExclusionRules__c (LongTextArea 4000): the Never section
+[ ] AIPrompt__c (LongTextArea): the Instructions section
+[ ] AISystemContext__c (LongTextArea 4000): the Context section
+[ ] AITone__c (LongTextArea 4000): the Tone section
+[ ] DeveloperName__c (Text, unique, external id): the API name; a slash command and the tab use it to pick this template
+[ ] Description__c (TextArea)
+[ ] IsActive__c (Checkbox): off means archived
+[ ] IsDefault__c (Checkbox): the fallback template, used by an agent with no template of its own; one active default in the org
+[ ] MaxResponseLength__c (Number): words; sent to the model as "Keep replies under N words."
+[ ] Version__c (Number): raised by the trigger whenever a section or the response length changes; there is no version history
 
 Validation rules (4):
 
 [ ] ActiveRequiresPrompt
 [ ] DefaultRequiresActive
-[ ] DeveloperNameFormat
+[ ] DeveloperNameFormat (letters, numbers and underscores, starting with a letter)
 [ ] MaxResponseLengthPositive
 
 List views (2):
@@ -157,16 +157,41 @@ Compact layouts (1):
 Presentation and platform:
 
 [ ] Page layout: AI Prompt Template Layout
-[ ] Tab
+[ ] Tab (the AI Assist app uses the AI Prompt Templates tab, AIPromptTemplatesTab, instead)
 [ ] Access in each permission set (object, field, tab) is correct
 
 Trigger and handler:
 
 [ ] Trigger AIPromptTemplateTrigger (before insert, before update)
-[ ] AIPromptTemplateTriggerHandler (without sharing): Raises the version when the wording changes, and refuses a second active default for an Agent.
-[ ] AIPromptTemplateService (without sharing): Works out which template answers a message (the one a slash command asked for, else the default) and which others the model may switch to.
+[ ] AIPromptTemplateTriggerHandler (without sharing): Raises the version when the wording or response length changes, and refuses a second active default.
+[ ] AIPromptTemplateService (without sharing): Works out which template answers a message (the one a slash command asked for, else the agent's own, else the default) and splits a template into the sections the model receives.
   [ ] Test: AIPromptTemplateServiceTest
   [ ] Test: AIPromptTemplateTriggerHandlerTest
+
+Tab classes:
+
+[ ] AIPromptTemplatesController, AIPromptTemplatesEditorService, AIPromptTemplatesTryItService, AIPromptMergeFieldService, AIPromptTemplatesDataStructure
+  [ ] Test: AIPromptTemplatesControllerTest, AIPromptTemplatesEditorServiceTest, AIPromptTemplatesTryItServiceTest, AIPromptMergeFieldServiceTest
+
+1.2.3a AIPromptTestMessage__c (AI Prompt Test Message)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ControlledByParent. Name field: AutoNumber. Depends on: AIPromptTemplate__c (master-detail). A message saved on the Try it tab, with the replies from its last run. No tab, layout or trigger.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (8):
+
+[ ] AIPromptTemplate__c (MasterDetail to AIPromptTemplate__c)
+[ ] EditedVerdict__c (Picklist: Better, Worse)
+[ ] LastEditedReply__c (LongTextArea)
+[ ] LastRunOn__c (DateTime)
+[ ] LastRunStatus__c (Picklist: Passed, Failed)
+[ ] LastSavedReply__c (LongTextArea)
+[ ] MessageBody__c (LongTextArea 4000)
+[ ] SavedVerdict__c (Picklist: Better, Worse)
+
+[ ] Access in each permission set (object, field) is correct
 
 1.2.4 AIDataSource__c (AI Data Source)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,7 +200,7 @@ Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (12):
+Fields (14):
 
 [ ] ApexClassName__c (Text)
 [ ] BindingType__c (Picklist)
@@ -183,6 +208,8 @@ Fields (12):
 [ ] DeveloperName__c (Text, required, unique, external ID)
 [ ] InputSchema__c (LongTextArea)
 [ ] IsActive__c (Checkbox)
+[ ] LastTestStatus__c (Picklist)
+[ ] LastTestedOn__c (DateTime)
 [ ] MaxRows__c (Number)
 [ ] OutputDescription__c (TextArea)
 [ ] SOQLTemplate__c (LongTextArea)
@@ -220,7 +247,7 @@ Sharing: ReadWrite (external Private). Name field: AutoNumber. Field history: on
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (13):
+Fields (16):
 
 [ ] ActionName__c (Text, required)
 [ ] ActionType__c (Picklist, required)
@@ -232,9 +259,12 @@ Fields (13):
 [ ] FlowAPIName__c (Text)
 [ ] InputSchema__c (LongTextArea)
 [ ] IsActive__c (Checkbox)
+[ ] LastTestStatus__c (Picklist)
+[ ] LastTestedOn__c (DateTime)
 [ ] OutputDescription__c (TextArea)
 [ ] RequiresConfirmation__c (Checkbox)
 [ ] TargetObject__c (Text)
+[ ] TestedFlowVersion__c (Number)
 
 Validation rules (7):
 
@@ -361,7 +391,7 @@ Sharing: ReadWrite (external Private). Name field: Text. Field history: on.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (13):
+Fields (16):
 
 [ ] AllowedChannels__c (MultiselectPicklist)
 [ ] ConversationExportEnabled__c (Checkbox)
@@ -679,13 +709,14 @@ Sharing: ControlledByParent (external ControlledByParent). Name field: Text. Fie
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (9):
+Fields (10):
 
 [ ] ComplianceGroup__c (Text)
 [ ] DataType__c (Text)
 [ ] FieldAPIName__c (Text)
 [ ] FieldKey__c (Text, unique, external ID)
 [ ] FieldLabel__c (Text)
+[ ] IsOverridden__c (Checkbox, set by the AI PII Registry tab; a sync leaves Is PII, PII Field Type and Compliance Group alone on an overridden row)
 [ ] IsPII__c (Checkbox)
 [ ] LastSynced__c (DateTime)
 [ ] PIIFieldType__c (Text)

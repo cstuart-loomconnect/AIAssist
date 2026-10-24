@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>MessageBody__c</fullName>
+    <description
+  >What the administrator types to the agent when trying the template.</description>
+    <inlineHelpText
+  >The message sent to the model when the template is tried.</inlineHelpText>
+    <label>Message Body</label>
+    <length>4000</length>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
+</CustomField>

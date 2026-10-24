@@ -4,11 +4,11 @@ Component Name: aiAssistSettings
 =================================================================
 =================================================================
 
-Description: The AI Assist Settings tab: change AI Assist Settings and AI Assist UI Settings, and manage AI Usage Policies.
+Description: The AI Assist Settings tab: change AI Assist Settings and AI Assist UI Settings.
 
 Step 1: Load every row of both settings from Apex
-Step 2: Show one tab for AI Assist Settings, one for AI Assist UI Settings and one for AI Usage Policies
-Step 3: Hand each of the two settings tabs to a panel, and show the usage policies in their own component
+Step 2: Show one tab for AI Assist Settings and one for AI Assist UI Settings
+Step 3: Hand each tab to a panel
 Step 4: Load the rows again whenever a panel saves or deletes one
 
 =================================================================
@@ -20,7 +20,7 @@ Version      Author                   Description
 
 import { LightningElement } from "lwc";
 import getSettingsPage from "@salesforce/apex/AIAssistSettingsController.getSettingsPage";
-import { SETTINGS_NAME_ASSIST, SETTINGS_NAME_UI, TAB_ASSIST, TAB_UI, TAB_POLICY, ASSIST_GROUPS, UI_GROUPS, LABELS, NO_ERROR } from "./aiAssistSettingsSettings";
+import { SETTINGS_NAME_ASSIST, SETTINGS_NAME_UI, TAB_ASSIST, TAB_UI, ASSIST_GROUPS, UI_GROUPS, LABELS, NO_ERROR } from "./aiAssistSettingsSettings";
 import { formatErrorMessage } from "./aiAssistSettingsHelper";
 
 // The Settings tab. It loads both settings, shows one panel for each, and reloads when a panel saves or deletes a row.
@@ -34,7 +34,6 @@ export default class AiAssistSettings extends LightningElement {
   uiGroups = UI_GROUPS;
   assistTabValue = TAB_ASSIST;
   uiTabValue = TAB_UI;
-  policyTabValue = TAB_POLICY;
 
   // State of the tab
   assistRows = [];

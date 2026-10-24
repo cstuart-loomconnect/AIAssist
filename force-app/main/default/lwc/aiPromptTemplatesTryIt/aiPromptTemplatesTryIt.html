@@ -1,0 +1,82 @@
+<template>
+  <!-- Panel: the inputs, the two results and the saved messages -->
+  <div class="slds-is-relative slds-p-vertical_small">
+    <template lwc:if={isRunning}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Inputs: the message, the record, the agent and the Run both button -->
+    <div class="aipt-inputs slds-grid slds-wrap slds-grid_vertical-align-start slds-p-around_small">
+      <div class="aipt-input-message">
+        <lightning-input label={labels.message} placeholder={labels.messagePlaceholder} value={messageBody} onchange={handleMessageChange}></lightning-input>
+        <!-- Save message: keeps the text as a saved test message -->
+        <template lwc:if={isSaved}>
+          <lightning-button variant="base" label={labels.saveMessage} onclick={handleSaveMessage} disabled={isSaveDisabled} class="slds-m-top_xx-small"></lightning-button>
+        </template>
+      </div>
+      <template lwc:if={showRecordPicker}>
+        <div class="aipt-input-record">
+          <lightning-record-picker label={labels.onRecord} object-api-name={objectApiName} value={recordId} onchange={handleRecordChange}></lightning-record-picker>
+        </div>
+      </template>
+      <div class="aipt-input-agent">
+        <lightning-combobox label={labels.agent} placeholder={labels.agentPlaceholder} options={agentChoices} value={agentId} onchange={handleAgentChange}></lightning-combobox>
+      </div>
+      <div class="aipt-input-run">
+        <lightning-button variant="brand" label={labels.runBoth} onclick={handleRunBoth} disabled={isRunDisabled}></lightning-button>
+      </div>
+    </div>
+
+    <!-- Results: the saved wording on the left and the edited wording on the right -->
+    <template lwc:if={hasResults}>
+      <div class="aipt-results slds-grid slds-wrap slds-m-top_medium">
+        <template for:each={resultColumns} for:item="column">
+          <div key={column.side} class="aipt-result-column">
+            <!-- Title row: the wording that ran and its time and tokens -->
+            <div class="slds-grid slds-grid_align-spread slds-m-bottom_x-small">
+              <span class="aipt-result-title">{column.title}</span>
+              <span class="aipt-muted slds-text-body_small">{column.metaText}</span>
+            </div>
+            <!-- Reply: what the agent answered, or why the run failed -->
+            <div class={column.resultClass}>{column.text}</div>
+            <!-- Verdict: Better and Worse, for a saved message only -->
+            <div class="slds-m-top_x-small">
+              <lightning-button label={labels.better} icon-name="utility:like" variant={column.betterVariant} data-side={column.side} data-verdict={column.betterValue} onclick={handleVerdict} disabled={column.verdictDisabled}></lightning-button>
+              <lightning-button label={labels.worse} icon-name="utility:dislike" variant={column.worseVariant} data-side={column.side} data-verdict={column.worseValue} onclick={handleVerdict} disabled={column.verdictDisabled} class="slds-m-left_x-small"></lightning-button>
+            </div>
+          </div>
+        </template>
+      </div>
+      <template lwc:if={showVerdictHint}>
+        <p class="aipt-muted slds-text-body_small slds-m-top_x-small">{labels.verdictHint}</p>
+      </template>
+    </template>
+
+    <!-- Saved messages: a card with one row for each saved test message -->
+    <div class="aipt-card slds-m-top_medium">
+      <div class="aipt-card-head slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-around_small">
+        <span class="aipt-result-title">{labels.savedMessages}</span>
+        <template lwc:if={hasMessages}>
+          <lightning-button label={runAllLabel} onclick={handleRunAll} disabled={isRunning}></lightning-button>
+        </template>
+      </div>
+      <template lwc:if={hasMessages}>
+        <p class="aipt-muted slds-text-body_small slds-p-horizontal_small slds-p-top_small">{labels.hintMessages}</p>
+        <ul>
+          <template for:each={messageViews} for:item="message">
+            <li key={message.key} class="aipt-message-row slds-grid slds-grid_vertical-align-center slds-p-around_small">
+              <span class="aipt-message-text slds-col">{message.messageBody}</span>
+              <span class={message.statusClass}>{message.statusLabel}</span>
+              <span class="aipt-muted slds-text-body_small aipt-message-time">{message.runTimeText}</span>
+              <lightning-button label={message.runLabel} data-id={message.testMessageId} onclick={handleRunMessage} disabled={message.isDisabled}></lightning-button>
+              <lightning-button label={labels.delete} variant="destructive-text" data-id={message.testMessageId} onclick={handleDeleteMessage} disabled={message.isDisabled}></lightning-button>
+            </li>
+          </template>
+        </ul>
+      </template>
+      <template lwc:else>
+        <p class="aipt-muted slds-p-around_small">{labels.noMessages}</p>
+      </template>
+    </div>
+  </div>
+</template>

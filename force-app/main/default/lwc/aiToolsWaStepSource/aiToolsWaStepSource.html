@@ -1,0 +1,79 @@
+<template>
+  <!-- Step: what is listed, and the list -->
+  <div class="slds-is-relative">
+    <!-- Busy: shown while the list loads -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Intro: which flows or classes are listed -->
+    <p class="aitwa-intro">{introText}</p>
+
+    <!-- Error: shown when a call failed -->
+    <template lwc:if={hasError}>
+      <div class="slds-notify slds-notify_alert slds-alert_error slds-m-bottom_small" role="alert">{errorMessage}</div>
+    </template>
+
+    <!-- Flows: one row for each active flow, with a radio button -->
+    <template lwc:if={showFlows}>
+      <table class="aitwa-table slds-table">
+        <thead>
+          <tr>
+            <th scope="col" class="aitwa-radio-cell"></th>
+            <th scope="col">{labels.columnFlow}</th>
+            <th scope="col">{labels.columnVersion}</th>
+            <th scope="col">{labels.columnInputs}</th>
+            <th scope="col">{labels.columnModified}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template for:each={flowRows} for:item="row">
+            <tr key={row.key} class={row.rowClass} data-key={row.key} onclick={handleFlowPick}>
+              <td class="aitwa-radio-cell"><input type="radio" name="flow" checked={row.isSelected} aria-label={row.label} /></td>
+              <td>
+                <div class="aitwa-name">{row.label}</div>
+                <div class="aitwa-code">{row.apiName}</div>
+              </td>
+              <td>{row.versionLabel}</td>
+              <td>{row.inputCount}</td>
+              <td>{row.modifiedLabel}</td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+
+    <!-- No flows: shown when there is nothing to pick -->
+    <template lwc:if={showNoFlows}><p class="aitwa-empty">{labels.noFlows}</p></template>
+
+    <!-- Classes: one row for each class that implements the interface, with a radio button -->
+    <template lwc:if={showClasses}>
+      <table class="aitwa-table slds-table">
+        <thead>
+          <tr>
+            <th scope="col" class="aitwa-radio-cell"></th>
+            <th scope="col">{labels.columnClass}</th>
+            <th scope="col">{labels.columnDeclares}</th>
+            <th scope="col">{labels.columnCallouts}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template for:each={classRows} for:item="row">
+            <tr key={row.key} class={row.rowClass} data-key={row.key} onclick={handleClassPick}>
+              <td class="aitwa-radio-cell"><input type="radio" name="class" checked={row.isSelected} aria-label={row.className} /></td>
+              <td class="aitwa-code aitwa-name">{row.className}</td>
+              <td>{row.declaresLabel}</td>
+              <td>{row.calloutsLabel}</td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+
+    <!-- No classes: shown when no class implements the interface -->
+    <template lwc:if={showNoClasses}><p class="aitwa-empty">{labels.noClasses}</p></template>
+
+    <!-- Callout warning: shown when the picked class says it does something that cannot be undone -->
+    <template lwc:if={showCalloutWarning}><div class="aitwa-note aitwa-note_warning">{labels.calloutWarning}</div></template>
+  </div>
+</template>

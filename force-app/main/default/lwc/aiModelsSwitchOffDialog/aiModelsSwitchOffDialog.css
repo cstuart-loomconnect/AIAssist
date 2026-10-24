@@ -1,0 +1,45 @@
+/* The dialog box: a fixed width that shrinks on a narrow screen. SLDS modal sizes are wider than this. */
+.aiamd-container {
+  width: 50rem;
+  max-width: 90vw;
+}
+
+/* The content: room under the table so an open choice list is not cut off. */
+.aiamd-content {
+  min-height: 16rem;
+}
+
+/* The agent table: a soft grey header bar with bold text. */
+.aiamd-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* An agent name: bold dark text. */
+.aiamd-strong {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* A note in the dialog: a rounded box. */
+.aiamd-note {
+  margin-bottom: 0;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+/* A note that informs: accent colour on a tint. */
+.aiamd-note_info {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-line);
+  color: var(--aia-accent);
+}
+
+/* A note that blocks or refuses: red box with red text. */
+.aiamd-note_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}

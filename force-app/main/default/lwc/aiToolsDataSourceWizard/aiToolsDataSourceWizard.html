@@ -1,0 +1,63 @@
+<template>
+  <!-- Wizard: one dark card that holds the header, the stepper, the step and the buttons -->
+  <div class="aiadw-card slds-is-relative">
+    <!-- Busy: shown while a saved data source loads or a save runs -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Header: the name and a pill on the left, and whether the draft is kept on the right -->
+    <div class="aiadw-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+      <div class="slds-grid slds-grid_vertical-align-center">
+        <h2 class="aiadw-name slds-m-around_none">{headerName}</h2>
+        <span class={pillClass}>{pillLabel}</span>
+      </div>
+      <span class="aiadw-status slds-text-body_small">{statusText}</span>
+    </div>
+
+    <!-- Stepper: one circle and name for each step, joined by a line -->
+    <div class="aiadw-stepper slds-grid slds-grid_vertical-align-center">
+      <template for:each={stepViews} for:item="item">
+        <div key={item.number} class="aiadw-step slds-grid slds-grid_vertical-align-center">
+          <button type="button" class="aiadw-step-button slds-grid slds-grid_vertical-align-center" data-step={item.number} disabled={item.isDisabled} onclick={handleStepClick}>
+            <span class={item.circleClass}
+              ><template lwc:if={item.isDone}><lightning-icon icon-name="utility:check" size="xx-small" variant="inverse"></lightning-icon></template><template lwc:if={item.isError}>!</template><template lwc:if={item.isNumber}>{item.number}</template></span
+            >
+            <span class={item.nameClass}>{item.label}</span>
+          </button>
+          <span class="aiadw-line"></span>
+        </div>
+      </template>
+    </div>
+
+    <!-- Error: shown when a load or a save failed, or a change failed its test -->
+    <template lwc:if={hasError}>
+      <div class="slds-notify slds-notify_alert slds-alert_error slds-m-around_small" role="alert">{errorMessage}</div>
+    </template>
+
+    <!-- Step: only the chosen step is built -->
+    <div class="aiadw-body">
+      <template lwc:if={isTypeStep}><c-ai-tools-ds-type draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-ds-type></template>
+      <template lwc:if={isSoqlStep}><c-ai-tools-ds-query draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-ds-query></template>
+      <template lwc:if={isApexStep}><c-ai-tools-ds-apex draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-ds-apex></template>
+      <template lwc:if={isInputsStep}><c-ai-tools-ds-inputs draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-ds-inputs></template>
+      <template lwc:if={isTestStep}><c-ai-tools-ds-test draft={draft} detail={testDetail} result={testResult} ondraftchange={handleDraftChange} ontestresult={handleTestResult}></c-ai-tools-ds-test></template>
+      <template lwc:if={isDetailsStep}><c-ai-tools-ds-details draft={draft} test-history-parts={testHistoryParts} test-failure-message={testFailureMessage} ondraftchange={handleDraftChange}></c-ai-tools-ds-details></template>
+    </div>
+
+    <!-- Footer: Cancel on the left, Back and Next or Save on the right -->
+    <div class="aiadw-footer slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+      <lightning-button label={labels.cancel} onclick={handleCancel}></lightning-button>
+      <div class="slds-grid">
+        <template lwc:if={showBack}><lightning-button label={labels.back} onclick={handleBack} class="slds-m-right_x-small"></lightning-button></template>
+        <template lwc:if={isLastStep}><lightning-button variant="brand" label={saveLabel} onclick={handleSave} disabled={isSaveDisabled}></lightning-button></template>
+        <template lwc:else><lightning-button variant="brand" label={labels.next} onclick={handleNext} disabled={isNextDisabled}></lightning-button></template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: asks before a change to a data source that agents use is saved -->
+  <template lwc:if={isDialogOpen}>
+    <c-ai-tools-ds-save-dialog source-name={draft.sourceName} agents={agentUses} is-saving={isSaving} oncancel={handleDialogCancel} onconfirm={handleDialogConfirm}></c-ai-tools-ds-save-dialog>
+  </template>
+</template>

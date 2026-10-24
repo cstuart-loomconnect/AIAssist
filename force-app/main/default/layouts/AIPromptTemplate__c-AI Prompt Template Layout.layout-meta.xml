@@ -62,10 +62,6 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Required</behavior>
-                <field>AIAgent__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Required</behavior>
                 <field>AITone__c</field>
             </layoutItems>
         </layoutColumns>

@@ -1,0 +1,60 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aipt-publish-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aipt-container">
+      <!-- Title: what is being published -->
+      <header class="slds-modal__header">
+        <h2 id="aipt-publish-title" class="slds-modal__title slds-hyphenate">{title}</h2>
+      </header>
+
+      <!-- Content: who it affects, what changed and the note about open conversations -->
+      <div class="slds-modal__content slds-p-around_medium">
+        <template lwc:if={intro}><p class="slds-m-bottom_small">{intro}</p></template>
+
+        <!-- Agents: one row for each agent that uses the template -->
+        <template lwc:if={hasAgents}>
+          <table class="aipt-table slds-table slds-table_bordered slds-table_cell-buffer">
+            <thead>
+              <tr>
+                <th scope="col">{labels.columnAgent}</th>
+                <th scope="col">{labels.columnUsers}</th>
+                <th scope="col">{labels.columnOpen}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={agentViews} for:item="agent">
+                <tr key={agent.key}>
+                  <td class="aipt-strong">{agent.agentName}</td>
+                  <td>{agent.userCount}</td>
+                  <td>{agent.openCount}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+        <template lwc:else>
+          <p class="aipt-muted">{labels.noAgents}</p>
+        </template>
+
+        <!-- Summary: what changed and whether it was tested -->
+        <dl class="slds-grid slds-wrap slds-m-top_small">
+          <dt class="aipt-muted slds-size_1-of-4">{labels.changed}</dt>
+          <dd class="slds-size_3-of-4 slds-m-bottom_x-small">{changedText}</dd>
+          <dt class="aipt-muted slds-size_1-of-4">{labels.tested}</dt>
+          <dd class="slds-size_3-of-4">{testedText}</dd>
+        </dl>
+
+        <!-- Note: what happens to open conversations -->
+        <div class="aipt-note slds-m-top_small slds-p-around_small">{labels.info}</div>
+      </div>
+
+      <!-- Buttons: Cancel and Publish -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={confirmLabel} onclick={handleConfirm} disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

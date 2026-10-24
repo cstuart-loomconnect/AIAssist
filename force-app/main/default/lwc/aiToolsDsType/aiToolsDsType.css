@@ -1,0 +1,58 @@
+/* A question above a row of choices: bold dark text. */
+.aiadt-question {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* A row of choices: two cards side by side with a gap. SLDS has no 16px gap utility for a wrapping row. */
+.aiadt-choices {
+  gap: 16px;
+}
+
+/* One choice: a bordered card that grows to share the row. */
+.aiadt-choice {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 320px;
+  gap: 4px;
+  padding: 16px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A choice the pointer is over: a darker border. */
+.aiadt-choice:hover {
+  border-color: var(--aia-line-strong);
+}
+
+/* A choice reached by keyboard: an accent outline. */
+.aiadt-choice:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* The choice that is on: accent border and a soft tint. */
+.aiadt-choice_selected,
+.aiadt-choice_selected:hover {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The title of a choice: bold dark text. */
+.aiadt-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* The sentence under a title: muted text. */
+.aiadt-text {
+  font-size: 14px;
+  color: var(--aia-muted);
+}

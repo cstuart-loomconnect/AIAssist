@@ -1,0 +1,70 @@
+/* The card: white with a soft border and rounded corners. SLDS has no utility for a bordered card in this colour. */
+.aipt-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The header band: dark ink with white text. The 12px gap and padding are not SLDS steps. */
+.aipt-card-header {
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The name and the pills: a gap between them. */
+.aipt-card-title-group {
+  gap: 12px;
+}
+
+/* The template name: white and a little larger than body text. */
+.aipt-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The header buttons sit in a row with a gap. */
+.aipt-card-buttons {
+  gap: 8px;
+}
+
+/* A header button: white text with a light outline on the dark band. SLDS buttons are made for a light background. */
+.aipt-header-button {
+  padding: 4px 14px;
+  background: transparent;
+  border: 1px solid #d5d7de;
+  border-radius: 4px;
+  color: var(--aia-surface);
+  font-weight: 600;
+}
+
+/* A header button under the pointer: a soft light wash. */
+.aipt-header-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--aia-surface);
+}
+
+/* The pills: small rounded labels. SLDS badges have a different size and shape. */
+.aipt-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A live or default template: green. */
+.aipt-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An inactive template: grey with a thin line. */
+.aipt-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}

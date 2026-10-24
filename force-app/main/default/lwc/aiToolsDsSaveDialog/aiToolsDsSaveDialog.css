@@ -1,0 +1,13 @@
+/* The dialog box: a fixed width that shrinks on a narrow screen. SLDS modal sizes are wider than this. */
+.aiadsd-container {
+  width: 50rem;
+  max-width: 90vw;
+}
+
+/* The note about the test: a soft blue box with accent text. */
+.aiadsd-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}

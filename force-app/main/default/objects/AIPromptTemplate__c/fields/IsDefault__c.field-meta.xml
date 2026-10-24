@@ -3,9 +3,9 @@
     <fullName>IsDefault__c</fullName>
     <defaultValue>false</defaultValue>
     <description
-  >Marks the template used when a message does not select one. An Agent can have only one active default. An Agent with exactly one active template uses it without this being set.</description>
+  >Marks the fallback template: the one an agent uses when it has no template of its own, or its template is inactive. Only one active template in the org can be the default.</description>
     <inlineHelpText
-  >Tick this on the template that should answer when the user has not chosen one (no slash command and the model has not picked another). Only one active template per Agent can be the default.</inlineHelpText>
+  >Tick this on the template that answers for any agent that has no template of its own. Only one active template can be the default.</inlineHelpText>
     <label>Is Default</label>
     <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>

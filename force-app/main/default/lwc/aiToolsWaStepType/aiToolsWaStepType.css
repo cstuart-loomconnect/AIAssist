@@ -1,0 +1,94 @@
+/* A question above a group of choices: bold dark text. */
+.aitwa-question {
+  margin: 20px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The cards sit in a row that shares the width, with a gap SLDS has no utility for. */
+.aitwa-cards {
+  gap: 16px;
+}
+
+/* One card: a bordered box with a title and a line of detail. */
+.aitwa-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The chosen card: an accent border and a tinted background. */
+.aitwa-card_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The title of a card: bold dark text. */
+.aitwa-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The detail of a card: muted text. */
+.aitwa-card-detail {
+  font-size: 14px;
+  color: var(--aia-muted);
+}
+
+/* Read only and Write: two joined buttons in one bordered strip. */
+.aitwa-choices {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One of the two buttons: plain text. */
+.aitwa-choice {
+  min-width: 170px;
+  padding: 12px 20px;
+  border: 0;
+  background: var(--aia-surface);
+  color: var(--aia-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The chosen button: the accent colour with white text. */
+.aitwa-choice_selected {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A note under the choices: a tinted box with a border. */
+.aitwa-note {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* A warning note: orange. */
+.aitwa-note_warning {
+  background: var(--aia-warning-tint);
+  border: 1px solid var(--aia-warning);
+  color: var(--aia-warning);
+}
+
+/* An information note: the accent tint. */
+.aitwa-note_info {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-accent);
+}

@@ -9,7 +9,7 @@ Description: Runs one Workflow Action a user has chosen to run from a suggestion
 Step 1: Check the application is on and the user may run Workflow Actions on this agent
 Step 2: Read the action in system mode and check it is active and assigned to the agent
 Step 3: Check the user has confirmed, when the action requires it
-Step 4: Keep only the inputs the action declares, and set recordId from the server
+Step 4: Keep only the inputs the action declares, fill the ones the server owns, and set recordId from the server
 Step 5: Run the Apex class, or check the user can reach every record and start the Flow
 Step 6: Record a Success, Failed or Blocked step on the reply the action was suggested on, then return the output or throw the refusal
 Step 7: For a Screen Flow, make the same checks, hand the window the flow and its inputs, and record how it ended
@@ -46,6 +46,7 @@ public without sharing class AIWorkflowActionDispatcher {
 
             // [3] Keep only the inputs the action declares; the browser can send anything
             Map<String, Object> parameters = filterDeclaredInputs(action.InputSchema__c, inputParameters, workflowActionId);
+            parameters = applyServerFilledInputs(action.InputSchema__c, parameters);
 
             // [4] Remove recordId: it is the conversation's record and nothing else, even when the schema declares an input of that name
             for (String declaredName : parameters.keySet().clone()) {
@@ -143,7 +144,7 @@ public without sharing class AIWorkflowActionDispatcher {
                 }
 
                 // [15] Start the Flow and read its output
-                Flow.Interview interview = Flow.Interview.createInterview(action.FlowAPIName__c, flowInputs);
+                Flow.Interview interview = createFlowInterview(action.FlowAPIName__c, flowInputs);
                 interview.start();
                 output = interview.getVariableValue(FLOW_OUTPUT_VARIABLE_NAME);
 
@@ -200,6 +201,7 @@ public without sharing class AIWorkflowActionDispatcher {
 
         // [4] Keep only the declared inputs, and never a recordId from the browser
         Map<String, Object> parameters = filterDeclaredInputs(action.InputSchema__c, inputParameters, workflowActionId);
+        parameters = applyServerFilledInputs(action.InputSchema__c, parameters);
 
         for (String declaredName : parameters.keySet().clone()) {
 
@@ -305,6 +307,44 @@ public without sharing class AIWorkflowActionDispatcher {
         AIExecutionStepRecorder.recordWorkflowActionStep(messageId, getAssignedAction(workflowActionId, agentId), recordId, AIAssistApplicationConstants.EXECUTION_STEP_STATUS_CANCELLED, false, 0);
     }
 
+    // Fills the inputs the schema says the server owns, whatever the browser sent. x-source "user" is always the signed-in user, "fixed" is always x-value, and "page" is never taken from the browser. A schema without x-source keys changes nothing.
+    public static Map<String, Object> applyServerFilledInputs(String inputSchema, Map<String, Object> parameters) {
+
+        // [1] Start from what was declared and submitted
+        Map<String, Object> filledParameters = parameters == null ? new Map<String, Object>() : new Map<String, Object>(parameters);
+
+        if (String.isBlank(inputSchema)) return filledParameters;
+
+        try {
+
+            // [2] Read the properties the schema declares
+            Object properties = ((Map<String, Object>) JSON.deserializeUntyped(inputSchema)).get('properties');
+
+            if (!(properties instanceof Map<String, Object>)) return filledParameters;
+
+            // [3] Overwrite or remove each input the server owns
+            for (String propertyName : ((Map<String, Object>) properties).keySet()) {
+
+                Object property = ((Map<String, Object>) properties).get(propertyName);
+
+                if (!(property instanceof Map<String, Object>)) continue;
+
+                Object source = ((Map<String, Object>) property).get(AIAssistApplicationConstants.WORKFLOW_SCHEMA_SOURCE_KEY);
+
+                if (source == AIAssistApplicationConstants.WORKFLOW_INPUT_SOURCE_USER) filledParameters.put(propertyName, UserInfo.getUserId());
+                else if (source == AIAssistApplicationConstants.WORKFLOW_INPUT_SOURCE_FIXED) filledParameters.put(propertyName, ((Map<String, Object>) property).get(AIAssistApplicationConstants.WORKFLOW_SCHEMA_VALUE_KEY));
+                else if (source == AIAssistApplicationConstants.WORKFLOW_INPUT_SOURCE_PAGE) filledParameters.remove(propertyName);
+            }
+
+        } catch (Exception ex) {
+            // A malformed schema declares nothing, and filterDeclaredInputs has already passed nothing.
+            return filledParameters;
+        }
+
+        // [4] Return the inputs
+        return filledParameters;
+    }
+
     // Keeps only the inputs InputSchema__c declares as properties. The values come from the browser, which can send anything, so a key the action never asked for is not passed on. A blank or malformed schema declares nothing, so nothing is passed. Dropped names are logged (never their values, which may be personal data).
     @TestVisible
     private static Map<String, Object> filterDeclaredInputs(String inputSchema, Map<String, Object> submittedInputs, Id workflowActionId) {
@@ -379,5 +419,19 @@ public without sharing class AIWorkflowActionDispatcher {
 
         // [3] Return it, or null when there is none
         return actions.isEmpty() ? null : actions[0];
+    }
+
+    // Creates the interview of a flow. A flow that comes from a managed package must be created with its namespace, or the platform says the type is invalid.
+    public static Flow.Interview createFlowInterview(String flowApiName, Map<String, Object> flowInputs) {
+
+        // [1] Find the namespace of the active flow, if it has one
+        String apiName = flowApiName.trim();
+        List<FlowDefinitionView> flows = [SELECT NamespacePrefix FROM FlowDefinitionView WHERE ApiName = :apiName AND IsActive = TRUE WITH SYSTEM_MODE LIMIT 1];
+        String namespacePrefix = flows.isEmpty() ? null : flows[0].NamespacePrefix;
+
+        // [2] Create it with the namespace when there is one
+        if (String.isNotBlank(namespacePrefix)) return Flow.Interview.createInterview(namespacePrefix, apiName, flowInputs);
+
+        return Flow.Interview.createInterview(apiName, flowInputs);
     }
 }

@@ -1,0 +1,37 @@
+<template>
+  <!-- Card: a white box that holds the button, the search box and the rows -->
+  <div class="aipt-card">
+    <!-- Top: the New template button and the search box -->
+    <div class="slds-p-around_small">
+      <lightning-button variant="brand" label={labels.newTemplate} onclick={handleNewTemplate} class="aipt-new-button"></lightning-button>
+      <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchText} onchange={handleSearchChange} class="slds-m-top_small"></lightning-input>
+    </div>
+
+    <!-- Rows: the template that is not saved yet, then one row per template -->
+    <div class="aipt-rows">
+      <template lwc:if={isNewSelected}>
+        <div class={newRowClass}>
+          <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+            <span class="aipt-row-name">{labels.newRowName}</span>
+          </div>
+          <span class="aipt-row-detail slds-text-body_small">{labels.newRowDetail}</span>
+        </div>
+      </template>
+
+      <template for:each={rowViews} for:item="row">
+        <button key={row.key} type="button" class={row.rowClass} data-id={row.templateId} onclick={handleRowClick}>
+          <span class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center aipt-row-top">
+            <span class="aipt-row-name">{row.templateName}</span>
+            <span class={row.statusClass}>{row.statusLabel}</span>
+          </span>
+          <span class="aipt-row-detail slds-text-body_small">{row.detailLine}</span>
+        </button>
+      </template>
+
+      <!-- No matches: shown when the search hides every row -->
+      <template lwc:if={showNoMatches}>
+        <p class="aipt-empty slds-p-around_small">{labels.noMatches}</p>
+      </template>
+    </div>
+  </div>
+</template>

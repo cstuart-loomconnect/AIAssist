@@ -23,11 +23,12 @@ Version      Author                   Description
     // testScenario3: Change the wording on 201 templates in bulk -> every one is versioned once with no queries in the update.
     // testScenario4: Settings switched off, wording changed, and the handler called with null input -> nothing is versioned and nothing is thrown.
     // testScenario5: The handler throws unexpectedly during a wording change -> the version is not raised and one platform log is written.
-    // testScenario6: A second active default is inserted for an agent that already has one, with a default for another agent beside it -> only the second default for the same agent is refused with the label.
-    // testScenario7: Two defaults for one agent are inserted together -> the first is saved and the second is refused.
+    // testScenario6: A second active default is inserted while one exists, with a template that is not a default beside it -> only the second default is refused with the label.
+    // testScenario7: Two defaults are inserted together -> the first is saved and the second is refused.
     // testScenario8: The default is moved by unticking it and ticking another, and then a template is ticked while another is still the default -> the move is saved and the clash is refused, and an unrelated edit to the default is never refused.
     // testScenario9: The default rule throws unexpectedly -> the second default is not refused and one platform log names the method.
-    // testScenario10: A default that is not active, a Developer Name with capitals or spaces, and a valid Developer Name are inserted -> the first two are refused by their validation rules and the valid one is saved.
+    // testScenario10: A default that is not active, a Developer Name with spaces, and a Developer Name with capitals are inserted -> the first two are refused by their validation rules and the capitals are saved.
+    // testScenario11: Change only the response length on a template -> the version goes up by one.
 
     @TestSetup static void setup() {
 
@@ -194,37 +195,31 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create two agents and give the first a default template
-            AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-            List<AIAgent__c> agents = AIAssistTestDataFactory.createAIAgents(2, model.Id, true);
-
-            AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 1, false)[0];
+            // [1] Create a default template, a second default and an ordinary template
+            AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, false)[0];
             firstDefault.IsDefault__c = true;
             insert firstDefault;
 
-            AIPromptTemplate__c clashingDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[0].Id, 1, false)[0];
+            AIPromptTemplate__c clashingDefault = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, false)[0];
             clashingDefault.IsDefault__c = true;
 
-            AIPromptTemplate__c otherAgentsDefault = AIAssistTestDataFactory.createAIPromptTemplates(agents[1].Id, 1, false)[0];
-            otherAgentsDefault.IsDefault__c = true;
+            AIPromptTemplate__c ordinaryTemplate = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, false)[0];
 
             List<Database.SaveResult> results;
 
-            // [2] Insert a second default for the first agent and a default for the second agent
+            // [2] Insert the second default and the ordinary template
             Test.startTest();
-                results = Database.insert(new List<AIPromptTemplate__c>{ clashingDefault, otherAgentsDefault }, false);
+                results = Database.insert(new List<AIPromptTemplate__c>{ clashingDefault, ordinaryTemplate }, false);
             Test.stopTest();
 
-            // [3] Count the active defaults each agent has
-            Integer firstAgentDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agents[0].Id AND IsDefault__c = TRUE];
-            Integer secondAgentDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agents[1].Id AND IsDefault__c = TRUE];
+            // [3] Count the defaults
+            Integer defaultCount = [SELECT COUNT() FROM AIPromptTemplate__c WHERE IsDefault__c = TRUE];
 
             // [4] Check only the clash was refused
-            Assert.isFalse(results[0].isSuccess(), 'A second default for the same agent should be refused.');
-            Assert.areEqual(Label.AI_Error_Prompt_Template_Default_Exists, results[0].getErrors()[0].getMessage(), 'The refusal should say the agent already has a default.');
-            Assert.isTrue(results[1].isSuccess(), 'A default for another agent should be saved.');
-            Assert.areEqual(1, firstAgentDefaults, 'The first agent should keep one default.');
-            Assert.areEqual(1, secondAgentDefaults, 'The second agent should have its own default.');
+            Assert.isFalse(results[0].isSuccess(), 'A second default should be refused.');
+            Assert.areEqual(Label.AI_Error_Prompt_Template_Default_Exists, results[0].getErrors()[0].getMessage(), 'The refusal should say there is already a default.');
+            Assert.isTrue(results[1].isSuccess(), 'A template that is not a default should be saved.');
+            Assert.areEqual(1, defaultCount, 'There should still be one default.');
         }
     }
 
@@ -233,10 +228,8 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an agent and two default templates for it
-            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-
-            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+            // [1] Create two default templates
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(null, 2, false);
             templates[0].IsDefault__c = true;
             templates[1].IsDefault__c = true;
 
@@ -248,7 +241,7 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Count the defaults saved
-            Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+            Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE IsDefault__c = TRUE];
 
             // [4] Check the first was saved and the second refused
             Assert.isTrue(results[0].isSuccess(), 'The first default should be saved.');
@@ -262,10 +255,8 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an agent with a default and a second active template
-            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-
-            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 2, false);
+            // [1] Create a default and a second active template
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(null, 2, false);
             templates[0].IsDefault__c = true;
             insert templates;
 
@@ -287,7 +278,7 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Read back which template is the default
-            AIPromptTemplate__c savedDefault = [SELECT Id FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+            AIPromptTemplate__c savedDefault = [SELECT Id FROM AIPromptTemplate__c WHERE IsDefault__c = TRUE];
 
             // [4] Check the unrelated edit and the move were saved and the clash was refused
             Assert.isTrue(unrelatedEditResults[0].isSuccess(), 'Editing the default for another reason should never be refused.');
@@ -302,14 +293,12 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an agent with a default, and force the default rule to throw
-            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-
-            AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+            // [1] Create a default, and force the default rule to throw
+            AIPromptTemplate__c firstDefault = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, false)[0];
             firstDefault.IsDefault__c = true;
             insert firstDefault;
 
-            AIPromptTemplate__c secondDefault = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 1, false)[0];
+            AIPromptTemplate__c secondDefault = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, false)[0];
             secondDefault.IsDefault__c = true;
 
             AIPromptTemplateTriggerHandler.isTestDefaultRuleExceptionThrown = true;
@@ -320,7 +309,7 @@ Version      Author                   Description
             Test.stopTest();
 
             // [3] Read the defaults and the logs back
-            Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE AIAgent__c = :agent.Id AND IsDefault__c = TRUE];
+            Integer savedDefaults = [SELECT COUNT() FROM AIPromptTemplate__c WHERE IsDefault__c = TRUE];
             List<AIPlatformLog__c> logs = [SELECT ClassName__c, MethodName__c FROM AIPlatformLog__c];
 
             // [4] Check the rule was not applied and one log names the method
@@ -337,14 +326,12 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Create an agent and three templates: an inactive default, a bad Developer Name and a good one
-            AIAgent__c agent = AIAssistTestDataFactory.createAIAgents(1, AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0].Id, true)[0];
-
-            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(agent.Id, 3, false);
+            // [1] Create three templates: an inactive default, a Developer Name with spaces and one with capitals
+            List<AIPromptTemplate__c> templates = AIAssistTestDataFactory.createAIPromptTemplates(null, 3, false);
             templates[0].IsActive__c = false;
             templates[0].IsDefault__c = true;
             templates[1].DeveloperName__c = 'Draft Client Email';
-            templates[2].DeveloperName__c = 'draft_client_email';
+            templates[2].DeveloperName__c = 'MortgageAdviser';
 
             List<Database.SaveResult> results;
 
@@ -353,10 +340,33 @@ Version      Author                   Description
                 results = Database.insert(templates, false);
             Test.stopTest();
 
-            // [3] Check the first two were refused and the good one saved
+            // [3] Check the first two were refused and the capitals saved
             Assert.isFalse(results[0].isSuccess(), 'A default that is not active should be refused.');
-            Assert.isFalse(results[1].isSuccess(), 'A Developer Name with capitals and spaces should be refused.');
-            Assert.isTrue(results[2].isSuccess(), 'A valid Developer Name should be saved.');
+            Assert.isFalse(results[1].isSuccess(), 'A Developer Name with spaces should be refused.');
+            Assert.isTrue(results[2].isSuccess(), 'A Developer Name with capitals and no spaces should be saved.');
+        }
+    }
+
+    @IsTest static void testScenario11() {
+
+        User superUser = AIAssistTestDataFactory.createSuperUser();
+
+        System.runAs(superUser) {
+            // [1] Create a template and note its starting version
+            AIPromptTemplate__c template = AIAssistTestDataFactory.createAIPromptTemplates(null, 1, true)[0];
+            Decimal startVersion = [SELECT Version__c FROM AIPromptTemplate__c WHERE Id = :template.Id].Version__c;
+
+            // [2] Change only the response length
+            Test.startTest();
+                template.MaxResponseLength__c = 250;
+                update template;
+            Test.stopTest();
+
+            // [3] Read the template back
+            AIPromptTemplate__c saved = [SELECT Version__c FROM AIPromptTemplate__c WHERE Id = :template.Id];
+
+            // [4] Check the version went up by one
+            Assert.areEqual(startVersion + 1, saved.Version__c, 'A new response length changes what the model is told, so the version goes up.');
         }
     }
 }

@@ -1,0 +1,91 @@
+/* The row of tools above the table: a gap between the search box and the filters. SLDS has no 12px gap utility. */
+.aiprf-tools {
+  gap: 12px;
+}
+
+/* The search box: wide enough to type in, and it shrinks on a narrow screen. */
+.aiprf-search {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+/* The table sits in a bordered rounded box that scrolls sideways on a narrow screen. SLDS has no utility for this look. */
+.aiprf-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The table head: a soft grey bar with bold text. */
+.aiprf-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* A field label: bold dark text. */
+.aiprf-strong {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* An API name, a masking strategy: small fixed-width text in a muted colour. */
+.aiprf-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The dash shown where a field has no PII type: muted text. */
+.aiprf-muted {
+  color: var(--aia-muted);
+}
+
+/* The PII type box: it keeps a steady width so the table does not jump. */
+.aiprf-table select {
+  min-width: 11rem;
+}
+
+/* The pill in the Source column: a small rounded label that does not shrink. SLDS badges have a different size and shape. */
+.aiprf-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The Auto pill: grey. */
+.aiprf-pill_auto {
+  background: var(--aia-bg);
+  color: var(--aia-muted);
+  border: 1px solid var(--aia-line);
+}
+
+/* The Overridden pill: orange. */
+.aiprf-pill_overridden {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The Reset button next to an overridden pill: a small link in the accent colour. */
+.aiprf-reset {
+  color: var(--aia-accent);
+  font-size: 12px;
+}
+
+/* The message when no field matches: muted text. */
+.aiprf-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The footnote under the table: an accent note on a tint. */
+.aiprf-note {
+  margin-bottom: 0;
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}
