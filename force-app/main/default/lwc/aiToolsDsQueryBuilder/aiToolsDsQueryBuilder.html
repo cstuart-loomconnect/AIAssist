@@ -1,0 +1,83 @@
+<template>
+  <!-- Object and max rows: the object is picked by typing, and the max rows is the LIMIT -->
+  <div class="aiadqb-top slds-grid slds-wrap">
+    <div class="aiadqb-object slds-is-relative">
+      <lightning-input label={labels.object} value={objectDisplay} placeholder={labels.objectPlaceholder} autocomplete="off" onchange={handleObjectInput} onblur={handleObjectBlur}></lightning-input>
+      <!-- Object matches: shown while the admin types -->
+      <template lwc:if={showObjectList}>
+        <ul class="aiadqb-object-list" role="listbox">
+          <template lwc:if={hasObjectMatches}>
+            <template for:each={objectMatches} for:item="item">
+              <li key={item.apiName} class="aiadqb-object-item" role="option" data-api-name={item.apiName} onmousedown={handleObjectPick}><span class="aiadqb-object-label">{item.label}</span><span class="aiadqb-api">{item.apiName}</span></li>
+            </template>
+          </template>
+          <template lwc:else><li class="aiadqb-object-none">{labels.noObjects}</li></template>
+        </ul>
+      </template>
+    </div>
+    <div class="aiadqb-max-rows">
+      <lightning-input type="number" label={labels.maxRows} value={maxRows} min="1" max="200" step="1" onchange={handleMaxRowsInput}></lightning-input>
+      <p class="aiadqb-help slds-text-body_small">{labels.maxRowsHelp}</p>
+    </div>
+  </div>
+
+  <!-- Fields: tick the fields to read, and search them -->
+  <div class="aiadqb-box">
+    <div class="aiadqb-box-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <div><strong class="slds-m-right_x-small">{labels.fields}</strong><span class="aiadqb-help slds-text-body_small">{fieldsCountText}</span></div>
+      <lightning-input type="search" variant="label-hidden" label={labels.searchFields} placeholder={labels.searchFields} value={fieldSearchText} onchange={handleFieldSearch} class="aiadqb-search"></lightning-input>
+    </div>
+    <div class="aiadqb-fields">
+      <template lwc:if={hasObject}>
+        <template lwc:if={hasFieldViews}>
+          <template for:each={fieldViews} for:item="item">
+            <div key={item.apiName} class="aiadqb-field slds-grid slds-grid_vertical-align-center">
+              <lightning-input type="checkbox" variant="label-hidden" label={item.label} checked={item.isChecked} data-api-name={item.apiName} onchange={handleFieldToggle}></lightning-input>
+              <span class="aiadqb-field-label">{item.label}</span>
+              <span class="aiadqb-api slds-col">{item.apiName}</span>
+              <span class="aiadqb-type">{item.dataType}</span>
+            </div>
+          </template>
+        </template>
+        <template lwc:else><p class="aiadqb-help slds-p-around_small">{labels.noMatchingFields}</p></template>
+      </template>
+      <template lwc:else><p class="aiadqb-help slds-p-around_small">{labels.noFields}</p></template>
+    </div>
+  </div>
+
+  <!-- Filters: each one compares a field to the open record, a fixed value or an agent input -->
+  <div class="aiadqb-box">
+    <div class="aiadqb-box-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+      <strong>{labels.filters}</strong>
+      <lightning-button label={labels.addFilter} onclick={handleAddFilter} disabled={isObjectMissing}></lightning-button>
+    </div>
+    <template for:each={filterViews} for:item="item">
+      <div key={item.key} class="aiadqb-filter slds-grid slds-grid_vertical-align-center slds-wrap">
+        <select class="slds-select aiadqb-filter-field" aria-label={labels.filterField} data-key={item.key} onchange={handleFilterField}>
+          <template for:each={item.fieldChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+        </select>
+        <select class="slds-select aiadqb-filter-operator" aria-label={labels.filterOperator} data-key={item.key} onchange={handleFilterOperator}>
+          <template for:each={item.operatorChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+        </select>
+        <select class="slds-select aiadqb-filter-source" aria-label={labels.filterSource} data-key={item.key} onchange={handleFilterSource}>
+          <template for:each={item.sourceChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+        </select>
+        <template lwc:if={item.isFixedText}><lightning-input variant="label-hidden" label={labels.filterValue} value={item.fixedValue} data-key={item.key} onchange={handleFilterFixed} class="aiadqb-filter-value"></lightning-input></template>
+        <template lwc:if={item.isFixedBoolean}
+          ><select class="slds-select aiadqb-filter-value" aria-label={labels.filterValue} data-key={item.key} onchange={handleFilterFixed}>
+            <template for:each={item.booleanChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+          </select></template
+        >
+        <template lwc:if={item.isAgent}><lightning-input variant="label-hidden" label={labels.filterInputName} value={item.inputName} data-key={item.key} onchange={handleFilterInputName} class="aiadqb-filter-value"></lightning-input></template>
+        <lightning-button-icon icon-name="utility:close" variant="bare" alternative-text={labels.removeFilter} data-key={item.key} onclick={handleRemoveFilter}></lightning-button-icon>
+      </div>
+    </template>
+    <p class="aiadqb-help slds-p-around_small">{labels.filtersNote}</p>
+  </div>
+
+  <!-- Order by: one field, ascending or descending -->
+  <label class="slds-form-element__label">{labels.orderBy}</label>
+  <select class="slds-select" aria-label={labels.orderBy} disabled={isObjectMissing} onchange={handleOrderChange}>
+    <template for:each={orderOptions} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+  </select>
+</template>

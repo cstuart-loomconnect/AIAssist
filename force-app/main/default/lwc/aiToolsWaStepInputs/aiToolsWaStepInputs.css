@@ -1,0 +1,234 @@
+/* The step: the main column and the preview side by side, sharing the width. The 24px gap is not an SLDS step. */
+.aitwa-layout {
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* The main column grows and can shrink beside the preview. */
+.aitwa-main {
+  flex: 3 1 480px;
+  min-width: 0;
+}
+
+/* The sentence above the table: muted text. */
+.aitwa-intro {
+  margin: 0 0 14px;
+  color: var(--aia-muted);
+}
+
+/* The inputs table: a bordered white box. */
+.aitwa-table {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  background: var(--aia-surface);
+}
+
+/* The header cells: a soft grey bar with bold text. */
+.aitwa-table th {
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The body cells: room around the content and a line above each row. */
+.aitwa-table td {
+  padding: 10px 16px;
+  border-top: 1px solid var(--aia-line);
+  color: var(--aia-ink-soft);
+  vertical-align: middle;
+}
+
+/* The last column holds only a small remove button. */
+.aitwa-action-cell {
+  width: 48px;
+}
+
+/* An input name or an output list: a code font. */
+.aitwa-code {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--aia-ink);
+}
+
+/* Words that explain a row: muted text. */
+.aitwa-muted {
+  color: var(--aia-muted);
+}
+
+/* A problem under a box: red text. */
+.aitwa-problem {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--aia-danger);
+}
+
+/* The pills in the Filled by column: small rounded labels. SLDS badges have a different size and shape. */
+.aitwa-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The page pill: grey. */
+.aitwa-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-ink-soft);
+}
+
+/* The not supported pill: red. */
+.aitwa-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The outputs box: a bordered box with a soft header. */
+.aitwa-box {
+  margin-top: 16px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  background: var(--aia-surface);
+}
+
+.aitwa-box-head {
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+.aitwa-box-body {
+  padding: 14px 16px;
+}
+
+/* The sentence under the outputs: no extra top margin. */
+.aitwa-box-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+/* A note: a tinted box with a border. */
+.aitwa-note {
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* A note that sits above or below a block needs a gap. */
+.aitwa-note_top {
+  margin: 0 0 14px;
+}
+
+/* A warning note: orange. */
+.aitwa-note_warning {
+  background: var(--aia-warning-tint);
+  border: 1px solid var(--aia-warning);
+  color: var(--aia-warning);
+}
+
+/* An information note: the accent tint. */
+.aitwa-note_info {
+  margin-top: 16px;
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-accent);
+}
+
+/* The object box: it does not need the full width. */
+.aitwa-target {
+  max-width: 360px;
+  margin-top: 16px;
+}
+
+/* The preview column: it shares the width with the table. */
+.aitwa-side {
+  flex: 2 1 320px;
+  min-width: 0;
+}
+
+/* The preview heading: bold dark text. */
+.aitwa-side-title {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The grey backdrop of the preview, like the dimmed page behind a modal. */
+.aitwa-preview {
+  padding: 16px;
+  background: var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The preview window: a white card. */
+.aitwa-modal {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border-radius: 8px;
+}
+
+.aitwa-modal-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--aia-line);
+  text-align: center;
+  font-size: 16px;
+  color: var(--aia-ink);
+}
+
+.aitwa-modal-body {
+  padding: 14px 16px;
+}
+
+/* One field in the preview: a label over a box. */
+.aitwa-field {
+  margin-bottom: 12px;
+}
+
+.aitwa-field-label {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--aia-ink-soft);
+}
+
+.aitwa-field-box {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* The preview buttons: drawn, not clickable. */
+.aitwa-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+}
+
+.aitwa-fake-button {
+  padding: 6px 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  background: var(--aia-surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aitwa-fake-button_brand {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* The sentence under the preview: small muted text. */
+.aitwa-side-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+}

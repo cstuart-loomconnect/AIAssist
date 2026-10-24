@@ -1,0 +1,75 @@
+<template>
+  <!-- Screen flow: nothing to run on the server -->
+  <template lwc:if={isScreenFlow}>
+    <div class="aitwa-note aitwa-note_info"><strong>{labels.screenFlowTitle}</strong> {labels.screenFlowText}</div>
+  </template>
+
+  <!-- Test: the fields, the result and the note -->
+  <template lwc:else>
+    <div class="slds-is-relative">
+      <!-- Busy: shown while the test runs -->
+      <template lwc:if={isRunning}>
+        <lightning-spinner size="small" alternative-text={labels.running}></lightning-spinner>
+      </template>
+
+      <!-- Fields: the record, one box for each input the agent fills, Roll back and Run test -->
+      <div class="aitwa-fields slds-grid slds-wrap slds-grid_vertical-align-end">
+        <template lwc:if={showRecord}>
+          <div class="aitwa-field aitwa-field_wide">
+            <template lwc:if={hasTargetObject}><lightning-record-picker label={labels.record} object-api-name={draft.targetObject} onchange={handleRecordChange}></lightning-record-picker></template>
+            <template lwc:else><lightning-input label={labels.recordId} field-level-help={labels.recordHelp} value={recordId} onchange={handleRecordChange}></lightning-input></template>
+          </div>
+        </template>
+        <template for:each={fieldViews} for:item="field">
+          <div key={field.key} class="aitwa-field">
+            <template lwc:if={field.isInputBox}><lightning-input label={field.name} type={field.fieldType} data-name={field.name} data-type={field.fieldType} onchange={handleValueChange}></lightning-input></template>
+            <template lwc:if={field.isCheckbox}><lightning-input label={field.name} type="checkbox" data-name={field.name} data-type={field.fieldType} onchange={handleValueChange}></lightning-input></template>
+          </div>
+        </template>
+        <template lwc:if={hasNoInputs}><p class="aitwa-note-inputs slds-col slds-size_1-of-1">{labels.noInputsNote}</p></template>
+        <div class="aitwa-actions slds-grid slds-grid_vertical-align-center slds-grid_align-end">
+          <lightning-input type="toggle" label={labels.rollBack} field-level-help={labels.rollBackHelp} checked={shouldRollBack} message-toggle-active="" message-toggle-inactive="" onchange={handleRollBackChange}></lightning-input>
+          <lightning-button label={labels.runTest} variant="neutral" onclick={handleRunTest} disabled={isRunning}></lightning-button>
+        </div>
+      </div>
+
+      <!-- Error: shown when the test was refused before it ran -->
+      <template lwc:if={hasError}><div class="slds-notify slds-notify_alert slds-alert_error slds-m-vertical_small" role="alert">{errorMessage}</div></template>
+
+      <!-- Result: how the test ended -->
+      <template lwc:if={hasResult}>
+        <div class={bannerClass}>{resultText}</div>
+
+        <!-- Outputs: what the action returned -->
+        <template lwc:if={hasOutputs}>
+          <table class="aitwa-table slds-table">
+            <thead>
+              <tr>
+                <th scope="col">{labels.columnOutput}</th>
+                <th scope="col">{labels.columnValue}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={result.outputs} for:item="output">
+                <tr key={output.name}>
+                  <td class="aitwa-code">{output.name}</td>
+                  <td>{output.value}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+
+        <!-- Warnings: what the test could not undo -->
+        <template lwc:if={hasWarnings}>
+          <template for:each={result.warnings} for:item="warning">
+            <div key={warning} class="aitwa-note aitwa-note_warning aitwa-note_top">{warning}</div>
+          </template>
+        </template>
+      </template>
+
+      <!-- Note: what a roll back can and cannot undo -->
+      <div class="aitwa-note aitwa-note_warning aitwa-note_top">{labels.rollBackNote}</div>
+    </div>
+  </template>
+</template>

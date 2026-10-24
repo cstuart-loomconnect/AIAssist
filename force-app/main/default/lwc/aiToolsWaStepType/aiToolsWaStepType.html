@@ -1,0 +1,26 @@
+<template>
+  <!-- Question: what runs the action -->
+  <h3 class="aitwa-question slds-m-top_none">{labels.whatRuns}</h3>
+
+  <!-- Cards: Apex class, autolaunched flow and screen flow, with the chosen one outlined -->
+  <div class="aitwa-cards slds-grid slds-wrap">
+    <template for:each={cardViews} for:item="card">
+      <button key={card.value} type="button" class={card.cardClass} data-value={card.value} onclick={handleTypeClick}><span class="aitwa-card-title">{card.title}</span><span class="aitwa-card-detail">{card.detail}</span></button>
+    </template>
+  </div>
+
+  <!-- Question: whether the action changes data -->
+  <h3 class="aitwa-question">{labels.doesChange}</h3>
+
+  <!-- Choice: Read only or Write -->
+  <div class="aitwa-choices">
+    <button type="button" class={readOnlyClass} data-value="Read Only" onclick={handleExecutionClick}>{labels.readOnly}</button>
+    <button type="button" class={writeClass} data-value="Write" onclick={handleExecutionClick}>{labels.write}</button>
+  </div>
+
+  <!-- Write note: shown for a write that is not a screen flow -->
+  <template lwc:if={showWriteNote}><div class="aitwa-note aitwa-note_warning">{labels.writeNote}</div></template>
+
+  <!-- Screen flow note: shown for a screen flow -->
+  <template lwc:if={showScreenFlowNote}><div class="aitwa-note aitwa-note_info">{labels.screenFlowNote}</div></template>
+</template>

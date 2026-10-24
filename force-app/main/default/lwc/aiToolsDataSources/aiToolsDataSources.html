@@ -1,0 +1,72 @@
+<template>
+  <!-- Wizard: shown instead of the list while a data source is being built or changed -->
+  <template lwc:if={isWizardOpen}>
+    <c-ai-tools-data-source-wizard edit-id={editDataSourceId} onclose={handleWizardClose} onsaved={handleWizardSaved}></c-ai-tools-data-source-wizard>
+  </template>
+
+  <!-- List: the intro, the new button, the search and filters, and the table -->
+  <template lwc:if={isListOpen}>
+    <div class="slds-is-relative slds-p-vertical_small">
+      <!-- Busy: shown while the list loads -->
+      <template lwc:if={showRefreshSpinner}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- Intro: what a data source is, with the button that starts a new one -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aiads-top">
+        <p class="aiads-intro slds-col">{labels.intro}</p>
+        <lightning-button variant="brand" label={labels.newDataSource} onclick={handleNewDataSource}></lightning-button>
+      </div>
+
+      <!-- Tools: the search on the left and the filter buttons on the right -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aiads-tools">
+        <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchText} onchange={handleSearch} class="aiads-search"></lightning-input>
+        <div class="aiads-filters slds-grid">
+          <template for:each={filterButtons} for:item="item">
+            <button key={item.key} type="button" class={item.buttonClass} data-key={item.key} onclick={handleFilterClick}>{item.label}</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Table: one clickable row for each data source -->
+      <div class="aiads-table-wrap">
+        <table class="slds-table slds-table_cell-buffer aiads-table">
+          <thead>
+            <tr>
+              <th scope="col">{labels.columnName}</th>
+              <th scope="col">{labels.columnType}</th>
+              <th scope="col">{labels.columnObject}</th>
+              <th scope="col">{labels.columnBinding}</th>
+              <th scope="col">{labels.columnMaxRows}</th>
+              <th scope="col">{labels.columnAgents}</th>
+              <th scope="col">{labels.columnLastTested}</th>
+              <th scope="col">{labels.columnStatus}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={rowViews} for:item="item">
+              <tr key={item.key} class="aiads-row" data-key={item.key} onclick={handleRowClick}>
+                <td class="aiads-name">{item.sourceName}</td>
+                <td>{item.sourceType}</td>
+                <td>{item.objectLabel}</td>
+                <td>{item.bindingType}</td>
+                <td>{item.maxRowsLabel}</td>
+                <td>{item.agentCount}</td>
+                <td><span class={item.testClass}>{item.testLabel}</span><span class="slds-m-left_xx-small">{item.testedDate}</span></td>
+                <td><span class={item.statusClass}>{item.statusLabel}</span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        <!-- No data sources: shown when the load is done and no row matches -->
+        <template lwc:if={showLoading}>
+          <div class="aiads-loading slds-is-relative">
+            <lightning-spinner size="medium" alternative-text={labels.loading}></lightning-spinner>
+            <p class="aiads-loading-text">{labels.loading}</p>
+          </div>
+        </template>
+        <template lwc:if={showNoDataSources}><p class="aiads-empty slds-p-around_medium">{labels.noDataSources}</p></template>
+      </div>
+    </div>
+  </template>
+</template>

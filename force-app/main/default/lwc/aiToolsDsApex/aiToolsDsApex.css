@@ -1,0 +1,75 @@
+/* The sentence above the table: muted text. */
+.aiadap-intro {
+  margin: 0 0 12px;
+  color: var(--aia-muted);
+}
+
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aiadap-table-wrap {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The table head: a soft grey band with bold text. */
+.aiadap-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* A class row: clickable. */
+.aiadap-row {
+  cursor: pointer;
+}
+
+/* A class row the pointer is over: a soft grey. */
+.aiadap-row:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The chosen class row: a soft accent tint. */
+.aiadap-row_selected,
+.aiadap-row_selected:hover {
+  background: var(--aia-accent-tint);
+}
+
+/* The name of a class: code text. */
+.aiadap-class {
+  font-family: monospace;
+  color: var(--aia-ink);
+}
+
+/* The name of the chosen class: bold. */
+.aiadap-class_selected {
+  font-weight: 700;
+}
+
+/* The note under the table: a soft blue box with accent text. */
+.aiadap-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}
+
+/* The empty message: a dashed box. */
+.aiadap-empty {
+  background: var(--aia-surface-soft);
+  border: 1px dashed var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The title of the empty message: bold dark text. */
+.aiadap-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* The text of the empty message: muted. */
+.aiadap-empty-text {
+  color: var(--aia-muted);
+}

@@ -1,0 +1,142 @@
+/* The sentence above the table: muted text. */
+.aitwa-intro {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The gap between the sentence and the New button. SLDS has no 16px gap utility for this row. */
+.aitwa-top {
+  gap: 16px;
+}
+
+/* The gap between the search box and the filter buttons. */
+.aitwa-tools {
+  gap: 16px;
+  margin: 20px 0 16px;
+}
+
+/* The search box: it keeps a sensible width beside the filters. */
+.aitwa-search {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* The filter buttons: one joined bordered strip. SLDS button groups do not look like this. */
+.aitwa-filters {
+  overflow: hidden;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  background: var(--aia-surface);
+}
+
+/* One filter button: plain text with a line between it and the next. */
+.aitwa-filter {
+  padding: 12px 18px;
+  border: 0;
+  border-right: 1px solid var(--aia-line-strong);
+  background: var(--aia-surface);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The last filter button has no line after it. */
+.aitwa-filter:last-child {
+  border-right: 0;
+}
+
+/* The chosen filter: the accent colour with white text. */
+.aitwa-filter_selected {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aitwa-table-wrap {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The header cells: a soft grey bar with bold text. */
+.aitwa-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* A row can be clicked, so it shows a hand and a soft grey under the pointer. */
+.aitwa-row {
+  cursor: pointer;
+}
+
+.aitwa-row:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* The name of an action: bold dark text. */
+.aitwa-name {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* The pills: small rounded labels. SLDS badges have a different size and shape. */
+.aitwa-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A passed test, or an active action: green. */
+.aitwa-pill_passed {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* A failed test: red. */
+.aitwa-pill_failed {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* A flow that is inactive or changed: red like a failure. */
+.aitwa-pill_attention {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* Never tested, or inactive: grey. */
+.aitwa-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}
+
+/* The test date beside a pill: a little space and muted text. */
+.aitwa-date {
+  margin-left: 4px;
+}
+
+/* The message under the table: muted text. */
+.aitwa-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The first load: a tall box with a spinner and the words, so an empty table is not mistaken for no data. */
+.aitwa-loading {
+  min-height: 170px;
+  padding-top: 118px;
+  text-align: center;
+}
+
+.aitwa-loading-text {
+  margin: 0;
+  color: var(--aia-muted);
+}

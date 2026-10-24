@@ -29,7 +29,7 @@ public without sharing class AIDataSourceDispatcher {
         if (dataSourceId == null || agentId == null) throw new AIDataSourceExecutorException('A data source and an agent are required.');
 
         // [2] Load the definition in system mode, because the end user cannot read it, but only if it is active and assigned to this agent
-        List<AIDataSource__c> dataSources = [SELECT Id, DeveloperName__c, SourceType__c, BindingType__c, SOQLTemplate__c, ApexClassName__c, MaxRows__c FROM AIDataSource__c WHERE Id = :dataSourceId AND IsActive__c = TRUE AND Id IN (SELECT AIDataSource__c FROM AIAgentDataSource__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE) WITH SYSTEM_MODE LIMIT 1];
+        List<AIDataSource__c> dataSources = [SELECT Id, DeveloperName__c, SourceType__c, BindingType__c, SOQLTemplate__c, ApexClassName__c, MaxRows__c, InputSchema__c FROM AIDataSource__c WHERE Id = :dataSourceId AND IsActive__c = TRUE AND Id IN (SELECT AIDataSource__c FROM AIAgentDataSource__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE) WITH SYSTEM_MODE LIMIT 1];
 
         // [3] Refuse with one message that does not say whether it was missing, inactive or assigned elsewhere
         if (dataSources.isEmpty()) throw new AIDataSourceExecutorException('The data source was not found, is not active, or is not assigned to this agent.');
@@ -49,8 +49,8 @@ public without sharing class AIDataSourceDispatcher {
             // [5] A SOQL source must have a template to run
             if (String.isBlank(dataSource.SOQLTemplate__c)) throw new AIDataSourceExecutorException('Data source "' + dataSource.DeveloperName__c + '" has no SOQL template.');
 
-            // [6] Bind the model's parameters, plus the record id when there is one, and run the template as the user
-            Map<String, Object> bindValues = new Map<String, Object>(parameters);
+            // [6] Bind the inputs the data source declares, plus the record id when there is one, and run the template as the user
+            Map<String, Object> bindValues = AIDataSourceInputBinder.getBindValues(dataSource.InputSchema__c, parameters);
             if (recordId != null) bindValues.put('recordId', recordId);
 
             rawResults = AISoqlTemplateRunner.runTemplate(dataSource.SOQLTemplate__c, bindValues, dataSource.MaxRows__c == null ? null : dataSource.MaxRows__c.intValue());
@@ -67,7 +67,7 @@ public without sharing class AIDataSourceDispatcher {
             // [9] Build the request that tells the class who is asking and for what
             AIDataSourceRequest request = new AIDataSourceRequest();
             request.recordId = recordId;
-            request.inputParameters = new Map<String, Object>(parameters);
+            request.inputParameters = AIDataSourceInputBinder.getBindValues(dataSource.InputSchema__c, parameters);
             request.conversationId = conversationId;
             request.agentId = agentId;
             request.userId = UserInfo.getUserId();

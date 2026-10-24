@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LastTestStatus__c</fullName>
+    <description
+  >How the last test of this action in the AI Tools tab ended. Blank when it has never been tested or its definition changed since.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Set by the AI Tools tab when the action is tested. It is cleared when the action is saved without a test.</inlineHelpText>
+    <label>Last Test Status</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Passed</fullName>
+                <default>false</default>
+                <label>Passed</label>
+            </value>
+            <value>
+                <fullName>Failed</fullName>
+                <default>false</default>
+                <label>Failed</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

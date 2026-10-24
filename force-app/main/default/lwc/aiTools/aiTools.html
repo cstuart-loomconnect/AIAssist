@@ -1,0 +1,24 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the body -->
+  <div class="aiat-page">
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div class="aiat-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <h1 class="aiat-title slds-m-around_none">{labels.title}</h1>
+      <span class="aiat-subtitle slds-text-body_small">{labels.subtitle}</span>
+    </div>
+
+    <!-- Body: the tabs on a white card -->
+    <div class="aiat-body slds-p-around_medium">
+      <lightning-tabset>
+        <!-- Data Sources: the list and the wizard for data sources -->
+        <lightning-tab label={labels.dataSourcesTab} value={dataSourcesTabValue}>
+          <c-ai-tools-data-sources></c-ai-tools-data-sources>
+        </lightning-tab>
+        <!-- Workflow Actions: the list and the wizard for workflow actions -->
+        <lightning-tab label={labels.workflowActionsTab} value={workflowActionsTabValue}>
+          <c-ai-tools-workflow-actions></c-ai-tools-workflow-actions>
+        </lightning-tab>
+      </lightning-tabset>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 1 of the data source wizard: how the data source reads data, and whether it is about the open record.</description>
+</LightningComponentBundle>

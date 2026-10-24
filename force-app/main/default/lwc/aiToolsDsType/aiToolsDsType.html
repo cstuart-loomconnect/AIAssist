@@ -1,0 +1,23 @@
+<template>
+  <!-- Source type question: SOQL or Apex -->
+  <h3 class="aiadt-question">{labels.typeQuestion}</h3>
+  <div class="aiadt-choices slds-grid slds-wrap">
+    <template for:each={typeItems} for:item="item">
+      <button key={item.value} type="button" class={item.choiceClass} data-value={item.value} aria-pressed={item.isSelected} onclick={handleTypeClick}>
+        <span class="aiadt-title">{item.title}</span>
+        <span class="aiadt-text">{item.text}</span>
+      </button>
+    </template>
+  </div>
+
+  <!-- Binding question: bound to the open record or unbound -->
+  <h3 class="aiadt-question slds-m-top_xx-large">{labels.bindingQuestion}</h3>
+  <div class="aiadt-choices slds-grid slds-wrap">
+    <template for:each={bindingItems} for:item="item">
+      <button key={item.value} type="button" class={item.choiceClass} data-value={item.value} aria-pressed={item.isSelected} onclick={handleBindingClick}>
+        <span class="aiadt-title">{item.title}</span>
+        <span class="aiadt-text">{item.text}</span>
+      </button>
+    </template>
+  </div>
+</template>

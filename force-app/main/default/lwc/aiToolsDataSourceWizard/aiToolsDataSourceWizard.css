@@ -1,0 +1,153 @@
+/* The wizard card: a white box with a rounded border that holds the dark header. */
+.aiadw-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header band: dark ink with white text, with the top corners rounded to match the card. The card does not hide overflow, so a drop-down list can open past its edge. The 14px 24px padding is not an SLDS step. */
+.aiadw-header {
+  border-radius: 7px 7px 0 0;
+  padding: 14px 24px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The name of the data source in the header: white and bold. */
+.aiadw-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The line on the right of the header: soft white. */
+.aiadw-status {
+  color: #d5d7de;
+}
+
+/* The pills beside the name: small rounded labels. SLDS badges have a different size and shape. */
+.aiadw-pill {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The Draft pill: orange on a soft tint. */
+.aiadw-pill_draft {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The type pill: accent colour on a soft tint. */
+.aiadw-pill_type {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The stepper: a row on a soft background with a line under it. */
+.aiadw-stepper {
+  padding: 14px 24px;
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* One step: the button and the line after it. The line fills the room left over. */
+.aiadw-step {
+  flex: 1 1 auto;
+}
+
+/* The last step has no line after it. */
+.aiadw-step:last-child {
+  flex: 0 0 auto;
+}
+
+.aiadw-step:last-child .aiadw-line {
+  display: none;
+}
+
+/* The button around a circle and a name: plain, so it looks like text. */
+.aiadw-step-button {
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* A step that cannot be clicked yet is not a pointer. */
+.aiadw-step-button[disabled] {
+  cursor: default;
+}
+
+/* The line between two steps. */
+.aiadw-line {
+  flex: 1 1 auto;
+  height: 1px;
+  margin: 0 12px;
+  background: var(--aia-line-strong);
+}
+
+/* The circle of a step: a ring with the number inside. */
+.aiadw-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 50%;
+  background: var(--aia-surface);
+  color: var(--aia-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The circle of the step that is open: filled with the accent colour. */
+.aiadw-circle_current {
+  background: var(--aia-accent);
+  border-color: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* The circle of a step that is done: filled green with a tick. */
+.aiadw-circle_done {
+  background: var(--aia-success);
+  border-color: var(--aia-success);
+  color: var(--aia-surface);
+}
+
+/* The circle of a step with a problem: filled red with an exclamation mark. */
+.aiadw-circle_error {
+  background: var(--aia-danger);
+  border-color: var(--aia-danger);
+  color: var(--aia-surface);
+}
+
+/* The name of a step: dark text. */
+.aiadw-step-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+}
+
+/* The name of the step that is open: accent colour. */
+.aiadw-step-name_current {
+  color: var(--aia-accent);
+}
+
+/* The body: room around the step. */
+.aiadw-body {
+  padding: 20px 24px;
+}
+
+/* The footer: a soft grey band with a line above it and the bottom corners rounded to match the card. */
+.aiadw-footer {
+  border-radius: 0 0 7px 7px;
+  padding: 14px 24px;
+  background: var(--aia-surface-soft);
+  border-top: 1px solid var(--aia-line);
+}

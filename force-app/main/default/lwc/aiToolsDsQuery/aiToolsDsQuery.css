@@ -1,0 +1,132 @@
+/* The toolbar: a row with a gap between the buttons, the note and the max rows. */
+.aiadq-toolbar {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* The two mode buttons: one bordered group. SLDS button groups do not style a selected button like this. */
+.aiadq-modes {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* One mode button: plain text with a line between it and the next. */
+.aiadq-mode {
+  min-width: 110px;
+  padding: 10px 16px;
+  background: var(--aia-surface);
+  border: 0;
+  border-right: 1px solid var(--aia-line-strong);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The last mode button has no line after it, because the group already has an edge. */
+.aiadq-mode:last-child {
+  border-right: 0;
+}
+
+/* A mode button that cannot be used: faded. */
+.aiadq-mode:disabled {
+  color: var(--aia-muted);
+  cursor: not-allowed;
+}
+
+/* The mode that is on: accent colour with white text. */
+.aiadq-mode_on,
+.aiadq-mode_on:disabled {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A line of help: muted text. */
+.aiadq-note {
+  color: var(--aia-muted);
+}
+
+/* The max rows box in write mode: a fixed width. */
+.aiadq-max-rows {
+  width: 120px;
+}
+
+/* The builder and the generated query side by side, with a gap when they wrap. */
+.aiadq-layout {
+  gap: 24px;
+}
+
+/* The builder column: grows to take most of the room. */
+.aiadq-builder {
+  flex: 2 1 460px;
+  min-width: 0;
+}
+
+/* The generated query column. */
+.aiadq-preview {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+/* The title of the generated query: bold dark text. */
+.aiadq-preview-title {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* The generated query: a bordered box with code text that keeps its line breaks. */
+.aiadq-code {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Query words such as SELECT and FROM: accent colour and bold. */
+.aiadq-keyword {
+  color: var(--aia-accent);
+  font-weight: 700;
+}
+
+/* A bind such as :recordId: dark red. */
+.aiadq-bind {
+  color: #a8321c;
+  font-weight: 700;
+}
+
+/* Any other text of the query. */
+.aiadq-plain {
+  color: var(--aia-ink);
+}
+
+/* The message under a valid query: green. */
+.aiadq-valid {
+  background: var(--aia-success-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-success);
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* The message under a query with errors: red. */
+.aiadq-invalid {
+  background: var(--aia-danger-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-danger);
+}
+
+/* The box around the step: gives the spinner room, so it covers the step while the objects or fields load. */
+.aiadq-wrap {
+  min-height: 120px;
+}

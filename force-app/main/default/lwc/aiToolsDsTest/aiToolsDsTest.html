@@ -1,0 +1,99 @@
+<template>
+  <!-- Run panel: the record, the agent inputs, who to run as, and the Run test button -->
+  <div class="aiadte-panel slds-grid slds-wrap slds-grid_vertical-align-start">
+    <!-- Record: the open record the data source runs for -->
+    <template lwc:if={isBound}>
+      <div class="aiadte-control aiadte-record">
+        <template lwc:if={hasRecordObject}
+          ><label class="slds-form-element__label">{labels.record}</label
+          ><lightning-record-picker variant="label-hidden" label={labels.record} placeholder={labels.recordSearch} object-api-name={draft.recordObjectApiName} value={draft.testRecordId} onchange={handleRecordPick}></lightning-record-picker
+        ></template>
+        <template lwc:if={hasNoRecordObject}><lightning-input label={labels.record} placeholder={labels.recordPlaceholder} value={draft.testRecordId} onchange={handleRecordInput}></lightning-input></template>
+      </div>
+    </template>
+
+    <!-- Inputs: one control for each input the agent fills in -->
+    <template for:each={inputControls} for:item="item">
+      <div key={item.name} class="aiadte-control">
+        <template lwc:if={item.isInput}><lightning-input type={item.controlType} label={item.name} value={item.value} data-name={item.name} data-control={item.controlType} onchange={handleInputChange}></lightning-input></template>
+        <template lwc:if={item.isCheckbox}><lightning-input type="checkbox" label={item.name} checked={item.isChecked} data-name={item.name} data-control={item.controlType} onchange={handleInputChange}></lightning-input></template>
+      </div>
+    </template>
+
+    <!-- Run as: the person testing, or another user to check what they would get -->
+    <div class="aiadte-control aiadte-run-as slds-is-relative">
+      <lightning-input label={labels.runAs} value={runAsDisplay} placeholder={labels.runAsPlaceholder} field-level-help={labels.runAsHelp} autocomplete="off" onchange={handleUserInput} onblur={handleUserBlur}></lightning-input>
+      <template lwc:if={showUserList}>
+        <ul class="aiadte-user-list" role="listbox">
+          <template for:each={userOptions} for:item="user">
+            <li key={user.ownerId} class="aiadte-user-item" role="option" data-user-id={user.ownerId} data-user-name={user.name} onmousedown={handleUserPick}>{user.name}<span class="aiadte-help"> {user.detail}</span></li>
+          </template>
+        </ul>
+      </template>
+    </div>
+    <div class="aiadte-actions slds-grid slds-grid_vertical-align-center">
+      <lightning-button label={labels.useMyself} variant="base" onclick={handleUseMyself}></lightning-button>
+      <lightning-button label={labels.runTest} variant="brand-outline" onclick={handleRunTest} disabled={isRunDisabled} class="slds-m-left_small"></lightning-button>
+    </div>
+  </div>
+
+  <!-- Error: shown when the test could not start -->
+  <template lwc:if={hasError}>
+    <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{errorMessage}</div>
+  </template>
+
+  <!-- Running: shown while Apex runs the test -->
+  <template lwc:if={isRunning}>
+    <div class="slds-is-relative aiadte-running"><lightning-spinner size="small" alternative-text={labels.running}></lightning-spinner></div>
+  </template>
+
+  <!-- Result: the message, the warnings, the table and what the agent receives -->
+  <template lwc:if={resultView}>
+    <div class={resultView.boxClass}><strong>{resultView.lead}</strong>{resultView.rest}</div>
+
+    <template lwc:if={resultView.hasWarnings}>
+      <template for:each={resultView.warnings} for:item="warning">
+        <div key={warning} class="aiadte-result aiadte-result_warning">{warning}</div>
+      </template>
+    </template>
+
+    <template lwc:if={resultView.isRan}>
+      <template lwc:if={resultView.hasRows}>
+        <div class="aiadte-table-wrap">
+          <table class="slds-table slds-table_cell-buffer aiadte-table">
+            <thead>
+              <tr>
+                <template for:each={resultView.columns} for:item="column"><th key={column.key} scope="col" class={column.headClass}>{column.apiName}</th></template>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={resultView.rows} for:item="row">
+                <tr key={row.key}>
+                  <template for:each={row.cells} for:item="cell"
+                    ><td key={cell.key}>
+                      <template lwc:if={cell.isNoAccess}><span class="aiadte-help">{cell.text}</span></template
+                      ><template lwc:else>{cell.text}</template>
+                    </td></template
+                  >
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+      <template lwc:else><p class="aiadte-help slds-m-vertical_small">{labels.noRows}</p></template>
+
+      <!-- What the agent receives: how the PII Registry changes the rows before the agent sees them -->
+      <div class="aiadte-receives">
+        <div class="aiadte-receives-head">{labels.receivesTitle}</div>
+        <p class="aiadte-receives-body">{resultView.receivesText}</p>
+      </div>
+    </template>
+
+    <!-- Partial: why a user does not see everything, and what other failures look like -->
+    <template lwc:if={resultView.isPartial}>
+      <div class="aiadte-note slds-m-top_small slds-p-around_small">{labels.safeNote}</div>
+      <div class="aiadte-result aiadte-result_danger"><strong>{labels.otherFailures}</strong>{labels.otherFailuresText}</div>
+    </template>
+  </template>
+</template>
