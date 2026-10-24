@@ -6,8 +6,8 @@
     <inlineHelpText
   >Describe anything this specific scenario needs the AI to avoid, such as stating an exact figure or making a particular assumption. General compliance and prohibited content rules are already handled at the agent level - use this only for exclusions specific to this template.</inlineHelpText>
     <label>AI Exclusion Rules</label>
-    <required>false</required>
-    <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
-    <type>TextArea</type>
+    <length>4000</length>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
 </CustomField>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>SavedVerdict__c</fullName>
+    <description
+  >What the administrator marked the saved template reply as on the last run.</description>
+    <inlineHelpText
+  >Set from the Better and Worse buttons on the Try it tab. Cleared when the message is run again.</inlineHelpText>
+    <label>Saved Verdict</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Better</fullName>
+                <default>false</default>
+                <label>Better</label>
+            </value>
+            <value>
+                <fullName>Worse</fullName>
+                <default>false</default>
+                <label>Worse</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

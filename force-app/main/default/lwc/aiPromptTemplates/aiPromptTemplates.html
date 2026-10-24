@@ -1,0 +1,38 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the two columns -->
+  <div class="aipt-page slds-is-relative">
+    <!-- Busy: shown while Apex is working -->
+    <template lwc:if={isBusy}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div class="aipt-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <h1 class="aipt-title slds-m-around_none">{labels.title}</h1>
+      <span class="aipt-subtitle slds-text-body_small">{labels.subtitle}</span>
+    </div>
+
+    <!-- Body: the list on the left and the selected template on the right -->
+    <div class="aipt-body slds-grid slds-p-around_medium">
+      <!-- List column: every template with a search box -->
+      <div class="aipt-left">
+        <c-ai-prompt-templates-list rows={rows} selected-id={selectedId} is-new-selected={isNewTemplate} onselect={handleSelect} onnewtemplate={handleNewTemplate}></c-ai-prompt-templates-list>
+      </div>
+
+      <!-- Detail column: the selected template, or a hint when none is picked -->
+      <div class="aipt-right slds-col">
+        <template lwc:if={hasTemplate}>
+          <c-ai-prompt-templates-detail saved-template={savedTemplate} onsaved={handleSaved} onactivate={handleActivate} onmakedefault={handleMakeDefault} onarchive={handleArchiveRequest}></c-ai-prompt-templates-detail>
+        </template>
+        <template lwc:else>
+          <p class="aipt-empty slds-p-around_large">{labels.noSelection}</p>
+        </template>
+      </div>
+    </div>
+
+    <!-- Archive dialog: asks where each agent moves to before the template is archived -->
+    <template lwc:if={showArchiveDialog}>
+      <c-ai-prompt-templates-archive-dialog template-id={selectedId} template-name={archiveTemplateName} options={archiveOptions} is-saving={isArchiving} oncancel={handleArchiveCancel} onconfirm={handleArchiveConfirm}></c-ai-prompt-templates-archive-dialog>
+    </template>
+  </div>
+</template>

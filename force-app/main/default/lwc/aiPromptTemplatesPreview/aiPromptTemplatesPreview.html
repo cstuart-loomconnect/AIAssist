@@ -1,0 +1,35 @@
+<template>
+  <!-- Preview: the title with the token count, a dark panel and a footnote -->
+  <div>
+    <!-- Title row: the name of the panel on the left and the token count on the right -->
+    <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-bottom_x-small">
+      <span class="aipt-preview-title">{labels.title}</span>
+      <template lwc:if={showTokens}>
+        <span class="aipt-preview-tokens slds-text-body_small">{tokensText}</span>
+      </template>
+    </div>
+
+    <!-- Panel: a note while there are errors, otherwise the sections -->
+    <div class="aipt-panel slds-p-around_small">
+      <template lwc:if={hasErrors}>
+        <span>{errorsText}</span>
+      </template>
+      <template lwc:elseif={hasSections}>
+        <template for:each={sectionViews} for:item="section">
+          <div key={section.key} class="aipt-panel-section">
+            <div class="aipt-panel-heading">{section.heading}</div>
+            <div class="aipt-panel-text">
+              <template for:each={section.segmentViews} for:item="segment"><span key={segment.key} class={segment.segmentClass}>{segment.text}</span></template>
+            </div>
+          </div>
+        </template>
+      </template>
+      <template lwc:else>
+        <span>{labels.loading}</span>
+      </template>
+    </div>
+
+    <!-- Footnote: how the sample values are chosen -->
+    <p class="aipt-preview-footnote slds-text-body_small slds-m-top_small">{labels.footnote}</p>
+  </div>
+</template>

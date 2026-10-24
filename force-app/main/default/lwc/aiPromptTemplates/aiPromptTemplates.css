@@ -1,0 +1,86 @@
+/* The colours of the whole AI Prompt Templates tab, defined once here so every component inside it inherits them. SLDS has no tokens for this warm palette. */
+:host {
+  --aia-accent: #3040c4;
+  --aia-accent-tint: #eef0fb;
+  --aia-ink: #1c1e26;
+  --aia-ink-soft: #3f4350;
+  --aia-muted: #5e6270;
+  --aia-bg: #f6f5f1;
+  --aia-surface: #ffffff;
+  --aia-surface-soft: #fafaf7;
+  --aia-line: #e4e2da;
+  --aia-line-strong: #c9c7bf;
+  --aia-success: #1f6f4a;
+  --aia-success-tint: #e8f3ec;
+  --aia-warning: #9a3412;
+  --aia-warning-tint: #fdf0e6;
+  --aia-danger: #a12121;
+  --aia-danger-tint: #fbe9e9;
+  --aia-code-bg: #1c1e26;
+  --aia-code-text: #e8e9ee;
+  --aia-code-heading: #8fa3ff;
+  --aia-code-value: #f2b25c;
+}
+
+/* The page: a warm grey background so the white cards stand out, with a rounded border. */
+.aipt-page {
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The header band: dark ink with white text. The 12px gap and 14px 20px padding are not SLDS steps. */
+.aipt-header {
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The page title: white, a little larger than body text. */
+.aipt-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The line of help in the header: soft white. */
+.aipt-subtitle {
+  color: #d5d7de;
+}
+
+/* The two columns: the gap between them, and they stack on a narrow screen. SLDS has no 16px column gap utility. */
+.aipt-body {
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* The list column: a fixed width that keeps the list readable. */
+.aipt-left {
+  flex: 0 0 320px;
+  width: 320px;
+}
+
+/* The detail column: it may shrink below its content so long text wraps. */
+.aipt-right {
+  min-width: 0;
+}
+
+/* The hint shown when no template is picked: muted text. */
+.aipt-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* On a narrow screen the list sits above the detail instead of beside it. */
+@media (max-width: 900px) {
+  .aipt-body {
+    flex-wrap: wrap;
+  }
+
+  .aipt-left {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}

@@ -1,0 +1,21 @@
+<template>
+  <!-- Section card: a title and a hint above a text box, and the problem under it -->
+  <div class={boxClass}>
+    <!-- Title row: the name of the section on the left and its hint on the right -->
+    <div class="aipt-section-head slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-p-horizontal_small slds-p-vertical_x-small">
+      <span class="aipt-section-title">{title}</span>
+      <span class="aipt-section-hint slds-text-body_small">{hint}</span>
+    </div>
+
+    <!-- Help: what to write in this section -->
+    <p class="aipt-section-help slds-text-body_small slds-p-horizontal_small slds-p-top_x-small">{help}</p>
+
+    <!-- Text: the wording of the section, in a code-style font -->
+    <textarea class={textClass} rows={textRows} placeholder={placeholder} onfocus={handleFocus} value={value} oninput={handleInput}></textarea>
+
+    <!-- Problem: shown when the section has something to fix -->
+    <template lwc:if={hasProblem}>
+      <p class="aipt-section-message slds-p-horizontal_small slds-p-vertical_x-small">{message}</p>
+    </template>
+  </div>
+</template>

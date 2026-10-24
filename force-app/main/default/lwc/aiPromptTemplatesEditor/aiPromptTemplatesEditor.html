@@ -1,0 +1,83 @@
+<template>
+  <template lwc:if={hasDraft}>
+    <!-- Editor: the banner, the fields, the Insert bar with the sections and preview, and the footer -->
+    <div class="slds-is-relative">
+      <!-- Problems banner: shown when something must be fixed first -->
+      <template lwc:if={hasProblems}>
+        <div class="aipt-banner slds-p-around_small slds-m-bottom_small"><strong>{bannerLead}</strong> {bannerTail}</div>
+      </template>
+
+      <!-- Fields: name, API name and max response length -->
+      <div class="slds-grid slds-wrap aipt-fields">
+        <div class={nameClass}>
+          <label class="slds-form-element__label" for="aipt-name"><abbr class="slds-required" title="required">*</abbr>{labels.fieldName}</label>
+          <div class="slds-form-element__control"><input id="aipt-name" type="text" class="slds-input" data-field={fieldTemplateName} value={draft.templateName} oninput={handleFieldInput} /></div>
+          <div class="slds-form-element__help aipt-field-help">{labels.helpName}</div>
+          <template lwc:if={nameMessage}><div class="slds-form-element__help">{nameMessage}</div></template>
+        </div>
+        <div class={developerNameClass}>
+          <label class="slds-form-element__label" for="aipt-api-name"><abbr class="slds-required" title="required">*</abbr>{labels.fieldDeveloperName}</label>
+          <div class="slds-form-element__control"><input id="aipt-api-name" type="text" class={developerInputClass} data-field={fieldDeveloperName} value={draft.developerName} readonly={isSavedTemplate} title={labels.developerNameLocked} oninput={handleFieldInput} /></div>
+          <div class="slds-form-element__help aipt-field-help">{labels.helpDeveloperName}</div>
+          <template lwc:if={developerNameMessage}><div class="slds-form-element__help">{developerNameMessage}</div></template>
+        </div>
+        <div class={maxLengthClass}>
+          <label class="slds-form-element__label" for="aipt-max-length">{labels.fieldMaxLength}</label>
+          <div class="slds-form-element__control"><input id="aipt-max-length" type="number" class="slds-input" data-field={fieldMaxLength} value={draft.maxResponseLength} oninput={handleFieldInput} /></div>
+          <div class="slds-form-element__help aipt-field-help">{labels.helpMaxLength}</div>
+          <template lwc:if={maxLengthMessage}><div class="slds-form-element__help">{maxLengthMessage}</div></template>
+        </div>
+      </div>
+
+      <!-- Two columns: the Insert bar and the sections on the left, the preview on the right -->
+      <div class="slds-grid slds-wrap aipt-columns slds-m-top_medium">
+        <div class="aipt-column-main">
+          <!-- Insert bar: a chip for each merge field that goes in at the cursor -->
+          <div class="aipt-insert slds-grid slds-wrap slds-grid_vertical-align-center slds-p-around_small">
+            <span class="aipt-insert-label slds-text-body_small slds-m-right_small">{labels.insert}</span>
+            <template for:each={mergeFields} for:item="field">
+              <button key={field.token} type="button" class="aipt-chip" title={field.description} data-token={field.token} onclick={handleChipClick}>{field.token}</button>
+            </template>
+          </div>
+
+          <!-- Sections: Context, Tone, Instructions and Never -->
+          <template for:each={sectionViews} for:item="section">
+            <c-ai-prompt-templates-section
+              key={section.key}
+              class="aipt-section-slot"
+              data-key={section.key}
+              section-key={section.key}
+              title={section.title}
+              hint={section.hint}
+              help={section.help}
+              placeholder={section.placeholder}
+              value={section.value}
+              message={section.message}
+              onsectionchange={handleSectionChange}
+              onsectionfocus={handleSectionFocus}
+            ></c-ai-prompt-templates-section>
+          </template>
+        </div>
+
+        <!-- Preview: what the model receives -->
+        <div class="aipt-column-side">
+          <c-ai-prompt-templates-preview sections={previewSections} estimated-tokens={estimatedTokens} error-count={problemCount} is-loading={isPreviewLoading}></c-ai-prompt-templates-preview>
+        </div>
+      </div>
+
+      <!-- Footer: the status on the left and the buttons on the right -->
+      <div class="aipt-footer slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap slds-m-top_medium slds-p-top_small">
+        <span class="aipt-footer-text slds-text-body_small">{footerText}</span>
+        <div>
+          <lightning-button label={labels.discard} onclick={handleDiscard} disabled={isDiscardDisabled}></lightning-button>
+          <lightning-button variant="brand" label={primaryLabel} onclick={handleSave} disabled={isPrimaryDisabled} class="slds-m-left_x-small"></lightning-button>
+        </div>
+      </div>
+
+      <!-- Publish dialog: shown before a change to a template that agents use goes live -->
+      <template lwc:if={showPublishDialog}>
+        <c-ai-prompt-templates-publish-dialog impact={publishImpact} template-name={dialogTemplateName} is-saving={isSaving} oncancel={handlePublishCancel} onconfirm={handlePublishConfirm}></c-ai-prompt-templates-publish-dialog>
+      </template>
+    </div>
+  </template>
+</template>

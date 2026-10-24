@@ -1,0 +1,124 @@
+/* The inputs box: a soft grey box with a border and a gap between the inputs. */
+.aipt-inputs {
+  gap: 16px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The message input takes the spare width. */
+.aipt-input-message {
+  flex: 2 1 260px;
+}
+
+/* The record and agent inputs: a medium width that wraps on a narrow screen. */
+.aipt-input-record,
+.aipt-input-agent {
+  flex: 1 1 200px;
+}
+
+/* The Run both button: it lines up with the inputs by leaving room for their labels. */
+.aipt-input-run {
+  padding-top: 22px;
+}
+
+/* The two results: a gap between the columns, and each takes half the width. */
+.aipt-results {
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.aipt-result-column {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* The title of a result or a card: bold dark text. */
+.aipt-result-title {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* One reply: a white box with a thin border that keeps the line breaks of the reply. */
+.aipt-result {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A reply that is an error: a soft red box with red text. */
+.aipt-result_error {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* Muted text. */
+.aipt-muted {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The saved messages card: white with a soft border and rounded corners. */
+.aipt-card {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* The head of the card: a soft grey bar with a line under it. */
+.aipt-card-head {
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* One saved message: a line under it and a gap between its pieces. */
+.aipt-message-row {
+  gap: 12px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+.aipt-message-row:last-child {
+  border-bottom: 0;
+}
+
+/* The text of a saved message: it may shrink so a long message wraps. */
+.aipt-message-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The time of the last run: it keeps its width so the rows line up. */
+.aipt-message-time {
+  min-width: 90px;
+}
+
+/* The pills: small rounded labels. SLDS badges have a different size and shape. */
+.aipt-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A passed run: green. */
+.aipt-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* A failed run: red. */
+.aipt-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* A message that never ran: grey with a thin line. */
+.aipt-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}

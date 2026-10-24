@@ -4,7 +4,6 @@
     <columns>NAME</columns>
     <columns>IsActive__c</columns>
     <columns>Version__c</columns>
-    <columns>AIAgent__c</columns>
     <columns>MaxResponseLength__c</columns>
     <columns>Description__c</columns>
     <columns>LAST_UPDATE</columns>
