@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Usage limits and what people can do in AI Assist, and which users and permission sets each policy is assigned to.</description>
+    <label>AI Policies</label>
+    <lwcComponent>aiPolicies</lwcComponent>
+    <motif>Custom15: People</motif>
+</CustomTab>

@@ -1,0 +1,135 @@
+<template>
+  <!-- Check a user: a bordered box with a head, a search box and the answer -->
+  <div class="aipc-box slds-is-relative">
+    <!-- Busy: shown while a search or a check runs -->
+    <template lwc:if={isChecking}>
+      <lightning-spinner
+        size="small"
+        alternative-text={labels.searching}
+      ></lightning-spinner>
+    </template>
+
+    <div class="aipc-box-head">
+      <span class="aipc-box-title">{labels.title}</span>
+    </div>
+
+    <div class="slds-p-around_medium">
+      <!-- Search: type a name, then pick a user from the list under the box -->
+      <input
+        type="text"
+        class="slds-input"
+        aria-label={labels.title}
+        placeholder={labels.searchPlaceholder}
+        value={searchText}
+        oninput={handleSearchInput}
+      />
+
+      <!-- Matches: the users whose name fits what was typed -->
+      <template lwc:if={showMatches}>
+        <ul class="aipc-matches slds-m-top_x-small">
+          <template for:each={matches} for:item="match">
+            <li key={match.assigneeId}>
+              <button
+                type="button"
+                class="aipc-match"
+                data-id={match.assigneeId}
+                onclick={handleUserPick}
+              >
+                <span class="aipc-strong">{match.name}</span>
+                <span class="aipc-muted slds-text-body_small"
+                  >{match.detail}</span
+                >
+              </button>
+            </li>
+          </template>
+        </ul>
+        <template lwc:if={isSearching}
+          ><p class="aipc-muted slds-m-top_x-small slds-m-bottom_none">
+            {labels.searching}
+          </p></template
+        >
+        <template lwc:elseif={hasMatches}></template>
+        <template lwc:else
+          ><p class="aipc-muted slds-m-top_x-small slds-m-bottom_none">
+            {labels.noMatches}
+          </p></template
+        >
+      </template>
+
+      <!-- Error: the reason a search or a check failed -->
+      <template lwc:if={hasErrorMessage}
+        ><p
+          class="aipc-error slds-m-top_small slds-p-around_small"
+          role="alert"
+        >
+          {errorMessage}
+        </p></template
+      >
+
+      <!-- Answer: the policy the user gets, why, and every policy that was considered -->
+      <template lwc:if={hasResult}>
+        <div class="slds-m-top_medium">
+          <div class="aipc-fact slds-grid slds-m-bottom_xx-small">
+            <span class="aipc-muted aipc-fact-label">{labels.getsPolicy}</span>
+            <span
+              ><span class="aipc-strong">{resultView.policyName}</span
+              ><template lwc:if={resultView.hasPolicy}
+                ><span class="aipc-pill aipc-pill_good slds-m-left_x-small"
+                  >{labels.applies}</span
+                ></template
+              ></span
+            >
+          </div>
+          <div class="aipc-fact slds-grid slds-m-bottom_small">
+            <span class="aipc-muted aipc-fact-label">{labels.why}</span>
+            <span>{resultView.reason}</span>
+          </div>
+
+          <!-- Sources: one line for each policy that was considered, with what became of it -->
+          <table class="aipc-table slds-table slds-table_cell-buffer">
+            <thead>
+              <tr>
+                <th scope="col">{labels.columnSource}</th>
+                <th scope="col">{labels.columnPolicy}</th>
+                <th scope="col">{labels.columnTokens}</th>
+                <th scope="col">{labels.columnConversations}</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={resultView.sourceRows} for:item="row">
+                <tr key={row.key}>
+                  <td>{row.sourceLabel}</td>
+                  <td class={row.nameClass}>{row.policyName}</td>
+                  <td>{row.tokens}</td>
+                  <td>{row.conversations}</td>
+                  <td class="aipc-outcome">
+                    <span class={row.pillClass}>{row.outcome}</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+
+          <!-- Hint: what to do when a policy was ignored, with a button that does it -->
+          <template lwc:if={resultView.hasHint}
+            ><p class="aipc-hint slds-m-top_small slds-p-around_small">
+              {resultView.hint}
+            </p></template
+          >
+          <template lwc:if={resultView.hasIgnoredPolicy}>
+            <div class="slds-m-top_small">
+              <button
+                type="button"
+                class="aipc-assign-button slds-button"
+                onclick={handleAssign}
+              >
+                {resultView.buttonLabel}
+              </button>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>

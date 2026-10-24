@@ -1,0 +1,53 @@
+/* The dialog box: a fixed width that shrinks on a narrow screen. SLDS modal sizes are wider than this. */
+.aipdd-container {
+  width: 36rem;
+  max-width: 90vw;
+}
+
+/* The choices: a bordered box with a line between them. */
+.aipdd-choices {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* One choice: a row with a radio button and its words. */
+.aipdd-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+/* The policy dropdown sits under the second choice with room on each side. */
+.aipdd-select {
+  width: calc(100% - 28px);
+  margin: 0 14px 12px;
+}
+
+/* Muted text for the line about the default policy. */
+.aipdd-muted {
+  color: var(--aia-muted);
+}
+
+/* A note in the dialog: a rounded box. */
+.aipdd-note {
+  margin-bottom: 0;
+  border: 1px solid;
+  border-radius: 4px;
+}
+
+/* A note that informs: accent colour on a tint. */
+.aipdd-note_info {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-line);
+  color: var(--aia-accent);
+}
+
+/* A note that blocks or refuses: red box with red text. */
+.aipdd-note_blocked {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
