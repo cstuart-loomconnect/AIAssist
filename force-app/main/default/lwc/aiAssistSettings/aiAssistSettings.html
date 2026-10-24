@@ -21,7 +21,7 @@
         <div class="slds-notify slds-notify_alert slds-alert_error slds-m-around_medium" role="alert">{errorMessage}</div>
       </template>
 
-      <!-- Tabs: AI Assist Settings, AI Assist UI Settings and AI Usage Policies -->
+      <!-- Tabs: AI Assist Settings and AI Assist UI Settings -->
       <template lwc:if={showTabs}>
         <lightning-tabset>
           <lightning-tab label={labels.assistTab} value={assistTabValue}>
@@ -29,9 +29,6 @@
           </lightning-tab>
           <lightning-tab label={labels.uiTab} value={uiTabValue}>
             <c-ai-assist-settings-panel settings-name={uiSettingsName} groups={uiGroups} rows={uiRows} is-organisation-only onrefresh={handleRefresh}></c-ai-assist-settings-panel>
-          </lightning-tab>
-          <lightning-tab label={labels.policyTab} value={policyTabValue}>
-            <c-ai-assist-usage-policies></c-ai-assist-usage-policies>
           </lightning-tab>
         </lightning-tabset>
       </template>

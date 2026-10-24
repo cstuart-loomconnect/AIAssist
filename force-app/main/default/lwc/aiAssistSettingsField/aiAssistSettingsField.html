@@ -48,16 +48,6 @@
       <template lwc:elseif={isChoice}>
         <lightning-radio-group name={field.key} label={field.label} variant="label-hidden" options={field.options} value={value} type="radio" onchange={handleChoiceChange}></lightning-radio-group>
       </template>
-
-      <!-- Choice shown as a dropdown -->
-      <template lwc:elseif={isSelect}>
-        <lightning-combobox name={field.key} label={field.label} variant="label-hidden" options={field.options} value={value} onchange={handleChoiceChange}></lightning-combobox>
-      </template>
-
-      <!-- Several choices shown as checkboxes -->
-      <template lwc:elseif={isMulti}>
-        <lightning-checkbox-group name={field.key} label={field.label} variant="label-hidden" options={field.options} value={multiValue} onchange={handleChoiceChange}></lightning-checkbox-group>
-      </template>
     </div>
   </div>
 </template>

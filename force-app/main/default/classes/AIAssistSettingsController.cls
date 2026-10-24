@@ -9,8 +9,7 @@ Description: The Apex controller behind the AI Assist Settings tab.
 Step 1: Read every row of AI Assist Settings and AI Assist UI Settings
 Step 2: Save or delete one row, at organisation, profile or user level
 Step 3: Find a profile or user to create a row for
-Step 4: Read, save and delete AI Usage Policies, and add, switch and remove their assignments
-Step 5: Show an expected refusal as it is, and log anything unexpected once and show the generic label
+Step 4: Show an expected refusal as it is, and log anything unexpected once and show the generic label
 
 =================================================================
 =================================================================
@@ -84,118 +83,6 @@ public without sharing class AIAssistSettingsController {
 
             // [2] Hand the tab a message it can show
             throw buildAuraException(ex, 'findOwners');
-        }
-    }
-
-    // Every AI Usage Policy with its assignments.
-    @AuraEnabled
-    public static List<AIAssistSettingsDataStructure.PolicyView> getPolicies() {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.getPolicies();
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'getPolicies');
-        }
-    }
-
-    // Saves one policy, creating it when policyId is blank, and returns it as saved.
-    @AuraEnabled
-    public static AIAssistSettingsDataStructure.PolicyView savePolicy(Id policyId, Map<String, Object> values) {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.savePolicy(policyId, values);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'savePolicy');
-        }
-    }
-
-    // Deletes a policy and its assignments.
-    @AuraEnabled
-    public static void deletePolicy(Id policyId) {
-
-        try {
-
-            // [1] Do the work
-            AIAssistPolicyEditorService.deletePolicy(policyId);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'deletePolicy');
-        }
-    }
-
-    // Assigns a policy to a user or a permission set.
-    @AuraEnabled
-    public static AIAssistSettingsDataStructure.PolicyView addPolicyAssignment(Id policyId, String assigneeType, Id userId, String permissionSetName) {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.addAssignment(policyId, assigneeType, userId, permissionSetName);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'addPolicyAssignment');
-        }
-    }
-
-    // Switches an assignment on or off.
-    @AuraEnabled
-    public static AIAssistSettingsDataStructure.PolicyView setPolicyAssignmentActive(Id assignmentId, Boolean isActive) {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.setAssignmentActive(assignmentId, isActive);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'setPolicyAssignmentActive');
-        }
-    }
-
-    // Removes an assignment.
-    @AuraEnabled
-    public static AIAssistSettingsDataStructure.PolicyView removePolicyAssignment(Id assignmentId) {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.removeAssignment(assignmentId);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'removePolicyAssignment');
-        }
-    }
-
-    // The permission sets and groups whose name matches the text.
-    @AuraEnabled
-    public static List<AIAssistSettingsDataStructure.OwnerOption> findPermissionSets(String searchText) {
-
-        try {
-
-            // [1] Do the work
-            return AIAssistPolicyEditorService.findPermissionSets(searchText);
-
-        } catch (Exception ex) {
-
-            // [2] Hand the tab a message it can show
-            throw buildAuraException(ex, 'findPermissionSets');
         }
     }
 
