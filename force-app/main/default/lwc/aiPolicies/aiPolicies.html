@@ -1,0 +1,185 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the body -->
+  <div class="aip-page">
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div
+      class="aip-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap"
+    >
+      <h1 class="aip-title slds-m-around_none">{labels.title}</h1>
+      <span class="aip-subtitle slds-text-body_small">{labels.subtitle}</span>
+    </div>
+
+    <!-- Body: the intro, the policy list and the chosen policy on a white card -->
+    <div class="aip-body slds-is-relative slds-p-around_medium">
+      <!-- Busy: shown while the list loads or a change is being made -->
+      <template lwc:if={isBusy}>
+        <lightning-spinner
+          size="small"
+          alternative-text={labels.loading}
+        ></lightning-spinner>
+      </template>
+
+      <!-- Intro: what a policy does -->
+      <p class="aip-intro slds-m-bottom_small">{labels.intro}</p>
+
+      <!-- Layout: the policy list on the left and the chosen policy on the right -->
+      <div
+        class="aip-layout slds-grid slds-wrap slds-grid_vertical-align-start"
+      >
+        <!-- List: one bordered row for each policy, and a button to create one -->
+        <div class="aip-list slds-grid slds-grid_vertical">
+          <!-- List head: the button that starts a new policy -->
+          <div class="aip-list-head">
+            <button
+              type="button"
+              class="slds-button slds-button_brand slds-size_1-of-1"
+              onclick={handleNewPolicy}
+            >
+              {labels.newPolicy}
+            </button>
+          </div>
+          <!-- Policies: the name, the Default pill and what each is assigned to -->
+          <template for:each={policyItems} for:item="item">
+            <button
+              key={item.key}
+              type="button"
+              class={item.itemClass}
+              data-key={item.key}
+              onclick={handlePolicySelect}
+            >
+              <span
+                class="aip-item-top slds-grid slds-grid_align-spread slds-grid_vertical-align-start"
+              >
+                <span class="aip-name">{item.name}</span>
+                <template lwc:if={item.isDefault}
+                  ><span class="aip-pill">{item.defaultLabel}</span></template
+                >
+              </span>
+              <span class="aip-detail slds-text-body_small"
+                >{item.summary}</span
+              >
+            </button>
+          </template>
+          <!-- No policies: shown when the load is done and the list is empty -->
+          <template lwc:if={showNoPolicies}
+            ><p
+              class="aip-empty slds-p-vertical_small slds-p-horizontal_medium"
+            >
+              {labels.noPolicies}
+            </p></template
+          >
+        </div>
+
+        <!-- Chosen policy: a dark header with its name, then the tabs -->
+        <div class="aip-editor">
+          <!-- Choose one: shown until a policy is picked -->
+          <template lwc:if={showChooseOne}
+            ><p
+              class="aip-empty slds-p-vertical_small slds-p-horizontal_medium"
+            >
+              {labels.chooseOne}
+            </p></template
+          >
+          <template lwc:if={hasSelection}>
+            <div class="aip-card">
+              <!-- Card head: the policy name and a delete button for a saved policy -->
+              <div
+                class="aip-card-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread"
+              >
+                <h2 class="aip-heading slds-m-around_none">{selectedName}</h2>
+                <template lwc:if={isSavedPolicy}
+                  ><button
+                    type="button"
+                    class="aip-delete-button slds-button"
+                    onclick={handleDeleteRequest}
+                  >
+                    {labels.deletePolicy}
+                  </button></template
+                >
+              </div>
+
+              <div class="slds-p-around_medium">
+                <!-- Saved policy: the Settings and Assignments tabs -->
+                <template lwc:if={isSavedPolicy}>
+                  <lightning-tabset active-tab-value={activeTab}>
+                    <lightning-tab
+                      label={labels.settingsTab}
+                      value={settingsTabValue}
+                      onactive={handleTabActive}
+                    >
+                      <template for:each={formKeyItems} for:item="item">
+                        <c-ai-policies-form
+                          key={item.key}
+                          values={formValues}
+                          is-saving={isSaving}
+                          error-message={errorMessage}
+                          onsave={handleSave}
+                          oncancel={handleCancel}
+                        ></c-ai-policies-form>
+                      </template>
+                    </lightning-tab>
+                    <lightning-tab
+                      label={assignmentsTabLabel}
+                      value={assignmentsTabValue}
+                      onactive={handleTabActive}
+                    >
+                      <template for:each={assignmentsKeyItems} for:item="item">
+                        <c-ai-policies-assignments
+                          key={item.key}
+                          policy-id={selectedKey}
+                          assignments={selectedAssignments}
+                          onaddrequest={handleAddRequest}
+                          onactivechange={handleAssignmentActive}
+                          onremove={handleAssignmentRemove}
+                          onassignuser={handleAssignUser}
+                        ></c-ai-policies-assignments>
+                      </template>
+                    </lightning-tab>
+                  </lightning-tabset>
+                </template>
+
+                <!-- New policy: only the form, because it has nobody to assign to until it is saved -->
+                <template lwc:else>
+                  <template for:each={formKeyItems} for:item="item">
+                    <c-ai-policies-form
+                      key={item.key}
+                      values={formValues}
+                      is-saving={isSaving}
+                      error-message={errorMessage}
+                      onsave={handleSave}
+                      oncancel={handleCancel}
+                    ></c-ai-policies-form>
+                  </template>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add assignment dialog: picks the user or permission set that gets the policy -->
+    <template lwc:if={isAssignOpen}>
+      <c-ai-policies-assign-dialog
+        policy-id={selectedKey}
+        policy-name={selectedName}
+        is-saving={isBusy}
+        error-message={assignErrorMessage}
+        oncancel={handleAddCancel}
+        onconfirm={handleAddConfirm}
+      ></c-ai-policies-assign-dialog>
+    </template>
+
+    <!-- Delete dialog: asks where the people of the policy move to -->
+    <template lwc:if={isDeleteOpen}>
+      <c-ai-policies-delete-dialog
+        policy-id={selectedKey}
+        policy-name={selectedName}
+        is-saving={isBusy}
+        error-message={deleteErrorMessage}
+        oncancel={handleDeleteCancel}
+        onconfirm={handleDeleteConfirm}
+      ></c-ai-policies-delete-dialog>
+    </template>
+  </div>
+</template>

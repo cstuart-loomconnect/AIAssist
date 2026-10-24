@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >The Assignments tab of one AI policy: who gets it, how a user's policy is chosen and a box to check a user.</description>
+</LightningComponentBundle>
