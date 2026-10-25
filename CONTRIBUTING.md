@@ -19,7 +19,7 @@ PRs are labelled automatically (`apex`, `lwc`, `aura`, `objects`, `flows`, `secu
 
 ## Naming conventions
 
-API names are checked on every PR by `scripts/ci/check-naming.js`. The `__c`, `__mdt`, `__e` suffix is added by Salesforce and is not checked; the name in front of it is.
+API names are checked on every PR by `check-naming.js` in [AIAssist-CICD](https://github.com/cstuart-loomconnect/AIAssist-CICD). The `__c`, `__mdt`, `__e` suffix is added by Salesforce and is not checked; the name in front of it is.
 
 | Metadata                                                                                        | Rule                          | Example                                     |
 | ----------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------- |
@@ -33,7 +33,7 @@ API names are checked on every PR by `scripts/ci/check-naming.js`. The `__c`, `_
 
 Not allowed anywhere: spaces, underscores, hyphens or other symbols in the name, and spaces in any file or folder name under `force-app` (layouts and reports are exempt).
 
-If a name genuinely has to break a rule, for example a name that already shipped in a released package, add its path to `.github/naming-exceptions.txt` with a comment explaining why.
+If a name genuinely has to break a rule, for example a name that already shipped in a released package, add its path to `config/naming-exceptions.txt` in AIAssist-CICD with a comment explaining why.
 
 ## Automated checks
 
@@ -46,6 +46,12 @@ If a name genuinely has to break a rule, for example a name that already shipped
 | Dependency audit          | `npm audit` at high severity                                                          |
 | Scratch org + Apex tests  | Creates a scratch org, deploys, runs all local tests and requires 75% coverage        |
 | PR title / labels         | Conventional title and area labels                                                    |
-| Nightly build             | Full scratch org test run on `development` every night. Opens an issue if it fails    |
+| Nightly build             | Full scratch org test run on `development`. Manual for now. Opens an issue if it fails |
 
-Results are posted as a comment on each pull request.
+All of these run on every pull request into `development` or `master`, and results are posted as a comment on the PR.
+
+The workflows themselves live in [AIAssist-CICD](https://github.com/cstuart-loomconnect/AIAssist-CICD). This repo's `.github/workflows/` only holds small callers pinned to the `v1` release branch (`@v1`). To change a check, open a PR there, not here.
+
+## Documentation
+
+The documentation site is in [AIAssist-Docs](https://github.com/cstuart-loomconnect/AIAssist-Docs) and is published at https://cstuart-loomconnect.github.io/AIAssist-Docs/. Its reference pages are generated from this repo's `development` branch, so they update on their own. Hand-written pages, including known issues, are edited in that repo.

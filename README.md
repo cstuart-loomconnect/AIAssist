@@ -1,6 +1,13 @@
 # AIAssist
 
-AIAssist is a Salesforce package developed with Salesforce DX and intended for distribution on the AppExchange.
+AIAssist is a Salesforce package developed with Salesforce DX. This repo holds the package source (Core and UI).
+
+## Related repositories
+
+- [AIAssist-Docs](https://github.com/cstuart-loomconnect/AIAssist-Docs): the documentation site, published at https://cstuart-loomconnect.github.io/AIAssist-Docs/
+- [AIAssist-CICD](https://github.com/cstuart-loomconnect/AIAssist-CICD): the GitHub workflows that run on pull requests, and the scripts they call
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branching, PR titles and the automated checks.
 
 ## Salesforce DX Project
 

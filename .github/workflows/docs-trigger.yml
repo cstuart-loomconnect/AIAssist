@@ -1,0 +1,31 @@
+name: Docs trigger
+
+# Asks AIAssist-Docs to rebuild the documentation site whenever development changes, so the
+# generated reference pages stay current. Needs the DOCS_DISPATCH_TOKEN secret (a fine-grained
+# token with Contents: read and write on AIAssist-Docs only). Without it this does nothing and the
+# docs site's daily build picks up the change instead.
+on:
+  push:
+    branches: [development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to AIAssist-Docs
+        env:
+          TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::DOCS_DISPATCH_TOKEN is not set; the docs site will pick this up on its daily build."
+            exit 0
+          fi
+          curl -sSf -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/cstuart-loomconnect/AIAssist-Docs/dispatches \
+            -d '{"event_type":"aiassist-updated","client_payload":{"sha":"${{ github.sha }}"}}'

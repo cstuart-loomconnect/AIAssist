@@ -1,44 +1,18 @@
 name: PR Hygiene
 
-# Labels PRs by the areas they change and enforces a conventional PR title (feat:, fix:, ...).
+# Labels the pull request by area and checks the title is `type: subject` (see CONTRIBUTING.md).
+# The rules live in AIAssist-CICD.
 on:
-  # CI switched off: pull_request trigger disabled, run manually only.
-  # pull_request:
-  #   types: [opened, edited, synchronize, reopened]
-  workflow_dispatch:
+  pull_request:
+    branches: [development, master]
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  label:
-    name: Label by area
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/labeler@v7
-        continue-on-error: true
-
-  title:
-    name: PR title format
-    # Dependabot titles are generated ("build(deps): Bump ...") with a capitalised subject
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: amannn/action-semantic-pull-request@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          types: |
-            feat
-            fix
-            docs
-            refactor
-            test
-            perf
-            build
-            ci
-            chore
-          requireScope: false
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: The subject "{subject}" must start with a lowercase letter.
+  hygiene:
+    uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/pr-hygiene.yml@v1
+    with:
+      cicd-ref: v1
