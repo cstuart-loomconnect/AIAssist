@@ -30,7 +30,6 @@ Your DX project follows this structure:
 
 - **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
 - **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
 - **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
 
 See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
