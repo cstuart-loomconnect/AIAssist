@@ -1,12 +1,12 @@
 name: Docs trigger
 
-# Asks AIAssist-Docs to rebuild the documentation site whenever development changes, so the
-# generated reference pages stay current. Needs the DOCS_DISPATCH_TOKEN secret (a fine-grained
+# Asks AIAssist-Docs to rebuild the documentation site whenever master changes (every PR merged
+# into master), so the published docs always match the released code. Needs the DOCS_DISPATCH_TOKEN secret (a fine-grained
 # token with Contents: read and write on AIAssist-Docs only). Without it this does nothing and the
 # docs site's daily build picks up the change instead.
 on:
   push:
-    branches: [development]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
