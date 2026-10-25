@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>AI Agent Wizard</masterLabel>
     <description
-  >Step-by-step wizard for setting up an AI Agent. Placeholder until it is built.</description>
+  >Step-by-step wizard that creates or changes an AI Agent in eight steps: basics, model, data sources, workflow actions, conversations, limits, access and review.</description>
     <targets>
         <target>lightning__Tab</target>
     </targets>

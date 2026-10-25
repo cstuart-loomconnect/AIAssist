@@ -1,0 +1,148 @@
+/* The gap between the status pill and the text beside it. SLDS has no 12px gap utility. */
+.aiawmo-gap {
+  gap: 12px;
+}
+
+/* Muted text, for details and help under a field. */
+.aiawmo-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawmo-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A list of choices in one bordered box. */
+.aiawmo-options {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One choice: a radio or checkbox, the text and a pill, with a line under it. */
+.aiawmo-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+  cursor: pointer;
+}
+
+.aiawmo-option:last-child {
+  border-bottom: 0;
+}
+
+/* The chosen choice: a tinted row. */
+.aiawmo-option_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* The name and the detail of a choice sit one above the other and take the room that is left. */
+.aiawmo-option-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The radio or checkbox takes the accent colour. */
+.aiawmo-option input {
+  accent-color: var(--aia-accent);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawmo-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}
+
+/* A green pill: live, active or connected. */
+.aiawmo-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An orange pill: something to look at. */
+.aiawmo-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A red pill: something is wrong. */
+.aiawmo-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* A note box: a rounded, tinted strip of text. SLDS notify boxes have a different look. */
+.aiawmo-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* An information note: the accent tint. */
+.aiawmo-note_info {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* A bordered box with a soft grey header, used for each group of rows. */
+.aiawmo-box {
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header of a box: the title on the left and an action on the right. */
+.aiawmo-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* One row of a box: a line under it, except the last. */
+.aiawmo-box-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+.aiawmo-box-row:last-child {
+  border-bottom: 0;
+}
+
+/* An empty state: a dashed box with centred text. */
+.aiawmo-empty {
+  padding: 28px 24px;
+  background: var(--aia-surface-soft);
+  border: 1px dashed var(--aia-line-strong);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* The title of an empty state: bold dark text. */
+.aiawmo-empty-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}

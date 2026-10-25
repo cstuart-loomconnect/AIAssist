@@ -553,4 +553,41 @@ public without sharing class AIAssistApplicationConstants {
     public static final Decimal MODEL_TEMPERATURE_MAX = 2;
     public static final Decimal MODEL_TEMPERATURE_MAX_ANTHROPIC = 1;
     public static final Integer PROMPT_TRY_IT_MAX_OUTPUT_TOKENS = 1024;
+
+    // The AI Agent Wizard tab.
+    public static final Integer WIZARD_OBJECT_SEARCH_MIN_LENGTH = 2;
+    public static final Integer WIZARD_OBJECT_SEARCH_MAX_RESULTS = 25;
+    public static final Integer WIZARD_ASSIGNEE_SEARCH_MAX_RESULTS = 25;
+    public static final Integer WIZARD_LIST_MAX_RESULTS = 200;
+    public static final String WIZARD_SEVERITY_BLOCKER = 'Blocker';
+    public static final String WIZARD_SEVERITY_WARNING = 'Warning';
+    public static final Integer WIZARD_STEP_BASICS = 1;
+    public static final Integer WIZARD_STEP_MODEL = 2;
+    public static final Integer WIZARD_STEP_DATA_SOURCES = 3;
+    public static final Integer WIZARD_STEP_ACTIONS = 4;
+    public static final Integer WIZARD_STEP_CONVERSATIONS = 5;
+    public static final Integer WIZARD_STEP_LIMITS = 6;
+    public static final Integer WIZARD_STEP_ACCESS = 7;
+    public static final String WIZARD_DEVELOPER_NAME_PATTERN = '^[A-Za-z][A-Za-z0-9_]*$';
+    public static final String WIZARD_COPY_NAME_PREFIX = 'Copy of ';
+    public static final String WIZARD_CODE_NAME_REQUIRED = 'NameRequired';
+    public static final String WIZARD_CODE_DEVELOPER_NAME_REQUIRED = 'DeveloperNameRequired';
+    public static final String WIZARD_CODE_DEVELOPER_NAME_FORMAT = 'DeveloperNameFormat';
+    public static final String WIZARD_CODE_DEVELOPER_NAME_TAKEN = 'DeveloperNameTaken';
+    public static final String WIZARD_CODE_OBJECTS_REQUIRED = 'ObjectsRequired';
+    public static final String WIZARD_CODE_NO_MODEL = 'NoModel';
+    public static final String WIZARD_CODE_MODEL_INACTIVE = 'ModelInactive';
+    public static final String WIZARD_CODE_CONVERSATION_LIMITS_MUST_BE_POSITIVE = 'ConversationLimitsMustBePositive';
+    public static final String WIZARD_CODE_OBJECT_NOT_ON_AGENT = 'ObjectNotOnAgent';
+    public static final String WIZARD_CODE_ITEM_INACTIVE = 'ItemInactive';
+    public static final String WIZARD_CODE_FLOW_NO_ACTIVE_VERSION = 'FlowNoActiveVersion';
+    public static final String WIZARD_CODE_WORKFLOW_ACTIONS_DISABLED = 'WorkflowActionsDisabled';
+    public static final String WIZARD_CODE_TOKENS_OVER_POLICY = 'TokensOverPolicy';
+    public static final String WIZARD_CODE_TOOL_ROUNDS_OVER_CAP = 'ToolRoundsOverCap';
+    public static final String WIZARD_CODE_GLOBAL_VISIBILITY = 'GlobalVisibility';
+    public static final String WIZARD_CODE_NO_ASSIGNMENTS = 'NoAssignments';
+    public static final String WIZARD_CODE_NO_POLICY = 'NoPolicy';
+    public static final String WIZARD_CODE_NO_TEMPLATE = 'NoTemplate';
+    public static final String WIZARD_CODE_TOO_MANY_DATA_SOURCES = 'TooManyDataSources';
+    public static final String WIZARD_CODE_TOO_MANY_ACTIONS = 'TooManyActions';
 }

@@ -1,0 +1,22 @@
+<template>
+  <!-- Done card: a white card with a tick, what happened and the buttons -->
+  <div class="aiawdo-card-box">
+    <div class="aiawdo-tick">✓</div>
+    <h2 class="aiawdo-title">{titleText}</h2>
+    <p class="aiawdo-muted aiawdo-text">{detailText}</p>
+
+    <!-- What was created and the model -->
+    <div class="aiawdo-rows">
+      <div class="aiawdo-row"><span class="aiawdo-muted aiawdo-row-label">{createdLabel}</span><span>{createdText}</span></div>
+      <div class="aiawdo-row"><span class="aiawdo-muted aiawdo-row-label">{labels.model}</span><span>{modelText}</span></div>
+    </div>
+
+    <!-- Buttons: open the agent, try it on a record page, start another agent, or go back to the list -->
+    <div class="aiawdo-buttons">
+      <lightning-button variant="brand" label={labels.openRecord} onclick={handleOpenRecord}></lightning-button>
+      <template lwc:if={showTryIt}><lightning-button variant="brand-outline" label={tryLabel} onclick={handleTryIt}></lightning-button></template>
+      <lightning-button label={labels.createAnother} onclick={handleCreateAnother}></lightning-button>
+      <lightning-button label={labels.backToList} onclick={handleBackToList}></lightning-button>
+    </div>
+  </div>
+</template>

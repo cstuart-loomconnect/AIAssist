@@ -59,7 +59,7 @@ public without sharing class AIPromptTemplatesTryItService {
     }
 
     // Runs one message with one wording the way a chat turn does, and reports the reply.
-    private static AIPromptTemplatesDataStructure.RunResult runMessage(AIAgent__c agent, AIModelConfiguration__c modelConfiguration, AIPromptTemplate__c promptTemplate, String messageBody) {
+    public static AIPromptTemplatesDataStructure.RunResult runMessage(AIAgent__c agent, AIModelConfiguration__c modelConfiguration, AIPromptTemplate__c promptTemplate, String messageBody) {
 
         // [1] Build the one message the model answers
         AIConversationMessage__c userMessage = new AIConversationMessage__c(Sender__c = AIAssistApplicationConstants.SENDER_USER, MessageBody__c = messageBody);

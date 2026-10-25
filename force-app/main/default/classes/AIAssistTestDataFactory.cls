@@ -532,6 +532,48 @@ public without sharing class AIAssistTestDataFactory {
         return feedback;
     }
 
+    // A draft the AI Agent Wizard would accept: a unique name and API name, one object, the model, and every setting filled in. Nothing is saved.
+    public static AIAgentWizardDataStructure.AgentDraft createAIAgentDraft(Id modelConfigurationId) {
+
+        // [1] Fill every setting of the draft
+        AIAgentWizardDataStructure.AgentDraft draft = new AIAgentWizardDataStructure.AgentDraft();
+        draft.agentName = 'AI Assist Test Agent ' + uniqueSuffix();
+        draft.developerName = 'Agent_' + uniqueSuffix();
+        draft.description = 'A test agent.';
+        draft.persona = 'You are a test agent.';
+        draft.greeting = 'Hello.';
+        draft.objectApiNames = new List<String>{'Account'};
+        draft.modelConfigurationId = modelConfigurationId;
+        draft.conversationLoadTrigger = 'On Chat Window Open';
+        draft.allowConversationResume = true;
+        draft.singleActiveConversationPerRecord = true;
+        draft.conversationVisibility = 'Private';
+        draft.idleTimeoutMinutes = 60;
+        draft.conversationRetentionDays = 90;
+        draft.retentionTrigger = AIAssistApplicationConstants.RETENTION_TRIGGER_CONVERSATION_CLOSED_DATE;
+        draft.maxMessagesPerConversation = 100;
+        draft.maxTokensPerConversation = 50000;
+        draft.maxToolCallingIterations = 5;
+        draft.tokenTrackingMethod = AIAssistApplicationConstants.TRACKING_METHOD_TRACK;
+        draft.accessMode = AIAssistApplicationConstants.ACCESS_MODE_ALL_USERS;
+
+        return draft;
+    }
+
+    // One access line of a draft, for a user or, when the user is null, for the permission set. Nothing is saved.
+    public static AIAgentWizardDataStructure.AssignmentView createAIAssignmentView(Id userId, String permissionSetName) {
+
+        // [1] Fill the line for the user or the permission set
+        AIAgentWizardDataStructure.AssignmentView view = new AIAgentWizardDataStructure.AssignmentView();
+        view.assigneeType = userId == null ? AIAssistApplicationConstants.ASSIGNEE_TYPE_PERMISSION_SET : AIAssistApplicationConstants.ASSIGNEE_TYPE_USER;
+        view.userId = userId;
+        view.permissionSetName = permissionSetName;
+        view.label = userId == null ? permissionSetName : 'A user';
+        view.isActive = true;
+
+        return view;
+    }
+
     // A short random text that keeps names unique.
     private static String uniqueSuffix() {
 
