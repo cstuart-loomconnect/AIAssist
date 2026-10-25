@@ -11,15 +11,18 @@
       <button id="menu" aria-label="Menu">☰</button>
       <a class="brand" href="../">AI Assist</a>
       <span class="muted">Documentation</span>
-      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
       <button id="theme" aria-label="Toggle theme">◐</button>
       <div id="results" hidden></div>
     </header>
     <div class="layout">
       <nav id="nav" aria-label="Sections"><a href="../" class="">Home</a><a href="../architecture/" class="">Architecture</a><a href="../data-model/" class="current">Data model</a><a href="../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../data-model/conversations/" class="sub ">Conversations</a><a href="../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../data-model/pii-protection/" class="sub ">PII protection</a><a href="../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../interface/" class="">User interface</a><a href="../security/" class="">Security</a><a href="../develop/" class="">Develop and test</a></nav>
-      <main>
-        <div class="crumbs"><a href="../">Home</a></div>
-        
+      <main><div class="crumbs"><a href="../">Home</a></div> 
 <h1>Data model</h1>
 <p class="lead">28 objects in 5 groups. Solid lines are master-detail (child deleted with its parent); dotted lines are lookups.</p>
 <div class="diagram"><pre class="mermaid">erDiagram
@@ -122,9 +125,7 @@
     string ExecutionType
   }</pre></div>
 <h2>Groups</h2>
-<div class="cards"><a class="card" href="agent-configuration/"><b>Agent configuration</b><span>What an agent is made of: its model, prompt template, tools and who may use it.</span></a><a class="card" href="conversations/"><b>Conversations</b><span>What users say to an agent, what it answers, and the feedback and terms around it.</span></a><a class="card" href="usage-and-policies/"><b>Usage and policies</b><span>Limits live on policies, assigned to users; consumption is counted one row per user per day.</span></a><a class="card" href="pii-protection/"><b>PII protection</b><span>The registry of fields to protect, and the pseudonym mappings recorded for each conversation.</span></a><a class="card" href="settings-and-logging/"><b>Settings and logging</b><span>Org-wide settings, chat commands, and the platform log.</span></a></div>
-        <div class="pager"><a href="../architecture/">← Architecture</a><a href="../data-model/agent-configuration/">Agent configuration →</a></div>
-      </main>
+<div class="cards"><a class="card" href="agent-configuration/"><b>Agent configuration</b><span>What an agent is made of: its model, prompt template, tools and who may use it.</span></a><a class="card" href="conversations/"><b>Conversations</b><span>What users say to an agent, what it answers, and the feedback and terms around it.</span></a><a class="card" href="usage-and-policies/"><b>Usage and policies</b><span>Limits live on policies, assigned to users; consumption is counted one row per user per day.</span></a><a class="card" href="pii-protection/"><b>PII protection</b><span>The registry of fields to protect, and the pseudonym mappings recorded for each conversation.</span></a><a class="card" href="settings-and-logging/"><b>Settings and logging</b><span>Org-wide settings, chat commands, and the platform log.</span></a></div> <div class="pager"><a href="../architecture/">← Architecture</a><a href="../data-model/agent-configuration/">Agent configuration →</a></div></main>
     </div>
     <script type="module" src="../assets/js/site.js"></script>
   </body>

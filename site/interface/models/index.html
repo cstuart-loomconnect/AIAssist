@@ -11,31 +11,36 @@
       <button id="menu" aria-label="Menu">☰</button>
       <a class="brand" href="../../">AI Assist</a>
       <span class="muted">Documentation</span>
-      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
       <button id="theme" aria-label="Toggle theme">◐</button>
       <div id="results" hidden></div>
     </header>
     <div class="layout">
       <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../interface/" class="">User interface</a><a href="../../interface/chat/" class="sub ">Chat window</a><a href="../../interface/agent-wizard/" class="sub ">Agent Wizard</a><a href="../../interface/models/" class="sub current">AI Models</a><a href="../../interface/prompt-templates/" class="sub ">Prompt Templates</a><a href="../../interface/ai-tools/" class="sub ">AI Tools</a><a href="../../interface/policies/" class="sub ">AI Policies</a><a href="../../interface/pii-registry/" class="sub ">PII Registry</a><a href="../../interface/settings/" class="sub ">AI Assist Settings</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
-      <main>
-        <div class="crumbs"><a href="../../">Home</a> / <a href="../../interface/">User interface</a></div>
-        <h1>AI Models</h1>
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../interface/">User interface</a></div> <h1>AI Models</h1>
 <p class="lead">Manage connections to AI providers. A model is only switched on after a test message succeeds.</p>
 
 <h2>Behaviour worth knowing</h2>
-<ul><li>The connection test runs the real chat path with a stand-in agent and a small token cap, so it works for every provider.</li><li>Switching a model off requires each active agent using it to be moved to another active model.</li></ul>
+<ul>
+  <li>The connection test runs the real chat path with a stand-in agent and a small token cap, so it works for every provider.</li><li>Switching a model off requires each active agent using it to be moved to another active model.</li>
+</ul>
 
 <h2>Objects it works with</h2>
-<ul><li><a href="../../data-model/agent-configuration/#AIModelConfiguration__c">AI Model Configuration</a> <code>AIModelConfiguration__c</code></li><li><a href="../../data-model/agent-configuration/#AIAgent__c">AI Agent</a> <code>AIAgent__c</code></li></ul>
+<ul>
+  <li><a href="../../data-model/agent-configuration/#AIModelConfiguration__c">AI Model Configuration</a> <code>AIModelConfiguration__c</code></li><li><a href="../../data-model/agent-configuration/#AIAgent__c">AI Agent</a> <code>AIAgent__c</code></li>
+</ul>
 
 <h2>Apex</h2>
 <p><code>AIModelsConnectionTestService</code> <code>AIModelsController</code> <code>AIModelsDataStructure</code> <code>AIModelsEditorService</code></p>
 
 <h2>Lightning web components (3)</h2>
 <p><code>aiModels</code> <code>aiModelsForm</code> <code>aiModelsSwitchOffDialog</code></p>
-
-        <div class="pager"><a href="../../interface/agent-wizard/">← Agent Wizard</a><a href="../../interface/prompt-templates/">Prompt Templates →</a></div>
-      </main>
+ <div class="pager"><a href="../../interface/agent-wizard/">← Agent Wizard</a><a href="../../interface/prompt-templates/">Prompt Templates →</a></div></main>
     </div>
     <script type="module" src="../../assets/js/site.js"></script>
   </body>

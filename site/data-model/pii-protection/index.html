@@ -11,15 +11,18 @@
       <button id="menu" aria-label="Menu">☰</button>
       <a class="brand" href="../../">AI Assist</a>
       <span class="muted">Documentation</span>
-      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
       <button id="theme" aria-label="Toggle theme">◐</button>
       <div id="results" hidden></div>
     </header>
     <div class="layout">
       <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub current">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
-      <main>
-        <div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div>
-        
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
 <h1>PII protection</h1>
 <p class="lead">The registry of fields to protect, and the pseudonym mappings recorded for each conversation.</p>
 <div class="diagram"><pre class="mermaid">erDiagram
@@ -178,9 +181,7 @@
     
     <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Compliance Group</td><td><code>ComplianceGroup__c</code></td><td>MetadataRelationship → AIPiiComplianceGroup</td><td></td></tr><tr><td>Display Order</td><td><code>DisplayOrder__c</code></td><td>Number</td><td>required</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td>Whether this rule is evaluated.</td></tr><tr><td>Is Compliance Group Fallback</td><td><code>IsComplianceGroupFallback__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Keyword</td><td><code>Keyword__c</code></td><td>Text</td><td>required</td></tr><tr><td>Masking Rule</td><td><code>MaskingRule__c</code></td><td>MetadataRelationship → AIPiiDataMaskingRule</td><td>required</td></tr><tr><td>Match Field</td><td><code>MatchField__c</code></td><td>Picklist</td><td>required · values: NameOrLabelContains, ApiNameExact, DataTypeContains · Which signal the keyword is matched against.</td></tr><tr><td>PII Field Type</td><td><code>PIIFieldType__c</code></td><td>Text</td><td>required</td></tr></tbody></table></div>
   </div>
-</details>
-        <div class="pager"><a href="../../data-model/usage-and-policies/">← Usage and policies</a><a href="../../data-model/settings-and-logging/">Settings and logging →</a></div>
-      </main>
+</details> <div class="pager"><a href="../../data-model/usage-and-policies/">← Usage and policies</a><a href="../../data-model/settings-and-logging/">Settings and logging →</a></div></main>
     </div>
     <script type="module" src="../../assets/js/site.js"></script>
   </body>

@@ -11,15 +11,18 @@
       <button id="menu" aria-label="Menu">☰</button>
       <a class="brand" href="../../">AI Assist</a>
       <span class="muted">Documentation</span>
-      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
       <button id="theme" aria-label="Toggle theme">◐</button>
       <div id="results" hidden></div>
     </header>
     <div class="layout">
       <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub current">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub ">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
-      <main>
-        <div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div>
-        
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
 <h1>Agent configuration</h1>
 <p class="lead">What an agent is made of: its model, prompt template, tools and who may use it.</p>
 <div class="diagram"><pre class="mermaid">erDiagram
@@ -208,9 +211,7 @@
     <p><b>Validation rules:</b> <code>ActionTypeFieldsExclusive</code> <code>ApexClassNameFormat</code> <code>ApexClassRequired</code> <code>ConfirmationMessageRequired</code> <code>FlowAPINameFormat</code> <code>FlowAPINameRequired</code> <code>WriteActionsRequireConfirmation</code></p>
     <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Action Name</td><td><code>ActionName__c</code></td><td>Text</td><td>required</td></tr><tr><td>Action Type</td><td><code>ActionType__c</code></td><td>Picklist</td><td>required · values: Apex, Flow, Screen Flow</td></tr><tr><td>Apex Class Name</td><td><code>ApexClassName__c</code></td><td>Text</td><td></td></tr><tr><td>Confirmation Message</td><td><code>ConfirmationMessage__c</code></td><td>TextArea</td><td></td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td></td></tr><tr><td>Developer Name</td><td><code>DeveloperName__c</code></td><td>Text</td><td>required · unique · external ID</td></tr><tr><td>Execution Type</td><td><code>ExecutionType__c</code></td><td>Picklist</td><td>required · values: Read Only, Write</td></tr><tr><td>Flow API Name</td><td><code>FlowAPIName__c</code></td><td>Text</td><td></td></tr><tr><td>Input Schema</td><td><code>InputSchema__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Last Test Status</td><td><code>LastTestStatus__c</code></td><td>Picklist</td><td>values: Passed, Failed</td></tr><tr><td>Last Tested On</td><td><code>LastTestedOn__c</code></td><td>DateTime</td><td></td></tr><tr><td>Output Description</td><td><code>OutputDescription__c</code></td><td>TextArea</td><td></td></tr><tr><td>Requires Confirmation</td><td><code>RequiresConfirmation__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Target Object</td><td><code>TargetObject__c</code></td><td>Text</td><td>The object this action operates on.</td></tr><tr><td>Tested Flow Version</td><td><code>TestedFlowVersion__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
   </div>
-</details>
-        <div class="pager"><a href="../../data-model/">← Data model</a><a href="../../data-model/conversations/">Conversations →</a></div>
-      </main>
+</details> <div class="pager"><a href="../../data-model/">← Data model</a><a href="../../data-model/conversations/">Conversations →</a></div></main>
     </div>
     <script type="module" src="../../assets/js/site.js"></script>
   </body>

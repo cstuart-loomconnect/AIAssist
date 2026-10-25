@@ -11,15 +11,18 @@
       <button id="menu" aria-label="Menu">☰</button>
       <a class="brand" href="../../">AI Assist</a>
       <span class="muted">Documentation</span>
-      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
       <button id="theme" aria-label="Toggle theme">◐</button>
       <div id="results" hidden></div>
     </header>
     <div class="layout">
       <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub ">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub current">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
-      <main>
-        <div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div>
-        
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
 <h1>Settings and logging</h1>
 <p class="lead">Org-wide settings, chat commands, and the platform log.</p>
 
@@ -101,9 +104,7 @@
     
     <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Class Name</td><td><code>ClassName__c</code></td><td>Text</td><td>Where the exception occurred.</td></tr><tr><td>Exception Log Detail</td><td><code>ExceptionLogDetail__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Exception Message</td><td><code>ExceptionMessage__c</code></td><td>Text</td><td>The exception's message.</td></tr><tr><td>Exception Type</td><td><code>ExceptionType__c</code></td><td>Text</td><td>The exception class, such as System.DmlException.</td></tr><tr><td>Method Name</td><td><code>MethodName__c</code></td><td>Text</td><td>Which method the exception occurred in.</td></tr><tr><td>Occurred At</td><td><code>OccurredAt__c</code></td><td>DateTime</td><td>When the exception occurred.</td></tr><tr><td>Related Record Id</td><td><code>RelatedRecordId__c</code></td><td>Text</td><td></td></tr><tr><td>Severity</td><td><code>Severity__c</code></td><td>Picklist</td><td>values: Error, Warning, Info</td></tr><tr><td>Stack Trace</td><td><code>StackTrace__c</code></td><td>LongTextArea</td><td>The full stack trace at the point of failure.</td></tr><tr><td>User</td><td><code>User__c</code></td><td>Lookup → User</td><td></td></tr></tbody></table></div>
   </div>
-</details>
-        <div class="pager"><a href="../../data-model/pii-protection/">← PII protection</a><a href="../../interface/">User interface →</a></div>
-      </main>
+</details> <div class="pager"><a href="../../data-model/pii-protection/">← PII protection</a><a href="../../interface/">User interface →</a></div></main>
     </div>
     <script type="module" src="../../assets/js/site.js"></script>
   </body>
