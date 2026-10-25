@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExactlyOneTool</fullName>
+    <active>true</active>
+    <description>A skill tool is one data source or one workflow action.</description>
+    <errorConditionFormula>OR(AND(ISBLANK(AIDataSource__c), ISBLANK(AIWorkflowAction__c)), AND(NOT(ISBLANK(AIDataSource__c)), NOT(ISBLANK(AIWorkflowAction__c))))</errorConditionFormula>
+    <errorDisplayField>AIDataSource__c</errorDisplayField>
+    <errorMessage>A skill tool is one data source or one workflow action.</errorMessage>
+</ValidationRule>

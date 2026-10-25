@@ -163,6 +163,7 @@ public without sharing class AIAssistApplicationConstants {
     public static final String STEP_TYPE_PROVIDER_CALL = 'Provider Call';
     public static final String STEP_TYPE_WORKFLOW_ACTION = 'Workflow Action';
     public static final String STEP_TYPE_PII_MASKING = 'PII Masking';
+    public static final String STEP_TYPE_SKILL = 'Skill';
     public static final String STEP_TYPE_OTHER = 'Other';
 
     // The status of an entry in AIConversationMessage__c.ExecutionTraceJson__c
@@ -298,6 +299,16 @@ public without sharing class AIAssistApplicationConstants {
     public static final String PROMPT_TEMPLATE_PROMPT_INSTRUCTION = 'Prompt templates (if the request clearly matches one, call ' + PROMPT_TEMPLATE_TOOL_NAME + ' with its name before answering; otherwise answer as normal):';
     public static final String TOOL_RESULT_PROMPT_TEMPLATE_SELECTED = 'The prompt template was selected and its instructions now apply. Answer the user\'s request.';
     public static final String TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN = 'That is not one of the listed prompt templates. Answer with the instructions you already have.';
+
+    // AIAgentManager - the skill tool, which lets the model pick one of the Agent's AI Skills. The model sees only each skill's name and When To Use It text until it picks one; then the skill's instructions and tools are added for the rest of the turn. It is only offered when the agent has skills.
+    public static final String SKILL_TOOL_NAME = 'use_skill';
+    public static final String SKILL_TOOL_ARGUMENT = 'skill';
+    public static final String SKILL_TOOL_DESCRIPTION = 'Pick the skill that fits what the user asked for. Its instructions and tools are added once picked. Call it before answering, only when the request clearly matches one of the skills listed in the instructions.';
+    public static final String SKILL_PROMPT_INSTRUCTION = 'Skills (if the request clearly matches one, call ' + SKILL_TOOL_NAME + ' with its name before answering; otherwise answer as normal):';
+    public static final String SKILL_SELECTED_PROMPT_HEADING = 'Skill in use: ';
+    public static final String TOOL_RESULT_SKILL_SELECTED = 'The skill was picked. Its instructions now apply and its tools are available. Follow the instructions to answer the user\'s request.';
+    public static final String TOOL_RESULT_SKILL_UNKNOWN = 'That is not one of the listed skills. Answer with the instructions and tools you already have.';
+    public static final Integer MAX_SKILLS_PER_AGENT = 32;
 
     // AIAgentManager - AI provider callout request.
     public static final String HTTP_METHOD_POST = 'POST';

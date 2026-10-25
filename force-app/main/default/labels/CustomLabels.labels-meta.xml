@@ -3030,4 +3030,44 @@
         <value
     >This user holds {0}, which is assigned to the agent, and has a usage policy.</value>
     </labels>
+    <labels>
+        <fullName>AI_Error_Skill_Description_Length</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skill: When To Use It length.</shortDescription>
+        <value>When To Use It must be between 40 and 400 characters. It is all the model sees before it picks the skill.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Skill_No_Tools</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skill: activated with no tools.</shortDescription>
+        <value>Add at least one data source or workflow action before activating the skill.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Skill_Unknown_Tool</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skill: instructions name a missing tool.</shortDescription>
+        <value>The instructions name a tool that is not in the skill: {0}. Add it to the skill or remove the @ name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Skill_Mixed_Objects</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skill: bound tools on two objects.</shortDescription>
+        <value>The skill&apos;s bound data sources must all be on the same object, because a skill runs against one open record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Skill_Developer_Name_Locked</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skill: API name used by an agent.</shortDescription>
+        <value>An agent uses this skill, so its API name cannot change. Remove it from the agent first.</value>
+    </labels>
 </CustomLabels>

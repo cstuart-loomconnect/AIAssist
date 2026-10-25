@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>BoundObjectApiName__c</fullName>
+    <description>The object of the record the skill needs open, taken from its bound data sources by the AI Skill Tool trigger. Blank means the skill is unbound and can be offered anywhere.</description>
+    <inlineHelpText>Set automatically from the skill&apos;s tools. Do not edit.</inlineHelpText>
+    <label>Bound Object</label>
+    <length>80</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

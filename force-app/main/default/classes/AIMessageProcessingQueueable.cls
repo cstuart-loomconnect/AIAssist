@@ -8,7 +8,7 @@ Description: The asynchronous worker that answers one message outside the user's
 
 Step 1: Attach the finalizer so retries, the next message and the lock release happen however the job ends
 Step 2: Load the triggering message, and stand down if the conversation's lock has expired
-Step 3: Load the conversation, agent, model connection, prompt template, bounded history and tools
+Step 3: Load the conversation, agent, model connection, prompt template, bounded history, tools and AI Skills
 Step 4: Run the turn through the AI Agent Manager and save any held PII mappings
 Step 5: Save the provider's reference to the conversation (the Anthropic Agent API session id) on the conversation
 Step 6: Hand a retryable result to the finalizer, otherwise record the outcome
@@ -34,6 +34,7 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
         public List<AIConversationMessage__c> messageHistory;
         public List<AIDataSource__c> dataSources;
         public List<AIWorkflowAction__c> workflowActions;
+        public List<AISkillService.SkillBundle> skills;
         public Integer attemptNumber;
         public AIExecutionStepTracker trace;
     }
@@ -182,6 +183,7 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.messageHistory = orderedHistory;
             responseRequest.dataSources = getAssignedDataSources(agent.Id);
             responseRequest.workflowActions = getAssignedActions(agent.Id);
+            responseRequest.skills = AISkillService.getAssignedSkills(agent.Id, conversation.RelatedObjectAPIName__c);
             responseRequest.attemptNumber = attemptNumber;
 
             // [16] Show live progress as the UI settings say, store steps when the user's usage policy says so, and keep request and response payloads only for a user with both step capture and debug mode on
@@ -191,14 +193,16 @@ public without sharing class AIMessageProcessingQueueable implements Queueable, 
             responseRequest.trace.shouldCaptureSteps = shouldCaptureSteps;
 
             // [17] Run the turn through the AI Agent Manager
-            AIAgentManager.AgentResult agentResult = AIAgentManager.executeAiMessage(responseRequest.agent, responseRequest.modelConfiguration, responseRequest.promptTemplate, responseRequest.routingPromptTemplates, responseRequest.conversation, responseRequest.messageHistory, responseRequest.dataSources, responseRequest.workflowActions, responseRequest.attemptNumber, responseRequest.trace);
+            AIAgentManager.AgentResult agentResult = AIAgentManager.executeAiMessage(responseRequest.agent, responseRequest.modelConfiguration, responseRequest.promptTemplate, responseRequest.routingPromptTemplates, responseRequest.conversation, responseRequest.messageHistory, responseRequest.dataSources, responseRequest.workflowActions, responseRequest.skills, responseRequest.attemptNumber, responseRequest.trace);
 
-            // [18] Record the template the model switched to, so the reply names the one that produced it
+            // [18] Record the template the model switched to and the skill it picked, so the reply names the ones that produced it
             if (agentResult.selectedPromptTemplateId != null) {
 
                 responseContext.promptTemplateId = agentResult.selectedPromptTemplateId;
                 responseContext.promptTemplateVersion = agentResult.selectedPromptTemplateVersion;
             }
+
+            responseContext.skillId = agentResult.selectedSkillId;
 
             // [19] Add the tokens earlier attempts spent, so the result covers the whole turn
             agentResult.totalTokensUsed = (agentResult.totalTokensUsed == null ? 0 : agentResult.totalTokensUsed) + priorInputTokens + priorOutputTokens;
