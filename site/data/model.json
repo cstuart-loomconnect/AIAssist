@@ -1,0 +1,3236 @@
+{
+ "generated": "2026-10-25",
+ "domains": [
+  {
+   "key": "config",
+   "title": "Agent configuration",
+   "summary": "What an agent is made of: its model, prompt template, tools and who may use it.",
+   "objects": [
+    "AIAgent__c",
+    "AIModelConfiguration__c",
+    "AIPromptTemplate__c",
+    "AIPromptTestMessage__c",
+    "AIDataSource__c",
+    "AIWorkflowAction__c",
+    "AIAgentDataSource__c",
+    "AIAgentWorkflowAction__c",
+    "AIAgentAssignment__c"
+   ]
+  },
+  {
+   "key": "conversation",
+   "title": "Conversations",
+   "summary": "What users say to an agent, what it answers, and the feedback and terms around it.",
+   "objects": [
+    "AIConversation__c",
+    "AIConversationMessage__c",
+    "AIFeedback__c",
+    "AITermsAcknowledgment__c",
+    "AIAgent__c",
+    "AIPromptTemplate__c",
+    "AIModelConfiguration__c",
+    "AIWorkflowAction__c"
+   ]
+  },
+  {
+   "key": "usage",
+   "title": "Usage and policies",
+   "summary": "Limits live on policies, assigned to users; consumption is counted one row per user per day.",
+   "objects": [
+    "AIUsagePolicy__c",
+    "AIUsagePolicyAssignment__c",
+    "AIUsage__c"
+   ]
+  },
+  {
+   "key": "pii",
+   "title": "PII protection",
+   "summary": "The registry of fields to protect, and the pseudonym mappings recorded for each conversation.",
+   "objects": [
+    "AIPIIRegistry__c",
+    "AIPIIFieldMetadata__c",
+    "AIPIIMapping__c",
+    "AIPIIMaskingRecord__c",
+    "AIConversation__c",
+    "AIConversationMessage__c",
+    "AIPiiComplianceGroup__mdt",
+    "AIPiiDataMaskingRule__mdt",
+    "AIPiiFieldType__mdt"
+   ]
+  },
+  {
+   "key": "platform",
+   "title": "Settings and logging",
+   "summary": "Org-wide settings, chat commands, and the platform log.",
+   "objects": [
+    "AIAssistSettings__c",
+    "AIAssistUISettings__c",
+    "AIChatCommand__mdt",
+    "AIPlatformLog__c",
+    "AIPlatformLogEvent__e"
+   ]
+  }
+ ],
+ "objects": {
+  "AIAgentAssignment__c": {
+   "name": "AIAgentAssignment__c",
+   "label": "AI Agent Assignment",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "Grants a user access to an agent when its access mode is Assigned Users Only.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIAgent__c",
+     "label": "AI Agent",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIAgent__c",
+     "values": [],
+     "description": "The Agent this assignment gives access to."
+    },
+    {
+     "name": "AssigneeType__c",
+     "label": "Assignee Type",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "User",
+      "Permission Set"
+     ]
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Whether this assignment currently grants access."
+    },
+    {
+     "name": "PermissionSetName__c",
+     "label": "Permission Set Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "User__c",
+     "label": "User",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "User",
+     "deleteConstraint": "SetNull",
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "AssigneeMatchesType",
+    "PermissionSetNameFormat"
+   ],
+   "hasTrigger": false
+  },
+  "AIAgentDataSource__c": {
+   "name": "AIAgentDataSource__c",
+   "label": "AI Agent Data Source",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "Junction: which data sources an agent may call.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIAgent__c",
+     "label": "AI Agent",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIAgent__c",
+     "values": [],
+     "description": "The Agent this data source is assigned to."
+    },
+    {
+     "name": "AIDataSource__c",
+     "label": "AI Data Source",
+     "type": "Lookup",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIDataSource__c",
+     "deleteConstraint": "Restrict",
+     "values": [],
+     "description": "The Data Source being assigned to this Agent."
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIAgentWorkflowAction__c": {
+   "name": "AIAgentWorkflowAction__c",
+   "label": "AI Agent Workflow Action",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "Junction: which workflow actions an agent may suggest.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIAgent__c",
+     "label": "AI Agent",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIAgent__c",
+     "values": [],
+     "description": "The Agent this workflow action is assigned to."
+    },
+    {
+     "name": "AIWorkflowAction__c",
+     "label": "AI Workflow Action",
+     "type": "Lookup",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIWorkflowAction__c",
+     "deleteConstraint": "Restrict",
+     "values": [],
+     "description": "The Workflow Action being assigned to this Agent."
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIAgent__c": {
+   "name": "AIAgent__c",
+   "label": "AI Agent",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "An assistant a user can chat with: persona, access mode, conversation limits and retention, tied to a model and a prompt template.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIAgentPersona__c",
+     "label": "AI Agent Persona",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AIModelConfiguration__c",
+     "label": "AI Model Configuration",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIModelConfiguration__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "AIPromptTemplate__c",
+     "label": "AI Prompt Template",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPromptTemplate__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "AccessMode__c",
+     "label": "Access Mode",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Assigned Users Only",
+      "All AI Assist Users"
+     ]
+    },
+    {
+     "name": "AllowConversationResume__c",
+     "label": "Allow Conversation Resume",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConversationLoadTrigger__c",
+     "label": "Conversation Load Trigger",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "On Page Load",
+      "On Chat Window Open",
+      "Manual Only"
+     ]
+    },
+    {
+     "name": "ConversationRetentionDays__c",
+     "label": "Conversation Retention Days",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConversationVisibility__c",
+     "label": "Conversation Visibility",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Private",
+      "Global"
+     ]
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DeveloperName__c",
+     "label": "Developer Name",
+     "type": "Text",
+     "required": true,
+     "unique": true,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "ExternalReference__c",
+     "label": "External Reference",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "GreetingMessage__c",
+     "label": "Greeting Message",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IdleTimeoutMinutes__c",
+     "label": "Idle Timeout Minutes",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxMessagesPerConversation__c",
+     "label": "Max Messages Per Conversation",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxTokensPerConversation__c",
+     "label": "Max Tokens Per Conversation",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxToolCallingIterations__c",
+     "label": "Max Tool Calling Iterations",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ObjectApiNames__c",
+     "label": "Object API Names",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RetentionTrigger__c",
+     "label": "Retention Trigger",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Conversation Created Date",
+      "Conversation Closed Date",
+      "Last Message Date"
+     ]
+    },
+    {
+     "name": "SingleActiveConversationPerRecord__c",
+     "label": "Single Active Conversation Per Record",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "TokenTrackingMethod__c",
+     "label": "Token Tracking Method",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Estimate Token Usage",
+      "Track Token Usage",
+      "Pre-Request Usage Check"
+     ]
+    }
+   ],
+   "validationRules": [
+    "ActiveRequiresModelConfiguration",
+    "ConversationLimitsMustBePositive"
+   ],
+   "hasTrigger": true
+  },
+  "AIAssistSettings__c": {
+   "name": "AIAssistSettings__c",
+   "label": "AI Assist Settings",
+   "kind": "Custom object",
+   "sharing": null,
+   "description": "Org-wide behaviour settings (hierarchy custom setting).",
+   "domain": "platform",
+   "fields": [
+    {
+     "name": "AIProviderSuccessStatusCodes__c",
+     "label": "AI Provider Success Status Codes",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AIUsagePolicyUrl__c",
+     "label": "AI Usage Policy URL",
+     "type": "Url",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "CalloutTimeoutMilliseconds__c",
+     "label": "Callout Timeout Milliseconds",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "CurrentTermsVersion__c",
+     "label": "Current Terms Version",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DefaultMaxToolCallingIterations__c",
+     "label": "Default Max Tool Calling Iterations",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsEnabled__c",
+     "label": "Is Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxMessageLength__c",
+     "label": "Maximum Message Length",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxMessagesInFlight__c",
+     "label": "Maximum Messages In Flight",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxMessagesPerUserPerMinute__c",
+     "label": "Maximum Messages Per User Per Minute",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxPIIRegistryObjects__c",
+     "label": "Maximum PII Registry Objects",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxToolCallingIterationsCap__c",
+     "label": "Max Tool Calling Iterations Cap",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxToolCallsPerIteration__c",
+     "label": "Max Tool Calls Per Iteration",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ProcessingLockSeconds__c",
+     "label": "Processing Lock Seconds",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RetryAttempts__c",
+     "label": "Retry Attempts",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RetryableStatusCodes__c",
+     "label": "Retryable Status Codes",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIAssistUISettings__c": {
+   "name": "AIAssistUISettings__c",
+   "label": "AI Assist UI Settings",
+   "kind": "Custom object",
+   "sharing": null,
+   "description": "Chat window appearance and wording settings (hierarchy custom setting).",
+   "domain": "platform",
+   "fields": [
+    {
+     "name": "IsEnabled__c",
+     "label": "Is Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsFeedbackEnabled__c",
+     "label": "Is Feedback Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsInlineWorkflowActionsEnabled__c",
+     "label": "Is Inline Workflow Actions Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsMaintenanceMode__c",
+     "label": "Is Maintenance Mode",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsWorkflowActionsEnabled__c",
+     "label": "Is Workflow Actions Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxVisibleMessageHistory__c",
+     "label": "Max Visible Message History",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ShouldShowExecutionTrace__c",
+     "label": "Should Show Execution Trace",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ShowTimestampOnMessages__c",
+     "label": "Show Timestamp On Messages",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SuggestedActionsDisplay__c",
+     "label": "Suggested Actions Display",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "TypingIndicatorEnabled__c",
+     "label": "Typing Indicator Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIChatCommand__mdt": {
+   "name": "AIChatCommand__mdt",
+   "label": "AI Chat Command",
+   "kind": "Custom metadata",
+   "sharing": null,
+   "description": "A slash command available in the chat composer.",
+   "domain": "platform",
+   "fields": [
+    {
+     "name": "AgentDeveloperName__c",
+     "label": "Agent Developer Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AvailableTo__c",
+     "label": "Available To",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "All Users",
+      "Super Users and Admins",
+      "Admins Only"
+     ]
+    },
+    {
+     "name": "Command__c",
+     "label": "Command",
+     "type": "Text",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DisplayOrder__c",
+     "label": "Display Order",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ObjectAPIName__c",
+     "label": "Object API Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "PromptTemplateDeveloperName__c",
+     "label": "Prompt Template Developer Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "PromptText__c",
+     "label": "Prompt Text",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIConversationMessage__c": {
+   "name": "AIConversationMessage__c",
+   "label": "AI Conversation Message",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "A single message in a conversation, user or assistant, with status, tokens and any suggested action.",
+   "domain": "conversation",
+   "fields": [
+    {
+     "name": "AIConversation__c",
+     "label": "AI Conversation",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversation__c",
+     "values": [],
+     "description": "The conversation this message belongs to."
+    },
+    {
+     "name": "AIModelConfiguration__c",
+     "label": "AI Model Configuration",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIModelConfiguration__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "AIPromptTemplate__c",
+     "label": "AI Prompt Template",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPromptTemplate__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "DebugRequestJson__c",
+     "label": "Debug Request Json",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DebugResponseJson__c",
+     "label": "Debug Response Json",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DebugSentPreviewText__c",
+     "label": "Debug Sent Preview Text",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ExecutionTraceJson__c",
+     "label": "Execution Trace Json",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "FailureReason__c",
+     "label": "Failure Reason",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Provider Error",
+      "Timeout",
+      "Limit Reached",
+      "Request Blocked",
+      "PII Masking Failed",
+      "Configuration Error",
+      "Authentication Failed",
+      "Model Retired",
+      "Rate Limited",
+      "Service Busy",
+      "Other"
+     ]
+    },
+    {
+     "name": "InReplyTo__c",
+     "label": "In Reply To",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversationMessage__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "InputTokenCount__c",
+     "label": "Input Token Count",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsAwaitingCapacity__c",
+     "label": "Is Awaiting Capacity",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsSuperseded__c",
+     "label": "Is Superseded",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LatencyMilliseconds__c",
+     "label": "Latency (ms)",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MessageBody__c",
+     "label": "Message Body",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The content of this message."
+    },
+    {
+     "name": "OutputTokenCount__c",
+     "label": "Output Token Count",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "PIIValuesMasked__c",
+     "label": "PII Values Masked",
+     "type": "Summary",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ProcessingStatus__c",
+     "label": "Processing Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Queued",
+      "Processing",
+      "Complete",
+      "Failed"
+     ]
+    },
+    {
+     "name": "PromptTemplateVersion__c",
+     "label": "Prompt Template Version",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Sender__c",
+     "label": "Sender",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "User",
+      "AI Agent",
+      "System"
+     ],
+     "description": "Indicates who sent this message."
+    },
+    {
+     "name": "SuggestedWorkflowAction__c",
+     "label": "Suggested Workflow Action",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIWorkflowAction__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "TokenCount__c",
+     "label": "Token Count",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": true
+  },
+  "AIConversation__c": {
+   "name": "AIConversation__c",
+   "label": "AI Conversation",
+   "kind": "Custom object",
+   "sharing": "Private",
+   "description": "One chat between a user and an agent. Private to its owner unless shared.",
+   "domain": "conversation",
+   "fields": [
+    {
+     "name": "AIAgent__c",
+     "label": "AI Agent",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIAgent__c",
+     "deleteConstraint": "Restrict",
+     "values": [],
+     "description": "The Agent handling this conversation."
+    },
+    {
+     "name": "AIPromptTemplate__c",
+     "label": "AI Prompt Template",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPromptTemplate__c",
+     "deleteConstraint": "SetNull",
+     "values": []
+    },
+    {
+     "name": "Channel__c",
+     "label": "Channel",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Where this conversation took place."
+    },
+    {
+     "name": "ConversationCloseReason__c",
+     "label": "Conversation Close Reason",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "User Closed",
+      "Idle Timeout",
+      "Message Limit Reached",
+      "Token Limit Reached",
+      "System Override"
+     ]
+    },
+    {
+     "name": "ConversationClosedTimestamp__c",
+     "label": "Conversation Closed Timestamp",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConversationTokenUsage__c",
+     "label": "Conversation Token Usage",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ExternalReference__c",
+     "label": "External Reference",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "IsOnLegalHold__c",
+     "label": "Is On Legal Hold",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastMessageTimestamp__c",
+     "label": "Last Message Timestamp",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MessageCount__c",
+     "label": "Message Count",
+     "type": "Summary",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ProcessingLockedUntil__c",
+     "label": "Processing Locked Until",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RelatedObjectAPIName__c",
+     "label": "Related Object API Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RelatedRecordId__c",
+     "label": "Related Record Id",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "RetentionExpiryDate__c",
+     "label": "Retention Expiry Date",
+     "type": "Date",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "StatusDisplay__c",
+     "label": "Status Display",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Status__c",
+     "label": "Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Active",
+      "Closed",
+      "Archived"
+     ],
+     "description": "The current state of this conversation."
+    }
+   ],
+   "validationRules": [
+    "ClosedRequiresReasonAndTimestamp"
+   ],
+   "hasTrigger": true
+  },
+  "AIDataSource__c": {
+   "name": "AIDataSource__c",
+   "label": "AI Data Source",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "A tool that fetches data for the model, e.g. a SOQL template, Apex or Flow.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "ApexClassName__c",
+     "label": "Apex Class Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "BindingType__c",
+     "label": "Binding Type",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Bound",
+      "Unbound"
+     ]
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DeveloperName__c",
+     "label": "Developer Name",
+     "type": "Text",
+     "required": true,
+     "unique": true,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "InputSchema__c",
+     "label": "Input Schema",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastTestStatus__c",
+     "label": "Last Test Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Passed",
+      "Partial",
+      "Failed"
+     ]
+    },
+    {
+     "name": "LastTestedOn__c",
+     "label": "Last Tested On",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxRows__c",
+     "label": "Max Rows",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "OutputDescription__c",
+     "label": "Output Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SOQLTemplate__c",
+     "label": "SOQL Template",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SourceName__c",
+     "label": "Source Name",
+     "type": "Text",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SourceType__c",
+     "label": "Source Type",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "SOQL",
+      "Apex"
+     ]
+    },
+    {
+     "name": "TargetObject__c",
+     "label": "Target Object",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The object this data source is scoped to."
+    }
+   ],
+   "validationRules": [
+    "ApexClassNameFormat",
+    "ApexClassRequired",
+    "MaxRowsRange",
+    "SOQLTemplateRequired",
+    "SourceTypeFieldsExclusive"
+   ],
+   "hasTrigger": false
+  },
+  "AIFeedback__c": {
+   "name": "AIFeedback__c",
+   "label": "AI Feedback",
+   "kind": "Custom object",
+   "sharing": "Private",
+   "description": "Thumbs up or down, with comments, on an assistant message.",
+   "domain": "conversation",
+   "fields": [
+    {
+     "name": "AIConversationMessage__c",
+     "label": "AI Conversation Message",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversationMessage__c",
+     "deleteConstraint": "SetNull",
+     "values": [],
+     "description": "The specific AI response this feedback is about."
+    },
+    {
+     "name": "AIConversation__c",
+     "label": "AI Conversation",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversation__c",
+     "deleteConstraint": "SetNull",
+     "values": [],
+     "description": "The conversation this feedback relates to."
+    },
+    {
+     "name": "Comment__c",
+     "label": "Comment",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Free-text detail explaining the rating."
+    },
+    {
+     "name": "RatingDisplay__c",
+     "label": "Rating Display",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Rating with an emoji for list views."
+    },
+    {
+     "name": "Rating__c",
+     "label": "Rating",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Helpful",
+      "Not Helpful"
+     ]
+    },
+    {
+     "name": "ReasonDisplay__c",
+     "label": "Reason Display",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Reason with an emoji for list views."
+    },
+    {
+     "name": "Reason__c",
+     "label": "Reason",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Inaccurate",
+      "Incomplete",
+      "Not Relevant",
+      "Too Slow",
+      "Unsafe Or Inappropriate",
+      "Other"
+     ]
+    }
+   ],
+   "validationRules": [
+    "ConversationOrMessageRequired"
+   ],
+   "hasTrigger": false
+  },
+  "AIModelConfiguration__c": {
+   "name": "AIModelConfiguration__c",
+   "label": "AI Model Configuration",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "A connection to an AI provider: named credential, model identifier, temperature and output limits.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIProvider__c",
+     "label": "AI Provider",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Anthropic",
+      "AnthropicAgent",
+      "OpenAI"
+     ],
+     "description": "The AI provider this configuration calls."
+    },
+    {
+     "name": "ApiPath__c",
+     "label": "API Path",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ApiVersionHeaderName__c",
+     "label": "API Version Header Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ApiVersionHeaderValue__c",
+     "label": "API Version Header Value",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "EnvironmentId__c",
+     "label": "Environment Id",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaximumOutputTokens__c",
+     "label": "Maximum Output Tokens",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ModelIdentifier__c",
+     "label": "Model Identifier",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "NamedCredential__c",
+     "label": "Named Credential",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Temperature__c",
+     "label": "Temperature",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "ActiveRequiresConnectionDetails",
+    "ApiPathFormat",
+    "MaximumOutputTokensPositive",
+    "NamedCredentialFormat",
+    "TemperatureRange"
+   ],
+   "hasTrigger": false
+  },
+  "AIPIIFieldMetadata__c": {
+   "name": "AIPIIFieldMetadata__c",
+   "label": "AI PII Field Metadata",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "The PII classification of one field on a registered object.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "ComplianceGroup__c",
+     "label": "Compliance Group",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DataType__c",
+     "label": "Data Type",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "FieldAPIName__c",
+     "label": "Field API Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The field this row classifies."
+    },
+    {
+     "name": "FieldKey__c",
+     "label": "Field Key",
+     "type": "Text",
+     "required": false,
+     "unique": true,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "FieldLabel__c",
+     "label": "Field Label",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsOverridden__c",
+     "label": "Is Overridden",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsPII__c",
+     "label": "Is PII",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastSynced__c",
+     "label": "Last Synced",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "When this specific field row was last confirmed."
+    },
+    {
+     "name": "PIIFieldType__c",
+     "label": "PII Field Type",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "PIIRegistry__c",
+     "label": "PII Registry",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPIIRegistry__c",
+     "values": [],
+     "description": "The parent object registry record."
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPIIMapping__c": {
+   "name": "AIPIIMapping__c",
+   "label": "AI PII Mapping",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "The pseudonym mapping for a conversation, so replies can be un-masked.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "AIConversation__c",
+     "label": "AI Conversation",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversation__c",
+     "values": [],
+     "description": "The conversation this mapping belongs to."
+    },
+    {
+     "name": "MappingJson__c",
+     "label": "Mapping JSON",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPIIMaskingRecord__c": {
+   "name": "AIPIIMaskingRecord__c",
+   "label": "AI PII Masking Record",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "Audit record of a value masked in a message.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "AIConversationMessage__c",
+     "label": "AI Conversation Message",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIConversationMessage__c",
+     "values": [],
+     "description": "The message whose request was masked."
+    },
+    {
+     "name": "ComplianceGroup__c",
+     "label": "Compliance Group",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaskingStrategy__c",
+     "label": "Masking Strategy",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Outcome__c",
+     "label": "Outcome",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Masked",
+      "Failed",
+      "Skipped"
+     ]
+    },
+    {
+     "name": "PIIFieldType__c",
+     "label": "PII Field Type",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SourceField__c",
+     "label": "Source Field",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SourceObject__c",
+     "label": "Source Object",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "StepOrder__c",
+     "label": "Step Order",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ValuesMasked__c",
+     "label": "Values Masked",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "MaskingRecordImmutable"
+   ],
+   "hasTrigger": false
+  },
+  "AIPIIRegistry__c": {
+   "name": "AIPIIRegistry__c",
+   "label": "AI PII Registry",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "A registry entry for an object whose fields are scanned for PII.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "CacheResetDate__c",
+     "label": "Cache Reset Date",
+     "type": "Date",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Why this object is in scope."
+    },
+    {
+     "name": "FieldCount__c",
+     "label": "Field Count",
+     "type": "Summary",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Whether the dispatcher includes this object."
+    },
+    {
+     "name": "LastSynced__c",
+     "label": "Last Synced",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "When this object was last successfully synced."
+    },
+    {
+     "name": "MaxFieldsToQuery__c",
+     "label": "Max Fields To Query",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ObjectAPIName__c",
+     "label": "Object API Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The object to sync PII field classification for."
+    },
+    {
+     "name": "SyncStatus__c",
+     "label": "Sync Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Not Synced",
+      "Queued",
+      "In Progress",
+      "Synced",
+      "Failed"
+     ],
+     "description": "The current sync state."
+    }
+   ],
+   "validationRules": [
+    "MaxFieldsToQueryRange",
+    "ObjectAPINameFormat"
+   ],
+   "hasTrigger": false
+  },
+  "AIPiiComplianceGroup__mdt": {
+   "name": "AIPiiComplianceGroup__mdt",
+   "label": "AI PII Compliance Group",
+   "kind": "Custom metadata",
+   "sharing": null,
+   "description": "Compliance grouping (e.g. GDPR) for PII field types.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPiiDataMaskingRule__mdt": {
+   "name": "AIPiiDataMaskingRule__mdt",
+   "label": "AI PII Data Masking Rule",
+   "kind": "Custom metadata",
+   "sharing": null,
+   "description": "How a PII field type is masked.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Whether this masking rule is applied."
+    },
+    {
+     "name": "Redact__c",
+     "label": "Redact",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ReplacementCharacterCount__c",
+     "label": "Replacement Character Count",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ReplacementPattern__c",
+     "label": "Replacement Pattern",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Strategy__c",
+     "label": "Strategy",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "RandomizeByPattern",
+      "SubstituteFromList",
+      "PatternReplace"
+     ]
+    },
+    {
+     "name": "SubstituteValues__c",
+     "label": "Substitute Values",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPiiFieldType__mdt": {
+   "name": "AIPiiFieldType__mdt",
+   "label": "AI PII Field Type",
+   "kind": "Custom metadata",
+   "sharing": null,
+   "description": "A kind of PII (name, email, phone...) and how it is detected.",
+   "domain": "pii",
+   "fields": [
+    {
+     "name": "ComplianceGroup__c",
+     "label": "Compliance Group",
+     "type": "MetadataRelationship",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPiiComplianceGroup__mdt",
+     "values": []
+    },
+    {
+     "name": "DisplayOrder__c",
+     "label": "Display Order",
+     "type": "Number",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Whether this rule is evaluated."
+    },
+    {
+     "name": "IsComplianceGroupFallback__c",
+     "label": "Is Compliance Group Fallback",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Keyword__c",
+     "label": "Keyword",
+     "type": "Text",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaskingRule__c",
+     "label": "Masking Rule",
+     "type": "MetadataRelationship",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPiiDataMaskingRule__mdt",
+     "values": []
+    },
+    {
+     "name": "MatchField__c",
+     "label": "Match Field",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "NameOrLabelContains",
+      "ApiNameExact",
+      "DataTypeContains"
+     ],
+     "description": "Which signal the keyword is matched against."
+    },
+    {
+     "name": "PIIFieldType__c",
+     "label": "PII Field Type",
+     "type": "Text",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPlatformLogEvent__e": {
+   "name": "AIPlatformLogEvent__e",
+   "label": "AI Platform Log Event",
+   "kind": "Platform event",
+   "sharing": null,
+   "description": "Platform event used to write log entries even when a transaction rolls back.",
+   "domain": "platform",
+   "fields": [
+    {
+     "name": "ClassName__c",
+     "label": "Class Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Where the exception occurred."
+    },
+    {
+     "name": "ExceptionLogDetail__c",
+     "label": "Exception Log Detail",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ExceptionMessage__c",
+     "label": "Exception Message",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The exception's message."
+    },
+    {
+     "name": "ExceptionType__c",
+     "label": "Exception Type",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The exception class, such as System.DmlException."
+    },
+    {
+     "name": "MethodName__c",
+     "label": "Method Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Which method the exception occurred in."
+    },
+    {
+     "name": "OccurredAt__c",
+     "label": "Occurred At",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "When the exception occurred."
+    },
+    {
+     "name": "RelatedRecordId__c",
+     "label": "Related Record Id",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Severity__c",
+     "label": "Severity",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "StackTrace__c",
+     "label": "Stack Trace",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The full stack trace at the point of failure."
+    },
+    {
+     "name": "UserId__c",
+     "label": "User Id",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": true
+  },
+  "AIPlatformLog__c": {
+   "name": "AIPlatformLog__c",
+   "label": "AI Platform Log",
+   "kind": "Custom object",
+   "sharing": "Private",
+   "description": "A persisted log entry written by the platform log manager.",
+   "domain": "platform",
+   "fields": [
+    {
+     "name": "ClassName__c",
+     "label": "Class Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Where the exception occurred."
+    },
+    {
+     "name": "ExceptionLogDetail__c",
+     "label": "Exception Log Detail",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ExceptionMessage__c",
+     "label": "Exception Message",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The exception's message."
+    },
+    {
+     "name": "ExceptionType__c",
+     "label": "Exception Type",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The exception class, such as System.DmlException."
+    },
+    {
+     "name": "MethodName__c",
+     "label": "Method Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Which method the exception occurred in."
+    },
+    {
+     "name": "OccurredAt__c",
+     "label": "Occurred At",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "When the exception occurred."
+    },
+    {
+     "name": "RelatedRecordId__c",
+     "label": "Related Record Id",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Severity__c",
+     "label": "Severity",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Error",
+      "Warning",
+      "Info"
+     ]
+    },
+    {
+     "name": "StackTrace__c",
+     "label": "Stack Trace",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The full stack trace at the point of failure."
+    },
+    {
+     "name": "User__c",
+     "label": "User",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "User",
+     "deleteConstraint": "SetNull",
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIPromptTemplate__c": {
+   "name": "AIPromptTemplate__c",
+   "label": "AI Prompt Template",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "The system prompt an agent answers with, including merge fields. Can be tested with Try It.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIExclusionRules__c",
+     "label": "AI Exclusion Rules",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AIPrompt__c",
+     "label": "AI Prompt",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AISystemContext__c",
+     "label": "AI System Context",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "AITone__c",
+     "label": "AI Tone",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DeveloperName__c",
+     "label": "Developer Name",
+     "type": "Text",
+     "required": false,
+     "unique": true,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsDefault__c",
+     "label": "Is Default",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxResponseLength__c",
+     "label": "Max Response Length",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Version__c",
+     "label": "Version",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "ActiveRequiresPrompt",
+    "DefaultRequiresActive",
+    "DeveloperNameFormat",
+    "MaxResponseLengthPositive"
+   ],
+   "hasTrigger": true
+  },
+  "AIPromptTestMessage__c": {
+   "name": "AIPromptTestMessage__c",
+   "label": "AI Prompt Test Message",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "A saved test message used to try a prompt template.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "AIPromptTemplate__c",
+     "label": "AI Prompt Template",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIPromptTemplate__c",
+     "values": [],
+     "description": "The prompt template this test message belongs to."
+    },
+    {
+     "name": "EditedVerdict__c",
+     "label": "Edited Verdict",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Better",
+      "Worse"
+     ]
+    },
+    {
+     "name": "LastEditedReply__c",
+     "label": "Last Edited Reply",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastRunOn__c",
+     "label": "Last Run On",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastRunStatus__c",
+     "label": "Last Run Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Passed",
+      "Failed"
+     ]
+    },
+    {
+     "name": "LastSavedReply__c",
+     "label": "Last Saved Reply",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MessageBody__c",
+     "label": "Message Body",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "SavedVerdict__c",
+     "label": "Saved Verdict",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Better",
+      "Worse"
+     ]
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AITermsAcknowledgment__c": {
+   "name": "AITermsAcknowledgment__c",
+   "label": "AI Terms Acknowledgment",
+   "kind": "Custom object",
+   "sharing": "Private",
+   "description": "Records that a user accepted the AI terms.",
+   "domain": "conversation",
+   "fields": [
+    {
+     "name": "AcknowledgedDate__c",
+     "label": "Acknowledged Date",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "When this acknowledgment was signed."
+    },
+    {
+     "name": "SignatureText__c",
+     "label": "Signature Text",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "TermsVersion__c",
+     "label": "Terms Version",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "Which version of the usage terms was agreed to."
+    },
+    {
+     "name": "User__c",
+     "label": "User",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "User",
+     "deleteConstraint": "SetNull",
+     "values": [],
+     "description": "Who signed."
+    }
+   ],
+   "validationRules": [
+    "AcknowledgmentMustBeOwn",
+    "SignatureRequired",
+    "SignedRecordImmutable"
+   ],
+   "hasTrigger": false
+  },
+  "AIUsagePolicyAssignment__c": {
+   "name": "AIUsagePolicyAssignment__c",
+   "label": "AI Usage Policy Assignment",
+   "kind": "Custom object",
+   "sharing": "ControlledByParent",
+   "description": "Assigns a usage policy to a user.",
+   "domain": "usage",
+   "fields": [
+    {
+     "name": "AIUsagePolicy__c",
+     "label": "AI Usage Policy",
+     "type": "MasterDetail",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "AIUsagePolicy__c",
+     "values": [],
+     "description": "The usage policy this assignment applies."
+    },
+    {
+     "name": "AssigneeType__c",
+     "label": "Assignee Type",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "User",
+      "Permission Set"
+     ]
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "PermissionSetName__c",
+     "label": "Permission Set Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "User__c",
+     "label": "User",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "User",
+     "deleteConstraint": "SetNull",
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "AssigneeMatchesType",
+    "PermissionSetNameFormat"
+   ],
+   "hasTrigger": false
+  },
+  "AIUsagePolicy__c": {
+   "name": "AIUsagePolicy__c",
+   "label": "AI Usage Policy",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "Limits (messages, tokens) applied to the users it is assigned to.",
+   "domain": "usage",
+   "fields": [
+    {
+     "name": "AllowedChannels__c",
+     "label": "Allowed Channels",
+     "type": "MultiselectPicklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConversationExportEnabled__c",
+     "label": "Conversation Export Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConversationVisibilityScope__c",
+     "label": "Conversation Visibility Scope",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "My Conversations Only",
+      "My Subordinates Conversations",
+      "All Conversations"
+     ]
+    },
+    {
+     "name": "DebugModeEnabled__c",
+     "label": "Debug Mode Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "What this policy is for and who it is meant for."
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsDefault__c",
+     "label": "Is Default",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsUserInitiatedChatEnabled__c",
+     "label": "Is User Initiated Chat Enabled",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxConcurrentConversations__c",
+     "label": "Max Concurrent Conversations",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxConversationsPer24Hours__c",
+     "label": "Max Conversations Per Day",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "MaxTokensPer24Hours__c",
+     "label": "Max Tokens Per Day",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ShouldCaptureExecutionSteps__c",
+     "label": "Should Capture Execution Steps",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "UsageLimitReachedBehavior__c",
+     "label": "Usage Limit Reached Behavior",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Block New Messages",
+      "Block New Conversations Only",
+      "Notify Only"
+     ]
+    }
+   ],
+   "validationRules": [
+    "LimitsMustBePositive"
+   ],
+   "hasTrigger": false
+  },
+  "AIUsage__c": {
+   "name": "AIUsage__c",
+   "label": "AI Usage",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "Daily consumption for one user: one row per user per day.",
+   "domain": "usage",
+   "fields": [
+    {
+     "name": "ConversationsStarted__c",
+     "label": "Conversations Started",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "InputTokens__c",
+     "label": "Input Tokens",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "OutputTokens__c",
+     "label": "Output Tokens",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "TokensUsed__c",
+     "label": "Tokens Used",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "UsageDate__c",
+     "label": "Usage Date",
+     "type": "Date",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "User__c",
+     "label": "User",
+     "type": "Lookup",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "referenceTo": "User",
+     "deleteConstraint": "SetNull",
+     "values": []
+    }
+   ],
+   "validationRules": [],
+   "hasTrigger": false
+  },
+  "AIWorkflowAction__c": {
+   "name": "AIWorkflowAction__c",
+   "label": "AI Workflow Action",
+   "kind": "Custom object",
+   "sharing": "ReadWrite",
+   "description": "A tool that does something on the user's behalf, e.g. an Apex action or a Screen Flow.",
+   "domain": "config",
+   "fields": [
+    {
+     "name": "ActionName__c",
+     "label": "Action Name",
+     "type": "Text",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ActionType__c",
+     "label": "Action Type",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Apex",
+      "Flow",
+      "Screen Flow"
+     ]
+    },
+    {
+     "name": "ApexClassName__c",
+     "label": "Apex Class Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "ConfirmationMessage__c",
+     "label": "Confirmation Message",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "Description__c",
+     "label": "Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "DeveloperName__c",
+     "label": "Developer Name",
+     "type": "Text",
+     "required": true,
+     "unique": true,
+     "externalId": true,
+     "values": []
+    },
+    {
+     "name": "ExecutionType__c",
+     "label": "Execution Type",
+     "type": "Picklist",
+     "required": true,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Read Only",
+      "Write"
+     ]
+    },
+    {
+     "name": "FlowAPIName__c",
+     "label": "Flow API Name",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "InputSchema__c",
+     "label": "Input Schema",
+     "type": "LongTextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "IsActive__c",
+     "label": "Is Active",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "LastTestStatus__c",
+     "label": "Last Test Status",
+     "type": "Picklist",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [
+      "Passed",
+      "Failed"
+     ]
+    },
+    {
+     "name": "LastTestedOn__c",
+     "label": "Last Tested On",
+     "type": "DateTime",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "OutputDescription__c",
+     "label": "Output Description",
+     "type": "TextArea",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "RequiresConfirmation__c",
+     "label": "Requires Confirmation",
+     "type": "Checkbox",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    },
+    {
+     "name": "TargetObject__c",
+     "label": "Target Object",
+     "type": "Text",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": [],
+     "description": "The object this action operates on."
+    },
+    {
+     "name": "TestedFlowVersion__c",
+     "label": "Tested Flow Version",
+     "type": "Number",
+     "required": false,
+     "unique": false,
+     "externalId": false,
+     "values": []
+    }
+   ],
+   "validationRules": [
+    "ActionTypeFieldsExclusive",
+    "ApexClassNameFormat",
+    "ApexClassRequired",
+    "ConfirmationMessageRequired",
+    "FlowAPINameFormat",
+    "FlowAPINameRequired",
+    "WriteActionsRequireConfirmation"
+   ],
+   "hasTrigger": false
+  }
+ },
+ "relationships": [
+  {
+   "from": "AIAgentAssignment__c",
+   "to": "AIAgent__c",
+   "field": "AIAgent__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIAgentAssignment__c",
+   "to": "User",
+   "field": "User__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIAgentDataSource__c",
+   "to": "AIAgent__c",
+   "field": "AIAgent__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIAgentDataSource__c",
+   "to": "AIDataSource__c",
+   "field": "AIDataSource__c",
+   "type": "Lookup",
+   "required": true
+  },
+  {
+   "from": "AIAgentWorkflowAction__c",
+   "to": "AIAgent__c",
+   "field": "AIAgent__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIAgentWorkflowAction__c",
+   "to": "AIWorkflowAction__c",
+   "field": "AIWorkflowAction__c",
+   "type": "Lookup",
+   "required": true
+  },
+  {
+   "from": "AIAgent__c",
+   "to": "AIModelConfiguration__c",
+   "field": "AIModelConfiguration__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIAgent__c",
+   "to": "AIPromptTemplate__c",
+   "field": "AIPromptTemplate__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversationMessage__c",
+   "to": "AIConversation__c",
+   "field": "AIConversation__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIConversationMessage__c",
+   "to": "AIModelConfiguration__c",
+   "field": "AIModelConfiguration__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversationMessage__c",
+   "to": "AIPromptTemplate__c",
+   "field": "AIPromptTemplate__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversationMessage__c",
+   "to": "AIConversationMessage__c",
+   "field": "InReplyTo__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversationMessage__c",
+   "to": "AIWorkflowAction__c",
+   "field": "SuggestedWorkflowAction__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversation__c",
+   "to": "AIAgent__c",
+   "field": "AIAgent__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIConversation__c",
+   "to": "AIPromptTemplate__c",
+   "field": "AIPromptTemplate__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIFeedback__c",
+   "to": "AIConversationMessage__c",
+   "field": "AIConversationMessage__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIFeedback__c",
+   "to": "AIConversation__c",
+   "field": "AIConversation__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIPIIFieldMetadata__c",
+   "to": "AIPIIRegistry__c",
+   "field": "PIIRegistry__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIPIIMapping__c",
+   "to": "AIConversation__c",
+   "field": "AIConversation__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIPIIMaskingRecord__c",
+   "to": "AIConversationMessage__c",
+   "field": "AIConversationMessage__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIPiiFieldType__mdt",
+   "to": "AIPiiComplianceGroup__mdt",
+   "field": "ComplianceGroup__c",
+   "type": "MetadataRelationship",
+   "required": false
+  },
+  {
+   "from": "AIPiiFieldType__mdt",
+   "to": "AIPiiDataMaskingRule__mdt",
+   "field": "MaskingRule__c",
+   "type": "MetadataRelationship",
+   "required": true
+  },
+  {
+   "from": "AIPlatformLog__c",
+   "to": "User",
+   "field": "User__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIPromptTestMessage__c",
+   "to": "AIPromptTemplate__c",
+   "field": "AIPromptTemplate__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AITermsAcknowledgment__c",
+   "to": "User",
+   "field": "User__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIUsagePolicyAssignment__c",
+   "to": "AIUsagePolicy__c",
+   "field": "AIUsagePolicy__c",
+   "type": "MasterDetail",
+   "required": true
+  },
+  {
+   "from": "AIUsagePolicyAssignment__c",
+   "to": "User",
+   "field": "User__c",
+   "type": "Lookup",
+   "required": false
+  },
+  {
+   "from": "AIUsage__c",
+   "to": "User",
+   "field": "User__c",
+   "type": "Lookup",
+   "required": false
+  }
+ ]
+}

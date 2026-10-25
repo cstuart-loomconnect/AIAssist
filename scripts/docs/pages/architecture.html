@@ -1,0 +1,123 @@
+<h1>Architecture</h1>
+<p class="lead">Built in layers; each layer depends only on those above it.</p>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>What it does</th>
+        <th>Key classes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Object model</td>
+        <td>
+          Custom objects, metadata types, settings, validation rules and
+          triggers.
+        </td>
+        <td><a href="../data-model/">{{objectTotal}} objects</a></td>
+      </tr>
+      <tr>
+        <td>Foundation</td>
+        <td>Constants, settings, logging, schema helpers.</td>
+        <td>
+          <code>AIAssistApplicationConstants</code>
+          <code>AIAssistSettingsService</code> <code>AIPlatformLogManager</code>
+          <code>AISchemaHelper</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Agents and prompts</td>
+        <td>Agent lifecycle, prompt templates and merge fields.</td>
+        <td>
+          <code>AIAgentManager</code> <code>AIPromptTemplateService</code>
+          <code>AIPromptMergeFieldService</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Messaging</td>
+        <td>
+          Validates, queues and processes each message and records the outcome.
+        </td>
+        <td>
+          <code>AIMessageValidator</code>
+          <code>AIMessageProcessingQueueable</code>
+          <code>AIMessageOutcomeService</code>
+          <code>AIConversationLockService</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Providers</td>
+        <td>
+          One request builder and response handler per provider behind shared
+          interfaces.
+        </td>
+        <td>
+          <code>IAIProviderRequestBuilder</code>
+          <code>IAIProviderResponseHandler</code> <code>AIAnthropic…</code>
+          <code>AIOpenAi…</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Tools</td>
+        <td>Data sources and workflow actions the model can use.</td>
+        <td>
+          <code>AIDataSourceDispatcher</code>
+          <code>AIWorkflowActionDispatcher</code>
+          <code>AISoqlTemplateRunner</code>
+        </td>
+      </tr>
+      <tr>
+        <td>PII</td>
+        <td>Registry, classification and pseudonymisation.</td>
+        <td>
+          <code>AIPiiFieldRegistry</code>
+          <code>AIPiiPseudonymizationService</code>
+          <code>AIPiiRegistrySyncWorker</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Usage</td>
+        <td>Policies and daily usage counting.</td>
+        <td>
+          <code>AIUsagePolicyService</code> <code>AIUsageLimitService</code>
+          <code>AIUsageService</code>
+        </td>
+      </tr>
+      <tr>
+        <td>Maintenance</td>
+        <td>Idle, retention and recalculation jobs.</td>
+        <td>
+          <code>AIMaintenanceScheduler</code>
+          <code>AIConversationIdleBatch</code>
+          <code>AIConversationRetentionBatch</code>
+        </td>
+      </tr>
+      <tr>
+        <td>User interface</td>
+        <td>
+          One LWC family per screen; each admin tab has a controller, editor
+          service and data structure.
+        </td>
+        <td><a href="../interface/">see User interface</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Extension points</h2>
+<p>
+  New providers, data sources and workflow actions plug in through interfaces:
+  <code>IAIProviderRequestBuilder</code> <code>IAIProviderResponseHandler</code>
+  <code>IAIDataSourceExecutor</code> <code>IAIDataSourceInputDescriber</code>
+  <code>IAIWorkflowActionExecutor</code>
+  <code>IAIWorkflowActionInputDescriber</code>
+</p>
+
+<h2>Code at a glance</h2>
+<p>
+  {{apexCount}} Apex classes (excluding tests) and {{lwcCount}} Lightning web
+  components.
+</p>

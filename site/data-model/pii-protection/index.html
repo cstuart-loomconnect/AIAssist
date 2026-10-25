@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PII protection · AI Assist</title>
+    <link rel="stylesheet" href="../../assets/css/site.css" />
+  </head>
+  <body data-root="../../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input id="search" type="search" placeholder="Find an object, field or page…" aria-label="Search" />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub current">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
+      <main>
+        <div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div>
+        
+<h1>PII protection</h1>
+<p class="lead">The registry of fields to protect, and the pseudonym mappings recorded for each conversation.</p>
+<div class="diagram"><pre class="mermaid">erDiagram
+  AIConversation ||--o{ AIConversationMessage : "AIConversation"
+  AIConversationMessage |o..o{ AIConversationMessage : "InReplyTo"
+  AIPIIRegistry ||--o{ AIPIIFieldMetadata : "PIIRegistry"
+  AIConversation ||--o{ AIPIIMapping : "AIConversation"
+  AIConversationMessage ||--o{ AIPIIMaskingRecord : "AIConversationMessage"
+  AIPiiComplianceGroup |o..o{ AIPiiFieldType : "ComplianceGroup"
+  AIPiiDataMaskingRule |o..o{ AIPiiFieldType : "MaskingRule"
+  AIPIIRegistry {
+    string Name
+  }
+  AIPIIFieldMetadata {
+    string FieldKey UK
+    string PIIRegistry FK
+  }
+  AIPIIMapping {
+    string AIConversation FK
+  }
+  AIPIIMaskingRecord {
+    string AIConversationMessage FK
+  }
+  AIConversation {
+    string AIAgent FK
+    string AIPromptTemplate FK
+    string ExternalReference UK
+    string RelatedRecordId UK
+  }
+  AIConversationMessage {
+    string AIConversation FK
+    string AIModelConfiguration FK
+    string AIPromptTemplate FK
+    string InReplyTo FK
+    string SuggestedWorkflowAction FK
+  }
+  AIPiiComplianceGroup {
+    string Name
+  }
+  AIPiiDataMaskingRule {
+    string Strategy
+  }
+  AIPiiFieldType {
+    string ComplianceGroup FK
+    string DisplayOrder
+    string Keyword
+    string MaskingRule FK
+    string MatchField
+    string PIIFieldType
+  }</pre></div>
+<h2>Objects</h2>
+<div class="table-wrap"><table><thead><tr><th>Object</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="#AIPIIFieldMetadata__c">AI PII Field Metadata</a></td><td>The PII classification of one field on a registered object.</td></tr><tr><td><a href="#AIPIIMapping__c">AI PII Mapping</a></td><td>The pseudonym mapping for a conversation, so replies can be un-masked.</td></tr><tr><td><a href="#AIPIIMaskingRecord__c">AI PII Masking Record</a></td><td>Audit record of a value masked in a message.</td></tr><tr><td><a href="#AIPIIRegistry__c">AI PII Registry</a></td><td>A registry entry for an object whose fields are scanned for PII.</td></tr><tr><td><a href="#AIPiiComplianceGroup__mdt">AI PII Compliance Group</a></td><td>Compliance grouping (e.g. GDPR) for PII field types.</td></tr><tr><td><a href="#AIPiiDataMaskingRule__mdt">AI PII Data Masking Rule</a></td><td>How a PII field type is masked.</td></tr><tr><td><a href="#AIPiiFieldType__mdt">AI PII Field Type</a></td><td>A kind of PII (name, email, phone...) and how it is detected.</td></tr></tbody></table></div>
+<h2>Field reference</h2>
+
+<details class="obj" id="AIPIIFieldMetadata__c">
+  <summary>
+    <b>AI PII Field Metadata</b> <code>AIPIIFieldMetadata__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">10 fields</span>
+  </summary>
+  <div class="body">
+    <p>The PII classification of one field on a registered object.</p>
+    <p><b>Relationships:</b> PII Registry → AI PII Registry (master-detail)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Compliance Group</td><td><code>ComplianceGroup__c</code></td><td>Text</td><td></td></tr><tr><td>Data Type</td><td><code>DataType__c</code></td><td>Text</td><td></td></tr><tr><td>Field API Name</td><td><code>FieldAPIName__c</code></td><td>Text</td><td>The field this row classifies.</td></tr><tr><td>Field Key</td><td><code>FieldKey__c</code></td><td>Text</td><td>unique · external ID</td></tr><tr><td>Field Label</td><td><code>FieldLabel__c</code></td><td>Text</td><td></td></tr><tr><td>Is Overridden</td><td><code>IsOverridden__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Is PII</td><td><code>IsPII__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Last Synced</td><td><code>LastSynced__c</code></td><td>DateTime</td><td>When this specific field row was last confirmed.</td></tr><tr><td>PII Field Type</td><td><code>PIIFieldType__c</code></td><td>Text</td><td></td></tr><tr><td>PII Registry</td><td><code>PIIRegistry__c</code></td><td>MasterDetail → AIPIIRegistry</td><td>required · The parent object registry record.</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPIIMapping__c">
+  <summary>
+    <b>AI PII Mapping</b> <code>AIPIIMapping__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">2 fields</span>
+  </summary>
+  <div class="body">
+    <p>The pseudonym mapping for a conversation, so replies can be un-masked.</p>
+    <p><b>Relationships:</b> AI Conversation → AI Conversation (master-detail)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Conversation</td><td><code>AIConversation__c</code></td><td>MasterDetail → AIConversation</td><td>required · The conversation this mapping belongs to.</td></tr><tr><td>Mapping JSON</td><td><code>MappingJson__c</code></td><td>LongTextArea</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPIIMaskingRecord__c">
+  <summary>
+    <b>AI PII Masking Record</b> <code>AIPIIMaskingRecord__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">9 fields</span>
+  </summary>
+  <div class="body">
+    <p>Audit record of a value masked in a message.</p>
+    <p><b>Relationships:</b> AI Conversation Message → AI Conversation Message (master-detail)</p>
+    <p><b>Validation rules:</b> <code>MaskingRecordImmutable</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Conversation Message</td><td><code>AIConversationMessage__c</code></td><td>MasterDetail → AIConversationMessage</td><td>required · The message whose request was masked.</td></tr><tr><td>Compliance Group</td><td><code>ComplianceGroup__c</code></td><td>Text</td><td></td></tr><tr><td>Masking Strategy</td><td><code>MaskingStrategy__c</code></td><td>Text</td><td></td></tr><tr><td>Outcome</td><td><code>Outcome__c</code></td><td>Picklist</td><td>values: Masked, Failed, Skipped</td></tr><tr><td>PII Field Type</td><td><code>PIIFieldType__c</code></td><td>Text</td><td></td></tr><tr><td>Source Field</td><td><code>SourceField__c</code></td><td>Text</td><td></td></tr><tr><td>Source Object</td><td><code>SourceObject__c</code></td><td>Text</td><td></td></tr><tr><td>Step Order</td><td><code>StepOrder__c</code></td><td>Number</td><td></td></tr><tr><td>Values Masked</td><td><code>ValuesMasked__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPIIRegistry__c">
+  <summary>
+    <b>AI PII Registry</b> <code>AIPIIRegistry__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">8 fields</span>
+  </summary>
+  <div class="body">
+    <p>A registry entry for an object whose fields are scanned for PII.</p>
+    
+    <p><b>Validation rules:</b> <code>MaxFieldsToQueryRange</code> <code>ObjectAPINameFormat</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Cache Reset Date</td><td><code>CacheResetDate__c</code></td><td>Date</td><td></td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td>Why this object is in scope.</td></tr><tr><td>Field Count</td><td><code>FieldCount__c</code></td><td>Summary</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td>Whether the dispatcher includes this object.</td></tr><tr><td>Last Synced</td><td><code>LastSynced__c</code></td><td>DateTime</td><td>When this object was last successfully synced.</td></tr><tr><td>Max Fields To Query</td><td><code>MaxFieldsToQuery__c</code></td><td>Number</td><td></td></tr><tr><td>Object API Name</td><td><code>ObjectAPIName__c</code></td><td>Text</td><td>The object to sync PII field classification for.</td></tr><tr><td>Sync Status</td><td><code>SyncStatus__c</code></td><td>Picklist</td><td>values: Not Synced, Queued, In Progress, Synced, Failed · The current sync state.</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPiiComplianceGroup__mdt">
+  <summary>
+    <b>AI PII Compliance Group</b> <code>AIPiiComplianceGroup__mdt</code>
+    <span class="badge">Custom metadata</span>
+    
+    
+    <span class="muted">2 fields</span>
+  </summary>
+  <div class="body">
+    <p>Compliance grouping (e.g. GDPR) for PII field types.</p>
+    
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Description</td><td><code>Description__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPiiDataMaskingRule__mdt">
+  <summary>
+    <b>AI PII Data Masking Rule</b> <code>AIPiiDataMaskingRule__mdt</code>
+    <span class="badge">Custom metadata</span>
+    
+    
+    <span class="muted">6 fields</span>
+  </summary>
+  <div class="body">
+    <p>How a PII field type is masked.</p>
+    
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td>Whether this masking rule is applied.</td></tr><tr><td>Redact</td><td><code>Redact__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Replacement Character Count</td><td><code>ReplacementCharacterCount__c</code></td><td>Number</td><td></td></tr><tr><td>Replacement Pattern</td><td><code>ReplacementPattern__c</code></td><td>Text</td><td></td></tr><tr><td>Strategy</td><td><code>Strategy__c</code></td><td>Picklist</td><td>required · values: RandomizeByPattern, SubstituteFromList, PatternReplace</td></tr><tr><td>Substitute Values</td><td><code>SubstituteValues__c</code></td><td>LongTextArea</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPiiFieldType__mdt">
+  <summary>
+    <b>AI PII Field Type</b> <code>AIPiiFieldType__mdt</code>
+    <span class="badge">Custom metadata</span>
+    
+    
+    <span class="muted">8 fields</span>
+  </summary>
+  <div class="body">
+    <p>A kind of PII (name, email, phone...) and how it is detected.</p>
+    <p><b>Relationships:</b> Compliance Group → AI PII Compliance Group (lookup); Masking Rule → AI PII Data Masking Rule (lookup)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Compliance Group</td><td><code>ComplianceGroup__c</code></td><td>MetadataRelationship → AIPiiComplianceGroup</td><td></td></tr><tr><td>Display Order</td><td><code>DisplayOrder__c</code></td><td>Number</td><td>required</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td>Whether this rule is evaluated.</td></tr><tr><td>Is Compliance Group Fallback</td><td><code>IsComplianceGroupFallback__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Keyword</td><td><code>Keyword__c</code></td><td>Text</td><td>required</td></tr><tr><td>Masking Rule</td><td><code>MaskingRule__c</code></td><td>MetadataRelationship → AIPiiDataMaskingRule</td><td>required</td></tr><tr><td>Match Field</td><td><code>MatchField__c</code></td><td>Picklist</td><td>required · values: NameOrLabelContains, ApiNameExact, DataTypeContains · Which signal the keyword is matched against.</td></tr><tr><td>PII Field Type</td><td><code>PIIFieldType__c</code></td><td>Text</td><td>required</td></tr></tbody></table></div>
+  </div>
+</details>
+        <div class="pager"><a href="../../data-model/usage-and-policies/">← Usage and policies</a><a href="../../data-model/settings-and-logging/">Settings and logging →</a></div>
+      </main>
+    </div>
+    <script type="module" src="../../assets/js/site.js"></script>
+  </body>
+</html>
