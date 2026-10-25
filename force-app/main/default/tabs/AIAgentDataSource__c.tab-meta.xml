@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customObject>true</customObject>
+    <description
+  >Links between AI Agents and the Data Sources they can draw from.</description>
+    <motif>Custom33: Desk</motif>
+</CustomTab>

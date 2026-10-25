@@ -1,0 +1,156 @@
+/* The gap between the search box and the filters. SLDS has no 12px gap utility. */
+.aiawpi-gap {
+  gap: 12px;
+}
+
+/* The room around what is inside the picker box. */
+.aiawpi-body {
+  padding: 16px;
+}
+
+/* The search box is as wide as a form box, not the whole row. */
+.aiawpi-search {
+  max-width: 340px;
+}
+
+/* The message under a row that needs a look: orange text on a plain row. */
+.aiawpi-message {
+  padding: 8px 16px 8px 46px;
+  border-bottom: 1px solid var(--aia-line);
+  font-size: 13px;
+  color: var(--aia-warning);
+}
+
+/* Muted text, for details and help under a field. */
+.aiawpi-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawpi-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A bordered box with a soft grey header, used for each group of rows. */
+.aiawpi-box {
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header of a box: the title on the left and an action on the right. */
+.aiawpi-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A list of choices in one bordered box. */
+.aiawpi-options {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One choice: a radio or checkbox, the text and a pill, with a line under it. */
+.aiawpi-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+  cursor: pointer;
+}
+
+.aiawpi-option:last-child {
+  border-bottom: 0;
+}
+
+/* The chosen choice: a tinted row. */
+.aiawpi-option_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* A choice that cannot be picked: faded and not clickable. */
+.aiawpi-option_disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The name and the detail of a choice sit one above the other and take the room that is left. */
+.aiawpi-option-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The radio or checkbox takes the accent colour. */
+.aiawpi-option input {
+  accent-color: var(--aia-accent);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawpi-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}
+
+/* A green pill: live, active or connected. */
+.aiawpi-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An orange pill: something to look at. */
+.aiawpi-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A segmented control: joined buttons in one bordered strip. */
+.aiawpi-seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One segment: plain text on white. */
+.aiawpi-seg-button {
+  padding: 12px 20px;
+  border: 0;
+  border-left: 1px solid var(--aia-line-strong);
+  background: var(--aia-surface);
+  color: var(--aia-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aiawpi-seg-button:first-child {
+  border-left: 0;
+}
+
+/* The chosen segment: the accent colour with white text. */
+.aiawpi-seg-button_selected {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}

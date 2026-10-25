@@ -1,0 +1,131 @@
+/* The start card: a white box with a soft border, set inside the grey page. SLDS has no utility for a bordered rounded card in this colour. */
+.aiawst-card-box {
+  padding: 24px 32px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The title of the start card: large dark text. */
+.aiawst-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The buttons under the card: room above them. */
+.aiawst-foot {
+  margin-top: 16px;
+}
+
+/* A row of choice cards that share the width, with a gap SLDS has no utility for. */
+.aiawst-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* One choice card: a bordered box with a title and a line of detail. */
+.aiawst-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The chosen card: an accent border and a tinted background. */
+.aiawst-card_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The title of a card: bold dark text. */
+.aiawst-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The detail of a card: muted text. */
+.aiawst-card-detail {
+  font-size: 14px;
+  color: var(--aia-muted);
+}
+
+/* A question above a group of choices: bold dark text. */
+.aiawst-question {
+  margin: 20px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Muted text, for details and help under a field. */
+.aiawst-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawst-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A list of choices in one bordered box. */
+.aiawst-options {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One choice: a radio or checkbox, the text and a pill, with a line under it. */
+.aiawst-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+  cursor: pointer;
+}
+
+.aiawst-option:last-child {
+  border-bottom: 0;
+}
+
+/* The chosen choice: a tinted row. */
+.aiawst-option_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* The name and the detail of a choice sit one above the other and take the room that is left. */
+.aiawst-option-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The radio or checkbox takes the accent colour. */
+.aiawst-option input {
+  accent-color: var(--aia-accent);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawst-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}

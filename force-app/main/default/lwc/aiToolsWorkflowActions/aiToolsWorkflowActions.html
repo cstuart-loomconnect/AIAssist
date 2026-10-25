@@ -1,0 +1,72 @@
+<template>
+  <!-- Panel: the list, or the wizard in place of it -->
+  <div class="slds-is-relative slds-p-vertical_small">
+    <!-- List: shown until the admin starts or opens a workflow action -->
+    <template lwc:if={isListView}>
+      <!-- Busy: shown while the list loads -->
+      <template lwc:if={showRefreshSpinner}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- Top row: what a workflow action is, and the button that starts a new one -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aitwa-top">
+        <p class="aitwa-intro slds-col">{labels.intro}</p>
+        <lightning-button variant="brand" label={labels.newAction} onclick={handleNewAction}></lightning-button>
+      </div>
+
+      <!-- Tools row: the search box on the left and the filter buttons on the right -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aitwa-tools">
+        <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchText} onchange={handleSearchChange} class="aitwa-search"></lightning-input>
+        <div class="aitwa-filters slds-grid">
+          <template for:each={filterViews} for:item="filter">
+            <button key={filter.key} type="button" class={filter.buttonClass} data-key={filter.key} onclick={handleFilterClick}>{filter.label}</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Table: one row for each workflow action -->
+      <div class="aitwa-table-wrap">
+        <table class="aitwa-table slds-table slds-table_cell-buffer">
+          <thead>
+            <tr>
+              <th scope="col">{labels.columnAction}</th>
+              <th scope="col">{labels.columnRuns}</th>
+              <th scope="col">{labels.columnChanges}</th>
+              <th scope="col">{labels.columnTarget}</th>
+              <th scope="col">{labels.columnAgents}</th>
+              <th scope="col">{labels.columnTested}</th>
+              <th scope="col">{labels.columnStatus}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={rowViews} for:item="row">
+              <tr key={row.key} class="aitwa-row" data-id={row.key} onclick={handleRowClick}>
+                <td class="aitwa-name">{row.actionName}</td>
+                <td>{row.runsLabel}</td>
+                <td>{row.changesLabel}</td>
+                <td>{row.targetLabel}</td>
+                <td>{row.agentCount}</td>
+                <td><span class={row.testedClass}>{row.testedLabel}</span><span class="aitwa-date">{row.testedDate}</span></td>
+                <td><span class={row.statusClass}>{row.statusLabel}</span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        <!-- No actions: shown when the load is done and nothing matches -->
+        <template lwc:if={showLoading}>
+          <div class="aitwa-loading slds-is-relative">
+            <lightning-spinner size="medium" alternative-text={labels.loading}></lightning-spinner>
+            <p class="aitwa-loading-text">{labels.loading}</p>
+          </div>
+        </template>
+        <template lwc:if={showNoActions}><p class="aitwa-empty slds-p-around_medium">{labels.noActions}</p></template>
+      </div>
+    </template>
+
+    <!-- Wizard: creates a new workflow action, or changes the one that was clicked -->
+    <template lwc:if={isWizardView}>
+      <c-ai-tools-wa-wizard action-id={editActionId} onclose={handleWizardClose}></c-ai-tools-wa-wizard>
+    </template>
+  </div>
+</template>

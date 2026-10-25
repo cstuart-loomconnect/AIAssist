@@ -1,0 +1,65 @@
+AIAssist (master) vs AI-Assist (old repo) - comparison
+Date: 2026-10-10
+Compared: AIAssist branch integration-testing (f71251c, which includes feature/phase1-managed-package-permanence via PR #32; read straight from git) against AI-Assist, by file name, plus git history of AIAssist. Same-named files were not diffed line by line.
+
+Legend
+  [NOT PORTED] Never existed in AIAssist history. Decide whether it is needed.
+  [OUT OF SCOPE] Admin console work, parked by decision.
+  [PORTED] Built in AIAssist. [MISSING] Not in AIAssist and no decision recorded. [BY DECISION] Left out on purpose.
+
+==========================================================================
+SECTION 1: Missing from AIAssist (present in AI-Assist)
+==========================================================================
+
+--- 1A. Not ported - decide whether you need them -------------------------
+
+  Nothing left to decide.
+
+--- 1C. Chat window and UI -------------------------------------------------
+
+  [PORTED] 18 of the 20 old chat window bundles are in force-app/main/default/lwc (updated 2026-10-10, not yet run in a browser): aiAssistChat, aiChatComposer, aiChatContextBar, aiChatDebugTrace, aiChatEmptyState, aiChatErrorCard, aiChatFeedbackPanel, aiChatHeader, aiChatHistory, aiChatMessage, aiChatMessageList, aiChatNewChatsPaused, aiChatStatePanel, aiChatSuggestedAction, aiChatTerms, aiChatWorkingIndicator. aiChatUtils and aiChatStyles were not ported: each component has its own Settings file (values and labels) and Helper file (private functions) instead, and each component's CSS holds its own styles with no shared stylesheet. The meta XML (utility bar and record page targets, channel, agent, height and accent properties) is the same as the old one.
+  [BY DECISION] aiChatPiiMappingsModal, aiChatUsageBanner - see 1D items 1 and 3; the new Apex has nothing for them to show.
+  [OUT OF SCOPE] Admin console (AIConsole* classes, AINavTab metadata, ~35 console LWCs) - Documented earlier as not ported.
+
+--- 1D. Chat features checked one by one ----------------------------------
+
+  Compared AIChatController, AIChatDataStructure and the old chat window against the new ones (the old Apex was read straight from the AI-Assist repo; the new from the working tree).
+
+  Same in both (all 15 old controller methods except getPiiMappings): open the window with its state (inactive, maintenance, channel off, terms, no agent, ready), earlier messages, conversation updates, send, slash commands, retry and Regenerate, close, open, resume, history (this record or all), feedback, terms, run a suggested action, debug trace, failure detail, export. Also the same on screen: agent switcher, record context bar and PII badge, empty state with suggested commands, markdown replies, sources, Copy, day separators, "Show earlier messages", new-chats-paused card, ended bar with Resume, utility bar highlight and following the record page.
+
+  Missing in AIAssist, or changed:
+
+  1. [MISSING] Usage display. Old: AIChatUsageService filled UsageState (tokens used, limit, behaviour, limit reached, block messages, block new conversations, notify only, minutes to reset) on the chat context, every update and every send; the window showed "12.4k / 50k today", a banner before and at the limit, and a dismissible "over your limit" warning. New: the limits are still enforced (AIUsageLimitService.enforceUsageLimits on send and retry, set by UsageLimitReachedBehavior__c), but nothing is returned to show. So the user sees no meter and no warning, "notify only" is invisible, and a limit is learned only when a send is refused with its label. Needs a decision: add a usage shape to ChatContext and SendResult, or accept refusal-only.
+  2. [BY DECISION] No live push. Old: AIMessageReadyEvent__e woke the window when a reply was saved and AIAgentProgressEvent__e (AIAgentProgressPublisher, started from AIExecutionStepTracker) streamed each step label. New: the window polls getConversationUpdate (2s, 4s, then 8s while processing; up to 60s while held), so a reply can show up to the poll wait after it is saved, and the step card is a generic "Reading..." then "Write the answer", not the real steps. Stop now really stops: the reply shows when the conversation is opened again, where the old window still received it by event.
+  3. [BY DECISION] getPiiMappings removed (2026-10-03). The debug trace has no "pii mappings" button or masking-pairs modal. Replies still have the real values restored (AIChatDebugService.restorePii).
+  4. [CHANGED] Send refusals are one status. Old: BLOCKED and LIMIT showed a "Not sent / Blocked by a company rule" card on the message with Edit message and Why?. New: SENT or ERROR; a refusal puts the message text under the composer and returns what the user typed to the box. The violation rules behind the old wording (AIViolation__c, AIViolationRule__c, AIViolationEvent__e and their triggers) were removed on purpose in commit 82bd30c.
+  5. [CHANGED] New chats switch. Old read ui.newChatsDisabled (AIAssistUISettings__c). New: AIUsagePolicy__c.IsUserInitiatedChatEnabled__c (from the one policy that applies to the user: their own assignment, else their permission sets, else the default), returned as user.newChatsDisabled. The window reads that; a copy at ui.newChatsDisabled was added to the Apex for the old window and is not needed.
+  6. [DROPPED, no effect today] Fields the old shapes carried that no old window code read: UserState.firstName, relatedRecordId and relatedObjectApiName on the conversation view and summary, DebugTrace.conversationPublicId (the new trace shows the conversation name only).
+
+  Not checked: the window has not been run in a browser, no scratch org holds the current Apex so only 18 of 19 bundles were compile-checked (the 19th needs getSharedConversationHistory deployed), and no 200-user load test has been run.
+
+==========================================================================
+SECTION 2: Missing from AI-Assist (present in AIAssist)
+==========================================================================
+
+Objects and fields
+  AIAgentAssignment__c, AIUsagePolicy__c, AIUsagePolicyAssignment__c, AIPIIMaskingRecord__c (+ tabs for AIUsagePolicy__c and AIPIIMaskingRecord__c) - Agent-to-user assignment, usage policies and masking records.
+  AIAgent__c.AccessMode__c, ObjectApiNames__c, SingleActiveConversationPerRecord__c - Agent access and record scoping.
+  AIAgent__c.ExternalReference__c, AIConversation__c.ExternalReference__c - Id in an external AI service (agent_... / session sesn_... for the Anthropic Agent API). Old repo had the conversation field only. The conversation field is written with the session id, and the session continued on the next turn, only when the provider is the Anthropic Agent API. The agent field is set by hand when the agent is built in Claude; no code reads or writes it (the agent id the provider uses is AIModelConfiguration__c.ModelIdentifier__c).
+  AIAssistSettings__c.IsEnabled__c, MaxMessageLength__c, MaxMessagesInFlight__c, MaxMessagesPerUserPerMinute__c, RetryAttempts__c - Master switch and throughput caps.
+  AIAssistUISettings__c.IsEnabled__c, IsWorkflowActionsEnabled__c - UI switches; debug mode and step capture are on AIUsagePolicy__c.
+  AIConversationMessage__c: AIModelConfiguration__c, AIPromptTemplate__c, FailureReason__c, InReplyTo__c, Input/OutputTokenCount__c, IsAwaitingCapacity__c, IsSuperseded__c, LatencyMilliseconds__c, ProcessingStatus__c, PromptTemplateVersion__c - Per-message tracing and status.
+  AIConversation__c.IsOnLegalHold__c, LastMessageTimestamp__c - Legal hold and precise last-message time.
+  AIConversationMessage__c.ExecutionTraceJson__c (replaces the old repo's AIExecutionStep__c records): one JSON trace per reply holding each step's type, status, time, wording and the audit of data sent to the model. Masking records now sit under the message.
+  AIDataSource__c.MaxRows__c, AIFeedback__c.Reason__c, AIModelConfiguration__c.EnvironmentId__c, AIPromptTemplate__c.Version__c, AIPlatformLog__c / AIPlatformLogEvent__e Severity__c - Smaller additions.
+  IsActive__c replaces Active__c on AIPiiRegistry__c and the three PII __mdt types.
+  AIAssistViewSharedConversations custom permission, globalValueSets, 133 custom labels (old: 6) - Visibility permission, shared picklists and translatable messages.
+  Chat window additions the old one did not have: ChatContext.blockedState / blockedMessage, ConversationUpdate.isHeld (a message waiting for a free place), getSharedConversationHistory and the read-only "Shared with me" tab (AIConversationVisibilityService), declineSuggestedAction (a cancelled confirmation is recorded).
+  Docs 01-05 (object model, Apex, test pattern, code pattern, Anthropic provider), CONTRIBUTING, code-analyzer.yml - Project documentation and static analysis.
+
+==========================================================================
+Notes
+==========================================================================
+- Admin console, PII metadata records, global scheduling and the unused agent settings are the known open items from the 2026-10-02 readiness review; this comparison did not find new ones beyond 1A.
+- Items worth a decision: (1) usage display for the chat window (1D item 1); (2) data source / workflow action save-time validation triggers were removed; (3) no Named Credential ships.
+- Per-field differences were compared by file name only; field definitions with the same name were not diffed.

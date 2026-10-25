@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AllowedChannels__c</fullName>
+    <description
+  >Channels users covered by this policy can chat from. Blank means all channels.</description>
+    <inlineHelpText
+  >Leave blank to allow every channel. Where several policies apply, a channel allowed by any of them is allowed.</inlineHelpText>
+    <label>Allowed Channels</label>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>MultiselectPicklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetName>AIChannel</valueSetName>
+    </valueSet>
+    <visibleLines>3</visibleLines>
+</CustomField>

@@ -1,0 +1,50 @@
+<template>
+  <p class="aiawli-muted">{labels.intro}</p>
+
+  <!-- Numbers: the three limits, side by side -->
+  <div class="aiawli-fields">
+    <div class={messagesClass}>
+      <label class="slds-form-element__label" for="aiawli-messages">{labels.messages}</label>
+      <div class="slds-form-element__control"><input id="aiawli-messages" type="number" min="1" class="slds-input" value={draft.maxMessagesPerConversation} oninput={handleMessagesInput} /></div>
+      <template lwc:if={messagesError}><div class="slds-form-element__help">{messagesError}</div></template>
+      <template lwc:else><div class="aiawli-hint">{labels.messagesHelp}</div></template>
+    </div>
+    <div class={tokensClass}>
+      <label class="slds-form-element__label" for="aiawli-tokens">{labels.tokens}</label>
+      <div class="slds-form-element__control"><input id="aiawli-tokens" type="number" min="1" class="slds-input" value={draft.maxTokensPerConversation} oninput={handleTokensInput} /></div>
+      <template lwc:if={tokensError}><div class="slds-form-element__help">{tokensError}</div></template>
+      <template lwc:else><div class="aiawli-hint">{tokensHelp}</div></template>
+    </div>
+    <div class={roundsClass}>
+      <label class="slds-form-element__label" for="aiawli-rounds">{labels.rounds}</label>
+      <div class="slds-form-element__control"><input id="aiawli-rounds" type="number" min="1" class="slds-input" value={draft.maxToolCallingIterations} oninput={handleRoundsInput} /></div>
+      <template lwc:if={roundsError}><div class="slds-form-element__help">{roundsError}</div></template>
+      <template lwc:elseif={hasOrgCap}><div class="aiawli-hint">{roundsHelp}</div></template>
+    </div>
+  </div>
+
+  <!-- Warnings: a note that the limits will not block saving -->
+  <template lwc:if={hasFindings}><div class="aiawli-note aiawli-note_warning">{labels.warningsNote}</div></template>
+
+  <!-- Token counting: how usage is counted -->
+  <h3 class="aiawli-question">{labels.counting}</h3>
+  <div class="aiawli-cards">
+    <template for:each={trackingCards} for:item="card">
+      <button key={card.value} type="button" class={card.cardClass} data-value={card.value} onclick={handleTrackingClick}><span class="aiawli-card-title">{card.title}</span><span class="aiawli-card-detail">{card.detail}</span></button>
+    </template>
+  </div>
+
+  <!-- Estimated use: what the limits add up to for the users who see the agent -->
+  <template lwc:if={showEstimate}>
+    <div class="aiawli-box">
+      <div class="aiawli-box-head">{labels.estimated}</div>
+      <template for:each={estimateRows} for:item="row">
+        <div key={row.key} class="aiawli-box-row slds-grid aiawli-gap">
+          <span class="aiawli-muted aiawli-estimate-label">{row.label}</span>
+          <span>{row.value}</span>
+          <template lwc:if={row.pillLabel}><span class={row.pillClass}>{row.pillLabel}</span></template>
+        </div>
+      </template>
+    </div>
+  </template>
+</template>

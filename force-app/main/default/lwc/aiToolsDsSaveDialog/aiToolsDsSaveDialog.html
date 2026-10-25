@@ -1,0 +1,40 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aiadsd-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aiadsd-container">
+      <!-- Title: the name of the data source -->
+      <header class="slds-modal__header">
+        <h2 id="aiadsd-title" class="slds-modal__title slds-hyphenate">{title}</h2>
+      </header>
+
+      <!-- Content: the agents that use it, and the note about the test -->
+      <div class="slds-modal__content slds-p-around_medium">
+        <p class="slds-m-bottom_small"><strong>{sourceName}</strong>{labels.messageStart}{countText}</p>
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+          <thead>
+            <tr>
+              <th scope="col">{labels.columnAgent}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={agents} for:item="agent">
+              <tr key={agent.agentId}>
+                <td>{agent.agentName}</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+        <!-- Note: why saving takes a test -->
+        <div class="aiadsd-note slds-m-top_small slds-p-around_small">{labels.note}</div>
+      </div>
+
+      <!-- Buttons: Cancel and Save and test -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="brand" label={labels.confirm} onclick={handleConfirm} disabled={isSaving} class="slds-m-left_x-small"></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

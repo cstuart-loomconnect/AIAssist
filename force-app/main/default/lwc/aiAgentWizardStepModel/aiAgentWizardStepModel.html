@@ -1,0 +1,41 @@
+<template>
+  <!-- Models: the list, the note and the connection check, shown when there are active models -->
+  <template lwc:if={hasModels}>
+    <p class="aiawmo-muted">{labels.intro}</p>
+
+    <!-- Model list: one radio row for each model -->
+    <div class="aiawmo-options">
+      <template for:each={modelViews} for:item="model">
+        <label key={model.key} class={model.optionClass}>
+          <input type="radio" name="aiawmo-model" data-key={model.key} checked={model.isSelected} onchange={handleModelChange} />
+          <span class="aiawmo-option-text"><span class="aiawmo-strong">{model.name}</span><span class="aiawmo-muted">{model.detail}</span></span>
+          <span class={model.tagClass}>{model.tagLabel}</span>
+        </label>
+      </template>
+    </div>
+
+    <!-- Note: where the connection details live -->
+    <div class="aiawmo-note aiawmo-note_info">{labels.connectionNote}</div>
+
+    <!-- Connection check: whether a test message gets an answer -->
+    <template lwc:if={showTest}>
+      <div class="aiawmo-box">
+        <div class="aiawmo-box-head">{labels.connectionCheck}</div>
+        <div class="aiawmo-box-row slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+          <div class="slds-grid slds-grid_vertical-align-center aiawmo-gap"><span class={statusClass}>{statusLabel}</span><span class="aiawmo-muted">{statusText}</span></div>
+          <lightning-button variant="brand-outline" label={labels.testAgain} onclick={handleTestAgain} disabled={isTesting}></lightning-button>
+        </div>
+      </div>
+    </template>
+  </template>
+
+  <!-- No models: an empty state with a way to carry on, and the note -->
+  <template lwc:else>
+    <div class="aiawmo-empty">
+      <h3 class="aiawmo-empty-title">{labels.emptyTitle}</h3>
+      <p class="aiawmo-muted">{labels.emptyText}</p>
+      <lightning-button label={labels.skip} onclick={handleSkip}></lightning-button>
+    </div>
+    <div class="aiawmo-note aiawmo-note_info">{labels.onlyExisting}</div>
+  </template>
+</template>

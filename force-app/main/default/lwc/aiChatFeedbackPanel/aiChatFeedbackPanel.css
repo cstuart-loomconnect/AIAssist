@@ -1,0 +1,171 @@
+/* Draws the close button: a square icon button with the muted token colour and a rounded look. SLDS icon buttons would change the design. */
+.aia-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--aia-muted);
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+  --slds-c-icon-color-foreground: var(--aia-muted);
+}
+
+/* Shades the icon button under the mouse, unless it is disabled. Uses a design token. */
+.aia-icon-btn:hover:not([disabled]) {
+  background: var(--aia-chip);
+}
+
+/* Shows a keyboard focus ring on the icon button. */
+.aia-icon-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Dims a disabled icon button and its icon. Uses a design token. */
+.aia-icon-btn[disabled] {
+  cursor: not-allowed;
+  --slds-c-icon-color-foreground-default: var(--aia-faint);
+  --slds-c-icon-color-foreground: var(--aia-faint);
+}
+
+/* Makes the icon button the smaller 32px size. */
+.aia-icon-btn_small {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+/* Draws the Skip and Send buttons: size, rounded look and bold text. SLDS buttons would change the design. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Shows a keyboard focus ring on the button. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* Dims a disabled button and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Colours the Send button with the accent token and turns its icon white. SLDS has no utility for the token or the icon colour. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Darkens the Send button under the mouse, unless it is disabled. Uses a design token. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* Makes the Skip button a plain text button in the muted token colour. */
+.aia-btn_text {
+  padding: 0 10px;
+  background: none;
+  color: var(--aia-muted);
+  font-weight: 400;
+}
+
+/* Darkens the Skip text under the mouse, unless it is disabled. Uses a design token. */
+.aia-btn_text:hover:not([disabled]) {
+  color: var(--aia-ink);
+}
+
+/* Draws each reason as a rounded pill with token colours. SLDS has no pill toggle. */
+.aia-pill {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 999px;
+  background: var(--aia-surface);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Highlights the picked reason in the accent token colours. SLDS has no utility for the pressed state. */
+.aia-pill[aria-pressed="true"] {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+  font-weight: 600;
+}
+
+/* Shows a keyboard focus ring on a reason pill. */
+.aia-pill:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Draws the panel as a bordered token-coloured card and spaces its rows. SLDS has no utility for these. */
+.feedback {
+  gap: 12px;
+  padding: 14px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line);
+  border-radius: 12px;
+}
+
+/* Sets the heading look in the ink token colour. */
+.feedback-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Spaces the reason pills from each other. SLDS has no gap utility. */
+.reasons {
+  gap: 6px;
+}
+
+/* Sets the small comment label in the muted token colour. */
+.comment-label {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* Gives the comment box token borders, a rounded look and no resize handle. SLDS textarea would use its own colours. */
+.comment {
+  border-color: var(--aia-line-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 19px;
+  resize: none;
+}
+
+/* Draws the accent focus ring on the comment box. Uses a design token. */
+.comment:focus {
+  border-color: var(--aia-accent);
+  box-shadow: 0 0 0 1px var(--aia-accent);
+}
+
+/* Spaces the Skip and Send buttons from each other. SLDS has no gap utility. */
+.feedback-actions {
+  gap: 8px;
+}

@@ -1,0 +1,36 @@
+<template>
+  <!-- Start card: a white card with the title, the two ways to begin and the list of the one chosen -->
+  <div class="aiawst-card-box">
+    <h2 class="aiawst-title slds-m-top_none">{labels.title}</h2>
+    <p class="aiawst-muted slds-m-bottom_medium">{labels.intro}</p>
+
+    <!-- Ways to begin: a blank agent or a copy -->
+    <div class="aiawst-cards">
+      <button type="button" class={blankCardClass} data-mode="blank" onclick={handleModeClick}><span class="aiawst-card-title">{labels.blankTitle}</span><span class="aiawst-card-detail">{labels.blankDetail}</span></button>
+      <button type="button" class={copyCardClass} data-mode="copy" onclick={handleModeClick}><span class="aiawst-card-title">{labels.copyTitle}</span><span class="aiawst-card-detail">{labels.copyDetail}</span></button>
+    </div>
+
+    <!-- Copy list: one radio row for each agent that can be copied, shown for Copy an existing agent -->
+    <template lwc:if={isCopyMode}>
+      <h3 class="aiawst-question">{labels.copyHeading}</h3>
+      <template lwc:if={hasCopyOptions}>
+        <div class="aiawst-options">
+          <template for:each={copyViews} for:item="copyView">
+            <label key={copyView.key} class={copyView.optionClass}>
+              <input type="radio" name="aiawst-copy" data-key={copyView.key} checked={copyView.isSelected} onchange={handleCopyChange} />
+              <span class="aiawst-option-text"><span class="aiawst-strong">{copyView.name}</span><span class="aiawst-muted">{copyView.detail}</span></span>
+              <span class="aiawst-pill">{copyView.statusLabel}</span>
+            </label>
+          </template>
+        </div>
+      </template>
+      <template lwc:else><p class="aiawst-muted">{labels.noAgents}</p></template>
+    </template>
+  </div>
+
+  <!-- Buttons: Cancel and Start -->
+  <div class="aiawst-foot slds-grid slds-grid_align-end">
+    <lightning-button label={labels.cancel} onclick={handleCancel}></lightning-button>
+    <lightning-button class="slds-m-left_x-small" variant="brand" label={labels.start} onclick={handleStart} disabled={isStartDisabled}></lightning-button>
+  </div>
+</template>

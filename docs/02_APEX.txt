@@ -1,0 +1,189 @@
+REVIEW CHECKLIST 2: APEX BY FEATURE
+===================================
+
+Trigger handlers are not here: each is checked with its object in the object model checklist.
+
+Sections are in call order, lowest layer first, so a class is checked after the classes it depends on. Each class is listed with its sharing declaration, size and stated purpose, and its test class sits directly beneath it.
+
+
+2.1 FOUNDATION AND UTILITIES
+----------------------------
+
+[ ] AIAssistApplicationConstants (inherited sharing, 379 lines): Every literal the application compares against or sends: picklist API values of the object model, the shapes of the AI providers' requests and responses, error codes,
+[ ] AISchemaHelper (without sharing): Object facts for a record (API name, labels, name field, access), described once per transaction and kept in a static variable, plus the object name list splitter.
+  [ ] Test: AISchemaHelperTest
+[ ] AIAssistSettingsService (inherited sharing, 83 lines): The one reader of AIAssistSettings__c and AIAssistUISettings__c.
+  [ ] Test: AIAssistSettingsServiceTest
+[ ] AIAssistTestDataFactory (no sharing keyword, 698 lines): The one place the test suite builds records.
+
+
+2.2 LOGGING
+-----------
+
+[ ] AIPlatformLogManager (inherited sharing, 360 lines): Records what went wrong, without ever being the thing that goes wrong.
+  [ ] Test: AIPlatformLogManagerTest
+
+
+2.3 DATA ACCESS
+---------------
+
+[ ] AIMessagingDataService (without sharing, 147 lines): Every write the messaging layer makes to data the end user is not allowed to write, and the one place a write is marked as trusted.
+  [ ] Test: AIMessagingDataServiceTest
+
+
+2.4 USAGE LIMITS
+----------------
+
+[ ] AIUsagePolicyService (without sharing, 306 lines): Works out what one user is allowed, from the usage policies that apply to them.
+  [ ] Test: AIUsagePolicyServiceTest
+[ ] AIUsageLimitService (without sharing, 129 lines): Decides whether a message may be accepted right now.
+  [ ] Test: AIUsageLimitServiceTest
+[ ] AIMessageSendLimitsTest (no sharing keyword, 351 lines): Testing utility for the org-wide throughput controls on AIAssistSettings__c: the cap on messages in flight (extra messages wait and are started when a place is free),
+
+
+2.6 PROVIDERS AND CREDENTIALS
+-----------------------------
+
+[ ] IAIProviderRequestBuilder (interface, 24 lines): Contract for shaping one AI provider's request body, implemented per provider (e.g.
+[ ] IAIProviderResponseHandler (interface, 28 lines): Contract for one AI provider's response shape - a single method covering everything response-side.
+[ ] AIProvider (inherited sharing, 202 lines): Everything shared between AIAgentManager and the provider classes (the IAIProviderRequestBuilder/IAIProviderResponseHandler implementations): - The canonical,
+  [ ] Test: AIProviderTest
+[ ] AIAnthropicMessageRequestBuilder (inherited sharing, implements IAIProviderRequestBuilder, 91 lines): IAIProviderRequestBuilder for Anthropic's Messages API - builds the request body.
+  [ ] Test: AIAnthropicMessageRequestBuilderTest
+[ ] AIAnthropicMessageResponseHandler (inherited sharing, implements IAIProviderResponseHandler, 230 lines): IAIProviderResponseHandler for Anthropic's Messages API - parses a response and shapes providerMessages.
+  [ ] Test: AIAnthropicMessageResponseHandlerTest
+[ ] AIAnthropicAgentRequestBuilder (without sharing, implements IAIProviderRequestBuilder, 238 lines): IAIProviderRequestBuilder for Anthropic's Agent API - continues the conversation's saved session or starts a new one, and builds the events sent to it.
+  [ ] Test: AIAnthropicAgentRequestBuilderTest
+[ ] AIAnthropicAgentResponseHandler (without sharing, implements IAIProviderResponseHandler, 262 lines): IAIProviderResponseHandler for Anthropic's Agent API - fetches a session's events until it settles and shapes providerMessages.
+  [ ] Test: AIAnthropicAgentResponseHandlerTest
+[ ] AIOpenAiRequestBuilder (inherited sharing, implements IAIProviderRequestBuilder, 99 lines): IAIProviderRequestBuilder for OpenAI's Chat Completions API - builds the request body.
+  [ ] Test: AIOpenAiRequestBuilderTest
+[ ] AIOpenAiResponseHandler (inherited sharing, implements IAIProviderResponseHandler, 222 lines): IAIProviderResponseHandler for OpenAI's Chat Completions API - parses a response and shapes providerMessages.
+  [ ] Test: AIOpenAiResponseHandlerTest
+
+
+2.7 PRIVACY AND PII
+-------------------
+
+[ ] AIPiiFieldTypeClassifier (inherited sharing, 138 lines): Classifies a field's PII type (Name, Email, National Insurance Number and so on) from its API name, label, data type and Compliance Group.
+  [ ] Test: AIPiiFieldTypeClassifierTest
+[ ] AIPiiFieldRegistry (inherited sharing, 72 lines): Read-only lookup of which fields are personal data, and of what type.
+  [ ] Test: AIPiiFieldRegistryTest
+[ ] AIPiiRegistrySyncDispatcher (inherited sharing, 84 lines): Finds the PII registry objects that are due a sync (never synced, failed last time, or past their Cache Reset Date), marks them Queued and hands them to
+  [ ] Test: AIPiiRegistrySyncDispatcherTest
+[ ] AIPiiRegistrySyncWorker (inherited sharing, implements Queueable, 124 lines): Refreshes the field metadata of the PII registry objects it is given.
+  [ ] Test: AIPiiRegistrySyncWorkerTest
+[ ] AIPiiPseudonymizationService (inherited sharing, 237 lines): Masks personal data before it reaches the model and restores it after, using AIPiiFieldRegistry (is this field PII, and of what type), AIPiiDataMaskingRule__mdt (what to
+  [ ] Test: AIPiiPseudonymizationServiceTest
+[ ] AIPiiMappingService (inherited sharing, 219 lines): Remembers, per conversation, which fake value stands in for which real value, so the model sees consistent stand-ins and its reply can be turned back into real values
+  [ ] Test: AIPiiMappingServiceTest
+[ ] AIPiiRegistryController (without sharing, 8 AuraEnabled methods): The Apex controller behind the AI PII Registry tab; shows a package refusal as it is and logs anything else once.
+  [ ] Test: AIPiiRegistryControllerTest
+[ ] AIPiiRegistryEditorService (without sharing): Reads the registry with field and PII counts, adds an object and queues its sync, switches an object on or off, and saves or resets a field override. Needs the Manage Settings permission.
+  [ ] Test: AIPiiRegistryEditorServiceTest
+[ ] AIPiiRegistryCoverageService (without sharing): Lists the objects active data sources read that have no registry, and searches the org's objects for the Add object dialog.
+  [ ] Test: AIPiiRegistryCoverageServiceTest
+[ ] AIPiiRegistryMaskingTestService (without sharing): Shows what AIPiiPseudonymizationService.previewMasking would send for a real record, saving, tallying and logging nothing.
+  [ ] Test: AIPiiRegistryMaskingTestServiceTest
+[ ] AIPiiRegistryDataStructure (without sharing): The shapes the AI PII Registry tab sends to and receives from Apex.
+
+
+2.8 DATA SOURCES
+----------------
+
+[ ] IAIDataSourceExecutor (interface, 25 lines): Contract for the Apex class named in AIDataSource__c.ApexClassName__c when SourceType__c is Apex.
+[ ] AIDataSourceRequest (without sharing, 42 lines): What the package hands to an Apex data source (IAIDataSourceExecutor.execute).
+  [ ] Test: AIDataSourceRequestTest
+[ ] AIDataSourceResponse (without sharing, 33 lines): What an Apex data source (IAIDataSourceExecutor.execute) returns: the records to put in front of the model.
+[ ] AISoqlTemplateRunner (inherited sharing, 68 lines): Runs the SOQL template of a SOQL data source for the user, in user mode: sharing, object permissions and field-level security all apply, so the model can only be given
+  [ ] Test: AISoqlTemplateRunnerTest
+[ ] AIDataSourceDispatcher (without sharing, 98 lines): Runs a data source when the model calls it as a tool, and returns the masked result.
+  [ ] Test: AIDataSourceDispatcherTest
+[ ] AIDataSourceResultProcessor (without sharing, 150 lines): Turns the records a data source returned into plain maps and lists that are safe to hand to the model: [1] Fields the running user cannot read are left out.
+  [ ] Test: AIDataSourceResultProcessorTest
+
+
+2.9 WORKFLOW ACTIONS
+--------------------
+
+[ ] IAIWorkflowActionExecutor (interface, 27 lines): Contract for the Apex class named in AIWorkflowAction__c.ApexClassName__c when the action type is Apex.
+[ ] AIWorkflowActionRequest (without sharing, 39 lines): What the package hands to an Apex Workflow Action (IAIWorkflowActionExecutor.execute).
+  [ ] Test: AIWorkflowActionRequestTest
+[ ] AIWorkflowActionResponse (without sharing, 31 lines): What an Apex Workflow Action (IAIWorkflowActionExecutor.execute) returns.
+[ ] AIWorkflowActionDispatcher (without sharing, 316 lines): Runs one Workflow Action a user has chosen to run from a suggestion in the chat.
+  [ ] Test: AIWorkflowActionDispatcherTest
+
+
+2.10 AGENT ORCHESTRATION
+------------------------
+
+[ ] AIAgentManager (inherited sharing, 772 lines): Owns the conversation with the AI provider for one turn.
+  [ ] Test: AIAgentManagerTest
+
+
+2.11 MESSAGING PIPELINE
+-----------------------
+
+[ ] AIMessageValidator (inherited sharing, 403 lines): Decides whether a request to chat is allowed at all, before anything is written.
+  [ ] Test: AIMessageValidatorTest
+[ ] AIConversationLockService (without sharing, 163 lines): Makes sure only one message per conversation is processed at a time.
+  [ ] Test: AIConversationLockServiceTest
+[ ] AIConversationVisibilityService (with sharing, 292 lines): Decides who may read a conversation they did not start.
+  [ ] Test: AIConversationVisibilityServiceTest
+[ ] AIPromptTemplateService (without sharing): Works out which Prompt Template answers a message: the one a slash command asked for, else the Agent's default, plus the others the model may switch to with the select_prompt_template tool.
+  [ ] Test: AIPromptTemplateServiceTest
+[ ] AIConversationMessageService (without sharing, 408 lines): The entry point for a user sending a message: what the chat UI calls.
+  [ ] Test: AIConversationMessageServiceTest
+[ ] AIMessageProcessingQueueable (with sharing, implements Queueable, Database.AllowsCallouts, 512 lines): The asynchronous worker that does the heavy lifting for one message, run outside the user's original transaction so the chat UI is not blocked on a live callout.
+  [ ] Test: AIMessageProcessingQueueableTest
+[ ] AIMessageProcessingFinalizer (with sharing, implements Finalizer, 273 lines): Attached to every AIMessageProcessingQueueable job, and runs after it however it ended: successfully, with a caught exception, or killed by an uncatchable LimitException
+  [ ] Test: AIMessageProcessingFinalizerTest
+[ ] AIMessageOutcomeService (inherited sharing, 449 lines): What happens when a turn ends, wherever it ended: in AIMessageProcessingQueueable or, if the job was killed, in AIMessageProcessingFinalizer.
+  [ ] Test: AIMessageOutcomeServiceTest
+[ ] AIExecutionStepTracker (inherited sharing, 141 lines): The in-memory record of one turn: each timed phase (a data source read, a provider call) and each untimed step (prompt assembly, masking, template match), the iteration and attempt counts, and what was sent to the provider.
+  [ ] Test: AIExecutionStepTrackerTest
+[ ] AIExecutionStepRecorder (inherited sharing, 272 lines): Turns one AIExecutionStepTracker into the JSON trace on the message (AIConversationMessage__c.ExecutionTraceJson__c) and the AIPIIMaskingRecord__c rows against that message, for a turn that has just ended. Also appends a workflow action the user runs later.
+  [ ] Test: AIExecutionStepRecorderTest
+
+
+2.12 CHAT API
+-------------
+
+[ ] AIChatDataStructure (no sharing keyword, 382 lines): The response shapes returned to the aiAssistChat component family, and the small pieces shared by the chat services (AIChatStateService, AIChatContextService,
+[ ] AIChatController (with sharing, 497 lines): The Apex controller behind the AI Assist chat window.
+  [ ] Test: AIChatControllerTest
+[ ] AIChatConversationService (with sharing, 781 lines): Loading, paging, listing, resuming and exporting the signed-in user's conversations, and the two ownership checks every conversation or message Id goes through first.
+  [ ] Test: AIChatConversationServiceTest
+[ ] AIChatContextService (with sharing, 336 lines): The record the chat window is about and the agents offered for it.
+  [ ] Test: AIChatContextServiceTest
+[ ] AIChatStateService (without sharing, 122 lines): What state the chat window is in for the signed-in user: the UI settings, what this user may do (debug, export, Workflow Actions), whether the channel is allowed, and
+  [ ] Test: AIChatStateServiceTest
+[ ] AIChatCommandService (with sharing, 295 lines): Slash commands (AIChatCommand__mdt): which exist for this user, agent and record, and how a message is split into what the user sees and the command's hidden
+  [ ] Test: AIChatCommandServiceTest
+[ ] AIChatActionService (with sharing, 156 lines): The Suggested Action card on an AI reply, and running it when the user clicks it.
+  [ ] Test: AIChatActionServiceTest
+[ ] AIChatFeedbackService (without sharing): Thumbs up or down on an AI reply.
+  [ ] Test: AIChatFeedbackServiceTest
+[ ] AIChatTermsService (without sharing): Accepting the usage terms.
+  [ ] Test: AIChatTermsServiceTest
+[ ] AIChatDebugService (with sharing, 226 lines): Everything the chat window shows only to a user with debug mode: the request trace for a reply and the failure detail behind a failed turn.
+  [ ] Test: AIChatDebugServiceTest
+
+
+2.13 RETENTION AND SCHEDULED JOBS
+---------------------------------
+
+[ ] AIMaintenanceScheduler (inherited sharing, implements Schedulable, 101 lines): The package's one scheduled job.
+  [ ] Test: AIMaintenanceSchedulerTest
+[ ] AIConversationIdleBatch (without sharing, implements Database.Batchable<SObject>, 74 lines): Closes active conversations that have sat idle longer than their agent's IdleTimeoutMinutes__c.
+  [ ] Test: AIConversationIdleBatchTest
+[ ] AIConversationRetentionBatch (inherited sharing, implements Database.Batchable<SObject>, 65 lines): Deletes conversations once they have passed RetentionExpiryDate__c, skipping any conversation on legal hold (IsOnLegalHold__c).
+  [ ] Test: AIConversationRetentionBatchTest
+[ ] AIConversationRetentionRecalcBatch (without sharing, implements Database.Batchable<SObject>, 70 lines): Recalculates RetentionExpiryDate__c on every conversation of the agents whose retention settings changed (ConversationRetentionDays__c or RetentionTrigger__c), started
+  [ ] Test: AIConversationRetentionRecalcBatchTest
+
+
+2.14 TESTS WITHOUT A CLASS OF THEIR OWN
+---------------------------------------
+
+[ ] AIMessageSendLimitsTest (no sharing keyword, 351 lines): Testing utility for the org-wide throughput controls on AIAssistSettings__c: the cap on messages in flight (extra messages wait and are started when a place is free),

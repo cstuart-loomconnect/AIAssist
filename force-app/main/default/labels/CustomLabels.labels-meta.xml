@@ -1,0 +1,3033 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>AI_Chat_Composer_Placeholder</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: message box placeholder.</shortDescription>
+        <value>Ask a question or type / for commands</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Confirm_Action_Default</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: confirmation text when the action has no Confirmation Message.</shortDescription>
+        <value
+    >Are you sure you want to run this action? It may change data.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Confirm_Cancel</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: cancel button.</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Confirm_Run</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: confirm button.</shortDescription>
+        <value>Run action</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Debug_Heading</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: execution trace heading (debug mode only).</shortDescription>
+        <value>How this answer was produced</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Disclaimer</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: footer disclaimer.</shortDescription>
+        <value
+    >AI responses can be inaccurate. Check important information before you act on it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Empty_State_Body</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: empty state body.</shortDescription>
+        <value
+    >Ask a question about this record, or type / to see the available commands.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Empty_State_Title</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: empty state heading.</shortDescription>
+        <value>Start a conversation</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_End_Conversation</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: close conversation button.</shortDescription>
+        <value>End conversation</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Fallback_Default</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: reply when nothing matches and the agent has no Fallback Message.</shortDescription>
+        <value
+    >I&apos;m not able to help with that request. Try rephrasing it, or ask your administrator what this assistant can do.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Comment_Placeholder</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: feedback comment placeholder.</shortDescription>
+        <value
+    >Tell us more (optional). Please don&apos;t include personal information.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Helpful</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: positive feedback button.</shortDescription>
+        <value>Helpful</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Not_Helpful</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: negative feedback button.</shortDescription>
+        <value>Not helpful</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Prompt</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: feedback question.</shortDescription>
+        <value>Was this response helpful?</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Reason_Prompt</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: shown after a Not helpful rating.</shortDescription>
+        <value>What went wrong?</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Feedback_Thanks</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: shown after feedback is submitted.</shortDescription>
+        <value>Thanks for your feedback.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Greeting_Default</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: greeting when the agent has no Greeting Message.</shortDescription>
+        <value
+    >Hi, I&apos;m your AI assistant. How can I help with this record?</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_History</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: history panel title.</shortDescription>
+        <value>Chat history</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_New_Chat</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: new conversation button.</shortDescription>
+        <value>New chat</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_New_Chats_Paused</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Is User Initiated Chat Enabled is off.</shortDescription>
+        <value
+    >New conversations are paused. You can still read your existing ones.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_PII_Notice</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: privacy notice shown when PII protection is active for the record.</shortDescription>
+        <value
+    >Personal information is replaced with placeholders before your message is sent to the AI service.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Retry</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: retry button on an error card.</shortDescription>
+        <value>Try again</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Send</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: send button.</shortDescription>
+        <value>Send</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Suggested_Actions_Heading</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: heading above suggested workflow actions.</shortDescription>
+        <value>Suggested next steps</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Title</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat header title.</shortDescription>
+        <value>AI Assist</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Working</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: working indicator text.</shortDescription>
+        <value>AI Assist is working on your request</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Active</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Active.</shortDescription>
+        <value>Active</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Back</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: Back.</shortDescription>
+        <value>Back</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Cancel</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Cancel.</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Close</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Close.</shortDescription>
+        <value>Close</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Delete</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Delete.</shortDescription>
+        <value>Delete</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Edit</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: Edit.</shortDescription>
+        <value>Edit</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Finish</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Finish.</shortDescription>
+        <value>Finish</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Inactive</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Inactive.</shortDescription>
+        <value>Inactive</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Loading</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Shared button or status text: Loading.</shortDescription>
+        <value>Loading</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Next</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: Next.</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_No</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: No.</shortDescription>
+        <value>No</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Save</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: Save.</shortDescription>
+        <value>Save</value>
+    </labels>
+    <labels>
+        <fullName>AI_Common_Yes</fullName>
+        <categories>AI Assist,Common</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Shared button or status text: Yes.</shortDescription>
+        <value>Yes</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Action_Confirmation_Required</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a Write action was triggered without confirmation.</shortDescription>
+        <value
+    >This action changes data and must be confirmed before it runs.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Action_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a workflow action threw an error.</shortDescription>
+        <value
+    >The action could not be completed. Check the record before trying again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Action_Not_Permitted</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: action not enabled for the user or not assigned to the agent.</shortDescription>
+        <value>You don&apos;t have permission to run this action.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Agent_Inactive</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the conversation belongs to an agent that has been deactivated.</shortDescription>
+        <value>This AI agent is not currently active.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Agent_Not_Assigned</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: agent is Assigned Users Only and the user is not assigned.</shortDescription>
+        <value
+    >You haven&apos;t been given access to this AI agent. Ask your administrator to assign it to you.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Agent_Not_Available</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: no active agent matches the current record or channel.</shortDescription>
+        <value
+    >No AI agent is available for this record. Contact your administrator if you think one should be.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Application_Inactive</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Is Application Active is off in AI Assist Settings.</shortDescription>
+        <value
+    >AI Assist is switched off for your organisation. Contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Channel_Not_Allowed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the channel is not enabled for this user.</shortDescription>
+        <value
+    >AI Assist is not available from here for your user. Use a different channel, or ask your administrator to enable this one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_No_Access</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the user has no active AI Usage Policy, so may not use AI Assist.</shortDescription>
+        <value
+    >AI Assist has not been set up for your user. Ask your administrator to give you access.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Concurrent_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Max Concurrent Conversations reached.</shortDescription>
+        <value
+    >You have too many open conversations. Close one before starting another.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Console_Load_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: a list or detail view failed to load.</shortDescription>
+        <value>This page couldn&apos;t be loaded. Refresh and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Console_Not_Authorised</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: operation needs the Admin or Super User permission set.</shortDescription>
+        <value
+    >You don&apos;t have permission to do that. Ask your administrator for the AI Assist Admin or Super User permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Console_Save_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: a save failed validation or DML.</shortDescription>
+        <value
+    >Your changes couldn&apos;t be saved. Check the highlighted fields and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Conversation_Busy</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: processing lock held on the conversation.</shortDescription>
+        <value
+    >A response is already being prepared. Please wait for it to finish before sending another message.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Conversation_Closed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: message sent to a Closed or Archived conversation.</shortDescription>
+        <value
+    >This conversation has ended. Start a new conversation to continue.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Conversation_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: conversation id does not resolve or is not visible to the user.</shortDescription>
+        <value
+    >This conversation could not be found. It may have been closed or removed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Daily_Usage_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: Max Tokens Per Day reached.</shortDescription>
+        <value
+    >You&apos;ve reached your daily AI Assist usage limit. Try again tomorrow, or ask your administrator to review your limit.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Daily_Conversation_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Max Conversations Per Day reached.</shortDescription>
+        <value
+    >You&apos;ve reached your daily limit of new AI Assist conversations. Try again tomorrow, or ask your administrator to review your limit.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Data_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a data source returned nothing because of access limits.</shortDescription>
+        <value
+    >Some of the information needed to answer wasn&apos;t available to you, so the answer may be incomplete.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Feedback_Invalid</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a rating that is not Helpful or Not Helpful.</shortDescription>
+        <value>That rating is not valid. Choose Helpful or Not Helpful.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Command_Unknown</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a slash command that is not offered to this user here.</shortDescription>
+        <value
+    >That command is not available here. Type / to see the commands you can use.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Prompt_Template_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a slash command whose Prompt Template is unavailable.</shortDescription>
+        <value
+    >That command cannot be used right now because its prompt template is not available. Ask your administrator to check it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Prompt_Template_Default_Exists</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompt Template: a second active default.</shortDescription>
+        <value
+    >Another Prompt Template is already the active default. Untick Is Default on it first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Generic</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: fallback for any unexpected failure while producing a reply.</shortDescription>
+        <value
+    >Something went wrong generating a response. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Maintenance_Mode</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Is Maintenance Mode is on in AI Assist UI Settings.</shortDescription>
+        <value
+    >AI Assist is undergoing maintenance and will be back shortly. Your existing conversations are safe.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Message_Empty</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: blank message submitted.</shortDescription>
+        <value>Enter a message before sending.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Message_Limit_Reached</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Max Messages Per Conversation reached.</shortDescription>
+        <value
+    >This conversation has reached its message limit. Start a new conversation to continue.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Message_Too_Long</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: message exceeds the maximum accepted length.</shortDescription>
+        <value
+    >Your message is too long. Please shorten it and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Not_Authorised</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: user lacks the permission set or object access.</shortDescription>
+        <value
+    >You don&apos;t have permission to use AI Assist. Ask your administrator to assign you the AI Assist User permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Privacy_Masking_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: PII masking failed. The request is never sent unmasked.</shortDescription>
+        <value
+    >We couldn&apos;t safely protect personal information in this request, so it wasn&apos;t sent. Please contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Authentication</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the provider rejected the credential or the account.</shortDescription>
+        <value
+    >AI Assist couldn&apos;t sign in to the AI service. Ask your administrator to check the API key and the account.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Model_Retired</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the configured model is retired or unknown.</shortDescription>
+        <value
+    >The AI model this agent uses is no longer available. Ask your administrator to update the model configuration.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Not_Configured</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the agent has no active Model Configuration.</shortDescription>
+        <value
+    >AI Assist hasn&apos;t been fully set up yet. Ask your administrator to complete the model configuration.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the provider is rate limiting (HTTP 429).</shortDescription>
+        <value
+    >The AI service is handling too many requests right now. Wait a minute, then try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Timeout</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: provider callout timed out.</shortDescription>
+        <value
+    >The AI service took too long to respond. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Provider_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: provider returned a non-retryable or exhausted-retry error.</shortDescription>
+        <value
+    >The AI service is temporarily unavailable. Please try again in a few moments.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Record_Access_Denied</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the running user cannot read the related record.</shortDescription>
+        <value
+    >You don&apos;t have access to the record this conversation is about.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Request_Blocked</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: a Violation Rule with Block Request matched.</shortDescription>
+        <value
+    >This request was blocked because it breaks an AI Assist usage rule. If you think this is a mistake, contact your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Response_Empty</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: provider returned no usable content.</shortDescription>
+        <value
+    >The AI service returned an empty response. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Rate_Limited</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the per-user messages-per-minute limit.</shortDescription>
+        <value
+    >You&apos;re sending messages too quickly. Wait a moment, then try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Service_Busy</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: the pending-job cap is reached.</shortDescription>
+        <value>AI Assist is busy, try again shortly.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Terms_Not_Acknowledged</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: user has not acknowledged the current terms.</shortDescription>
+        <value
+    >You need to accept the AI Assist usage terms before you can start a conversation.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Terms_Version_Changed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: acknowledged version differs from Current Terms Version.</shortDescription>
+        <value
+    >The AI Assist usage terms have been updated. Please review and accept the new version to continue.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Token_Limit_Reached</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: Max Tokens Per Conversation reached.</shortDescription>
+        <value
+    >This conversation has reached its usage limit. Start a new conversation to continue.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Agent_Access</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: agent Access Mode.</shortDescription>
+        <value
+    >Assigned Users Only limits this agent to the users and permission sets you assign. Use it for any agent that touches sensitive data.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Apex_Class</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: Apex class name help.</shortDescription>
+        <value
+    >The Apex class must implement the AI Assist interface. Classes that do not are rejected.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Conversation_Export</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: user settings.</shortDescription>
+        <value
+    >Export lets a user take conversation content out of Salesforce. Turn it on only where your policy allows it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Data_Access</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: data source and agent screens.</shortDescription>
+        <value
+    >AI Assist only reads data the signed-in user already has access to. Sharing rules and field-level security always apply.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Data_Source_Max_Rows</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: data source.</shortDescription>
+        <value
+    >Limit how many records a data source can return. Fewer rows means lower cost and less data shared with the AI service.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Debug_Mode</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: user settings.</shortDescription>
+        <value
+    >Debug mode shows how an answer was produced, including the data sources used. Turn it on only for people who need it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Delete_Agent</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: agent delete confirmation.</shortDescription>
+        <value
+    >Agents that have conversation history cannot be deleted. Deactivate the agent instead.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Legal_Hold</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: conversation detail.</shortDescription>
+        <value
+    >A conversation on legal hold is never deleted by retention, even after its retention date.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Log_Retention</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: settings.</shortDescription>
+        <value
+    >Logs are kept for the retention period and then deleted. Violations are kept longer because they are audit evidence.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Named_Credential</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: model configuration.</shortDescription>
+        <value
+    >Use a Named Credential so API keys are never stored in a field. Only choose a credential that points at your AI provider.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_PII</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: PII registry.</shortDescription>
+        <value
+    >Fields classified as personal information are replaced with placeholders before data is sent to the AI service.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_PII_Masking_Records</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: PII masking records.</shortDescription>
+        <value
+    >Masking records list which fields were masked and how many values, never the values themselves. Use them to show personal data was protected.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Permission_Admin</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: who-can-do-what summary.</shortDescription>
+        <value
+    >AI Assist Admin: builds and maintains agents, prompts, data sources, actions and settings. Cannot read message content owned by others.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Permission_Super_User</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: who-can-do-what summary.</shortDescription>
+        <value
+    >AI Assist Super User: can read every conversation, violation and log to support users, and review violations. Cannot change configuration.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Permission_User</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: who-can-do-what summary.</shortDescription>
+        <value
+    >AI Assist User: can chat, give feedback and accept the usage terms. Cannot see configuration, other people&apos;s conversations or logs.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Retention</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: agent conversation settings.</shortDescription>
+        <value
+    >Conversations are deleted when the retention period ends. Choose the shortest period that meets your needs.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_SOQL_Template</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: SOQL template editor.</shortDescription>
+        <value
+    >Write a SELECT query and use bind variables such as :recordId. Never paste user input into the query text.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Temperature</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: model configuration.</shortDescription>
+        <value
+    >Lower values give more consistent answers. Higher values give more varied ones.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Test_Mode</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: agent settings.</shortDescription>
+        <value
+    >Test mode lets administrators try an agent without opening it to users.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Guidance_Write_Actions</fullName>
+        <categories>AI Assist,Guidance</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: workflow action screens.</shortDescription>
+        <value
+    >Actions that change data must always be confirmed by the user before they run.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Saved</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Console: toast after a settings save.</shortDescription>
+        <value>Settings saved.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Unsaved_Changes</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Console: unsaved changes warning.</shortDescription>
+        <value>You have unsaved changes.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Calling_Model</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Thinking</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Finalising</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Preparing the response</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Preparing_Request</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Preparing your request</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Protecting_Data</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Protecting personal information</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Reading_Data</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Looking up information</value>
+    </labels>
+    <labels>
+        <fullName>AI_Step_Running_Action</fullName>
+        <categories>AI Assist,Step</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Progress event Step Label.</shortDescription>
+        <value>Running an action</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Accept</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel accept button.</shortDescription>
+        <value>I accept</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Confirmation</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel confirmation.</shortDescription>
+        <value>Thanks. Your acceptance has been recorded.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Intro</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel introduction.</shortDescription>
+        <value
+    >Before you use AI Assist, please read and accept how it works and what you agree to.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Link_Text</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Terms panel link to the AI Usage Policy URL.</shortDescription>
+        <value>Read the full usage policy</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Signature_Help</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel signature help.</shortDescription>
+        <value
+    >Your typed name is your electronic signature. We record the date, time and sign-in session.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Signature_Label</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel signature field label.</shortDescription>
+        <value>Type your full name to sign</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Signature_Required</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel: blank signature.</shortDescription>
+        <value>Type your full name to accept the terms.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Terms_Title</fullName>
+        <categories>AI Assist,Terms</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Terms panel title.</shortDescription>
+        <value>AI Assist usage terms</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Activate_Warning</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard: shown before activation.</shortDescription>
+        <value
+    >Activating makes this agent available to users straight away.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Draft_Saved</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard: toast after auto-save.</shortDescription>
+        <value>Draft saved.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Actions</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard step help: workflow actions.</shortDescription>
+        <value
+    >Choose which actions the agent may suggest. Actions that change data always ask the user to confirm.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Basics</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Agent wizard step help: basics.</shortDescription>
+        <value>Name your agent and choose the object it works on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Conversation</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard step help: conversation settings.</shortDescription>
+        <value
+    >Set conversation limits, how long conversations are kept, and who can see them.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Data</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard step help: data sources.</shortDescription>
+        <value
+    >Choose which data the agent may read. It can only read what the signed-in user can already see.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Guardrails</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent wizard step help: violation rules.</shortDescription>
+        <value>Add rules that detect or block risky requests.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Model</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Agent wizard step help: model.</shortDescription>
+        <value
+    >Choose the AI model this agent uses. Only active model configurations are listed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Prompts</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Agent wizard step help: prompts.</shortDescription>
+        <value
+    >Add one or more prompt templates. The agent picks the best match for each record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Step_Review</fullName>
+        <categories>AI Assist,Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Agent wizard step help: review.</shortDescription>
+        <value>Review your choices, then activate the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Object_Not_Found</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Agent object: the object API name does not exist in this org.</shortDescription>
+        <value
+    >Object {0} was not found in this org. Enter the API name of an existing object, such as Case.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Blocked_Not_Assigned</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: no agent is available to the user.</shortDescription>
+        <value
+    >You haven&apos;t been given access to an AI Assist agent here. Ask your administrator.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Record_Page_Chat</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Record Page Chat.</shortDescription>
+        <value>Record Page Chat</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Utility_Bar</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Utility Bar.</shortDescription>
+        <value>Utility Bar</value>
+    </labels>
+    <labels>
+        <fullName>AI_Channel_Mobile</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Channel picklist value label: Mobile.</shortDescription>
+        <value>Mobile</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_Anthropic</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: Anthropic.</shortDescription>
+        <value>Anthropic</value>
+    </labels>
+    <labels>
+        <fullName>AI_Provider_OpenAI</fullName>
+        <categories>AI Assist,Picklist Values</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Provider picklist value label: OpenAI.</shortDescription>
+        <value>OpenAI</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Chatter</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save target name, Chatter post.</shortDescription>
+        <value>Chatter post</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Note</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save target name, note.</shortDescription>
+        <value>Note</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Save_Target_Task</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save target name, task.</shortDescription>
+        <value>Task</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Chatter</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: reply posted to the record feed.</shortDescription>
+        <value>Posted to the record feed</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Note</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: reply saved as a note.</shortDescription>
+        <value>Saved as a note on the record</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Saved_As_Task</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: reply saved as a task.</shortDescription>
+        <value>Created a task on the record</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Note_Default_Title</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: note title when the first line is blank.</shortDescription>
+        <value>AI Assist reply</value>
+    </labels>
+    <labels>
+        <fullName>AI_Chat_Task_Default_Subject</fullName>
+        <categories>AI Assist,Chat</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: task subject when the first line is blank.</shortDescription>
+        <value>Follow up on AI Assist reply</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_No_Record</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, conversation has no record.</shortDescription>
+        <value>This conversation is not about a record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Text_Empty</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: save to record, no text.</shortDescription>
+        <value>There is no text to save.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Target_Invalid</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, unknown target.</shortDescription>
+        <value
+    >Choose whether to save as a note, a Chatter post or a task.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Chatter_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, no Chatter feed on object.</shortDescription>
+        <value>Chatter posts are not turned on for this kind of record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record failed or not permitted.</shortDescription>
+        <value
+    >The reply could not be saved to the record. You may not have permission to add to it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Not_Global</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, agent conversations are private.</shortDescription>
+        <value
+    >This conversation cannot be shared because its agent keeps conversations private.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Limit</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: share, limit reached.</shortDescription>
+        <value
+    >This conversation is already shared with as many people as it can be.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Self</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Chat: share, own conversation.</shortDescription>
+        <value>You already own this conversation.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_User_Ineligible</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, user cannot use AI Assist.</shortDescription>
+        <value
+    >That person cannot use AI Assist, so this conversation cannot be shared with them.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Share_Failed</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: share, the share could not be saved.</shortDescription>
+        <value>The conversation could not be shared. Try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Error_Save_Notes_Unavailable</fullName>
+        <categories>AI Assist,Error</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Chat: save to record, Notes are not turned on in the org.</shortDescription>
+        <value
+    >Notes are not turned on in this org, so the reply cannot be saved as a note.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Access</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: user may not use the tab.</shortDescription>
+        <value>Only AI Assist administrators can change these settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Limit</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a usage limit that is not a whole number above zero.</shortDescription>
+        <value
+    >{0} must be a whole number above zero. Leave it blank for no limit.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Assignee</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: an assignment with no valid user or permission set.</shortDescription>
+        <value
+    >Choose a user or a permission set to assign the policy to.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Permission_Set</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a permission set name that does not exist.</shortDescription>
+        <value
+    >No permission set or permission set group has that name. Use the API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Duplicate</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the same assignee added twice.</shortDescription>
+        <value
+    >This policy is already assigned to that user or permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Required</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: a required field is blank.</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Whole_Number_Range</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: a number is out of range.</shortDescription>
+        <value>{0} must be a whole number from {1} to {2}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Cap_Below_Default</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: iteration cap below the default.</shortDescription>
+        <value
+    >The iteration cap must be at least the default iterations.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Status_Codes</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: status code list is not valid.</shortDescription>
+        <value
+    >{0} must be HTTP status codes from 100 to 599 separated by commas, such as 200,201.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Choice</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: value is not one of the choices.</shortDescription>
+        <value>{0} has a value that is not allowed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Field_Not_Allowed</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: field cannot be set here.</shortDescription>
+        <value>{0} cannot be set on this row.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Owner</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: no profile or user chosen.</shortDescription>
+        <value>Choose the profile or user this row is for.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Org_Row_Delete</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Settings: organisation row cannot be deleted.</shortDescription>
+        <value>The organisation row cannot be deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Row_Not_Found</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: row no longer exists.</shortDescription>
+        <value>This row no longer exists. Reload the settings.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Text_Length</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: text too long.</shortDescription>
+        <value>{0} must be {1} characters or fewer.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Settings_Error_Settings_Name</fullName>
+        <categories>AI Assist,Settings</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Settings: unknown settings name.</shortDescription>
+        <value>These settings cannot be changed here.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Not_Found</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action not found.</shortDescription>
+        <value>This workflow action no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action: value missing.</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Type_Invalid</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action: type not allowed.</shortDescription>
+        <value
+    >Choose Apex class, Autolaunched flow or Screen flow, and Read only or Write.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Source_Invalid</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action: class or flow not usable.</shortDescription>
+        <value
+    >Choose an Apex class that implements IAIWorkflowActionExecutor, or an active flow of the right kind.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Duplicate</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action: API name already used.</shortDescription>
+        <value>Another workflow action already uses that API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Flow_Inactive</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: flow not active.</shortDescription>
+        <value>The flow has no active version, so it cannot run.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Rollback_Sandbox</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: no roll back only in a sandbox.</shortDescription>
+        <value>Roll back can only be switched off in a sandbox.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Callouts_Sandbox</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: class cannot be rolled back.</shortDescription>
+        <value
+    >This class says it does things that cannot be rolled back (such as sending email). It can only be tested in a sandbox.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Screen_Flow_No_Test</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action test: screen flow.</shortDescription>
+        <value
+    >A screen flow needs a person to finish it, so it cannot be tested here. Try it in the chat.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Record_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: record needed.</shortDescription>
+        <value
+    >Choose a record to test with: this action works on the open record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_ReadOnly_Changed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Workflow action test: a Read Only action changed records.</shortDescription>
+        <value
+    >This action is set to Read Only but it changed {0} record(s). Set it to Write, or change what it does.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsWa_Error_Test_Failed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Workflow action test: failed.</shortDescription>
+        <value>The test failed: {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Name_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: name and description required.</shortDescription>
+        <value
+    >Give the data source a name and a description for the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Developer_Name</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: API name format.</shortDescription>
+        <value
+    >The API name must start with a letter and use only letters, numbers and underscores.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Source_Type</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: source type missing.</shortDescription>
+        <value
+    >Choose whether the data source is a SOQL query or an Apex class.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Query_Invalid</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has errors.</shortDescription>
+        <value>Fix the errors in the query before saving.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_No_Template</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: no SOQL template.</shortDescription>
+        <value>Write or build a query first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Apex_Class</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: no Apex class.</shortDescription>
+        <value
+    >Choose an Apex class that implements IAIDataSourceExecutor.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Class_Not_Executor</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: class is not an executor.</shortDescription>
+        <value
+    >Apex class {0} was not found or does not implement IAIDataSourceExecutor.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Not_Found</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: data source gone.</shortDescription>
+        <value>That data source no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Test_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: test needed before saving a data source agents use.</shortDescription>
+        <value
+    >Agents use this data source, so it must pass a test before the change is saved.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Record_Required</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: bound test needs a record.</shortDescription>
+        <value
+    >Pick a record to test with: this data source needs the record the user has open.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Object</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object unknown.</shortDescription>
+        <value>That object does not exist or you cannot read it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Timeout</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query too slow.</shortDescription>
+        <value>Query timed out; add an indexed filter such as AccountId.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Error_Too_Many_Rows</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: more rows matched than returned.</shortDescription>
+        <value
+    >Too many rows: {0} matched; only {1} returned. Add a filter.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Warning_Count_Failed</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: could not count matching rows.</shortDescription>
+        <value
+    >The rows that matched could not be counted, so the result may be cut short.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Only_Select</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query is not a SELECT.</shortDescription>
+        <value>Only SELECT is allowed. Remove {0}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Shape</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has no SELECT FROM.</shortDescription>
+        <value>Write a query like SELECT Id, Name FROM Account.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Object_Bind</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object name is a bind.</shortDescription>
+        <value>The object name cannot be a bind.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Object_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: object unknown in the query.</shortDescription>
+        <value>No object {0}, or you cannot read it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Subquery_Depth</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: sub-query too deep.</shortDescription>
+        <value>Sub-queries more than 1 level deep are not allowed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: field unknown.</shortDescription>
+        <value>No field {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Suggest</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: field unknown with a suggestion.</shortDescription>
+        <value>No field {0} on {1}. Did you mean {2}?</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Field_Hidden</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: field not readable.</shortDescription>
+        <value>You cannot read {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Relationship_Missing</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: relationship unknown.</shortDescription>
+        <value>No relationship {0} on {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_No_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: query has no LIMIT.</shortDescription>
+        <value
+    >No LIMIT. Max rows ({0}) is added as the LIMIT automatically; remove any LIMIT over 200.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Limit_Too_High</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: LIMIT over the most allowed.</shortDescription>
+        <value>LIMIT {0} is over 200. Lower it to 200 or less.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Hard_Coded_Id</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: record id typed into the query.</shortDescription>
+        <value
+    >A hard-coded record ID won't exist in other orgs. Use a bind instead.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Record_Id_Unbound</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: recordId used by an unbound data source.</shortDescription>
+        <value
+    >The bind :recordId is only filled for a data source bound to the open record. Make this one bound, or use a different input name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Soql_Record_Id_Unused</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Tools: bound data source never uses recordId.</shortDescription>
+        <value
+    >This data source is bound to the open record, but the query never uses :recordId.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: fix button.</shortDescription>
+        <value>Fix</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Add_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: add LIMIT fix button.</shortDescription>
+        <value>Add LIMIT {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Use_Limit</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: lower LIMIT fix button.</shortDescription>
+        <value>Use LIMIT 200</value>
+    </labels>
+    <labels>
+        <fullName>AI_Tools_Fix_Turn_Into_Input</fullName>
+        <categories>AI Assist,Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Tools: hard-coded id fix button.</shortDescription>
+        <value>Turn into input</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Name_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: name missing.</shortDescription>
+        <value>Enter a name for the template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: API name missing.</shortDescription>
+        <value>Enter an API name for the template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Format</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: API name has the wrong shape.</shortDescription>
+        <value
+    >Use letters, numbers and underscores only, starting with a letter (DeveloperNameFormat).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Api_Name_Taken</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: API name already used.</shortDescription>
+        <value>Another template already uses this API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Max_Length</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: response length is not positive.</shortDescription>
+        <value>Must be more than 0 (MaxResponseLengthPositive).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Instructions_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: instructions missing.</shortDescription>
+        <value
+    >Instructions are required for an active template (ActiveRequiresPrompt).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Unknown_Merge_Field</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: merge field not recognised.</shortDescription>
+        <value>Unknown merge field {0}. Use one from the Insert bar.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Not_Found</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: template not found.</shortDescription>
+        <value
+    >That template could not be found. It may have been deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Default_Cannot_Archive</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Prompts: default cannot be archived.</shortDescription>
+        <value
+    >The default template can&apos;t be archived. Make another template the default first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Default_Must_Be_Active</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: default must be active.</shortDescription>
+        <value
+    >Only an active template can be the default. Activate it first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Move_Target_Invalid</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: move target not usable.</shortDescription>
+        <value>An agent can only be moved to another active template.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Message_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: test message missing.</shortDescription>
+        <value>Type a message to try.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Message_Too_Long</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: test message too long.</shortDescription>
+        <value>A test message can be up to 4,000 characters.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Too_Many_Messages</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: too many saved messages.</shortDescription>
+        <value
+    >A template can have up to 25 saved test messages. Delete one first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Agent_Required</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: agent missing.</shortDescription>
+        <value>Pick an agent to run the message as.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Agent_No_Model</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: agent has no model.</shortDescription>
+        <value
+    >That agent has no model configuration, so there is nothing to run the message on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Run_Failed</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: model gave no reply.</shortDescription>
+        <value
+    >The model did not reply. Check the agent&apos;s model configuration and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Verdict</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: verdict not valid.</shortDescription>
+        <value>Mark a reply as Better or Worse.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Prompts_Error_Save_First</fullName>
+        <categories>AI Assist,Prompts</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Prompts: template not saved yet.</shortDescription>
+        <value>Save the template before saving test messages for it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Name_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: name required.</shortDescription>
+        <value>Give the model a name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Model_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: model required.</shortDescription>
+        <value>Enter the provider's model ID.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Credential_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: credential required.</shortDescription>
+        <value>Pick the named credential the provider is called through.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Credential_Format</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: credential format.</shortDescription>
+        <value
+    >The named credential must be the API name of a named credential: letters, numbers and underscores only.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Provider_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: provider invalid.</shortDescription>
+        <value>Pick a provider this package supports.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Environment_Required</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: environment required.</shortDescription>
+        <value>Enter the environment ID. Anthropic Agent needs one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Path_Format</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: path format.</shortDescription>
+        <value
+    >The API path must start with a single / and contain only path characters: no host name, spaces, &quot;..&quot; or &quot;//&quot;.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Tokens_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: tokens invalid.</shortDescription>
+        <value>Max output tokens must be a whole number of 1 or more.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Temperature_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: temperature invalid.</shortDescription>
+        <value
+    >Temperature must be between 0 and 2 (between 0 and 1 for Anthropic).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Not_Found</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: not found.</shortDescription>
+        <value>That model could not be found. It may have been deleted.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Move_Target_Invalid</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: move target invalid.</shortDescription>
+        <value>An agent can only be moved to another active model.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Move_Missing</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: move missing.</shortDescription>
+        <value
+    >Pick a model for every agent before switching this model off.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Error_Switch_Off_Has_Agents</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Models: switch off has agents.</shortDescription>
+        <value
+    >Active agents use this model. Switch it off from the toggle, which moves them first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Models_Test_Agent_Name</fullName>
+        <categories>AI Assist,Models</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Models: name of the stand-in agent in a connection test.</shortDescription>
+        <value>Connection test</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Last_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the only default policy switched off.</shortDescription>
+        <value
+    >A default policy is needed. Make another policy the default instead of switching this one off.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Delete_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: the default policy deleted.</shortDescription>
+        <value
+    >The default policy can't be deleted. To delete it, make another policy the default first.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Error_Move_To</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: no policy to move the people to.</shortDescription>
+        <value
+    >Choose another policy to move the people to before deleting this one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Tokens_A_Day</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a daily token limit in a sentence.</shortDescription>
+        <value>{0} tokens a day</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_No_Token_Limit</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: no daily token limit in a sentence.</shortDescription>
+        <value>no daily token limit</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Warning_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a permission set that already has a policy.</shortDescription>
+        <value
+    >{0} is already assigned to the {1} policy. Adding it here means its {2} users match two policies, so the stricter one applies: {3} ({4}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Warning_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: a user who already has a user assignment.</shortDescription>
+        <value
+    >{0} already has a user assignment to the {1} policy. Adding it here means two user assignments match, so the stricter one applies: {2} ({3}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the user assignment source.</shortDescription>
+        <value>User assignment</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a permission set source.</shortDescription>
+        <value>Permission set · {0}</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Source_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the default source.</shortDescription>
+        <value>Default</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_User</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a user assignment applies.</shortDescription>
+        <value
+    >They have a user assignment, which comes before permission sets and the default policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_User_Several</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, several user assignments.</shortDescription>
+        <value
+    >No more than one policy can apply. They have {0} user assignments with different policies; the stricter one wins.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Permission_Set</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a permission set applies.</shortDescription>
+        <value
+    >No user assignment. Their permission set gives them this policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Permission_Set_Several</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, several permission sets.</shortDescription>
+        <value
+    >No user assignment. Matches {0} permission sets with different policies; the stricter one wins.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_Default</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, the default applies.</shortDescription>
+        <value
+    >No user assignment and no permission set assignment, so the default policy applies.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Reason_None</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, nothing applies.</shortDescription>
+        <value
+    >No policy applies to this user, so they cannot use AI Assist.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Policies_Check_Hint</fullName>
+        <categories>AI Assist,Policies</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Policies: check a user, a policy was ignored.</shortDescription>
+        <value
+    >If this user should get {0}, add a user assignment for them, or remove the assignment that wins ({1}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: object not found.</shortDescription>
+        <value
+    >That object could not be found in the registry. It may have been removed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Field_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: field not found.</shortDescription>
+        <value>That field could not be found. Sync the object again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Object_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: object cannot be added.</shortDescription>
+        <value
+    >That object does not exist in this org, or it cannot be queried.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Object_Exists</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: object already added.</shortDescription>
+        <value>That object is already in the registry.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Limit_Reached</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: registry is full.</shortDescription>
+        <value
+    >The registry already holds {0} objects, the most Maximum PII Registry Objects allows. Raise it in AI Settings to add more.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Max_Fields_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: max fields not valid.</shortDescription>
+        <value>Max fields to query must be a whole number from 1 to 500.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Sync_Running</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: sync already running.</shortDescription>
+        <value
+    >This object is already queued or syncing. Wait for it to finish.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Type_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: type not offered.</shortDescription>
+        <value>That PII type is not one the registry offers.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Test_Record_Invalid</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: test record not valid.</shortDescription>
+        <value>Pick a record of the object you are testing.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Error_Test_Record_Not_Found</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: test record not found.</shortDescription>
+        <value
+    >That record could not be read. Check that it exists and that you can see it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_No_Rule</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>PII Registry: redacted, no rule.</shortDescription>
+        <value>Redacted: no active rule for this type</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_Strategy</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: redacted, strategy not applied.</shortDescription>
+        <value>Redacted: {0} is not applied yet</value>
+    </labels>
+    <labels>
+        <fullName>AI_PiiRegistry_Rule_Redacted_Exhausted</fullName>
+        <categories>AI Assist,PII Registry</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >PII Registry: redacted, list used up.</shortDescription>
+        <value>Redacted: every substitute value is already used</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NameRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NameRequired: title.</shortDescription>
+        <value>Agent name is required</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NameRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NameRequired: message.</shortDescription>
+        <value>Give the agent a name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameRequired: title.</shortDescription>
+        <value>API name is required</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameRequired: message.</shortDescription>
+        <value>Give the agent an API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameFormat_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameFormat: title.</shortDescription>
+        <value>API name is not valid</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameFormat_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameFormat: message.</shortDescription>
+        <value
+    >Use letters, numbers and underscores only, starting with a letter.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameTaken_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameTaken: title.</shortDescription>
+        <value>API name is taken</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameTaken_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameTaken: message.</shortDescription>
+        <value
+    >Another agent already uses this API name. Choose a different one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectsRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectsRequired: title.</shortDescription>
+        <value>Pick a record page</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectsRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectsRequired: message.</shortDescription>
+        <value>Choose at least one object the agent appears on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoModel_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoModel: title.</shortDescription>
+        <value>No model chosen</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoModel_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoModel: message.</shortDescription>
+        <value>Choose the AI model the agent answers with.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ModelInactive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ModelInactive: title.</shortDescription>
+        <value>Model is switched off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ModelInactive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ModelInactive: message.</shortDescription>
+        <value
+    >The chosen model is switched off, so the agent cannot answer until it is switched on.</value>
+    </labels>
+    <labels>
+        <fullName
+    >AI_Wizard_Finding_ConversationLimitsMustBePositive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ConversationLimitsMustBePositive: title.</shortDescription>
+        <value>Limits must be 1 or more</value>
+    </labels>
+    <labels>
+        <fullName
+    >AI_Wizard_Finding_ConversationLimitsMustBePositive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ConversationLimitsMustBePositive: message.</shortDescription>
+        <value
+    >Retention days, idle timeout, messages, tokens and tool rounds must each be 1 or more, or left blank.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectNotOnAgent_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectNotOnAgent: title.</shortDescription>
+        <value>Item is for another object</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectNotOnAgent_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectNotOnAgent: message.</shortDescription>
+        <value
+    >{0} works on {1}, which this agent does not appear on, so it will not be offered there.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ItemInactive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding ItemInactive: title.</shortDescription>
+        <value>Item is switched off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ItemInactive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ItemInactive: message.</shortDescription>
+        <value
+    >{0} is switched off, so the model is not offered it until it is switched on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_FlowNoActiveVersion_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding FlowNoActiveVersion: title.</shortDescription>
+        <value>Flow has no active version</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_FlowNoActiveVersion_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding FlowNoActiveVersion: message.</shortDescription>
+        <value>{0} runs a flow with no active version, so it will fail.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_WorkflowActionsDisabled_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding WorkflowActionsDisabled: title.</shortDescription>
+        <value>Workflow actions are off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_WorkflowActionsDisabled_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding WorkflowActionsDisabled: message.</shortDescription>
+        <value
+    >Workflow actions are switched off for the org, so this agent cannot run them.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TokensOverPolicy_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TokensOverPolicy: title.</shortDescription>
+        <value>Token limit is over the policy</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TokensOverPolicy_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TokensOverPolicy: message.</shortDescription>
+        <value
+    >The limit of {0} tokens a conversation is more than the {1} policy allows in a day ({2}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ToolRoundsOverCap_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ToolRoundsOverCap: title.</shortDescription>
+        <value>Tool rounds are over the cap</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ToolRoundsOverCap_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ToolRoundsOverCap: message.</shortDescription>
+        <value
+    >{0} tool rounds is more than the org cap of {1}, so the cap applies.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_GlobalVisibility_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding GlobalVisibility: title.</shortDescription>
+        <value>Everyone can see these conversations</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_GlobalVisibility_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding GlobalVisibility: message.</shortDescription>
+        <value
+    >Global conversations can be seen by anyone who can see the record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoAssignments_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NoAssignments: title.</shortDescription>
+        <value>Nobody is assigned</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoAssignments_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NoAssignments: message.</shortDescription>
+        <value
+    >Only assigned users can use this agent and nobody is assigned yet.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoPolicy_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoPolicy: title.</shortDescription>
+        <value>No usage policy is active</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoPolicy_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoPolicy: message.</shortDescription>
+        <value
+    >Users with no active usage policy can read but not send, and no default policy is active.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoTemplate_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoTemplate: title.</shortDescription>
+        <value>No prompt template</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoTemplate_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoTemplate: message.</shortDescription>
+        <value
+    >No template is chosen and none is the default, so the agent has no prompt.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyDataSources_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyDataSources: title.</shortDescription>
+        <value>Too many data sources</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyDataSources_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyDataSources: message.</shortDescription>
+        <value
+    >Only the first {0} data sources reach the model. This agent has {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyActions_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyActions: title.</shortDescription>
+        <value>Too many workflow actions</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyActions_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyActions: message.</shortDescription>
+        <value
+    >Only the first {0} workflow actions reach the model. This agent has {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Agent not found.</shortDescription>
+        <value>That agent could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Draft_Required</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Draft missing.</shortDescription>
+        <value>There is no agent to save.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Cannot_Activate</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Cannot activate.</shortDescription>
+        <value
+    >This agent cannot be activated until every blocker is fixed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Model_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Model not found.</shortDescription>
+        <value>That model could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Item_Missing</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard: Data source or action missing.</shortDescription>
+        <value
+    >A data source or workflow action of this agent no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Assignee</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Assignee invalid.</shortDescription>
+        <value>Each access line needs a user or a permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_User_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User not found.</shortDescription>
+        <value>That user could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Message_Required</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try message missing.</shortDescription>
+        <value>Type a message to try.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Message_Too_Long</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try message too long.</shortDescription>
+        <value>A trial message can be up to 4,000 characters.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_No_Model</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try needs a model.</shortDescription>
+        <value>Choose a model before trying the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Run_Failed</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try got no reply.</shortDescription>
+        <value>The model did not reply. Check the model and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Try_Default_Prompt</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try default prompt.</shortDescription>
+        <value>Answer the question helpfully and briefly.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Inactive</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: inactive.</shortDescription>
+        <value>This user is not active.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_No_Permission_Set</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard: User reason: no permission set.</shortDescription>
+        <value>This user holds no AI Assist permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Not_Assigned</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: not assigned.</shortDescription>
+        <value
+    >The agent is for assigned users only and this user is not assigned.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_No_Policy</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: no policy.</shortDescription>
+        <value
+    >No active usage policy applies to this user, so they can read but not send.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_All_Users</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: all users.</shortDescription>
+        <value
+    >The agent is open to every AI Assist user and this user has a usage policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Assigned_User</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: assigned user.</shortDescription>
+        <value
+    >This user is assigned to the agent by name and has a usage policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Assigned_Set</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: assigned set.</shortDescription>
+        <value
+    >This user holds {0}, which is assigned to the agent, and has a usage policy.</value>
+    </labels>
+</CustomLabels>

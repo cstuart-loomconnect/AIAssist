@@ -1,0 +1,53 @@
+<template>
+  <!-- Name and API name: side by side -->
+  <div class="slds-grid slds-wrap aiadd-row">
+    <lightning-input class="slds-col aiadd-field" label={labels.name} value={draft.sourceName} max-length={maxNameLength} required onchange={handleNameChange}></lightning-input>
+    <lightning-input class="slds-col aiadd-field aiadd-mono" label={labels.apiName} value={draft.developerName} max-length={maxApiNameLength} field-level-help={labels.apiNameHelp} required onchange={handleApiNameChange}></lightning-input>
+  </div>
+
+  <!-- Description for the agent: what it is for and when to call it -->
+  <lightning-textarea label={labels.description} value={draft.description} max-length={maxDescriptionLength} required onchange={handleDescriptionChange}></lightning-textarea>
+  <p class="aiadd-help slds-text-body_small">{labels.descriptionHelp}</p>
+
+  <!-- What comes back: what the agent gets from it -->
+  <lightning-textarea label={labels.outputDescription} value={draft.outputDescription} max-length={maxDescriptionLength} onchange={handleOutputChange} class="aiadd-gap"></lightning-textarea>
+
+  <!-- Object it returns: only for an Apex class, because a query reads its object from the query -->
+  <template lwc:if={isApex}>
+    <lightning-input label={labels.targetObject} value={draft.targetObject} onchange={handleTargetObjectChange} class="aiadd-gap"></lightning-input>
+  </template>
+
+  <!-- Summary: what was built and tested -->
+  <div class="aiadd-summary">
+    <div class="aiadd-summary-head">{labels.summary}</div>
+    <dl class="aiadd-summary-body">
+      <dt>{labels.summaryType}</dt>
+      <dd>{typeText}</dd>
+      <dt>{labels.summaryInputs}</dt>
+      <dd>{inputsText}</dd>
+      <template lwc:if={isSoql}>
+        <dt>{labels.summaryMaxRows}</dt>
+        <dd>{draft.maxRows}</dd>
+      </template>
+      <dt>{labels.summaryLastTest}</dt>
+      <dd>
+        <template lwc:if={hasTested}>
+          <template for:each={testPills} for:item="pill"
+            ><span key={pill.key} class="aiadd-pill-group"><span class={pill.pillClass}>{pill.pillText}</span>{pill.restText}</span></template
+          >
+        </template>
+        <template lwc:else>{labels.summaryNever}</template>
+      </dd>
+    </dl>
+    <!-- Test failure: why the last test failed -->
+    <template lwc:if={hasTestFailure}
+      ><p class="aiadd-failure"><strong>{labels.testFailed}</strong> {testFailureMessage}</p></template
+    >
+  </div>
+
+  <!-- Active: whether agents can use it -->
+  <div class="slds-grid slds-grid_vertical-align-center aiadd-active">
+    <lightning-input type="toggle" label={labels.active} checked={draft.isActive} message-toggle-active="" message-toggle-inactive="" onchange={handleActiveChange}></lightning-input>
+    <span class="aiadd-active-help slds-text-body_small">{labels.activeHelp}</span>
+  </div>
+</template>

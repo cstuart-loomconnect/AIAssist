@@ -1,0 +1,122 @@
+<template>
+  <!-- Step: the intro, the table, the outputs and the notes -->
+  <div class="slds-grid slds-wrap aitwa-layout">
+    <!-- Main column: everything except the screen flow preview -->
+    <div class="aitwa-main">
+      <!-- Intro: what this step is for -->
+      <p class="aitwa-intro">{introText}</p>
+
+      <!-- Unsupported warning: shown when an input cannot be filled in -->
+      <template lwc:if={hasUnsupported}
+        ><div class="aitwa-note aitwa-note_warning aitwa-note_top"><strong>{unsupportedText}</strong></div></template
+      >
+
+      <!-- Table: one row for each input -->
+      <template lwc:if={hasInputs}>
+        <table class="aitwa-table slds-table">
+          <thead>
+            <tr>
+              <th scope="col">{columnName}</th>
+              <th scope="col">{labels.columnType}</th>
+              <th scope="col">{labels.columnFilledBy}</th>
+              <th scope="col">{labels.columnValue}</th>
+              <th scope="col" class="aitwa-action-cell"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={inputViews} for:item="row">
+              <tr key={row.key}>
+                <!-- Name: a code name, or a box for an input the admin added -->
+                <td>
+                  <template lwc:if={row.isCustom}><lightning-input variant="label-hidden" label={labels.namePlaceholder} placeholder={labels.namePlaceholder} value={row.name} data-index={row.index} onchange={handleNameChange}></lightning-input></template>
+                  <template lwc:else><span class="aitwa-code">{row.name}</span></template>
+                </td>
+                <!-- Type: a list for an input the admin added, plain text otherwise -->
+                <td>
+                  <template lwc:if={row.isCustom}
+                    ><select class="slds-select" aria-label={labels.columnType} data-index={row.index} onchange={handleTypeChange}>
+                      <template for:each={row.typeChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+                    </select></template
+                  >
+                  <template lwc:else>{row.typeLabel}</template>
+                </td>
+                <!-- Filled by: a pill when it cannot change, a list otherwise -->
+                <td>
+                  <template lwc:if={row.isPill}><span class={row.pillClass}>{row.pillLabel}</span></template>
+                  <template lwc:else
+                    ><select class="slds-select" aria-label={labels.columnFilledBy} data-index={row.index} onchange={handleSourceChange}>
+                      <template for:each={row.sourceChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+                    </select></template
+                  >
+                </td>
+                <!-- Value: a description for the agent, a fixed value, or words that explain -->
+                <td>
+                  <template lwc:if={row.isAgent}><lightning-input variant="label-hidden" label={labels.columnValue} placeholder={labels.descriptionPlaceholder} value={row.description} data-index={row.index} onchange={handleDescriptionChange}></lightning-input></template>
+                  <template lwc:if={row.isFixedText}><lightning-input variant="label-hidden" label={labels.fixedPlaceholder} type={row.fieldType} placeholder={labels.fixedPlaceholder} value={row.fixedValue} data-index={row.index} onchange={handleFixedChange}></lightning-input></template>
+                  <template lwc:if={row.isFixedBoolean}
+                    ><select class="slds-select" aria-label={labels.fixedPlaceholder} data-index={row.index} onchange={handleFixedChange}>
+                      <template for:each={row.booleanChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+                    </select></template
+                  >
+                  <template lwc:if={row.isStatic}><span class="aitwa-muted">{row.staticText}</span></template>
+                  <template lwc:if={row.needsValue}><div class="aitwa-problem">{labels.needsValue}</div></template>
+                </td>
+                <!-- Remove: only for an input the admin added -->
+                <td class="aitwa-action-cell">
+                  <template lwc:if={row.isCustom}><lightning-button-icon icon-name="utility:delete" variant="bare" alternative-text={labels.removeInput} data-index={row.index} onclick={handleRemoveInput}></lightning-button-icon></template>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </template>
+
+      <!-- Add input: only for an Apex class, which can read inputs it did not describe -->
+      <template lwc:if={isApex}
+        ><div class="slds-m-top_small"><lightning-button label={labels.addInput} icon-name="utility:add" onclick={handleAddInput}></lightning-button></div
+      ></template>
+
+      <!-- Outputs: what an autolaunched flow gives back -->
+      <template lwc:if={showOutputs}>
+        <div class="aitwa-box">
+          <div class="aitwa-box-head">{labels.outputsTitle}</div>
+          <div class="aitwa-box-body">
+            <span class="aitwa-code">{outputsText}</span>
+            <p class="aitwa-muted aitwa-box-note">{labels.outputsNote}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Flow note: the flow and its version, and that a change is flagged on the list -->
+      <template lwc:if={isFlow}><div class="aitwa-note aitwa-note_info aitwa-note_top">{flowNoteText}</div></template>
+
+      <!-- Target object: the object the open record belongs to -->
+      <div class="aitwa-target">
+        <lightning-input label={labels.targetObject} field-level-help={labels.targetObjectHelp} value={draft.targetObject} onchange={handleTargetObjectChange}></lightning-input>
+      </div>
+    </div>
+
+    <!-- Preview: a screen flow shows the window the user will see -->
+    <template lwc:if={isScreenFlow}>
+      <div class="aitwa-side">
+        <div class="aitwa-side-title">{labels.previewTitle}</div>
+        <div class="aitwa-preview">
+          <div class="aitwa-modal">
+            <div class="aitwa-modal-head">{previewTitle}</div>
+            <div class="aitwa-modal-body">
+              <template for:each={previewFields} for:item="field">
+                <div key={field.key} class="aitwa-field">
+                  <div class="aitwa-field-label">{field.label}</div>
+                  <template lwc:if={field.isPrefilled}><div class="aitwa-field-box">{field.value}</div></template>
+                  <template lwc:if={field.isLeft}><div class="aitwa-field-box aitwa-muted">{labels.previewSelect}</div></template>
+                </div>
+              </template>
+            </div>
+            <div class="aitwa-modal-foot"><span class="aitwa-fake-button">{labels.previewCancel}</span><span class="aitwa-fake-button aitwa-fake-button_brand">{labels.previewFinish}</span></div>
+          </div>
+        </div>
+        <p class="aitwa-muted aitwa-side-note">{labels.previewNote}</p>
+      </div>
+    </template>
+  </div>
+</template>

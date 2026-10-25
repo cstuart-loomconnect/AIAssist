@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsOverridden__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >True when an administrator set Is PII or PII Field Type by hand on the AI PII Registry tab. A sync leaves those two fields, and Compliance Group, alone on an overridden row.</description>
+    <inlineHelpText
+  >Set by the AI PII Registry tab. The next sync keeps your choice instead of classifying the field again.</inlineHelpText>
+    <label>Is Overridden</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

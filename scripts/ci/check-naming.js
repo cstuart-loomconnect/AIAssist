@@ -47,9 +47,9 @@ const OBJECT_CHILDREN = new Set([
 const errors = [];
 const fail = (file, msg) => errors.push({ file, msg });
 
-// "LoomConnect__My_Field__c" -> "My_Field"; returns null when the name is not a custom API name.
+// "My_Field__c" -> "My_Field"; returns null when the name is not a custom API name.
 function customCore(name) {
-    const m = name.match(/^(?:[A-Za-z][A-Za-z0-9]*__)?(.+?)__(?:c|mdt|e|b|x)$/);
+    const m = name.match(/^(.+?)__(?:c|mdt|e|b|x)$/);
     return m ? m[1] : null;
 }
 

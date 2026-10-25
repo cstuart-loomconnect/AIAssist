@@ -1,0 +1,45 @@
+<template>
+  <!-- Picker: a bordered box with a head, the search and filters, the list and the buttons -->
+  <div class="aiawpi-box">
+    <!-- Head: what is added, and which objects the list is for -->
+    <div class="aiawpi-box-head"><span>{titleText}</span><span class="aiawpi-muted">{showingText}</span></div>
+
+    <div class="aiawpi-body">
+      <!-- Search and filters: a search box and three joined filter buttons -->
+      <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center aiawpi-gap">
+        <input type="search" class="slds-input aiawpi-search" placeholder={searchPlaceholder} value={searchText} oninput={handleSearchInput} />
+        <div class="aiawpi-seg">
+          <template for:each={filterButtons} for:item="filterButton">
+            <button key={filterButton.value} type="button" class={filterButton.buttonClass} data-value={filterButton.value} onclick={handleFilterClick}>{filterButton.label}</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- List: one checkbox row for each option, with a message under the ones to look at -->
+      <template lwc:if={hasRows}>
+        <div class="aiawpi-options slds-m-top_small">
+          <template for:each={rows} for:item="row">
+            <div key={row.key}>
+              <label class={row.optionClass}>
+                <input type="checkbox" data-key={row.key} checked={row.isSelected} disabled={row.isDisabled} onchange={handleRowChange} />
+                <span class="aiawpi-option-text"><span class="aiawpi-strong">{row.name}</span><span class="aiawpi-muted">{row.detail}</span></span>
+                <span class={row.tagClass}>{row.tagLabel}</span>
+              </label>
+              <template lwc:if={row.hasMessage}><div class="aiawpi-message">{row.message}</div></template>
+            </div>
+          </template>
+        </div>
+      </template>
+      <template lwc:else><p class="aiawpi-muted slds-m-top_small">{labels.noMatches}</p></template>
+
+      <!-- Buttons: how many are ticked, Cancel and Add -->
+      <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center slds-m-top_small">
+        <span class="aiawpi-muted">{selectedText}</span>
+        <div>
+          <lightning-button label={labels.cancel} onclick={handleCancel}></lightning-button>
+          <lightning-button class="slds-m-left_x-small" variant="brand" label={addLabel} onclick={handleAdd} disabled={isAddDisabled}></lightning-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,64 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the body -->
+  <div class="aipr-page">
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div class="aipr-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <h1 class="aipr-title slds-m-around_none">{labels.title}</h1>
+      <span class="aipr-subtitle slds-text-body_small">{labels.subtitle}</span>
+    </div>
+
+    <!-- Body: the warning banner, the object list and the pane of the chosen object on a white card -->
+    <div class="aipr-body slds-is-relative slds-p-around_medium">
+      <!-- Busy: shown while the registry loads -->
+      <template lwc:if={isBusy}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- Banner: objects that agents read but the registry does not cover -->
+      <template lwc:if={hasUnprotectedObjects}>
+        <c-ai-pii-registry-unprotected objects={unprotectedObjects} onaddobject={handleBannerAdd}></c-ai-pii-registry-unprotected>
+      </template>
+
+      <!-- Layout: the object list on the left and the pane on the right -->
+      <div class="aipr-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+        <!-- List: the Add object button, how many objects the registry holds, and one row for each object -->
+        <div class="aipr-list slds-grid slds-grid_vertical">
+          <!-- List head: the button that adds an object, and the count against the limit -->
+          <div class="aipr-list-head">
+            <button type="button" class="slds-button slds-button_brand slds-size_1-of-1" onclick={handleAddObject}>{labels.addObject}</button>
+            <p class="aipr-limit slds-text-body_small slds-m-top_x-small slds-m-bottom_none slds-text-align_center">{limitText}</p>
+          </div>
+          <!-- Objects: the name, the status chip, and the field and PII counts of each -->
+          <template for:each={registryItems} for:item="item">
+            <button key={item.key} type="button" class={item.itemClass} data-key={item.key} onclick={handleSelect}>
+              <span class="aipr-item-top slds-grid slds-grid_align-spread slds-grid_vertical-align-start">
+                <span class="aipr-name">{item.name}</span>
+                <span class={item.chipClass}>{item.chipLabel}</span>
+              </span>
+              <span class="aipr-detail slds-text-body_small">{item.detail}</span>
+            </button>
+          </template>
+          <!-- No objects: shown when the load is done and the list is empty -->
+          <template lwc:if={showNoObjects}><p class="aipr-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.noObjects}</p></template>
+        </div>
+
+        <!-- Pane: the chosen object -->
+        <div class="aipr-pane">
+          <!-- Choose one: shown until an object is picked -->
+          <template lwc:if={showChooseOne}><p class="aipr-empty slds-p-vertical_small slds-p-horizontal_medium">{labels.chooseOne}</p></template>
+          <!-- Object: its header, its fields, its failure and its masking test, built again when another object is picked -->
+          <template lwc:if={hasSelection}>
+            <template for:each={detailKeyItems} for:item="item">
+              <c-ai-pii-registry-detail key={item.key} registry={selectedRegistry} fields={detailFields} type-options={typeOptions} is-field-limit-reached={isFieldLimitReached} suggested-max-fields={suggestedMaxFields} is-loading={isDetailBusy} is-saving={isSaving} error-message={errorMessage} onactivechange={handleActiveChange} onsync={handleSync} onfieldoverride={handleFieldOverride} onfieldreset={handleFieldReset} onviewlog={handleViewLog}></c-ai-pii-registry-detail>
+            </template>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add object dialog: finds an object and adds it -->
+    <template lwc:if={isAddOpen}>
+      <c-ai-pii-registry-add-dialog search-text={addSearchText} is-saving={isAddSaving} error-message={addErrorMessage} oncancel={handleAddCancel} onadd={handleAddConfirm}></c-ai-pii-registry-add-dialog>
+    </template>
+  </div>
+</template>

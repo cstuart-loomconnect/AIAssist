@@ -1,0 +1,49 @@
+/* The colours of the whole Settings tab, defined once here so every component inside it inherits them. SLDS has no tokens for this warm palette. */
+:host {
+  --aia-accent: #3040c4;
+  --aia-accent-tint: #eef0fb;
+  --aia-ink: #1c1e26;
+  --aia-ink-soft: #3f4350;
+  --aia-muted: #5e6270;
+  --aia-bg: #f6f5f1;
+  --aia-surface: #ffffff;
+  --aia-surface-soft: #fafaf7;
+  --aia-line: #e4e2da;
+  --aia-line-strong: #c9c7bf;
+  --aia-success: #1f6f4a;
+  --aia-success-tint: #e8f3ec;
+  --aia-warning: #9a3412;
+  --aia-warning-tint: #fdf0e6;
+}
+
+/* The page: a warm grey background so the white panels stand out, with a rounded border. */
+.aias-page {
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* The header band: dark ink with a white title. The 12px gap and 14px 20px padding are not SLDS steps. */
+.aias-header {
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The page title: white, a little larger than body text. */
+.aias-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The tabs sit on a white card with a soft border. SLDS has no utility for a bordered rounded card in this colour. */
+.aias-body lightning-tabset {
+  display: block;
+  padding: 4px 16px 8px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}

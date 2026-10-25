@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>AI Agent Wizard</masterLabel>
+    <description
+  >Step-by-step wizard that creates or changes an AI Agent in eight steps: basics, model, data sources, workflow actions, conversations, limits, access and review.</description>
+    <targets>
+        <target>lightning__Tab</target>
+    </targets>
+</LightningComponentBundle>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0176D3</headerColor>
+        <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
+    </brand>
+    <description
+  >Build and administer AI Assist: agents, data sources, workflow actions, model configuration, usage policies and PII handling, plus conversations, feedback and platform logs for oversight.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <label>AI Assist</label>
+    <navType>Standard</navType>
+    <tabs>standard-home</tabs>
+    <tabs>AIAgentWizard</tabs>
+    <tabs>AIAgent__c</tabs>
+    <tabs>AIToolsTab</tabs>
+    <tabs>AIPromptTemplatesTab</tabs>
+    <tabs>AIModelsTab</tabs>
+    <tabs>AIPoliciesTab</tabs>
+    <tabs>AIPiiRegistryTab</tabs>
+    <tabs>AIAssistSettingsTab</tabs>
+    <tabs>AIConversation__c</tabs>
+    <tabs>AIFeedback__c</tabs>
+    <tabs>AIPlatformLog__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

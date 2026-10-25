@@ -1,0 +1,116 @@
+/* The row of name and API name: a gap, so the two fields do not touch when the row wraps. */
+.aiadd-row {
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+/* One field of the row: grows to share the row. */
+.aiadd-field {
+  flex: 1 1 320px;
+}
+
+/* The API name is typed in a fixed-width font, as it is code. */
+.aiadd-mono {
+  --slds-c-input-text-font-family: monospace;
+  font-family: monospace;
+}
+
+/* A line of help under a field: muted text. */
+.aiadd-help {
+  margin: 4px 0 0;
+  color: var(--aia-muted);
+}
+
+/* A field with room above it. */
+.aiadd-gap {
+  display: block;
+  margin-top: 16px;
+}
+
+/* The summary: a bordered box with a grey head. */
+.aiadd-summary {
+  margin-top: 20px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The head of the summary: a soft grey band with bold text. */
+.aiadd-summary-head {
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* The body of the summary: names in one column, values in the other. */
+.aiadd-summary-body {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 14px 16px;
+}
+
+/* A name in the summary: muted text. */
+.aiadd-summary-body dt {
+  color: var(--aia-muted);
+}
+
+/* A value in the summary: dark text. */
+.aiadd-summary-body dd {
+  margin: 0;
+  color: var(--aia-ink);
+}
+
+/* One test result and its text: some room after it. */
+.aiadd-pill-group {
+  margin-right: 8px;
+}
+
+/* The pills of the test results: small rounded labels. SLDS badges have a different size and shape. */
+.aiadd-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A pill for a good result: green. */
+.aiadd-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* A pill for a partial result: orange. */
+.aiadd-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A pill for a failed result: red. */
+.aiadd-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The reason the last test failed: red text under the summary. */
+.aiadd-failure {
+  margin: 0;
+  padding: 0 16px 14px;
+  color: var(--aia-danger);
+}
+
+/* The row with the Active switch: room above it, and a gap between the switch and its help. */
+.aiadd-active {
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* The line of help beside the Active switch: muted text. */
+.aiadd-active-help {
+  color: var(--aia-muted);
+}

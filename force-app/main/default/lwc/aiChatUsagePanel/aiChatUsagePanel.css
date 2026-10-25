@@ -1,0 +1,168 @@
+/* Lets the component size to its content inside the box the parent gives it. */
+:host {
+  display: block;
+}
+
+/* The panel: a slightly darker surface than the chat, a stronger edge and a deeper shadow, so it stands out. 14px padding and 14px spacing are not SLDS steps. */
+.panel {
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 10px;
+  background: var(--aia-chip);
+  box-shadow: 0 16px 40px rgba(28, 30, 38, 0.32);
+  color: var(--aia-ink);
+}
+
+/* Inside a menu: no box of its own, since the menu already has one. */
+.panel_embedded {
+  padding: 4px 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* The heading size and weight. */
+.heading {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+/* The close button: a 28px square target with the muted icon colour. */
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+  --slds-c-icon-color-foreground: var(--aia-muted);
+}
+
+/* Faded background when the mouse is over the close button. */
+.close:hover {
+  background: var(--aia-line);
+}
+
+/* Keyboard focus ring for the close button, in the accent colour. */
+.close:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Space between the rows. The list has no bullets or margin. */
+.rows {
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One limit: its name and amounts, its bar and its help line, 5px apart. */
+.row {
+  display: grid;
+  gap: 5px;
+}
+
+/* Gap between the name and the amounts when the panel is narrow. */
+.row-top {
+  gap: 8px;
+}
+
+/* The limit's name. */
+.row-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The amounts, with digits that line up. */
+.row-usage {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bar: a 10px rounded track, darker than the panel so the empty part shows. SLDS has no step this size. */
+.bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--aia-line-strong);
+}
+
+/* The filled part of the bar, in the colour of the row. */
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--aia-success);
+}
+
+/* The bar of a limit that is nearly used up turns amber. */
+.row_warn .bar-fill {
+  background: var(--aia-warning);
+}
+
+/* The bar of a limit that is used up turns red. */
+.row_bad .bar-fill {
+  background: var(--aia-danger);
+}
+
+/* The line under the bar. */
+.row-help {
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The help line of a limit that is nearly used up turns amber. */
+.row_warn .row-help {
+  color: var(--aia-warning-strong);
+}
+
+/* The help line of a limit that is used up turns red. */
+.row_bad .row-help {
+  color: var(--aia-danger-ink);
+}
+
+/* The small label beside a limit that is nearly used up or reached. Only the amber and red rows show it. */
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--aia-success-tint);
+  color: var(--aia-success-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+/* The tag of a limit that is nearly used up turns amber. */
+.row_warn .tag {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning-ink);
+}
+
+/* The tag of a limit that is used up turns red. */
+.row_bad .tag {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger-ink);
+}
+
+/* The line at the bottom, divided from the rows. */
+.footer {
+  padding-top: 10px;
+  border-top: 1px solid var(--aia-line);
+  font-size: 12px;
+  color: var(--aia-muted);
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsDefault__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Marks the fallback template: the one an agent uses when it has no template of its own, or its template is inactive. Only one active template in the org can be the default.</description>
+    <inlineHelpText
+  >Tick this on the template that answers for any agent that has no template of its own. Only one active template can be the default.</inlineHelpText>
+    <label>Is Default</label>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

@@ -1,0 +1,81 @@
+<template>
+  <!-- Problems: shown once Next was pressed with a field to fix -->
+  <template lwc:if={showProblemBanner}>
+    <div class="aiawba-note aiawba-note_danger" role="alert"><strong>{problemBannerText}</strong></div>
+  </template>
+
+  <!-- Names: the name the admins see and the API name -->
+  <div class="aiawba-names slds-grid slds-wrap">
+    <div class={nameClass}>
+      <label class="slds-form-element__label" for="aiawba-name"><abbr class="slds-required" title="required">*</abbr>{labels.agentName}</label>
+      <div class="slds-form-element__control"><input id="aiawba-name" type="text" class="slds-input" value={draft.agentName} oninput={handleNameInput} /></div>
+      <template lwc:if={nameError}><div class="slds-form-element__help">{nameError}</div></template>
+    </div>
+    <div class={apiNameClass}>
+      <label class="slds-form-element__label" for="aiawba-api"><abbr class="slds-required" title="required">*</abbr>{labels.apiName}</label>
+      <div class="slds-form-element__control aiawba-code"><input id="aiawba-api" type="text" class="slds-input" maxlength={apiNameMaxLength} value={draft.developerName} oninput={handleApiNameInput} /></div>
+      <template lwc:if={apiNameError}><div class="slds-form-element__help">{apiNameError}</div></template>
+      <template lwc:else><div class="aiawba-hint">{labels.apiNameHelp}</div></template>
+    </div>
+  </div>
+
+  <!-- Description: for admins only -->
+  <div class="slds-form-element slds-m-top_medium">
+    <label class="slds-form-element__label" for="aiawba-description">{labels.description}</label>
+    <div class="slds-form-element__control"><textarea id="aiawba-description" class="slds-textarea" oninput={handleDescriptionInput}>{draft.description}</textarea></div>
+    <div class="aiawba-hint">{labels.descriptionHelp}</div>
+  </div>
+
+  <!-- Record pages: chips for the chosen objects, and a box that searches for more -->
+  <div class={objectsClass}>
+    <label class="slds-form-element__label slds-m-top_medium" for="aiawba-search"><abbr class="slds-required" title="required">*</abbr>{labels.objects}</label>
+    <div class="aiawba-chip-box">
+      <template for:each={objectChips} for:item="chip">
+        <span key={chip.apiName} class="aiawba-chip">{chip.label}<button type="button" class="aiawba-chip-remove" data-key={chip.apiName} title={labels.removeObject} onclick={handleObjectRemove}>×</button></span>
+      </template>
+      <input id="aiawba-search" type="text" class="aiawba-chip-input" placeholder={labels.searchObjects} value={searchText} oninput={handleSearchInput} />
+    </div>
+
+    <!-- Matches: the objects that fit what was typed -->
+    <template lwc:if={showMatches}>
+      <div class="aiawba-matches">
+        <template for:each={searchMatches} for:item="match">
+          <button key={match.apiName} type="button" class="aiawba-match" data-key={match.apiName} onclick={handleObjectPick}><span class="aiawba-strong">{match.label}</span><span class="aiawba-muted">{match.apiName}</span></button>
+        </template>
+      </div>
+    </template>
+    <template lwc:if={isSearching}><div class="aiawba-hint">{labels.searching}</div></template>
+    <template lwc:if={showNoMatches}><div class="aiawba-hint">{labels.noObjects}</div></template>
+    <template lwc:if={hasSearchError}><div class="slds-form-element__help">{searchErrorMessage}</div></template>
+    <template lwc:if={objectsError}><div class="slds-form-element__help">{objectsError}</div></template>
+    <div class="aiawba-hint">{labels.objectsHelp}</div>
+  </div>
+
+  <!-- Prompt template: one radio row for each template -->
+  <p class="aiawba-label slds-m-top_medium">{labels.promptTemplate}</p>
+  <div class="aiawba-options">
+    <template for:each={templateViews} for:item="template">
+      <label key={template.key} class={template.optionClass}>
+        <input type="radio" name="aiawba-template" data-key={template.key} checked={template.isSelected} onchange={handleTemplateChange} />
+        <span class="aiawba-option-text"><span class="aiawba-strong">{template.name}</span><span class="aiawba-muted">{template.detail}</span></span>
+        <template lwc:if={template.isDefaultTag}><span class="aiawba-pill">{template.tagLabel}</span></template>
+        <template lwc:else><span class="aiawba-pill aiawba-pill_success">{template.tagLabel}</span></template>
+      </label>
+    </template>
+  </div>
+  <div class="aiawba-hint">{labels.promptTemplateHelp}</div>
+
+  <!-- Persona: how the agent talks and what it must never do -->
+  <div class="slds-form-element slds-m-top_medium">
+    <label class="slds-form-element__label" for="aiawba-persona">{labels.persona}</label>
+    <div class="slds-form-element__control"><textarea id="aiawba-persona" class="slds-textarea aiawba-tall" oninput={handlePersonaInput}>{draft.persona}</textarea></div>
+    <div class="aiawba-hint">{labels.personaHelp}</div>
+  </div>
+
+  <!-- Greeting: the first message of a new conversation -->
+  <div class="slds-form-element slds-m-top_medium">
+    <label class="slds-form-element__label" for="aiawba-greeting">{labels.greeting}</label>
+    <div class="slds-form-element__control"><textarea id="aiawba-greeting" class="slds-textarea" oninput={handleGreetingInput}>{draft.greeting}</textarea></div>
+    <div class="aiawba-hint">{labels.greetingHelp}</div>
+  </div>
+</template>

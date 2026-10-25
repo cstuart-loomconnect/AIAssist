@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DebugSentPreviewText__c</fullName>
+    <complianceGroup>PII</complianceGroup>
+    <description
+  >A short preview of the last user message sent to the provider, after masking. Kept only when the user had debug mode on.</description>
+    <inlineHelpText>Holds customer data, already masked.</inlineHelpText>
+    <label>Debug Sent Preview Text</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <trackTrending>false</trackTrending>
+</CustomField>

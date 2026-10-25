@@ -1,0 +1,68 @@
+/* The done card: a white box with a soft border and centred text. SLDS has no utility for a bordered rounded card in this colour. */
+.aiawdo-card-box {
+  padding: 32px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* The tick: a green circle with a white-on-tint tick. */
+.aiawdo-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--aia-success-tint);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--aia-success);
+}
+
+/* The title: large dark text. */
+.aiawdo-title {
+  margin: 12px 0 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The sentence under the title: a narrow column so it wraps like a paragraph. */
+.aiawdo-text {
+  max-width: 560px;
+  margin: 0 auto 16px;
+}
+
+/* The rows of what was created: a narrow table centred under the text. */
+.aiawdo-rows {
+  display: inline-block;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+/* One row: a muted label and the value. */
+.aiawdo-row {
+  display: flex;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+/* The label of a row: a fixed width so the values line up. */
+.aiawdo-row-label {
+  min-width: 90px;
+}
+
+/* The buttons: in a row that wraps on a narrow screen. The 12px gap is not an SLDS step. */
+.aiawdo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Muted text. */
+.aiawdo-muted {
+  color: var(--aia-muted);
+}

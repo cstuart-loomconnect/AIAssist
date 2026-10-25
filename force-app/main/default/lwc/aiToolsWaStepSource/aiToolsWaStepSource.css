@@ -1,0 +1,75 @@
+/* The sentence above the list: muted text. */
+.aitwa-intro {
+  margin: 0 0 14px;
+  color: var(--aia-muted);
+}
+
+/* The list: a bordered white box. */
+.aitwa-table {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  background: var(--aia-surface);
+}
+
+/* The header cells: a soft grey bar with bold text. */
+.aitwa-table th {
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The body cells: room around the text and a line above each row. */
+.aitwa-table td {
+  padding: 14px 16px;
+  border-top: 1px solid var(--aia-line);
+  color: var(--aia-ink-soft);
+}
+
+/* The radio column is narrow. */
+.aitwa-radio-cell {
+  width: 64px;
+}
+
+/* A row can be clicked, so it shows a hand. */
+.aitwa-row {
+  cursor: pointer;
+}
+
+/* The chosen row: the accent tint. */
+.aitwa-row_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* A name: bold dark text. */
+.aitwa-name {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* An API name or class name: a code font. */
+.aitwa-code {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* The message when nothing is listed: muted text. */
+.aitwa-empty {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The warning under the list: a tinted box with a border. */
+.aitwa-note {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+
+/* A warning: orange. */
+.aitwa-note_warning {
+  background: var(--aia-warning-tint);
+  border: 1px solid var(--aia-warning);
+  color: var(--aia-warning);
+}

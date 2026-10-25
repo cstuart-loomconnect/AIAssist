@@ -1,0 +1,33 @@
+/* The dialog box: a fixed width that shrinks on a narrow screen. SLDS modal sizes are wider than this. */
+.aipt-container {
+  width: 50rem;
+  max-width: 90vw;
+}
+
+/* The agent table: a soft grey header bar with bold text. */
+.aipt-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* An agent name: bold dark text. */
+.aipt-strong {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* Labels and empty text: muted. */
+.aipt-muted {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The note about open conversations: a soft blue box with accent text. */
+.aipt-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}

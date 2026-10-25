@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EnvironmentId__c</fullName>
+    <description
+  >The Anthropic Agent API environment (env_...) every session for this configuration runs in. Not used by other providers.</description>
+    <externalId>false</externalId>
+    <inlineHelpText
+  >Only for the Anthropic Agent API provider: the environment id created in Anthropic. The agent id goes in Model Identifier.</inlineHelpText>
+    <label>Environment Id</label>
+    <length>80</length>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

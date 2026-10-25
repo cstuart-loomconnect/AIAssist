@@ -1,5 +1,6 @@
 {
   "trailingComma": "none",
+  "xmlSelfClosingSpace": false,
   "plugins": [
     "prettier-plugin-apex",
     "@prettier/plugin-xml"
@@ -12,6 +13,338 @@
     {
       "files": "*.{cmp,page,component}",
       "options": { "parser": "html" }
+    },
+    {
+      "files": "**/lwc/aiAssistSettings/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsField/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsForm/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistSettingsPanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStart/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepBasics/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepModel/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepItems/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardPicker/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepConversations/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepLimits/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepAccess/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardAssigneeDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepReview/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardDone/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardList/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiChatWorkingIndicator/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatTerms/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatSuggestedAction/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatStatePanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatScreenFlowModal/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatNewChatsPaused/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatUsageBanner/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatUsagePanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHeader/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatHistory/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatComposer/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatContextBar/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatDebugTrace/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatEmptyState/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatErrorCard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatFeedbackPanel/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatMessage/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatMessageList/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatSaveDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiChatShareDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiTools/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiModels/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiModelsForm/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiModelsSwitchOffDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistry/*.html",
+      "options": { "parser": "lwc", "printWidth": 600 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistryDetail/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistryFields/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistryTest/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistryAddDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPiiRegistryUnprotected/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDataSourceWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDataSources/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsApex/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsDetails/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsInputs/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsQuery/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsQueryBuilder/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsQueryEditor/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsSaveDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsTest/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsDsType/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepConfirmation/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepDetails/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepInputs/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepSource/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepTest/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaStepType/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWaWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsWorkflowActions/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplates/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesList/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesDetail/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesEditor/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesSection/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesPreview/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesTryIt/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesPublishDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesArchiveDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPromptTemplatesUsedBy/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPolicies/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPoliciesForm/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPoliciesAssignments/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPoliciesCheckUser/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPoliciesAssignDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiPoliciesDeleteDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiAssistChat/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
     }
   ]
 }

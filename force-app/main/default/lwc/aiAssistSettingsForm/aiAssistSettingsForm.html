@@ -1,0 +1,34 @@
+<template>
+  <!-- Layout: the group list on the left and the fields box on the right -->
+  <div class="aiasf-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+    <!-- Side list: one bordered card for each group of settings, with its field count -->
+    <div class="aiasf-groups slds-grid slds-grid_vertical">
+      <template for:each={groupItems} for:item="item">
+        <button key={item.key} type="button" class={item.itemClass} data-key={item.key} onclick={handleGroupSelect}>
+          <span class="aiasf-group-label">{item.label}</span>
+          <span class="aiasf-group-count slds-text-body_small">{item.countLabel}</span>
+        </button>
+      </template>
+    </div>
+
+    <!-- Fields: the settings of the chosen group -->
+    <div class="aiasf-fields">
+      <h3 class="aiasf-heading slds-m-around_none">{selectedGroup.label}</h3>
+      <template for:each={fieldViews} for:item="item">
+        <c-ai-assist-settings-field key={item.key} field={item.field} value={item.value} api-name={item.apiName} badge-label={item.badgeLabel} onchange={handleFieldChange}></c-ai-assist-settings-field>
+      </template>
+
+      <!-- Error: shown when a value is not allowed or the last save failed -->
+      <template lwc:if={hasError}>
+        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{shownError}</div>
+      </template>
+
+      <!-- Footer: whether there are changes, and the buttons -->
+      <div class="aiasf-footer slds-grid slds-grid_vertical-align-center">
+        <span class="slds-col slds-text-color_weak">{statusLabel}</span>
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button class="slds-m-left_x-small" variant="brand" label={saveLabel} onclick={handleSave} disabled={isSaveDisabled}></lightning-button>
+      </div>
+    </div>
+  </div>
+</template>

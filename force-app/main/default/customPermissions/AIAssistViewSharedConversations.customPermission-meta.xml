@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Lets the All Conversations visibility scope take effect for a user who does not hold View All on AI Conversation. The user still reads only the conversations the org's sharing gives them.</description>
+    <isLicensed>false</isLicensed>
+    <label>AI Assist View Shared Conversations</label>
+</CustomPermission>

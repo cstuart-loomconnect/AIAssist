@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AssigneeMatchesType</fullName>
+    <active>true</active>
+    <description
+  >Fill in only the field that matches the Assignee Type: User for User, Permission Set Name for Permission Set.</description>
+    <errorConditionFormula
+  >OR(AND(ISPICKVAL(AssigneeType__c, &quot;User&quot;), OR(ISBLANK(User__c), NOT(ISBLANK(PermissionSetName__c)))), AND(ISPICKVAL(AssigneeType__c, &quot;Permission Set&quot;), OR(ISBLANK(PermissionSetName__c), NOT(ISBLANK(User__c)))))</errorConditionFormula>
+    <errorDisplayField>AssigneeType__c</errorDisplayField>
+    <errorMessage
+  >Fill in only the field that matches the Assignee Type: User for User, Permission Set Name for Permission Set.</errorMessage>
+</ValidationRule>

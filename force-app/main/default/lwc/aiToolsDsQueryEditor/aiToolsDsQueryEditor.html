@@ -1,0 +1,22 @@
+<template>
+  <!-- Editor: the query as text -->
+  <textarea lwc:ref="text" class="aiadqe-text slds-textarea" rows="8" spellcheck="false" aria-label={labels.editorLabel} oninput={handleInput}></textarea>
+
+  <!-- Problems: one row for each error or warning found -->
+  <div class="aiadqe-problems slds-m-top_medium">
+    <div class="aiadqe-problems-head">{problemsTitle}</div>
+    <template lwc:if={hasProblems}>
+      <template for:each={problemViews} for:item="item">
+        <div key={item.key} class="aiadqe-problem slds-grid slds-grid_vertical-align-center">
+          <span class={item.pillClass}>{item.severity}</span>
+          <span class="slds-col aiadqe-message"><strong>{item.lineLabel}</strong> {item.message}</span>
+          <template lwc:if={item.hasFix}><lightning-button label={item.fixLabel} data-start={item.fixStart} data-end={item.fixEnd} data-text={item.fixText} onclick={handleFixClick}></lightning-button></template>
+        </div>
+      </template>
+    </template>
+    <template lwc:else><p class="aiadqe-none slds-p-around_small">{labels.noProblems}</p></template>
+  </div>
+
+  <!-- Note: what a query may and may not do -->
+  <div class="aiadqe-note slds-m-top_medium slds-p-around_small">{labels.noteText}</div>
+</template>

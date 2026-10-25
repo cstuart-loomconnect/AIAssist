@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >The Add assignment dialog of the AI Agent Wizard: search for users or permission sets to give the agent to.</description>
+</LightningComponentBundle>

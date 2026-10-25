@@ -1,0 +1,244 @@
+/* Draws the toolbar icon buttons: square, muted token colour, rounded. SLDS icon buttons would change the design. */
+.aia-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--aia-muted);
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+  --slds-c-icon-color-foreground: var(--aia-muted);
+}
+
+/* Shades an icon button under the mouse, unless it is disabled. Uses a design token. */
+.aia-icon-btn:hover:not([disabled]) {
+  background: var(--aia-chip);
+}
+
+/* Shows a keyboard focus ring on an icon button. */
+.aia-icon-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Dims a disabled icon button and its icon. Uses a design token. */
+.aia-icon-btn[disabled] {
+  cursor: not-allowed;
+  --slds-c-icon-color-foreground-default: var(--aia-faint);
+  --slds-c-icon-color-foreground: var(--aia-faint);
+}
+
+/* Makes the icon button the smaller 32px size. */
+.aia-icon-btn_small {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+/* Monospace font for commands, token counts and the trace link. SLDS has no utility for this. */
+.aia-mono {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Lets the component sit as a block in the message list. SLDS has no utility for styling :host. */
+:host {
+  display: block;
+}
+
+/* Sets the notice text size, spacing and subtle token colour. */
+.notice {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--aia-subtle);
+}
+
+/* Spaces the user bubble from its time and caps its width. SLDS has no gap or percentage width utility. */
+.user-row {
+  gap: 4px;
+  max-width: 82%;
+}
+
+/* Draws the user bubble in the accent token colour with a pointed bottom-right corner. Keeps line breaks the user typed. */
+.user-bubble {
+  padding: 10px 14px;
+  background: var(--aia-accent);
+  color: #ffffff;
+  border-radius: 14px 14px 4px 14px;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Dims the user bubble while the message is still sending. */
+.user-bubble_sending {
+  opacity: 0.7;
+}
+
+/* Sets the size of the slash command inside the user bubble. */
+.command {
+  font-size: 13px;
+}
+
+/* Sets the small time and token text in the subtle token colour. */
+.meta {
+  font-size: 11px;
+  color: var(--aia-subtle);
+}
+
+/* Stops the reply column from growing wider than its parent and spaces its parts. SLDS has no gap utility. */
+.agent {
+  gap: 8px;
+  max-width: 100%;
+}
+
+/* Spaces the avatar from the agent name. SLDS has no gap utility. */
+.agent-header {
+  gap: 8px;
+}
+
+/* Draws the small avatar tile in the accent tint token colour. */
+.agent-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* Sets the agent name look in the ink token colour. */
+.agent-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Draws the reply bubble as a bordered token-coloured card with a pointed top-left corner. SLDS has no utility for these. */
+.agent-bubble {
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px 14px 14px 14px;
+  font-size: 14px;
+  line-height: 21px;
+  color: var(--aia-ink);
+  overflow-wrap: anywhere;
+}
+
+/* Sets the reply text size so rich text matches the bubble. */
+.rich {
+  font-size: 14px;
+  line-height: 21px;
+}
+
+/* Draws the sources row with a divider line above it. Uses a design token. */
+.sources {
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--aia-line-soft);
+}
+
+/* Lines the Sources label up with the chips. SLDS spacing steps do not match. */
+.sources-label {
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--aia-muted);
+}
+
+/* Draws each source as a rounded chip in the chip token colour. */
+.source-chip {
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--aia-chip);
+  font-size: 11px;
+  color: var(--aia-ink);
+}
+
+/* Spaces the toolbar buttons tightly and pulls the toolbar up under the bubble. SLDS has no negative margin utility. */
+.toolbar {
+  gap: 2px;
+  margin-top: -4px;
+}
+
+/* Highlights the thumbs up button in the success token colours once selected. */
+.tool_helpful {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* Highlights the thumbs down button in the danger token colours once selected. */
+.tool_not-helpful {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* Spaces the time from the buttons before it. SLDS spacing steps are not 6px. */
+.toolbar-time {
+  padding-left: 6px;
+}
+
+/* Shows the thanks note in the success token colour. */
+.thanks {
+  font-size: 12px;
+  color: var(--aia-success);
+}
+
+/* Draws the trace link as an underlined text button aligned to the left. A native button needs its default look removed. */
+.trace-link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 11px;
+  color: var(--aia-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Draws the Save to record menu: a white box with a strong edge, rounded corners and a deep shadow, placed under its button. SLDS has no utility for this look. */
+.save-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 4;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(28, 30, 38, 0.22);
+}
+
+/* Draws one row of the Save to record menu as a full-width borderless button with the design token text colour. */
+.save-option {
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--aia-ink);
+  text-align: left;
+  cursor: pointer;
+  --slds-c-icon-color-foreground-default: var(--aia-muted);
+  --slds-c-icon-color-foreground: var(--aia-muted);
+}
+
+/* Shades a menu row under the mouse. Uses a design token. */
+.save-option:hover {
+  background: var(--aia-chip);
+}
+
+/* Shows a keyboard focus ring on a menu row. */
+.save-option:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: -2px;
+}

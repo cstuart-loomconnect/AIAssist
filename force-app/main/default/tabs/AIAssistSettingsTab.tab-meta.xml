@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Org-wide AI Assist settings and AI Assist UI settings in one place. Placeholder until it is built.</description>
+    <label>AI Assist Settings</label>
+    <lwcComponent>aiAssistSettings</lwcComponent>
+    <motif>Custom19: Wrench</motif>
+</CustomTab>

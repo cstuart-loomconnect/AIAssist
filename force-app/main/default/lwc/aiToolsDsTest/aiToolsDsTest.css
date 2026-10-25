@@ -1,0 +1,147 @@
+/* The run panel: a soft grey box with the controls in a wrapping row. */
+.aiadte-panel {
+  gap: 16px;
+  padding: 16px;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+}
+
+/* One control of the panel: grows to share the row. */
+.aiadte-control {
+  flex: 1 1 200px;
+}
+
+/* The record control: wider than the others. */
+.aiadte-record {
+  flex: 2 1 280px;
+}
+
+/* The run as control: wider than a plain input, and the anchor of the user list. */
+.aiadte-run-as {
+  flex: 2 1 260px;
+}
+
+/* A line of help: muted text. */
+.aiadte-help {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The Use myself and Run test buttons: sit level with the boxes, below their labels. SLDS has no utility for this offset. */
+.aiadte-actions {
+  flex: 0 0 auto;
+  margin-top: 1.5rem;
+}
+
+/* The list of matching users: a white box that floats under the box. SLDS combobox lists need markup this component does not use. */
+.aiadte-user-list {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  list-style: none;
+}
+
+/* One user in the list. */
+.aiadte-user-item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* A user the pointer is over: a soft grey. */
+.aiadte-user-item:hover {
+  background: var(--aia-surface-soft);
+}
+
+/* Room around the spinner while a test runs. */
+.aiadte-running {
+  min-height: 40px;
+}
+
+/* A result message: a bordered box with room above it. */
+.aiadte-result {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* A result that passed: green. */
+.aiadte-result_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* A result that ran but hid something: orange. */
+.aiadte-result_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A result that failed: red. */
+.aiadte-result_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aiadte-table-wrap {
+  margin-top: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The head of a column: a soft grey band with bold text. */
+.aiadte-head {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* The head of a column the user cannot read: red. */
+.aiadte-head_removed {
+  color: var(--aia-danger);
+}
+
+/* The box about what the agent receives: a bordered box with a grey head. */
+.aiadte-receives {
+  margin-top: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The head of that box: bold text on a soft grey band. */
+.aiadte-receives-head {
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 700;
+  color: var(--aia-ink);
+}
+
+/* The text of that box: muted. */
+.aiadte-receives-body {
+  margin: 0;
+  padding: 12px 16px;
+  color: var(--aia-muted);
+}
+
+/* A note: a soft blue box with accent text. */
+.aiadte-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}

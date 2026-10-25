@@ -1,0 +1,61 @@
+<template>
+  <!-- Tools: the search box on the left and the three filters on the right -->
+  <div class="aiprf-tools slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap slds-m-bottom_small">
+    <div class="aiprf-search"><lightning-input type="search" variant="label-hidden" label={labels.searchFields} placeholder={labels.searchFields} value={searchText} onchange={handleSearchChange}></lightning-input></div>
+    <div class="slds-button-group" role="group">
+      <template for:each={filterButtons} for:item="filter">
+        <button key={filter.key} type="button" class={filter.buttonClass} data-filter={filter.key} onclick={handleFilterClick}>{filter.label}</button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Table: one row for each field -->
+  <template lwc:if={hasFieldRows}>
+    <div class="aiprf-table-wrap">
+      <table class="aiprf-table slds-table slds-table_cell-buffer">
+        <thead>
+          <tr>
+            <th scope="col">{labels.columnField}</th>
+            <th scope="col">{labels.columnType}</th>
+            <th scope="col">{labels.columnPii}</th>
+            <th scope="col">{labels.columnPiiType}</th>
+            <th scope="col">{labels.columnComplianceGroup}</th>
+            <th scope="col">{labels.columnMasking}</th>
+            <th scope="col">{labels.columnSource}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template for:each={fieldRows} for:item="row">
+            <tr key={row.key}>
+              <td><span class="aiprf-strong">{row.fieldLabel}</span><br /><span class="aiprf-code">{row.fieldApiName}</span></td>
+              <td>{row.dataType}</td>
+              <td><lightning-input type="toggle" variant="label-hidden" label={labels.piiToggle} checked={row.isPii} message-toggle-active="" message-toggle-inactive="" data-field-id={row.fieldId} disabled={isSaving} onchange={handlePiiToggle}></lightning-input></td>
+              <td>
+                <template lwc:if={row.isPii}>
+                  <select class="slds-select" aria-label={row.typeLabel} data-field-id={row.fieldId} data-pii-type={row.piiFieldType} disabled={isSaving} onchange={handleTypeChange}>
+                    <template for:each={row.typeChoices} for:item="choice">
+                      <option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option>
+                    </template>
+                  </select>
+                </template>
+                <template lwc:else><span class="aiprf-muted">{labels.none}</span></template>
+              </td>
+              <td>{row.complianceText}</td>
+              <td><span class="aiprf-code">{row.maskingText}</span></td>
+              <td>
+                <span class={row.sourceClass}>{row.sourceLabel}</span>
+                <template lwc:if={row.isOverridden}><button type="button" class="aiprf-reset slds-button slds-m-left_x-small" title={labels.resetTitle} data-field-id={row.fieldId} disabled={isSaving} onclick={handleReset}>{labels.reset}</button></template>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </template>
+
+  <!-- No fields: shown when the filter and the search leave nothing -->
+  <template lwc:if={hasNoFieldRows}><p class="aiprf-empty slds-p-vertical_small">{labels.noFields}</p></template>
+
+  <!-- Footnote: how the fields are classified, and that an override stays -->
+  <p class="aiprf-note slds-m-top_medium slds-p-around_small">{labels.footnote}</p>
+</template>

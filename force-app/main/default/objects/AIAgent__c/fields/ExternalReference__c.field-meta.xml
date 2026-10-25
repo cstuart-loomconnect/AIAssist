@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ExternalReference__c</fullName>
+    <description
+  >The id of this agent in an external AI service, such as the Anthropic Agent API agent id (agent_...), so the agent can be matched to it without relying on the Salesforce record Id.</description>
+    <externalId>true</externalId>
+    <inlineHelpText
+  >Enter the id the external AI service gave this agent, for example agent_... for the Anthropic Agent API. Keep it stable: changing it breaks the link to the external agent.</inlineHelpText>
+    <label>External Reference</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,101 @@
+/* Makes the component fill the space its parent gives it, and holds the Jump to latest button against its bottom edge. SLDS has no utility for styling :host. */
+:host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* Spaces the messages, pads the list and lets it scroll. Fades smoothly when dimmed. SLDS has no utility for these. */
+.scroll {
+  gap: 16px;
+  min-height: 0;
+  padding: 12px 16px 16px;
+  overflow-y: auto;
+  transition: opacity 0.15s ease;
+}
+
+/* Fades the list while it is dimmed. */
+.scroll_dimmed {
+  opacity: 0.45;
+}
+
+/* Spaces a day separator from the message below it. SLDS has no gap utility. */
+.item {
+  gap: 16px;
+}
+
+/* Sets the day separator text size, spacing and subtle token colour. */
+.separator {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--aia-subtle);
+}
+
+/* Draws the Show earlier messages button as a small rounded pill centred in the list. A native button needs these token colours. */
+.earlier {
+  align-self: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--aia-line);
+  border-radius: 999px;
+  background: var(--aia-surface);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--aia-ink-soft);
+  cursor: pointer;
+}
+
+/* Darkens the pill border under the mouse, unless it is disabled. Uses a design token. */
+.earlier:hover:not([disabled]) {
+  border-color: var(--aia-line-strong);
+}
+
+/* Shows a keyboard focus ring on the pill. */
+.earlier:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 1px;
+}
+
+/* Draws the Jump to latest button as a small rounded pill floating at the bottom centre of the list. A native button needs these token colours and the shadow. */
+.jump {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 2;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 999px;
+  background: var(--aia-surface);
+  box-shadow: 0 4px 14px rgba(28, 30, 38, 0.18);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink);
+  cursor: pointer;
+  transform: translateX(-50%);
+  --slds-c-icon-color-foreground-default: var(--aia-ink);
+  --slds-c-icon-color-foreground: var(--aia-ink);
+}
+
+/* Fills the pill with the accent colour when a new reply arrived out of view. Uses a design token. */
+.jump_new {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* Shades the quiet pill under the mouse. Uses a design token. */
+.jump:hover:not(.jump_new) {
+  background: var(--aia-surface-soft);
+}
+
+/* Shows a keyboard focus ring on the pill. */
+.jump:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}

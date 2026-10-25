@@ -1,0 +1,88 @@
+/* The sentence above the table: muted text. */
+.aiadi-intro {
+  margin: 0 0 12px;
+  color: var(--aia-muted);
+}
+
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aiadi-table-wrap {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The table head: a soft grey band with bold text. */
+.aiadi-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* The name of an input: code text. */
+.aiadi-name {
+  font-family: monospace;
+  color: var(--aia-ink);
+}
+
+/* Muted text. */
+.aiadi-muted {
+  color: var(--aia-muted);
+}
+
+/* The pill that says who fills an input: a small rounded label. SLDS badges have a different size and shape. */
+.aiadi-pill {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The pill for an input the page fills: grey. */
+.aiadi-pill_page {
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-ink-soft);
+}
+
+/* The pill for an input the agent fills: accent colour. */
+.aiadi-pill_agent {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The saved schema box: a bordered box with a grey head. */
+.aiadi-schema {
+  margin-top: 16px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* The head of the schema box: a soft grey band. */
+.aiadi-schema-head {
+  padding: 10px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The schema text: code text that keeps its line breaks. */
+.aiadi-code {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The note under the schema: a soft blue box with accent text. */
+.aiadi-note {
+  background: var(--aia-accent-tint);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  color: var(--aia-accent);
+}

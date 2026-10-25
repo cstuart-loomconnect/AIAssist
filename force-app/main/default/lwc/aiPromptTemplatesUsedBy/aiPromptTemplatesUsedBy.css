@@ -1,0 +1,49 @@
+/* The table box: a bordered rounded box. SLDS tables have no outer border. */
+.aipt-table-wrap {
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* The header cells: a soft grey bar with bold text. */
+.aipt-table thead th {
+  background: var(--aia-surface-soft);
+  color: var(--aia-ink-soft);
+  font-weight: 600;
+  text-transform: none;
+}
+
+/* An agent name: bold dark text. */
+.aipt-strong {
+  color: var(--aia-ink);
+  font-weight: 600;
+}
+
+/* Hints and empty text: muted. */
+.aipt-muted {
+  margin: 0;
+  color: var(--aia-muted);
+}
+
+/* The pills: small rounded labels. SLDS badges have a different size and shape. */
+.aipt-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* An active agent: green. */
+.aipt-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An inactive agent: grey with a thin line. */
+.aipt-pill_neutral {
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line);
+  color: var(--aia-muted);
+}

@@ -1,0 +1,37 @@
+<template>
+  <!-- Page: a warm grey box that holds the header and the body -->
+  <div class="aias-page">
+    <!-- Header: a dark band with the icon and the page title -->
+    <div class="aias-header slds-grid slds-grid_vertical-align-center">
+      <lightning-icon icon-name="utility:settings" variant="inverse" size="small"></lightning-icon>
+      <h1 class="aias-title slds-m-around_none">{labels.title}</h1>
+    </div>
+
+    <!-- Body: a light panel under the header -->
+    <div class="aias-body slds-p-around_medium">
+      <!-- Loading: shown until the rows arrive -->
+      <template lwc:if={isFirstLoad}>
+        <div class="slds-is-relative slds-p-around_large">
+          <lightning-spinner alternative-text={labels.loading}></lightning-spinner>
+        </div>
+      </template>
+
+      <!-- Error: shown when the rows could not be read, for example a user without the Manage Settings permission -->
+      <template lwc:if={hasError}>
+        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-around_medium" role="alert">{errorMessage}</div>
+      </template>
+
+      <!-- Tabs: AI Assist Settings and AI Assist UI Settings -->
+      <template lwc:if={showTabs}>
+        <lightning-tabset>
+          <lightning-tab label={labels.assistTab} value={assistTabValue}>
+            <c-ai-assist-settings-panel settings-name={assistSettingsName} is-organisation-only groups={assistGroups} rows={assistRows} onrefresh={handleRefresh}></c-ai-assist-settings-panel>
+          </lightning-tab>
+          <lightning-tab label={labels.uiTab} value={uiTabValue}>
+            <c-ai-assist-settings-panel settings-name={uiSettingsName} groups={uiGroups} rows={uiRows} is-organisation-only onrefresh={handleRefresh}></c-ai-assist-settings-panel>
+          </lightning-tab>
+        </lightning-tabset>
+      </template>
+    </div>
+  </div>
+</template>

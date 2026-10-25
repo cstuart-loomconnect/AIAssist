@@ -1,0 +1,139 @@
+/* The text buttons in the ended and read-only bars: a 36px height, 8px radius and 14px padding, which are not SLDS steps. */
+.aia-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Keyboard focus ring for the buttons, in the accent colour. */
+.aia-btn:focus-visible {
+  outline: 2px solid var(--aia-accent);
+  outline-offset: 2px;
+}
+
+/* A switched-off button looks faded and shows the not-allowed cursor. */
+.aia-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The main button: accent background and white text, with the icon colour passed to any icon inside it. */
+.aia-btn_brand {
+  background: var(--aia-accent);
+  color: #ffffff;
+  --slds-c-icon-color-foreground-default: #ffffff;
+  --slds-c-icon-color-foreground: #ffffff;
+}
+
+/* The main button gets darker when the mouse is over it. */
+.aia-btn_brand:hover:not([disabled]) {
+  background: var(--aia-accent-strong);
+}
+
+/* The quieter button: surface colour with a border. */
+.aia-btn_neutral {
+  background: var(--aia-surface);
+  border-color: var(--aia-line-strong);
+  color: var(--aia-ink);
+  font-weight: 500;
+}
+
+/* The quieter button gets a soft background when the mouse is over it. */
+.aia-btn_neutral:hover:not([disabled]) {
+  background: var(--aia-surface-soft);
+}
+
+/* Lets the component fill the height the page gives it. SLDS has no utility for host styling. */
+:host {
+  display: block;
+  height: 100%;
+}
+
+/*
+Design tokens for the whole chat window. Custom properties inherit through every child
+component's shadow root, so the children only ever reference var(--aia-*).
+--aia-accent is set inline from the accentColor design property; its tints are derived
+from it so a different brand colour keeps the same relationships.
+*/
+.shell {
+  --aia-accent: #3040c4;
+  --aia-accent-strong: color-mix(in srgb, var(--aia-accent) 70%, #000000);
+  --aia-accent-mid: color-mix(in srgb, var(--aia-accent) 50%, #ffffff);
+  --aia-accent-border: color-mix(in srgb, var(--aia-accent) 25%, #ffffff);
+  --aia-accent-tint: color-mix(in srgb, var(--aia-accent) 8%, #ffffff);
+
+  --aia-ink: #1c1e26;
+  --aia-ink-soft: #3f4350;
+  --aia-muted: #5e6270;
+  --aia-subtle: #6b6f7c;
+  --aia-faint: #b9b7af;
+
+  --aia-bg: #f6f5f1;
+  --aia-surface: #ffffff;
+  --aia-surface-soft: #fafaf7;
+  --aia-chip: #f0efea;
+  --aia-line: #e4e2da;
+  --aia-line-strong: #d8d6ce;
+  --aia-line-soft: #efede6;
+
+  --aia-success: #1f6f4a;
+  --aia-success-ink: #1f4f37;
+  --aia-success-tint: #e8f3ec;
+
+  --aia-warning: #9a3412;
+  --aia-warning-strong: #7c2d12;
+  --aia-warning-ink: #5c2408;
+  --aia-warning-border: #c2410c;
+  --aia-warning-tint: #fdf0e6;
+
+  --aia-danger: #a2381e;
+  --aia-danger-ink: #6e2412;
+  --aia-danger-tint: #fbe9e4;
+
+  --aia-debug-bg: #1c1e26;
+  --aia-debug-line: #2e3140;
+  --aia-debug-ink: #d9dbe3;
+  --aia-debug-muted: #9ba0b0;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line);
+  border-radius: 12px;
+  color: var(--aia-ink);
+  font-size: 14px;
+}
+
+/* The bar at the bottom of an ended or read-only conversation: spacing, surface colour and top border from the design tokens. */
+.ended {
+  gap: 10px;
+  padding: 12px;
+  background: var(--aia-surface);
+  border-top: 1px solid var(--aia-line);
+}
+
+/* The sentence in the bar: size and colour from the design tokens. */
+.ended-text {
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* Space between the buttons in the bar. */
+.ended-actions {
+  gap: 8px;
+}
