@@ -292,6 +292,57 @@ Presentation and platform:
 [ ] Tab
 [ ] Access in each permission set (object, field, tab) is correct
 
+1.2.6 AISkill__c (AI Skill)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ReadWrite (external Private). Name field: Text. Field history: on. A bundle of existing data sources and workflow actions with instructions for one job. The model sees only the API name and When To Use It until it picks the skill (the use_skill tool); then the instructions and the skill's tools are added for the rest of the turn. Built and tested on the Skills tab of AI Tools (aiToolsSkills), given to agents on the Skills step of the AI Agent Wizard.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (8):
+
+[ ] BoundObjectApiName__c (Text 80): set by the AI Skill Tool trigger from the bound data sources; blank means the skill runs on any page
+[ ] Description__c (LongTextArea 1000, label When To Use It): 40 to 400 characters, checked by the trigger
+[ ] DeveloperName__c (Text 75, required, unique, external ID): the name the model picks the skill by; locked while an agent has the skill
+[ ] Instructions__c (LongTextArea 8000): numbered steps naming tools with @ and their API name
+[ ] IsActive__c (Checkbox): only switched on with tools, every @ name a tool, and bound tools on one object
+[ ] LastTestStatus__c (Picklist: Passed, Failed, Not Picked)
+[ ] LastTestedOn__c (DateTime)
+[ ] OutputType__c (Picklist: Chat Answer, Record Change, Report): Record Change is set by the AI Tools tab when a tool is a write action
+
+Validation rules (2):
+
+[ ] ActiveRequiresInstructions
+[ ] DeveloperNameFormat
+
+List views (2):
+
+[ ] Active
+[ ] All
+
+Compact layouts (1):
+
+[ ] AISkillCompact
+
+Presentation and platform:
+
+[ ] Page layout: AI Skill Layout
+[ ] No tab in the package: the AI Tools tab (Skills) edits it; confirm that is intended
+[ ] Access in each permission set (object, field, tab) is correct: Super User full, Admin create, read, edit and delete, User none (chips are read in system mode)
+
+Trigger and handler:
+
+[ ] Trigger AISkillTrigger (before insert, before update)
+[ ] AISkillTriggerHandler (without sharing): refuses a When To Use It outside 40 to 400 characters, a new API name while an agent has the skill, and activation with no tools, an @ name that is not a tool, or bound tools on two objects.
+  [ ] Test: AISkillTriggerHandlerTest
+[ ] AISkillService (without sharing): loads an agent's active skills that fit the open record, with their active tools in order, and says whether a data source or workflow action reaches an agent through a skill.
+  [ ] Test: AISkillServiceTest
+
+Tab classes:
+
+[ ] AIToolsSkillController, AIToolsSkillEditorService, AIToolsSkillTestService, AIToolsSkillDataStructure
+  [ ] Test: AIToolsSkillControllerTest, AIToolsSkillEditorServiceTest, AIToolsSkillTestServiceTest
+
 1.2.7 AIAgentDataSource__c (AI Agent Data Source)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -379,6 +430,81 @@ Presentation and platform:
 [ ] Page layout: AI Agent Assignment Layout
 [ ] No tab in the package: confirm that is intended
 [ ] Access in each permission set (object, field, tab) is correct
+
+
+1.2.10 AISkillTool__c (AI Skill Tool)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AISkill__c, AIDataSource__c, AIWorkflowAction__c. Puts one existing data source or workflow action into a skill, in order.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (6):
+
+[ ] AIDataSource__c (Lookup to AIDataSource__c, delete restricted)
+[ ] AISkill__c (MasterDetail to AISkill__c)
+[ ] AIWorkflowAction__c (Lookup to AIWorkflowAction__c, delete restricted)
+[ ] IsRequired__c (Checkbox, default on)
+[ ] StepOrder__c (Number 3,0)
+[ ] UniqueKey__c (Text 255, unique): skill Id and tool Id, set by the trigger
+
+Validation rules (1):
+
+[ ] ExactlyOneTool
+
+List views (1):
+
+[ ] All
+
+Compact layouts (1):
+
+[ ] AISkillToolCompact
+
+Presentation and platform:
+
+[ ] Page layout: AI Skill Tool Layout
+[ ] No tab in the package: confirm that is intended
+[ ] Access in each permission set (object, field, tab) is correct
+
+Trigger and handler:
+
+[ ] Trigger AISkillToolTrigger (before insert, before update, after insert, after update, after delete)
+[ ] AISkillToolTriggerHandler (without sharing): sets the unique key, and the skill's Bound Object from its bound data sources.
+  [ ] Test: AISkillToolTriggerHandlerTest
+
+1.2.11 AIAgentSkill__c (AI Agent Skill)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIAgent__c, AISkill__c. Written by the Skills step of the AI Agent Wizard. The agent can call the skill's data sources through it without them being linked directly.
+
+[ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
+
+Fields (4):
+
+[ ] AIAgent__c (MasterDetail to AIAgent__c)
+[ ] AISkill__c (Lookup to AISkill__c, required, delete restricted)
+[ ] IsActive__c (Checkbox)
+[ ] UniqueKey__c (Text 255, unique): agent Id and skill Id, set by the trigger
+
+List views (1):
+
+[ ] All
+
+Compact layouts (1):
+
+[ ] AIAgentSkillCompact
+
+Presentation and platform:
+
+[ ] Page layout: AI Agent Skill Layout
+[ ] No tab in the package: confirm that is intended
+[ ] Access in each permission set (object, field, tab) is correct
+
+Trigger and handler:
+
+[ ] Trigger AIAgentSkillTrigger (before insert, before update)
+[ ] AIAgentSkillTriggerHandler (without sharing): sets the unique key.
+  [ ] Test: AIAgentSkillTriggerHandlerTest
 
 
 1.3 USERS: POLICY, PER-USER SETTINGS AND TERMS
@@ -574,15 +700,16 @@ Trigger and handler:
 1.4.2 AIConversationMessage__c (AI Conversation Message)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversation__c, AIModelConfiguration__c, AIPromptTemplate__c, AIWorkflowAction__c, AIPIIMaskingRecord__c.
+Sharing: ControlledByParent (external ControlledByParent). Name field: AutoNumber. Field history: off. Depends on: AIConversation__c, AIModelConfiguration__c, AIPromptTemplate__c, AISkill__c, AIWorkflowAction__c, AIPIIMaskingRecord__c.
 
 [ ] Object definition: label, plural label, description, sharing model, name field, history, search and report settings
 
-Fields (21):
+Fields (22):
 
 [ ] AIConversation__c (MasterDetail to AIConversation__c)
 [ ] AIModelConfiguration__c (Lookup to AIModelConfiguration__c)
 [ ] AIPromptTemplate__c (Lookup to AIPromptTemplate__c)
+[ ] AISkill__c (Lookup to AISkill__c, cleared on delete): the skill the model picked for the reply; shown as the skill chip in chat
 [ ] DebugRequestJson__c (LongTextArea)
 [ ] DebugResponseJson__c (LongTextArea)
 [ ] DebugSentPreviewText__c (Text)

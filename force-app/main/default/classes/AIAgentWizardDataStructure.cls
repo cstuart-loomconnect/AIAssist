@@ -52,6 +52,9 @@ public without sharing class AIAgentWizardDataStructure {
         @AuraEnabled public List<Id> dataSourceIds = new List<Id>();
         @AuraEnabled public List<Id> workflowActionIds = new List<Id>();
 
+        // Skills. Every id here is saved as an active AI Agent Skill link; a skill gives the agent its tools without linking them above.
+        @AuraEnabled public List<Id> skillIds = new List<Id>();
+
         // Conversations
         @AuraEnabled public String conversationLoadTrigger; // An AIAgent__c.ConversationLoadTrigger__c value.
         @AuraEnabled public Boolean allowConversationResume;
@@ -118,6 +121,22 @@ public without sharing class AIAgentWizardDataStructure {
         @AuraEnabled public Integer agentCount; // Active agents that use the model.
     }
 
+    // An existing AI Skill the Skills step offers.
+    public class SkillOption {
+
+        @AuraEnabled public Id skillId;
+        @AuraEnabled public String name;
+        @AuraEnabled public String developerName;
+        @AuraEnabled public String description; // When To Use It.
+        @AuraEnabled public String outputType; // Chat Answer, Record Change or Report.
+        @AuraEnabled public String boundObject; // The object of the record the skill needs open, blank when it runs anywhere.
+        @AuraEnabled public Integer dataSourceCount = 0;
+        @AuraEnabled public Integer actionCount = 0;
+        @AuraEnabled public String lastTestStatus; // Passed, Failed or Not Picked, blank when never tested.
+        @AuraEnabled public Boolean isActive;
+        @AuraEnabled public Integer agentCount;
+    }
+
     // A data source the Data sources step offers.
     public class DataSourceOption {
 
@@ -168,6 +187,7 @@ public without sharing class AIAgentWizardDataStructure {
         @AuraEnabled public List<ModelOption> models = new List<ModelOption>();
         @AuraEnabled public List<DataSourceOption> dataSources = new List<DataSourceOption>();
         @AuraEnabled public List<WorkflowActionOption> workflowActions = new List<WorkflowActionOption>();
+        @AuraEnabled public List<SkillOption> skills = new List<SkillOption>();
         @AuraEnabled public Integer assistUserCount; // Users who hold the AI Assist User permission set.
         @AuraEnabled public Decimal orgToolCallingCap; // AIAssistSettings__c.MaxToolCallingIterationsCap__c.
         @AuraEnabled public Boolean isWorkflowActionsEnabled; // AIAssistUISettings__c.IsWorkflowActionsEnabled__c.
@@ -179,7 +199,7 @@ public without sharing class AIAgentWizardDataStructure {
     public class Finding {
 
         @AuraEnabled public String severity; // Blocker or Warning.
-        @AuraEnabled public Integer step; // The step that fixes it: 1 Basics, 2 Model, 3 Data sources, 4 Workflow actions, 5 Conversations, 6 Limits, 7 Access.
+        @AuraEnabled public Integer step; // The step that fixes it: 1 Basics, 2 Model, 3 Skills, 4 Data sources, 5 Workflow actions, 6 Conversations, 7 Limits, 8 Access.
         @AuraEnabled public String code; // A short stable name, such as NoModel, so the tab can tie a finding to a field.
         @AuraEnabled public String title;
         @AuraEnabled public String message;
@@ -234,6 +254,7 @@ public without sharing class AIAgentWizardDataStructure {
         @AuraEnabled public List<String> objectApiNames = new List<String>();
         @AuraEnabled public Integer dataSourceCount;
         @AuraEnabled public Integer workflowActionCount;
+        @AuraEnabled public Integer skillCount;
         @AuraEnabled public Integer assignmentCount;
         @AuraEnabled public Integer userCount;
         @AuraEnabled public Boolean isCreated; // True when the agent is new.

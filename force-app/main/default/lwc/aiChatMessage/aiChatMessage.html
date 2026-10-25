@@ -37,6 +37,10 @@
       <!-- Reply bubble: the answer and its sources -->
       <div class="agent-bubble slds-grid slds-grid_vertical">
         <lightning-formatted-rich-text class="rich" value={message.bodyHtml}></lightning-formatted-rich-text>
+        <!-- Skill: shown when the model picked an AI Skill for the answer -->
+        <template lwc:if={message.skillName}>
+          <div class="skill slds-grid slds-grid_vertical-align-center"><span class="sources-label">{labels.skill}</span><span class="skill-chip">{message.skillName}</span></div>
+        </template>
         <!-- Sources: shown when the answer used any -->
         <template lwc:if={message.hasSources}>
           <div class="sources slds-grid slds-wrap">

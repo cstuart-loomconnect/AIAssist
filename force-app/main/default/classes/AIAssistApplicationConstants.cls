@@ -587,11 +587,12 @@ public without sharing class AIAssistApplicationConstants {
     public static final String WIZARD_SEVERITY_WARNING = 'Warning';
     public static final Integer WIZARD_STEP_BASICS = 1;
     public static final Integer WIZARD_STEP_MODEL = 2;
-    public static final Integer WIZARD_STEP_DATA_SOURCES = 3;
-    public static final Integer WIZARD_STEP_ACTIONS = 4;
-    public static final Integer WIZARD_STEP_CONVERSATIONS = 5;
-    public static final Integer WIZARD_STEP_LIMITS = 6;
-    public static final Integer WIZARD_STEP_ACCESS = 7;
+    public static final Integer WIZARD_STEP_SKILLS = 3;
+    public static final Integer WIZARD_STEP_DATA_SOURCES = 4;
+    public static final Integer WIZARD_STEP_ACTIONS = 5;
+    public static final Integer WIZARD_STEP_CONVERSATIONS = 6;
+    public static final Integer WIZARD_STEP_LIMITS = 7;
+    public static final Integer WIZARD_STEP_ACCESS = 8;
     public static final String WIZARD_DEVELOPER_NAME_PATTERN = '^[A-Za-z][A-Za-z0-9_]*$';
     public static final String WIZARD_COPY_NAME_PREFIX = 'Copy of ';
     public static final String WIZARD_CODE_NAME_REQUIRED = 'NameRequired';
@@ -614,4 +615,5 @@ public without sharing class AIAssistApplicationConstants {
     public static final String WIZARD_CODE_NO_TEMPLATE = 'NoTemplate';
     public static final String WIZARD_CODE_TOO_MANY_DATA_SOURCES = 'TooManyDataSources';
     public static final String WIZARD_CODE_TOO_MANY_ACTIONS = 'TooManyActions';
+    public static final String WIZARD_CODE_TOO_MANY_SKILLS = 'TooManySkills';
 }

@@ -51,6 +51,10 @@
       "options": { "parser": "lwc", "printWidth": 1000 }
     },
     {
+      "files": "**/lwc/aiAgentWizardStepSkills/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
       "files": "**/lwc/aiAgentWizardPicker/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     },

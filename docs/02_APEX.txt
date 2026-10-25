@@ -97,8 +97,8 @@ Sections are in call order, lowest layer first, so a class is checked after the 
 [ ] AIDataSourceResponse (without sharing, 33 lines): What an Apex data source (IAIDataSourceExecutor.execute) returns: the records to put in front of the model.
 [ ] AISoqlTemplateRunner (inherited sharing, 68 lines): Runs the SOQL template of a SOQL data source for the user, in user mode: sharing, object permissions and field-level security all apply, so the model can only be given
   [ ] Test: AISoqlTemplateRunnerTest
-[ ] AIDataSourceDispatcher (without sharing, 98 lines): Runs a data source when the model calls it as a tool, and returns the masked result.
-  [ ] Test: AIDataSourceDispatcherTest
+[ ] AIDataSourceDispatcher (without sharing): Runs a data source when the model calls it as a tool, and returns the masked result. A data source is allowed when it is linked to the agent, reaches it through one of the agent's active AI Skills, or is in previewGrantedDataSourceIds (filled only by AIToolsSkillTestService after requireManager, and cleared after the test).
+  [ ] Test: AIDataSourceDispatcherTest, AISkillServiceTest
 [ ] AIDataSourceResultProcessor (without sharing, 150 lines): Turns the records a data source returned into plain maps and lists that are safe to hand to the model: [1] Fields the running user cannot read are left out.
   [ ] Test: AIDataSourceResultProcessorTest
 
@@ -110,15 +110,24 @@ Sections are in call order, lowest layer first, so a class is checked after the 
 [ ] AIWorkflowActionRequest (without sharing, 39 lines): What the package hands to an Apex Workflow Action (IAIWorkflowActionExecutor.execute).
   [ ] Test: AIWorkflowActionRequestTest
 [ ] AIWorkflowActionResponse (without sharing, 31 lines): What an Apex Workflow Action (IAIWorkflowActionExecutor.execute) returns.
-[ ] AIWorkflowActionDispatcher (without sharing, 316 lines): Runs one Workflow Action a user has chosen to run from a suggestion in the chat.
+[ ] AIWorkflowActionDispatcher (without sharing, 316 lines): Runs one Workflow Action a user has chosen to run from a suggestion in the chat. An action is allowed when it is linked to the agent or reaches it through one of the agent's active AI Skills.
   [ ] Test: AIWorkflowActionDispatcherTest
+
+
+2.9a AI SKILLS
+-------------
+
+[ ] AISkillService (without sharing): Loads the agent's active skills that fit the open record (a bound skill only on a record of its object), each with its active data sources and workflow actions in order, and answers whether a data source or workflow action reaches an agent through an active skill.
+  [ ] Test: AISkillServiceTest
+[ ] AIToolsSkillController, AIToolsSkillEditorService, AIToolsSkillTestService, AIToolsSkillDataStructure (without sharing): the Skills tab of AI Tools. Lists, saves and tests skills built only from existing data sources and workflow actions; every method calls AIAssistSettingsEditorService.requireManager first. A save switches the skill on last so the AI Skill trigger checks it whole, and rolls back on a refusal.
+  [ ] Test: AIToolsSkillControllerTest, AIToolsSkillEditorServiceTest, AIToolsSkillTestServiceTest
 
 
 2.10 AGENT ORCHESTRATION
 ------------------------
 
-[ ] AIAgentManager (inherited sharing, 772 lines): Owns the conversation with the AI provider for one turn.
-  [ ] Test: AIAgentManagerTest
+[ ] AIAgentManager (inherited sharing): Owns the conversation with the AI provider for one turn. An overload takes the agent's AI Skills (List<AISkillService.SkillBundle>): the model sees each skill's name and When To Use It as the use_skill tool; when it picks one, the skill's instructions are added to the system prompt, its data sources become tools and its workflow actions can be suggested, a Skill step is added to the trace, and AgentResult names the skill. The old signature passes no skills.
+  [ ] Test: AIAgentManagerTest, AISkillServiceTest
 
 
 2.11 MESSAGING PIPELINE

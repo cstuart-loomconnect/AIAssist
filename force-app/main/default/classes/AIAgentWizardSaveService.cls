@@ -7,7 +7,7 @@ Class Name: AIAgentWizardSaveService
 Description: Saves the whole draft of the AI Agent Wizard in one call, and switches an agent on or off from the list.
 
 Step 1: Check the draft and refuse what cannot be saved, or activated when that was asked for
-Step 2: Save the agent, then replace its data source and workflow action links, then its access list
+Step 2: Save the agent, then replace its skill, data source and workflow action links, then its access list
 Step 3: Switch the agent on only after everything else is saved, and report what was saved
 Step 4: Switch an agent on or off from the list of agents, refusing to switch it on while a blocker is left
 
@@ -64,7 +64,9 @@ public without sharing class AIAgentWizardSaveService {
         List<Id> workflowActionIds = getDistinctIds(draft.workflowActionIds);
         Integer dataSourceCount = [SELECT COUNT() FROM AIDataSource__c WHERE Id IN :dataSourceIds WITH SYSTEM_MODE];
         Integer workflowActionCount = [SELECT COUNT() FROM AIWorkflowAction__c WHERE Id IN :workflowActionIds WITH SYSTEM_MODE];
-        if (dataSourceCount != dataSourceIds.size() || workflowActionCount != workflowActionIds.size()) throw new AIAgentWizardSaveServiceException(Label.AI_Wizard_Error_Item_Missing);
+        List<Id> skillIds = getDistinctIds(draft.skillIds);
+        Integer skillCount = [SELECT COUNT() FROM AISkill__c WHERE Id IN :skillIds WITH SYSTEM_MODE];
+        if (dataSourceCount != dataSourceIds.size() || workflowActionCount != workflowActionIds.size() || skillCount != skillIds.size()) throw new AIAgentWizardSaveServiceException(Label.AI_Wizard_Error_Item_Missing);
 
         for (AIAgentWizardDataStructure.AssignmentView assignment : draft.assignments) {
 
@@ -110,6 +112,7 @@ public without sharing class AIAgentWizardSaveService {
         // [7] Replace the links and the access list
         saveDataSourceLinks(agent.Id, dataSourceIds);
         saveWorkflowActionLinks(agent.Id, workflowActionIds);
+        saveSkillLinks(agent.Id, skillIds);
         saveAssignments(agent.Id, draft.assignments);
 
         // [8] Switch the agent on last, once everything it needs is saved
@@ -124,6 +127,7 @@ public without sharing class AIAgentWizardSaveService {
         result.objectApiNames = getDistinctNames(draft.objectApiNames);
         result.dataSourceCount = dataSourceIds.size();
         result.workflowActionCount = workflowActionIds.size();
+        result.skillCount = skillIds.size();
         result.assignmentCount = draft.assignments.size();
         result.userCount = check.accessUserCount;
         result.isCreated = savedAgent == null;
@@ -181,6 +185,37 @@ public without sharing class AIAgentWizardSaveService {
         for (Id dataSourceId : dataSourceIds) {
 
             if (!linkedIds.contains(dataSourceId)) linksToInsert.add(new AIAgentDataSource__c(AIAgent__c = agentId, AIDataSource__c = dataSourceId, IsActive__c = true));
+        }
+
+        // [3] Save the changes
+        delete linksToDelete;
+        update linksToSwitchOn;
+        insert linksToInsert;
+    }
+
+    // Makes the active skill links of the agent match the draft, the same way as the data source links.
+    private static void saveSkillLinks(Id agentId, List<Id> skillIds) {
+
+        // [1] Read the links the agent has now, whether they are on or off
+        Set<Id> wantedIds = new Set<Id>(skillIds);
+        Set<Id> linkedIds = new Set<Id>();
+        List<AIAgentSkill__c> linksToDelete = new List<AIAgentSkill__c>();
+        List<AIAgentSkill__c> linksToSwitchOn = new List<AIAgentSkill__c>();
+
+        for (AIAgentSkill__c link : [SELECT Id, AISkill__c, IsActive__c FROM AIAgentSkill__c WHERE AIAgent__c = :agentId WITH SYSTEM_MODE LIMIT 2000]) {
+
+            linkedIds.add(link.AISkill__c);
+
+            if (!wantedIds.contains(link.AISkill__c) && link.IsActive__c == true) linksToDelete.add(link);
+            else if (wantedIds.contains(link.AISkill__c) && link.IsActive__c != true) linksToSwitchOn.add(new AIAgentSkill__c(Id = link.Id, IsActive__c = true));
+        }
+
+        // [2] Add a link for each skill that has none
+        List<AIAgentSkill__c> linksToInsert = new List<AIAgentSkill__c>();
+
+        for (Id skillId : skillIds) {
+
+            if (!linkedIds.contains(skillId)) linksToInsert.add(new AIAgentSkill__c(AIAgent__c = agentId, AISkill__c = skillId, IsActive__c = true));
         }
 
         // [3] Save the changes

@@ -98,7 +98,7 @@ Version      Author                   Description
             Assert.isTrue(findingByCode.containsKey('DeveloperNameRequired'), 'The API name is required.');
             Assert.isTrue(findingByCode.containsKey('ObjectsRequired'), 'An object is required.');
             Assert.areEqual(2, findingByCode.get('NoModel').step, 'The model is fixed on the Model step.');
-            Assert.areEqual(6, findingByCode.get('ConversationLimitsMustBePositive').step, 'A token limit of zero is fixed on the Limits step.');
+            Assert.areEqual(7, findingByCode.get('ConversationLimitsMustBePositive').step, 'A token limit of zero is fixed on the Limits step.');
             Assert.areEqual(AIAssistApplicationConstants.WIZARD_SEVERITY_WARNING, findingByCode.get('NoTemplate').severity, 'A missing template is a warning.');
         }
     }
@@ -162,7 +162,7 @@ Version      Author                   Description
             // [4] Check the outcome
             Assert.areEqual(AIAssistApplicationConstants.WIZARD_SEVERITY_WARNING, findingByCode.get('ModelInactive').severity, 'A model that is off is a warning.');
             Assert.areEqual(AIAssistApplicationConstants.WIZARD_SEVERITY_BLOCKER, findingByCode.get('ConversationLimitsMustBePositive').severity, 'A limit of zero is a blocker.');
-            Assert.areEqual(5, findingByCode.get('ConversationLimitsMustBePositive').step, 'A retention limit is fixed on the Conversations step.');
+            Assert.areEqual(6, findingByCode.get('ConversationLimitsMustBePositive').step, 'A retention limit is fixed on the Conversations step.');
             Assert.isFalse(check.canActivate, 'It cannot be activated.');
         }
     }
@@ -252,10 +252,10 @@ Version      Author                   Description
             }
 
             // [4] Check the outcome
-            Assert.areEqual(3, findingByCode.get('TooManyDataSources').step, 'Too many data sources is found on the Data sources step.');
-            Assert.areEqual(4, findingByCode.get('TooManyActions').step, 'Too many actions is found on the Workflow actions step.');
+            Assert.areEqual(4, findingByCode.get('TooManyDataSources').step, 'Too many data sources is found on the Data sources step.');
+            Assert.areEqual(5, findingByCode.get('TooManyActions').step, 'Too many actions is found on the Workflow actions step.');
             Assert.isFalse(findingByCode.containsKey('WorkflowActionsDisabled'), 'The org has workflow actions on.');
-            Assert.areEqual(6, findingByCode.get('ConversationLimitsMustBePositive').step, 'A tool round limit of zero is fixed on the Limits step.');
+            Assert.areEqual(7, findingByCode.get('ConversationLimitsMustBePositive').step, 'A tool round limit of zero is fixed on the Limits step.');
         }
     }
 

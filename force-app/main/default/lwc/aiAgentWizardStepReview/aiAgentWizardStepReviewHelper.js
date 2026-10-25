@@ -18,7 +18,7 @@ Version      Author                   Description
 1.0          Chandler Stuart          Initial development
 */
 
-import { STEP_BASICS, STEP_MODEL, STEP_DATA_SOURCES, STEP_ACTIONS, STEP_CONVERSATIONS, STEP_LIMITS, STEP_ACCESS, STEP_LABELS, SEVERITY_BLOCKER, LOAD_LABELS, VISIBILITY_LABELS, RETENTION_LABELS, TRACKING_LABELS, ACCESS_ALL, ACCESS_LABELS, ASSIGNEE_PERMISSION_SET, MAX_NAMES, ACTION_TYPE_SCREEN_FLOW, PILL_CLASS, PILL_SUCCESS_CLASS, PILL_DANGER_CLASS, PILL_WARNING_CLASS, LIST_SEPARATOR, MILLISECONDS_PER_SECOND, NO_TEXT, LABELS } from "./aiAgentWizardStepReviewSettings";
+import { STEP_BASICS, STEP_MODEL, STEP_SKILLS, STEP_DATA_SOURCES, STEP_ACTIONS, STEP_CONVERSATIONS, STEP_LIMITS, STEP_ACCESS, STEP_LABELS, SEVERITY_BLOCKER, LOAD_LABELS, VISIBILITY_LABELS, RETENTION_LABELS, TRACKING_LABELS, ACCESS_ALL, ACCESS_LABELS, ASSIGNEE_PERMISSION_SET, MAX_NAMES, ACTION_TYPE_SCREEN_FLOW, PILL_CLASS, PILL_SUCCESS_CLASS, PILL_DANGER_CLASS, PILL_WARNING_CLASS, LIST_SEPARATOR, MILLISECONDS_PER_SECOND, NO_TEXT, LABELS } from "./aiAgentWizardStepReviewSettings";
 
 // Counts the findings that block activation.
 export function countBlockers(findings) {
@@ -101,6 +101,7 @@ export function buildSummaryCards(draft, page, objectOptions, modelTest) {
   const pageLists = page || {};
   const model = (pageLists.models || []).find((candidate) => candidate.modelId === draft.modelConfigurationId);
   const template = (pageLists.promptTemplates || []).find((candidate) => candidate.templateId === draft.promptTemplateId);
+  const skills = (draft.skillIds || []).map((id) => (pageLists.skills || []).find((candidate) => candidate.skillId === id)).filter((found) => Boolean(found));
   const dataSources = (draft.dataSourceIds || []).map((id) => (pageLists.dataSources || []).find((candidate) => candidate.dataSourceId === id)).filter((found) => Boolean(found));
   const actions = (draft.workflowActionIds || []).map((id) => (pageLists.workflowActions || []).find((candidate) => candidate.actionId === id)).filter((found) => Boolean(found));
   const writeActions = actions.filter((action) => action.isWrite);
@@ -112,7 +113,8 @@ export function buildSummaryCards(draft, page, objectOptions, modelTest) {
   const modelRows = [buildRow("model", LABELS.configuration, model ? model.name : LABELS.noneChosen)];
   if (model) modelRows.push(buildConnectionRow(modelTest, model.modelId));
 
-  // [3] Data sources and Workflow actions
+  // [3] Skills, Data sources and Workflow actions
+  const skillRows = [buildRow("selected", LABELS.selected, skills.length === 0 ? LABELS.none : skills.length + " · " + formatNames(skills.map((skill) => skill.name)))];
   const dataSourceRows = [buildRow("selected", LABELS.selected, dataSources.length === 0 ? LABELS.none : dataSources.length + " · " + formatNames(dataSources.map((dataSource) => dataSource.name)))];
   const actionRows = [buildRow("selected", LABELS.selected, actions.length === 0 ? LABELS.readOnly : actions.length + " · " + formatNames(actions.map((action) => action.name)))];
   if (writeActions.length > 0) actionRows.push(buildRow("write", LABELS.writeActions, writeActions.length + (askedActions.length === writeActions.length ? LABELS.allAskFirst : ", " + askedActions.length + LABELS.someAskFirst)));
@@ -123,7 +125,7 @@ export function buildSummaryCards(draft, page, objectOptions, modelTest) {
   const limitRows = [buildRow("per", LABELS.perConversation, draft.maxMessagesPerConversation + LABELS.messages + " · " + Number(draft.maxTokensPerConversation).toLocaleString() + LABELS.tokens), buildRow("rounds", LABELS.toolRounds, String(draft.maxToolCallingIterations)), buildRow("counting", LABELS.counting, TRACKING_LABELS[draft.tokenTrackingMethod] || NO_TEXT)];
   const accessRows = [buildRow("mode", LABELS.mode, ACCESS_LABELS[draft.accessMode] || NO_TEXT), buildRow("users", LABELS.users, buildUsersText(draft, pageLists.assistUserCount))];
 
-  return [{ key: "basics", title: LABELS.basics, step: STEP_BASICS, rows: basicsRows }, { key: "model", title: LABELS.model, step: STEP_MODEL, rows: modelRows }, { key: "dataSources", title: LABELS.dataSources, step: STEP_DATA_SOURCES, rows: dataSourceRows }, { key: "actions", title: LABELS.actions, step: STEP_ACTIONS, rows: actionRows }, { key: "conversations", title: LABELS.conversations, step: STEP_CONVERSATIONS, rows: conversationRows }, { key: "limits", title: LABELS.limits, step: STEP_LIMITS, rows: limitRows }, { key: "access", title: LABELS.access, step: STEP_ACCESS, rows: accessRows }];
+  return [{ key: "basics", title: LABELS.basics, step: STEP_BASICS, rows: basicsRows }, { key: "model", title: LABELS.model, step: STEP_MODEL, rows: modelRows }, { key: "skills", title: LABELS.skills, step: STEP_SKILLS, rows: skillRows }, { key: "dataSources", title: LABELS.dataSources, step: STEP_DATA_SOURCES, rows: dataSourceRows }, { key: "actions", title: LABELS.actions, step: STEP_ACTIONS, rows: actionRows }, { key: "conversations", title: LABELS.conversations, step: STEP_CONVERSATIONS, rows: conversationRows }, { key: "limits", title: LABELS.limits, step: STEP_LIMITS, rows: limitRows }, { key: "access", title: LABELS.access, step: STEP_ACCESS, rows: accessRows }];
 }
 
 // Builds the Connection row of the Model card.

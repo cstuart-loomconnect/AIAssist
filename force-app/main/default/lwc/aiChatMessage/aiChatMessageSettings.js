@@ -100,6 +100,7 @@ export const LABELS = {
   regenerate: "Regenerate",
   saveToRecord: "Save to record",
   sources: "Sources",
+  skill: "Skill",
   feedbackThanks: "Thanks — your feedback was sent.",
   showTrace: "Show request trace"
 };

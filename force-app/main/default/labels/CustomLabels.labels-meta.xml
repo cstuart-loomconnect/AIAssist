@@ -3174,4 +3174,20 @@
         <shortDescription>Skills: a tool failed in the test.</shortDescription>
         <value>The model picked the skill, but a tool failed. Check the steps below.</value>
     </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManySkills_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding TooManySkills: title.</shortDescription>
+        <value>Too many skills</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManySkills_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding TooManySkills: message.</shortDescription>
+        <value>Only the first {0} skills reach the model. This agent has {1}.</value>
+    </labels>
 </CustomLabels>
