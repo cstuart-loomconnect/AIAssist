@@ -9,18 +9,16 @@
 .vscode
 
 coverage/
-# CI tooling and contributor docs
+# Caller workflows and contributor docs
 .github
-scripts/ci
-code-analyzer.yml
 CONTRIBUTING.md
 
-# Apex is formatted by hand to docs/03_TEST_CLASS_PATTERN.txt and docs/04_CLASS_CODE_PATTERN.txt.
+# Apex is formatted by hand to the house pattern (Code patterns and Testing pages on the docs site).
 # prettier-plugin-apex re-wraps calls and changes indentation, so never run it on Apex.
 **/*.cls
 **/*.trigger
 
-# Components that follow docs/05_LWC_CODE_PATTERN.txt keep their JavaScript hand-formatted (one-line imports and calls,
+# Components that follow the LWC house pattern (Code patterns page on the docs site) keep their JavaScript hand-formatted (one-line imports and calls,
 # blank lines after opening braces). Prettier would re-wrap them, so it is not run on those files.
 force-app/main/default/lwc/aiChatWorkingIndicator/*.js
 force-app/main/default/lwc/aiChatTerms/*.js
@@ -113,5 +111,3 @@ force-app/main/default/lwc/aiPiiRegistryTest/*.js
 force-app/main/default/lwc/aiPiiRegistryAddDialog/*.js
 force-app/main/default/lwc/aiPiiRegistryUnprotected/*.js
 
-site/
-documentation/
