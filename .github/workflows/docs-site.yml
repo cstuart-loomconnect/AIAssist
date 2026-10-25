@@ -1,11 +1,18 @@
 name: Documentation site
 
-# Rebuilds site/model.json from the metadata and publishes site/ to GitHub Pages.
-# One-off setup: Settings > Pages > Build and deployment > Source = GitHub Actions.
+# Generates the reference pages from the source, builds the MkDocs site and publishes it to GitHub Pages.
+# One-off setup: Settings > Pages > Build and deployment > Source = GitHub Actions, and allow the
+# development branch under Settings > Environments > github-pages > Deployment branches.
 on:
   push:
     branches: [development]
-    paths: ['site/**', 'force-app/main/default/objects/**', 'scripts/docs/**']
+    paths:
+      - 'documentation/**'
+      - 'mkdocs.yml'
+      - 'scripts/docs/**'
+      - 'force-app/**'
+      - 'docs/known-issues.txt'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -25,10 +32,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
         with:
-          node-version: 22
-      - run: node scripts/docs/build-model.mjs && node scripts/docs/build-site.mjs
+          fetch-depth: 0 # the changelog and class histories are read from git
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r scripts/docs/requirements.txt
+      - run: python3 scripts/docs/generate.py
+      - run: mkdocs build --strict
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

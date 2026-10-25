@@ -107,3 +107,4 @@ force-app/main/default/lwc/aiPiiRegistryAddDialog/*.js
 force-app/main/default/lwc/aiPiiRegistryUnprotected/*.js
 
 site/
+documentation/
