@@ -3070,4 +3070,108 @@
         <shortDescription>Skill: API name used by an agent.</shortDescription>
         <value>An agent uses this skill, so its API name cannot change. Remove it from the agent first.</value>
     </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Not_Found</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: skill not found.</shortDescription>
+        <value>This skill no longer exists. Go back to the list and refresh it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: a required value is missing.</shortDescription>
+        <value>{0} is required.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Duplicate</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: API name already used.</shortDescription>
+        <value>Another skill already uses this API name, or a tool is in the skill twice.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Tool_Not_Found</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: a tool was deleted.</shortDescription>
+        <value>A data source or workflow action in this skill no longer exists. Remove it and save again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Too_Many_Tools</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: too many tools.</shortDescription>
+        <value>A skill can hold up to {0} tools. Split it into two skills.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Not_Ready</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: test before basics are filled.</shortDescription>
+        <value>Give the skill an API name and a When To Use It text before testing it.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Agent_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: test needs an agent.</shortDescription>
+        <value>Pick the agent whose model answers the test.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Question_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: test needs a question.</shortDescription>
+        <value>Type the question a user would ask.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_No_Model</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: agent has no model.</shortDescription>
+        <value>This agent has no model configuration, so it cannot answer. Pick another agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Record_Required</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: bound skill needs a record.</shortDescription>
+        <value>This skill runs on a {0} record. Pick one to test it on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Error_Run_Failed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: the model did not answer.</shortDescription>
+        <value>The model did not answer. Check the agent&apos;s model configuration and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Test_Not_Picked</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: model answered without the skill.</shortDescription>
+        <value>The model answered without picking the skill. Make When To Use It match how users ask, then test again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_ToolsSk_Test_Step_Failed</fullName>
+        <categories>AI Assist,AI Tools</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Skills: a tool failed in the test.</shortDescription>
+        <value>The model picked the skill, but a tool failed. Check the steps below.</value>
+    </labels>
 </CustomLabels>

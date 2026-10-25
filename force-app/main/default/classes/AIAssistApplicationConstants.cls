@@ -310,6 +310,19 @@ public without sharing class AIAssistApplicationConstants {
     public static final String TOOL_RESULT_SKILL_UNKNOWN = 'That is not one of the listed skills. Answer with the instructions and tools you already have.';
     public static final Integer MAX_SKILLS_PER_AGENT = 32;
 
+    // AI Skills - the values of AISkill__c.OutputType__c and LastTestStatus__c, the two kinds of tool a skill holds, and what the AI Tools tab flags.
+    public static final String SKILL_OUTPUT_CHAT_ANSWER = 'Chat Answer';
+    public static final String SKILL_OUTPUT_RECORD_CHANGE = 'Record Change';
+    public static final String SKILL_OUTPUT_REPORT = 'Report';
+    public static final String SKILL_TEST_STATUS_PASSED = 'Passed';
+    public static final String SKILL_TEST_STATUS_FAILED = 'Failed';
+    public static final String SKILL_TEST_STATUS_NOT_PICKED = 'Not Picked';
+    public static final String SKILL_TOOL_KIND_DATA_SOURCE = 'dataSource';
+    public static final String SKILL_TOOL_KIND_ACTION = 'action';
+    public static final String SKILL_ATTENTION_TOOL_INACTIVE = 'Tool inactive';
+    public static final String SKILL_ATTENTION_NO_TOOLS = 'No tools';
+    public static final Integer SKILL_MAX_TOOLS = 20; // Every tool of a picked skill is added to the request, so a skill stays small.
+
     // AIAgentManager - AI provider callout request.
     public static final String HTTP_METHOD_POST = 'POST';
     public static final String HTTP_HEADER_CONTENT_TYPE = 'Content-Type';
