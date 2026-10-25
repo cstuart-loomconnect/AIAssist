@@ -224,7 +224,7 @@ public without sharing class AIPiiRegistryEditorService {
         String fieldName = field.FieldAPIName__c;
 
         // [2] Read the field's Data Classification again, as the sync does
-        List<FieldDefinition> fieldDefinitions = [SELECT QualifiedApiName, Label, DataType, ComplianceGroup FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :objectName AND QualifiedApiName = :fieldName LIMIT 1];
+        List<FieldDefinition> fieldDefinitions = [SELECT QualifiedApiName, Label, DataType, ComplianceGroup FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :objectName AND QualifiedApiName = :fieldName WITH SYSTEM_MODE LIMIT 1];
         String complianceGroup = fieldDefinitions.isEmpty() ? null : fieldDefinitions[0].ComplianceGroup;
 
         // [3] Classify it and save it as automatic

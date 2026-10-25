@@ -266,7 +266,7 @@ public without sharing class AIToolsEditorService {
         // [5] Save it and read it back
         try {
 
-            upsert record;
+            Database.upsert(record, AccessLevel.SYSTEM_MODE);
 
         } catch (DmlException ex) {
 

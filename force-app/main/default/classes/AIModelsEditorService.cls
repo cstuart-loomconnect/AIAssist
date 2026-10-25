@@ -113,7 +113,7 @@ public without sharing class AIModelsEditorService {
         }
 
         // [7] Save and hand back the model as it is now
-        upsert model;
+        Database.upsert(model, AccessLevel.SYSTEM_MODE);
         result.isSaved = true;
         result.model = buildModelView(findModel(model.Id), getAgentCounts().get(model.Id));
 
@@ -190,11 +190,11 @@ public without sharing class AIModelsEditorService {
             agent.AIModelConfiguration__c = newModelIdByAgentId.get(agent.Id);
         }
 
-        update agentsToMove;
+        Database.update(agentsToMove, AccessLevel.SYSTEM_MODE);
 
         // [4] Switch the model off
         model.IsActive__c = false;
-        update model;
+        Database.update(model, AccessLevel.SYSTEM_MODE);
 
         return getModelViews();
     }
@@ -254,7 +254,7 @@ public without sharing class AIModelsEditorService {
         // [1] Read the named credentials
         Map<String, AIModelsDataStructure.CredentialOption> optionByName = new Map<String, AIModelsDataStructure.CredentialOption>();
 
-        for (NamedCredential credential : [SELECT DeveloperName, MasterLabel FROM NamedCredential ORDER BY DeveloperName LIMIT :AIAssistApplicationConstants.MODEL_LIST_MAX_RESULTS]) {
+        for (NamedCredential credential : [SELECT DeveloperName, MasterLabel FROM NamedCredential WITH SYSTEM_MODE ORDER BY DeveloperName LIMIT :AIAssistApplicationConstants.MODEL_LIST_MAX_RESULTS]) {
 
             AIModelsDataStructure.CredentialOption option = new AIModelsDataStructure.CredentialOption();
             option.credentialName = credential.DeveloperName;

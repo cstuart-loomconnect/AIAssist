@@ -417,7 +417,7 @@ Version      Author                   Description
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
             AIAgentWizardDataStructure.AgentDraft draft = AIAssistTestDataFactory.createAIAgentDraft(null);
-            Id missingUserId = User.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingUserId = User.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String missingUserRefusal;
             String noDraftCheckRefusal;
             String noDraftUserRefusal;

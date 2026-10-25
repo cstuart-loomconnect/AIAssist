@@ -100,7 +100,7 @@ public without sharing class AIPoliciesEditorService {
         if (wasDefault && record.IsDefault__c != true) throw new AIPoliciesEditorServiceException(Label.AI_Policies_Error_Last_Default);
 
         // [5] Save it
-        upsert record;
+        Database.upsert(record, AccessLevel.SYSTEM_MODE);
 
         // [6] Take the default off every other policy
         if (record.IsDefault__c == true) {
@@ -109,7 +109,7 @@ public without sharing class AIPoliciesEditorService {
 
             for (AIUsagePolicy__c otherDefault : otherDefaults) otherDefault.IsDefault__c = false;
 
-            update otherDefaults;
+            Database.update(otherDefaults, AccessLevel.SYSTEM_MODE);
         }
 
         AIAssistSettingsService.clearCache();
@@ -186,11 +186,11 @@ public without sharing class AIPoliciesEditorService {
                 }
             }
 
-            insert toMove;
+            Database.insert(toMove, AccessLevel.SYSTEM_MODE);
         }
 
         // [5] Delete the policy and read the rest back
-        delete policy;
+        Database.delete(policy, AccessLevel.SYSTEM_MODE);
         AIAssistSettingsService.clearCache();
 
         return getPolicies();
