@@ -271,7 +271,7 @@ Version      Author                   Description
             AIDataSource__c deletedDataSource = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
             delete deletedDataSource;
             AIAgentWizardDataStructure.AgentDraft missingDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
-            missingDraft.agentId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            missingDraft.agentId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             AIAgentWizardDataStructure.AgentDraft itemDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
             itemDraft.dataSourceIds = new List<Id>{deletedDataSource.Id};
             AIAgentWizardDataStructure.AgentDraft assigneeDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
@@ -391,7 +391,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of an agent that was never saved, and a user who holds only the end user permission set
-            Id missingId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
             String missingRefusal;

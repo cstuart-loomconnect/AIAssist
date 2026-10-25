@@ -2,8 +2,11 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>DeveloperNameFormat</fullName>
     <active>true</active>
-    <description>The API name uses letters, numbers and underscores and starts with a letter, because the model picks the skill by it.</description>
-    <errorConditionFormula>NOT(REGEX(DeveloperName__c, &quot;^[A-Za-z][A-Za-z0-9_]*$&quot;))</errorConditionFormula>
+    <description
+  >The API name uses letters, numbers and underscores and starts with a letter, because the model picks the skill by it.</description>
+    <errorConditionFormula
+  >NOT(REGEX(DeveloperName__c, &quot;^[A-Za-z][A-Za-z0-9_]*$&quot;))</errorConditionFormula>
     <errorDisplayField>DeveloperName__c</errorDisplayField>
-    <errorMessage>Use letters, numbers and underscores only, starting with a letter.</errorMessage>
+    <errorMessage
+  >Use letters, numbers and underscores only, starting with a letter.</errorMessage>
 </ValidationRule>

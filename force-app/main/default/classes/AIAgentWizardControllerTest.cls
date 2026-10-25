@@ -112,7 +112,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of an agent that was never saved
-            Id missingId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String refusal;
 
             // [2] Ask for a copy of it

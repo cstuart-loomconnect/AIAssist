@@ -115,7 +115,7 @@ Version      Author                   Description
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIAgentWizardDataStructure.AgentDraft draft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
             AIAgentWizardDataStructure.AgentDraft noModelDraft = AIAssistTestDataFactory.createAIAgentDraft(null);
-            AIAgentWizardDataStructure.AgentDraft goneModelDraft = AIAssistTestDataFactory.createAIAgentDraft(AIModelConfiguration__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA');
+            AIAgentWizardDataStructure.AgentDraft goneModelDraft = AIAssistTestDataFactory.createAIAgentDraft(AIModelConfiguration__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA');
             String noDraftRefusal;
             String blankRefusal;
             String longRefusal;

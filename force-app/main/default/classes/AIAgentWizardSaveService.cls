@@ -107,7 +107,7 @@ public without sharing class AIAgentWizardSaveService {
         AIAssistSettingsEditorService.validateChoice(agent, 'AccessMode__c', AIAgent__c.AccessMode__c);
 
         // [6] Save the agent first, because the links belong to it
-        upsert agent;
+        Database.upsert(agent, AccessLevel.SYSTEM_MODE);
 
         // [7] Replace the links and the access list
         saveDataSourceLinks(agent.Id, dataSourceIds);
@@ -116,7 +116,7 @@ public without sharing class AIAgentWizardSaveService {
         saveAssignments(agent.Id, draft.assignments);
 
         // [8] Switch the agent on last, once everything it needs is saved
-        if (isActivating && agent.IsActive__c != true) update new AIAgent__c(Id = agent.Id, IsActive__c = true);
+        if (isActivating && agent.IsActive__c != true) Database.update(new AIAgent__c(Id = agent.Id, IsActive__c = true), AccessLevel.SYSTEM_MODE);
 
         // [9] Report what was saved
         AIAgentWizardDataStructure.SaveResult result = new AIAgentWizardDataStructure.SaveResult();
@@ -157,7 +157,7 @@ public without sharing class AIAgentWizardSaveService {
         }
 
         // [3] Switch it on or off, and read its line again
-        update new AIAgent__c(Id = agentId, IsActive__c = isActivating);
+        Database.update(new AIAgent__c(Id = agentId, IsActive__c = isActivating), AccessLevel.SYSTEM_MODE);
 
         return AIAgentWizardEditorService.getAgentRow(agentId);
     }
@@ -188,9 +188,9 @@ public without sharing class AIAgentWizardSaveService {
         }
 
         // [3] Save the changes
-        delete linksToDelete;
-        update linksToSwitchOn;
-        insert linksToInsert;
+        Database.delete(linksToDelete, AccessLevel.SYSTEM_MODE);
+        Database.update(linksToSwitchOn, AccessLevel.SYSTEM_MODE);
+        Database.insert(linksToInsert, AccessLevel.SYSTEM_MODE);
     }
 
     // Makes the active skill links of the agent match the draft, the same way as the data source links.
@@ -219,9 +219,9 @@ public without sharing class AIAgentWizardSaveService {
         }
 
         // [3] Save the changes
-        delete linksToDelete;
-        update linksToSwitchOn;
-        insert linksToInsert;
+        Database.delete(linksToDelete, AccessLevel.SYSTEM_MODE);
+        Database.update(linksToSwitchOn, AccessLevel.SYSTEM_MODE);
+        Database.insert(linksToInsert, AccessLevel.SYSTEM_MODE);
     }
 
     // Makes the active workflow action links of the agent match the draft, the same way as the data source links.
@@ -250,9 +250,9 @@ public without sharing class AIAgentWizardSaveService {
         }
 
         // [3] Save the changes
-        delete linksToDelete;
-        update linksToSwitchOn;
-        insert linksToInsert;
+        Database.delete(linksToDelete, AccessLevel.SYSTEM_MODE);
+        Database.update(linksToSwitchOn, AccessLevel.SYSTEM_MODE);
+        Database.insert(linksToInsert, AccessLevel.SYSTEM_MODE);
     }
 
     // Makes the access list of the agent match the draft: keeps matching lines, changes their switch, adds new lines and removes lines that were taken out.
@@ -300,9 +300,9 @@ public without sharing class AIAgentWizardSaveService {
         }
 
         // [4] Save the changes
-        delete assignmentsToDelete;
-        update assignmentsToUpdate;
-        insert assignmentsToInsert;
+        Database.delete(assignmentsToDelete, AccessLevel.SYSTEM_MODE);
+        Database.update(assignmentsToUpdate, AccessLevel.SYSTEM_MODE);
+        Database.insert(assignmentsToInsert, AccessLevel.SYSTEM_MODE);
     }
 
     // The name of the model, or blank when there is none.

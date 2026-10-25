@@ -90,7 +90,7 @@ Version      Author                   Description
         System.runAs(superUser) {
 
             // [1] Build the Id of a model that was never saved
-            Id missingId = AIModelConfiguration__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIModelConfiguration__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String refusal;
 
             // [2] Ask for its switch off options
