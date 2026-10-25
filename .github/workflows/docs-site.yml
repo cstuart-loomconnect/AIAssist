@@ -4,7 +4,7 @@ name: Documentation site
 # One-off setup: Settings > Pages > Build and deployment > Source = GitHub Actions.
 on:
   push:
-    branches: [master]
+    branches: [development]
     paths: ['site/**', 'force-app/main/default/objects/**', 'scripts/docs/**']
   workflow_dispatch:
 
