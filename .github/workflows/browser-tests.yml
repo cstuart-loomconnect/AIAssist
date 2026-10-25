@@ -1,0 +1,34 @@
+name: Browser tests
+
+# Creates a scratch org, deploys force-app and runs only the Playwright browser tests in e2e/
+# (no Apex unit tests), using the shared workflow from AIAssist-CICD.
+#
+# Start it:
+#   - on a pull request, by adding the `e2e` label (it then reruns on every push while the label is on)
+#   - by hand: Actions > Browser tests > Run workflow, then pick the branch
+#     (the Run workflow button appears once this file is on master)
+on:
+  pull_request:
+    branches: [development, master]
+    types: [labeled, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: browser-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  browser-tests:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'e2e') ||
+      (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'e2e'))
+    uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/scratch-org-tests.yml@v1
+    with:
+      cicd-ref: v1
+      apex-tests: false
+      e2e: true
+    secrets: inherit

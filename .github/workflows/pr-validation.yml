@@ -20,4 +20,6 @@ jobs:
     uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/pr-validation.yml@v1
     with:
       cicd-ref: v1
+      # Browser tests run in their own workflow (browser-tests.yml), not here.
+      e2e: false
     secrets: inherit
