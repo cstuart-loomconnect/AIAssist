@@ -1,0 +1,58 @@
+<template>
+  <!-- Banner: ready to activate, or how many things stop it -->
+  <div class={bannerClass}><strong>{banner.bold}</strong>{banner.text}</div>
+
+  <!-- Findings: one row for each blocker and warning, with a button that jumps to the step -->
+  <template lwc:if={hasFindings}>
+    <div class="aiawre-box aiawre-box_flush">
+      <template for:each={findingViews} for:item="finding">
+        <div key={finding.key} class="aiawre-box-row slds-grid slds-grid_vertical-align-center aiawre-gap">
+          <span class={finding.severityClass}>{finding.severityLabel}</span>
+          <div class="aiawre-grow">
+            <div class="aiawre-strong">{finding.title}</div>
+            <div class="aiawre-muted">{finding.message}</div>
+          </div>
+          <lightning-button variant={finding.buttonVariant} label={finding.buttonLabel} data-step={finding.step} onclick={handleEditClick}></lightning-button>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Summary: one card for each step, in two columns -->
+  <div class="aiawre-cards">
+    <template for:each={summaryCards} for:item="card">
+      <div key={card.key} class="aiawre-summary">
+        <div class="aiawre-box-head"><span>{card.title}</span><button type="button" class="aiawre-link" data-step={card.step} onclick={handleEditClick}>{labels.edit}</button></div>
+        <template for:each={card.rows} for:item="row">
+          <div key={row.key} class="aiawre-summary-row slds-grid aiawre-gap">
+            <span class="aiawre-muted aiawre-summary-label">{row.label}</span>
+            <template lwc:if={row.hasPill}><span class={row.pillClass}>{row.pillLabel}</span></template>
+            <template lwc:else><span>{row.value}</span></template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <!-- Try it: a trial message through the agent's model, prompt template and persona -->
+  <div class="aiawre-box">
+    <div class="aiawre-box-head">{labels.tryTitle}</div>
+    <template lwc:if={hasModel}>
+      <div class="aiawre-box-row">
+        <div class="aiawre-try slds-grid slds-wrap">
+          <div class="slds-form-element aiawre-try-message">
+            <label class="slds-form-element__label" for="aiawre-message">{labels.message}</label>
+            <div class="slds-form-element__control"><input id="aiawre-message" type="text" class="slds-input" placeholder={labels.messagePlaceholder} value={trialMessage} oninput={handleMessageInput} /></div>
+          </div>
+          <div class="aiawre-try-record"><lightning-record-picker label={labels.onRecord} object-api-name={firstObject} onchange={handleRecordChange}></lightning-record-picker></div>
+          <div class="aiawre-try-send"><lightning-button variant="brand-outline" label={sendLabel} onclick={handleSend} disabled={isSendDisabled}></lightning-button></div>
+        </div>
+        <p class="aiawre-muted aiawre-note-line">{labels.tryNote}</p>
+        <template lwc:if={hasReply}><div class="aiawre-muted">{trialMeta}</div></template>
+        <template lwc:if={hasReply}><div class="aiawre-reply">{trialReply}</div></template>
+        <template lwc:if={hasTrialError}><div class="aiawre-note aiawre-note_danger" role="alert">{trialError}</div></template>
+      </div>
+    </template>
+    <template lwc:else><div class="aiawre-box-row aiawre-muted">{labels.tryNeedsModel}</div></template>
+  </div>
+</template>

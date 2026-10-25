@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 2 of the AI Agent Wizard: the model configuration the agent uses, with a connection check.</description>
+</LightningComponentBundle>

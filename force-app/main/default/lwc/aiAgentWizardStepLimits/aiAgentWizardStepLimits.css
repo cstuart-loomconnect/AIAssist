@@ -1,0 +1,160 @@
+/* The three limit fields sit side by side and wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aiawli-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* One limit field: it shares the row. */
+.aiawli-field {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* Help text under a field: muted text. */
+.aiawli-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The gap between the label and the value of an estimate row. SLDS has no 16px gap utility. */
+.aiawli-gap {
+  gap: 16px;
+}
+
+/* The label of an estimate row: a fixed width so the values line up. */
+.aiawli-estimate-label {
+  min-width: 220px;
+}
+
+/* A row of choice cards that share the width, with a gap SLDS has no utility for. */
+.aiawli-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* One choice card: a bordered box with a title and a line of detail. */
+.aiawli-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The chosen card: an accent border and a tinted background. */
+.aiawli-card_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The title of a card: bold dark text. */
+.aiawli-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The detail of a card: muted text. */
+.aiawli-card-detail {
+  font-size: 14px;
+  color: var(--aia-muted);
+}
+
+/* A question above a group of choices: bold dark text. */
+.aiawli-question {
+  margin: 20px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Muted text, for details and help under a field. */
+.aiawli-muted {
+  color: var(--aia-muted);
+}
+
+/* A bordered box with a soft grey header, used for each group of rows. */
+.aiawli-box {
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header of a box: the title on the left and an action on the right. */
+.aiawli-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* One row of a box: a line under it, except the last. */
+.aiawli-box-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+.aiawli-box-row:last-child {
+  border-bottom: 0;
+}
+
+/* A note box: a rounded, tinted strip of text. SLDS notify boxes have a different look. */
+.aiawli-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* A warning note: orange. */
+.aiawli-note_warning {
+  background: var(--aia-warning-tint);
+  border-color: var(--aia-warning);
+  color: var(--aia-warning);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawli-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}
+
+/* A green pill: live, active or connected. */
+.aiawli-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An orange pill: something to look at. */
+.aiawli-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A pill beside a value: a little room to its left. */
+.aiawli-pill {
+  margin-left: 8px;
+}

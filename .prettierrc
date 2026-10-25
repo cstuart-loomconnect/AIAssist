@@ -32,7 +32,55 @@
     },
     {
       "files": "**/lwc/aiAgentWizard/*.html",
-      "options": { "parser": "lwc", "printWidth": 300 }
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStart/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepBasics/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepModel/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepItems/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardPicker/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepConversations/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepLimits/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepAccess/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardAssigneeDialog/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardStepReview/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardDone/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
+      "files": "**/lwc/aiAgentWizardList/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
     },
     {
       "files": "**/lwc/aiChatWorkingIndicator/*.html",

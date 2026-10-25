@@ -1,0 +1,64 @@
+<template>
+  <!-- Load: when a conversation is loaded -->
+  <h3 class="aiawco-question aiawco-question_first">{labels.whenLoaded}</h3>
+  <div class="aiawco-cards">
+    <template for:each={loadCards} for:item="card">
+      <button key={card.value} type="button" class={card.cardClass} data-value={card.value} onclick={handleLoadClick}><span class="aiawco-card-title">{card.title}</span><span class="aiawco-card-detail">{card.detail}</span></button>
+    </template>
+  </div>
+
+  <!-- Toggles: resume, which Manual only cannot use, and one active conversation per record -->
+  <div class="aiawco-box">
+    <div class={resumeToggle.rowClass}>
+      <lightning-input type="toggle" variant="label-hidden" label={labels.resumeTitle} checked={resumeToggle.isChecked} disabled={resumeToggle.isDisabled} onchange={handleResumeChange}></lightning-input>
+      <div class="aiawco-toggle-text">
+        <div class="aiawco-strong">{labels.resumeTitle}</div>
+        <div class="aiawco-muted">{resumeToggle.hint}</div>
+      </div>
+    </div>
+    <div class="aiawco-toggle-row">
+      <lightning-input type="toggle" variant="label-hidden" label={labels.singleTitle} checked={draft.singleActiveConversationPerRecord} onchange={handleSingleChange}></lightning-input>
+      <div class="aiawco-toggle-text">
+        <div class="aiawco-strong">{labels.singleTitle}</div>
+        <div class="aiawco-muted">{singleHint}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visibility: private or global, with a warning for global -->
+  <h3 class="aiawco-question">{labels.whoSees}</h3>
+  <div class="aiawco-seg">
+    <template for:each={visibilityButtons} for:item="visibilityButton">
+      <button key={visibilityButton.value} type="button" class={visibilityButton.buttonClass} data-value={visibilityButton.value} onclick={handleVisibilityClick}>{visibilityButton.label}</button>
+    </template>
+  </div>
+  <template lwc:if={isGlobal}><div class="aiawco-note aiawco-note_warning">{labels.globalWarning}</div></template>
+  <template lwc:else><div class="aiawco-hint">{labels.visibilityPrivateHelp}</div></template>
+
+  <!-- Timing: the idle time, the days to keep conversations and what the days count from -->
+  <div class="aiawco-fields">
+    <div class={idleClass}>
+      <label class="slds-form-element__label" for="aiawco-idle">{labels.idle}</label>
+      <div class="slds-form-element__control"><input id="aiawco-idle" type="number" min="1" class="slds-input" value={draft.idleTimeoutMinutes} oninput={handleIdleInput} /></div>
+      <template lwc:if={idleError}><div class="slds-form-element__help">{idleError}</div></template>
+      <template lwc:else><div class="aiawco-hint">{labels.idleHelp}</div></template>
+    </div>
+    <div class={retentionClass}>
+      <label class="slds-form-element__label" for="aiawco-retention">{labels.retention}</label>
+      <div class="slds-form-element__control"><input id="aiawco-retention" type="number" min="1" class="slds-input" value={draft.conversationRetentionDays} oninput={handleRetentionInput} /></div>
+      <template lwc:if={retentionError}><div class="slds-form-element__help">{retentionError}</div></template>
+      <template lwc:else><div class="aiawco-hint">{labels.retentionHelp}</div></template>
+    </div>
+    <div class="slds-form-element aiawco-field">
+      <label class="slds-form-element__label" for="aiawco-from">{labels.retentionFrom}</label>
+      <div class="slds-form-element__control">
+        <div class="slds-select_container">
+          <select id="aiawco-from" class="slds-select" onchange={handleRetentionFromChange}>
+            <template for:each={retentionFromChoices} for:item="choice"><option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option></template>
+          </select>
+        </div>
+      </div>
+      <div class="aiawco-hint">{labels.retentionFromHelp}</div>
+    </div>
+  </div>
+</template>

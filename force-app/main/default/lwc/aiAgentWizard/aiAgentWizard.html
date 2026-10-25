@@ -1,6 +1,96 @@
 <template>
-  <!-- Placeholder card: shows the wizard title and a coming-soon message until the real wizard is built -->
-  <lightning-card title={labels.title} icon-name="standard:bot">
-    <p class="slds-p-horizontal_medium">{labels.placeholder}</p>
-  </lightning-card>
+  <!-- Page: a warm grey box that holds the header and the screen -->
+  <div class="aiaw-page">
+    <!-- Header: a dark band with the title on the left and a line of help on the right -->
+    <div class="aiaw-header slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <h1 class="aiaw-title slds-m-around_none">{labels.title}</h1>
+      <div class="aiaw-header-right slds-grid slds-grid_vertical-align-center">
+        <!-- Back link: shown on the start screen and the steps -->
+        <template lwc:if={showBackLink}><button type="button" class="aiaw-back-link slds-text-body_small" onclick={handleBackToList}>{labels.backToList}</button></template>
+        <span class="aiaw-subtitle slds-text-body_small">{subtitleText}</span>
+      </div>
+    </div>
+
+    <!-- Body: the list of agents, the start screen, the steps or the done screen -->
+    <div class="aiaw-body slds-is-relative">
+      <!-- Busy: shown while the page is read or an agent is started -->
+      <template lwc:if={isLoading}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- List screen: every agent, with the buttons to create, edit and copy one -->
+      <template lwc:if={isScreenList}>
+        <c-ai-agent-wizard-list oncreateagent={handleCreateAgent} oneditagent={handleEditAgent}></c-ai-agent-wizard-list>
+      </template>
+
+      <!-- Start screen: how the new agent begins -->
+      <template lwc:elseif={isScreenStart}>
+        <template lwc:if={page}><c-ai-agent-wizard-start copy-options={page.copyOptions} object-options={objectOptions} onstart={handleStart} oncancelstart={handleStartCancel}></c-ai-agent-wizard-start></template>
+      </template>
+
+      <!-- Done screen: what was made -->
+      <template lwc:elseif={isScreenDone}>
+        <c-ai-agent-wizard-done save-result={saveResult} object-options={objectOptions} oncreateanother={handleCreateAnother} onbacktolist={handleDoneBackToList}></c-ai-agent-wizard-done>
+      </template>
+
+      <!-- Steps: the stepper on the left and the step panel on the right -->
+      <template lwc:elseif={isScreenWizard}>
+        <div class="aiaw-layout slds-grid slds-wrap slds-grid_vertical-align-start">
+          <!-- Stepper: one button for each step, with a number, a tick or an exclamation mark -->
+          <nav class="aiaw-nav" aria-label={labels.stepsAria}>
+            <template for:each={stepViews} for:item="stepView">
+              <button key={stepView.number} type="button" class={stepView.stepClass} data-step={stepView.number} disabled={stepView.isDisabled} onclick={handleStepClick}>
+                <span class="aiaw-marker">{stepView.marker}</span><span class="aiaw-step-text"><span class="aiaw-step-label">{stepView.label}</span><span class="aiaw-step-detail">{stepView.detail}</span></span>
+              </button>
+            </template>
+          </nav>
+
+          <!-- Panel: the step title and status, the step, and the buttons -->
+          <div class="aiaw-panel">
+            <!-- Panel header: the step title on the left and the status of the draft on the right -->
+            <div class="aiaw-panel-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+              <h2 class="aiaw-panel-title slds-m-around_none">{stepTitle}</h2>
+              <span class="aiaw-panel-status">{statusText}</span>
+            </div>
+
+            <!-- Step: only the step the admin is on is shown -->
+            <div class="aiaw-panel-body">
+              <!-- Live banner: shown while a live agent is changed -->
+              <template lwc:if={isEditingLive}>
+                <div class="aiaw-note aiaw-note_warning"><strong>{labels.editingLiveBold}</strong>{liveBannerAfter}</div>
+              </template>
+
+              <template lwc:if={isStepBasics}><c-ai-agent-wizard-step-basics draft={draft} prompt-templates={page.promptTemplates} object-options={objectOptions} field-errors={stepFieldErrors} show-errors={showErrors} ondraftchange={handleDraftChange}></c-ai-agent-wizard-step-basics></template>
+              <template lwc:elseif={isStepModel}><c-ai-agent-wizard-step-model draft={draft} models={page.models} model-test={modelTest} ondraftchange={handleDraftChange} onmodeltest={handleModelTest} onnext={handleNext}></c-ai-agent-wizard-step-model></template>
+              <template lwc:elseif={isStepDataSources}><c-ai-agent-wizard-step-items kind="dataSource" draft={draft} options={page.dataSources} object-options={objectOptions} findings={stepFindings} ondraftchange={handleDraftChange}></c-ai-agent-wizard-step-items></template>
+              <template lwc:elseif={isStepActions}><c-ai-agent-wizard-step-items kind="action" draft={draft} options={page.workflowActions} object-options={objectOptions} findings={stepFindings} ondraftchange={handleDraftChange} ongotosettings={handleGoToSettings}></c-ai-agent-wizard-step-items></template>
+              <template lwc:elseif={isStepConversations}><c-ai-agent-wizard-step-conversations draft={draft} object-options={objectOptions} field-errors={stepFieldErrors} ondraftchange={handleDraftChange}></c-ai-agent-wizard-step-conversations></template>
+              <template lwc:elseif={isStepLimits}><c-ai-agent-wizard-step-limits draft={draft} page={page} access-user-count={accessUserCount} findings={stepFindings} field-errors={stepFieldErrors} ondraftchange={handleDraftChange}></c-ai-agent-wizard-step-limits></template>
+              <template lwc:elseif={isStepAccess}><c-ai-agent-wizard-step-access draft={draft} page={page} object-options={objectOptions} access-user-count={accessUserCount} findings={stepFindings} ondraftchange={handleDraftChange}></c-ai-agent-wizard-step-access></template>
+              <template lwc:else><c-ai-agent-wizard-step-review draft={draft} page={page} object-options={objectOptions} findings={reviewFindings} model-test={modelTest} access-user-count={accessUserCount} is-checking={isChecking} ongotostep={handleGoToStep}></c-ai-agent-wizard-step-review></template>
+
+              <!-- Error: shown when the last check or save failed -->
+              <template lwc:if={hasError}>
+                <div class="aiaw-note aiaw-note_danger slds-m-top_medium" role="alert">{errorMessage}</div>
+              </template>
+            </div>
+
+            <!-- Footer: Cancel on the left, Back, Next and the save buttons on the right -->
+            <div class="aiaw-panel-foot slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+              <div>
+                <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+                <template lwc:if={showSaveDraft}><lightning-button class="slds-m-left_x-small" variant="brand-outline" label={labels.saveDraft} onclick={handleSaveDraft} disabled={isSaveDisabled}></lightning-button></template>
+              </div>
+              <div>
+                <template lwc:if={hasBack}><lightning-button label={labels.back} onclick={handleBack} disabled={isSaving}></lightning-button></template>
+                <template lwc:if={showNext}><lightning-button class="slds-m-left_x-small" variant={nextVariant} label={nextLabel} onclick={handleNext} disabled={isSaving}></lightning-button></template>
+                <template lwc:if={showSaveChanges}><lightning-button class="slds-m-left_x-small" variant="brand" label={labels.saveChanges} onclick={handleSaveChanges} disabled={saveChangesDisabled}></lightning-button></template>
+                <template lwc:if={showActivate}><lightning-button class="slds-m-left_x-small" variant="brand" label={labels.activate} onclick={handleActivate} disabled={isActivateDisabled}></lightning-button></template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
 </template>

@@ -1,0 +1,158 @@
+/* The first question has no space above it. */
+.aiawco-question_first {
+  margin-top: 0;
+}
+
+/* Help text under a field: muted text. */
+.aiawco-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* One toggle row: the switch and its text side by side, with a line under it. */
+.aiawco-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+.aiawco-toggle-row:last-child {
+  border-bottom: 0;
+}
+
+/* A toggle that does not apply: its text is faded. */
+.aiawco-toggle-row_disabled .aiawco-toggle-text {
+  opacity: 0.55;
+}
+
+/* The three timing fields sit side by side and wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aiawco-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+/* One timing field: it shares the row. */
+.aiawco-field {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* A row of choice cards that share the width, with a gap SLDS has no utility for. */
+.aiawco-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* One choice card: a bordered box with a title and a line of detail. */
+.aiawco-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  background: var(--aia-surface);
+  border: 2px solid var(--aia-line);
+  border-radius: 8px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The chosen card: an accent border and a tinted background. */
+.aiawco-card_selected {
+  background: var(--aia-accent-tint);
+  border-color: var(--aia-accent);
+}
+
+/* The title of a card: bold dark text. */
+.aiawco-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The detail of a card: muted text. */
+.aiawco-card-detail {
+  font-size: 14px;
+  color: var(--aia-muted);
+}
+
+/* A question above a group of choices: bold dark text. */
+.aiawco-question {
+  margin: 20px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* Muted text, for details and help under a field. */
+.aiawco-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawco-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A bordered box with a soft grey header, used for each group of rows. */
+.aiawco-box {
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* A segmented control: joined buttons in one bordered strip. */
+.aiawco-seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One segment: plain text on white. */
+.aiawco-seg-button {
+  padding: 12px 20px;
+  border: 0;
+  border-left: 1px solid var(--aia-line-strong);
+  background: var(--aia-surface);
+  color: var(--aia-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aiawco-seg-button:first-child {
+  border-left: 0;
+}
+
+/* The chosen segment: the accent colour with white text. */
+.aiawco-seg-button_selected {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A note box: a rounded, tinted strip of text. SLDS notify boxes have a different look. */
+.aiawco-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* A warning note: orange. */
+.aiawco-note_warning {
+  background: var(--aia-warning-tint);
+  border-color: var(--aia-warning);
+  color: var(--aia-warning);
+}

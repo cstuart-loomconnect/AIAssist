@@ -1,0 +1,71 @@
+<template>
+  <!-- Findings: what the checks found for this step, with a button that fixes each one -->
+  <template lwc:if={hasFindings}>
+    <div class="aiawit-note aiawit-note_warning"><strong>{findingCountText}</strong>{labels.wontStopSaving}</div>
+    <div class="aiawit-box aiawit-box_flush">
+      <template for:each={findingViews} for:item="finding">
+        <div key={finding.key} class="aiawit-box-row slds-grid slds-grid_vertical-align-center aiawit-gap">
+          <span class={finding.severityClass}>{finding.severityLabel}</span>
+          <div class="aiawit-grow">
+            <div class="aiawit-strong">{finding.title}</div>
+            <div class="aiawit-muted">{finding.message}</div>
+          </div>
+          <template lwc:if={finding.showRemove}><lightning-button label={labels.remove} data-key={finding.itemId} onclick={handleRemove}></lightning-button></template>
+          <template lwc:if={finding.showSettings}><lightning-button label={labels.openSettings} onclick={handleSettings}></lightning-button></template>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Intro and search: shown with the list and the empty state, not while the picker is open -->
+  <template lwc:if={isAdding}>
+    <c-ai-agent-wizard-picker kind={kind} options={options} added-ids={ids} object-api-names={draft.objectApiNames} object-options={objectOptions} onadd={handlePickerAdd} oncancel={handlePickerCancel}></c-ai-agent-wizard-picker>
+    <div class="aiawit-note aiawit-note_info">{pickerNote}</div>
+  </template>
+  <template lwc:else>
+    <p class="aiawit-muted">{introText}</p>
+
+    <!-- Empty state: nothing is added yet -->
+    <template lwc:if={showEmpty}>
+      <div class="aiawit-empty">
+        <h3 class="aiawit-empty-title">{emptyTitle}</h3>
+        <p class="aiawit-muted">{emptyText}</p>
+        <lightning-button variant="brand" label={addLabel} onclick={handleAddClick}></lightning-button>
+      </div>
+      <template lwc:if={showEmptyNote}><div class="aiawit-note aiawit-note_success">{emptyNote}</div></template>
+    </template>
+
+    <!-- List: the search box, the add button and a row for each item that is added -->
+    <template lwc:if={showList}>
+      <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center aiawit-gap">
+        <input type="search" class="slds-input aiawit-search" placeholder={searchPlaceholder} value={searchText} oninput={handleSearchInput} />
+        <lightning-button variant="brand" label={addLabel} onclick={handleAddClick}></lightning-button>
+      </div>
+      <div class="aiawit-box">
+        <div class="aiawit-box-head">{addedHeading}</div>
+        <template for:each={itemViews} for:item="item">
+          <div key={item.key} class="aiawit-box-row slds-grid slds-grid_vertical-align-center aiawit-gap">
+            <div class="aiawit-grow">
+              <div class="aiawit-strong">{item.name}</div>
+              <div class="aiawit-muted">{item.detail}</div>
+              <template lwc:if={item.extra}><div class="aiawit-muted">{item.extra}</div></template>
+            </div>
+            <template for:each={item.pills} for:item="pill"><span key={pill.key} class={pill.pillClass}>{pill.label}</span></template>
+            <lightning-button label={labels.remove} data-key={item.key} onclick={handleRemove}></lightning-button>
+          </div>
+        </template>
+        <template lwc:if={hasNoMatches}><div class="aiawit-box-row aiawit-muted">{labels.noMatches}</div></template>
+      </div>
+
+      <!-- Summary: what the actions can do, shown for workflow actions -->
+      <template lwc:if={showSummary}>
+        <div class="aiawit-box">
+          <div class="aiawit-box-head">{labels.summary}</div>
+          <template for:each={summaryRows} for:item="row">
+            <div key={row.key} class="aiawit-box-row slds-grid aiawit-gap"><span class="aiawit-muted aiawit-summary-label">{row.label}</span><span>{row.value}</span></div>
+          </template>
+        </div>
+      </template>
+    </template>
+  </template>
+</template>

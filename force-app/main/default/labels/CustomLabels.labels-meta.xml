@@ -2500,4 +2500,534 @@
     >PII Registry: redacted, list used up.</shortDescription>
         <value>Redacted: every substitute value is already used</value>
     </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NameRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NameRequired: title.</shortDescription>
+        <value>Agent name is required</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NameRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NameRequired: message.</shortDescription>
+        <value>Give the agent a name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameRequired: title.</shortDescription>
+        <value>API name is required</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameRequired: message.</shortDescription>
+        <value>Give the agent an API name.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameFormat_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameFormat: title.</shortDescription>
+        <value>API name is not valid</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameFormat_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameFormat: message.</shortDescription>
+        <value
+    >Use letters, numbers and underscores only, starting with a letter.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameTaken_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameTaken: title.</shortDescription>
+        <value>API name is taken</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_DeveloperNameTaken_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding DeveloperNameTaken: message.</shortDescription>
+        <value
+    >Another agent already uses this API name. Choose a different one.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectsRequired_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectsRequired: title.</shortDescription>
+        <value>Pick a record page</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectsRequired_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectsRequired: message.</shortDescription>
+        <value>Choose at least one object the agent appears on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoModel_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoModel: title.</shortDescription>
+        <value>No model chosen</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoModel_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoModel: message.</shortDescription>
+        <value>Choose the AI model the agent answers with.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ModelInactive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ModelInactive: title.</shortDescription>
+        <value>Model is switched off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ModelInactive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ModelInactive: message.</shortDescription>
+        <value
+    >The chosen model is switched off, so the agent cannot answer until it is switched on.</value>
+    </labels>
+    <labels>
+        <fullName
+    >AI_Wizard_Finding_ConversationLimitsMustBePositive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ConversationLimitsMustBePositive: title.</shortDescription>
+        <value>Limits must be 1 or more</value>
+    </labels>
+    <labels>
+        <fullName
+    >AI_Wizard_Finding_ConversationLimitsMustBePositive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ConversationLimitsMustBePositive: message.</shortDescription>
+        <value
+    >Retention days, idle timeout, messages, tokens and tool rounds must each be 1 or more, or left blank.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectNotOnAgent_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectNotOnAgent: title.</shortDescription>
+        <value>Item is for another object</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ObjectNotOnAgent_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ObjectNotOnAgent: message.</shortDescription>
+        <value
+    >{0} works on {1}, which this agent does not appear on, so it will not be offered there.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ItemInactive_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding ItemInactive: title.</shortDescription>
+        <value>Item is switched off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ItemInactive_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ItemInactive: message.</shortDescription>
+        <value
+    >{0} is switched off, so the model is not offered it until it is switched on.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_FlowNoActiveVersion_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding FlowNoActiveVersion: title.</shortDescription>
+        <value>Flow has no active version</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_FlowNoActiveVersion_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding FlowNoActiveVersion: message.</shortDescription>
+        <value>{0} runs a flow with no active version, so it will fail.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_WorkflowActionsDisabled_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding WorkflowActionsDisabled: title.</shortDescription>
+        <value>Workflow actions are off</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_WorkflowActionsDisabled_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding WorkflowActionsDisabled: message.</shortDescription>
+        <value
+    >Workflow actions are switched off for the org, so this agent cannot run them.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TokensOverPolicy_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TokensOverPolicy: title.</shortDescription>
+        <value>Token limit is over the policy</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TokensOverPolicy_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TokensOverPolicy: message.</shortDescription>
+        <value
+    >The limit of {0} tokens a conversation is more than the {1} policy allows in a day ({2}).</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ToolRoundsOverCap_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ToolRoundsOverCap: title.</shortDescription>
+        <value>Tool rounds are over the cap</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_ToolRoundsOverCap_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding ToolRoundsOverCap: message.</shortDescription>
+        <value
+    >{0} tool rounds is more than the org cap of {1}, so the cap applies.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_GlobalVisibility_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding GlobalVisibility: title.</shortDescription>
+        <value>Everyone can see these conversations</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_GlobalVisibility_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding GlobalVisibility: message.</shortDescription>
+        <value
+    >Global conversations can be seen by anyone who can see the record.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoAssignments_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NoAssignments: title.</shortDescription>
+        <value>Nobody is assigned</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoAssignments_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding NoAssignments: message.</shortDescription>
+        <value
+    >Only assigned users can use this agent and nobody is assigned yet.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoPolicy_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoPolicy: title.</shortDescription>
+        <value>No usage policy is active</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoPolicy_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoPolicy: message.</shortDescription>
+        <value
+    >Users with no active usage policy can read but not send, and no default policy is active.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoTemplate_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoTemplate: title.</shortDescription>
+        <value>No prompt template</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_NoTemplate_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard finding NoTemplate: message.</shortDescription>
+        <value
+    >No template is chosen and none is the default, so the agent has no prompt.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyDataSources_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyDataSources: title.</shortDescription>
+        <value>Too many data sources</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyDataSources_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyDataSources: message.</shortDescription>
+        <value
+    >Only the first {0} data sources reach the model. This agent has {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyActions_Title</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyActions: title.</shortDescription>
+        <value>Too many workflow actions</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Finding_TooManyActions_Message</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard finding TooManyActions: message.</shortDescription>
+        <value
+    >Only the first {0} workflow actions reach the model. This agent has {1}.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Agent not found.</shortDescription>
+        <value>That agent could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Draft_Required</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Draft missing.</shortDescription>
+        <value>There is no agent to save.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Cannot_Activate</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Cannot activate.</shortDescription>
+        <value
+    >This agent cannot be activated until every blocker is fixed.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Model_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Model not found.</shortDescription>
+        <value>That model could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Item_Missing</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard: Data source or action missing.</shortDescription>
+        <value
+    >A data source or workflow action of this agent no longer exists.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Assignee</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Assignee invalid.</shortDescription>
+        <value>Each access line needs a user or a permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_User_Not_Found</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User not found.</shortDescription>
+        <value>That user could not be found.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Message_Required</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try message missing.</shortDescription>
+        <value>Type a message to try.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Message_Too_Long</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try message too long.</shortDescription>
+        <value>A trial message can be up to 4,000 characters.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_No_Model</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try needs a model.</shortDescription>
+        <value>Choose a model before trying the agent.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Error_Run_Failed</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try got no reply.</shortDescription>
+        <value>The model did not reply. Check the model and try again.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_Try_Default_Prompt</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: Try default prompt.</shortDescription>
+        <value>Answer the question helpfully and briefly.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Inactive</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: inactive.</shortDescription>
+        <value>This user is not active.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_No_Permission_Set</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Wizard: User reason: no permission set.</shortDescription>
+        <value>This user holds no AI Assist permission set.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Not_Assigned</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: not assigned.</shortDescription>
+        <value
+    >The agent is for assigned users only and this user is not assigned.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_No_Policy</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: no policy.</shortDescription>
+        <value
+    >No active usage policy applies to this user, so they can read but not send.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_All_Users</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: all users.</shortDescription>
+        <value
+    >The agent is open to every AI Assist user and this user has a usage policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Assigned_User</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: assigned user.</shortDescription>
+        <value
+    >This user is assigned to the agent by name and has a usage policy.</value>
+    </labels>
+    <labels>
+        <fullName>AI_Wizard_User_Reason_Assigned_Set</fullName>
+        <categories>AI Assist,Agent Wizard</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Wizard: User reason: assigned set.</shortDescription>
+        <value
+    >This user holds {0}, which is assigned to the agent, and has a usage policy.</value>
+    </labels>
 </CustomLabels>

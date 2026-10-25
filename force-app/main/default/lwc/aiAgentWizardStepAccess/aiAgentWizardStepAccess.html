@@ -1,0 +1,67 @@
+<template>
+  <!-- Findings: what the checks found for this step -->
+  <template lwc:if={hasFindings}>
+    <div class="aiawac-note aiawac-note_warning"><strong>{findingCountText}</strong>{labels.wontStopSaving}</div>
+    <div class="aiawac-box aiawac-box_flush">
+      <template for:each={findingViews} for:item="finding">
+        <div key={finding.key} class="aiawac-box-row">
+          <div class="aiawac-strong">{finding.title}</div>
+          <div class="aiawac-muted">{finding.message}</div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Mode: everyone with the permission set, or only the people assigned -->
+  <h3 class="aiawac-question aiawac-question_first">{labels.whoCanUse}</h3>
+  <div class="aiawac-cards">
+    <template for:each={accessCards} for:item="card">
+      <button key={card.value} type="button" class={card.cardClass} data-value={card.value} onclick={handleAccessClick}><span class="aiawac-card-title">{card.title}</span><span class="aiawac-card-detail">{card.detail}</span></button>
+    </template>
+  </div>
+
+  <!-- Assignments: the people and permission sets with access, shown for Assigned users only -->
+  <template lwc:if={isAssignedOnly}>
+    <div class="aiawac-box">
+      <div class="aiawac-box-head"><span>{labels.assignments}</span><button type="button" class="aiawac-link" onclick={handleAddClick}>{labels.add}</button></div>
+      <template for:each={assignmentViews} for:item="assignment">
+        <div key={assignment.key} class="aiawac-box-row slds-grid slds-grid_vertical-align-center aiawac-gap">
+          <span class={assignment.tagClass}>{assignment.tagLabel}</span>
+          <div class="aiawac-grow">
+            <div class="aiawac-strong">{assignment.label}</div>
+            <div class="aiawac-muted">{assignment.userText}</div>
+          </div>
+          <lightning-input type="toggle" variant="label-hidden" label={labels.activeToggle} data-key={assignment.key} checked={assignment.isActive} onchange={handleToggleChange}></lightning-input>
+        </div>
+      </template>
+      <template lwc:if={hasNoAssignments}><div class="aiawac-box-row aiawac-muted">{labels.noAssignments}</div></template>
+    </div>
+
+    <!-- Check a user: type a name to see whether they would have the agent -->
+    <div class="slds-form-element slds-m-top_medium">
+      <label class="slds-form-element__label" for="aiawac-check">{labels.checkUser}</label>
+      <div class="slds-form-element__control"><input id="aiawac-check" type="text" class="slds-input" placeholder={labels.checkPlaceholder} value={userSearchText} oninput={handleUserSearchInput} /></div>
+    </div>
+    <template lwc:if={showUserMatches}>
+      <div class="aiawac-options">
+        <template for:each={userMatches} for:item="match">
+          <button key={match.userId} type="button" class="aiawac-match" data-key={match.userId} onclick={handleUserPick}>{match.label}</button>
+        </template>
+      </div>
+    </template>
+    <template lwc:if={isSearching}><div class="aiawac-muted">{labels.searching}</div></template>
+    <template lwc:if={showNoMatches}><div class="aiawac-muted">{labels.noMatches}</div></template>
+    <template lwc:if={isCheckingUser}><div class="aiawac-muted">{labels.checking}</div></template>
+    <template lwc:if={hasUserCheck}><div class={userCheckClass}>{userCheckText}</div></template>
+    <template lwc:if={hasError}><div class="aiawac-note aiawac-note_danger" role="alert">{errorMessage}</div></template>
+  </template>
+
+  <!-- Banner: how many users will see the agent, and where -->
+  <template lwc:if={hasBanner}><div class="aiawac-note aiawac-note_success">{bannerText}</div></template>
+
+  <!-- Picker note: shown for all users, who may have more than one agent on a page -->
+  <template lwc:if={isAllUsers}><div class="aiawac-note aiawac-note_info">{pickerNote}</div></template>
+
+  <!-- Assignee dialog: choose users and permission sets to add -->
+  <template lwc:if={isDialogOpen}><c-ai-agent-wizard-assignee-dialog assignments={draft.assignments} onadd={handleDialogAdd} oncancel={handleDialogCancel}></c-ai-agent-wizard-assignee-dialog></template>
+</template>

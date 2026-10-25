@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Steps 3 and 4 of the AI Agent Wizard: the data sources or workflow actions the agent has, with a picker to add more.</description>
+</LightningComponentBundle>

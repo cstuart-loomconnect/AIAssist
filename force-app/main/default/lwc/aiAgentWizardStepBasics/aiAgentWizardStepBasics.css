@@ -1,0 +1,193 @@
+/* The name boxes sit side by side and wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aiawba-names {
+  gap: 16px;
+}
+
+/* One name box: it shares the row. */
+.aiawba-names > .slds-form-element {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* Help text under a box: muted text. */
+.aiawba-hint {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The small label above the template list: muted text, like the SLDS form labels. */
+.aiawba-label {
+  margin-bottom: 4px;
+  color: var(--aia-ink-soft);
+  font-size: 12px;
+}
+
+/* A tall text box for the persona. SLDS has no utility for a text box height. */
+.aiawba-tall {
+  min-height: 120px;
+}
+
+/* The box of chips: it looks like an SLDS input but holds chips and the search box in a row. */
+.aiawba-chip-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One chip: an accent pill with a remove cross. */
+.aiawba-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: var(--aia-accent-tint);
+  font-weight: 600;
+  color: var(--aia-accent);
+}
+
+/* The cross of a chip: no button look. */
+.aiawba-chip-remove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  color: var(--aia-accent);
+  cursor: pointer;
+}
+
+/* The search box inside the chip box: no border of its own. */
+.aiawba-chip-input {
+  flex: 1 1 160px;
+  min-width: 120px;
+  padding: 4px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+/* The matches of the object search: a bordered list under the chip box. */
+.aiawba-matches {
+  margin-top: 4px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One match: the label and the API name on one row. */
+.aiawba-match {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--aia-line);
+  background: var(--aia-surface);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aiawba-match:last-child {
+  border-bottom: 0;
+}
+
+.aiawba-match:hover {
+  background: var(--aia-accent-tint);
+}
+
+/* The API name box: a code font. */
+.aiawba-code input {
+  font-family: monospace;
+}
+
+/* A note box: a rounded, tinted strip of text. SLDS notify boxes have a different look. */
+.aiawba-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* A problem note: red. */
+.aiawba-note_danger {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* Muted text, for details and help under a field. */
+.aiawba-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawba-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A list of choices in one bordered box. */
+.aiawba-options {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One choice: a radio or checkbox, the text and a pill, with a line under it. */
+.aiawba-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+  cursor: pointer;
+}
+
+.aiawba-option:last-child {
+  border-bottom: 0;
+}
+
+/* The chosen choice: a tinted row. */
+.aiawba-option_selected {
+  background: var(--aia-accent-tint);
+}
+
+/* The name and the detail of a choice sit one above the other and take the room that is left. */
+.aiawba-option-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The radio or checkbox takes the accent colour. */
+.aiawba-option input {
+  accent-color: var(--aia-accent);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawba-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}
+
+/* A green pill: live, active or connected. */
+.aiawba-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}

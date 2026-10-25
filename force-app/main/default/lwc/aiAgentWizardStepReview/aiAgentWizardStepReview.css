@@ -1,0 +1,183 @@
+/* The gap between the parts of a row. SLDS has no 12px gap utility. */
+.aiawre-gap {
+  gap: 12px;
+}
+
+/* The text of a finding takes the room the pill and the button leave. */
+.aiawre-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The box of findings follows the banner closely. */
+.aiawre-box_flush {
+  margin-top: 12px;
+}
+
+/* The summary cards: two columns that wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aiawre-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* One summary card: a bordered box with a soft header. */
+.aiawre-summary {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* One row of a summary card: a muted label and the value. */
+.aiawre-summary-row {
+  padding: 8px 16px;
+  color: var(--aia-ink);
+}
+
+/* The label of a summary row: a fixed width so the values line up. */
+.aiawre-summary-label {
+  min-width: 120px;
+}
+
+/* The inputs of the trial sit in a row that wraps on a narrow screen. The 12px gap is not an SLDS step. */
+.aiawre-try {
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* The message box takes most of the row. */
+.aiawre-try-message {
+  flex: 2 1 280px;
+  min-width: 0;
+}
+
+/* The record picker takes the rest of the row. */
+.aiawre-try-record {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* The line under the trial inputs: a little room above it. */
+.aiawre-note-line {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+/* The reply of the trial: a soft grey box with the text as written. */
+.aiawre-reply {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: var(--aia-bg);
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+/* Muted text, for details and help under a field. */
+.aiawre-muted {
+  color: var(--aia-muted);
+}
+
+/* Bold dark text, for names. */
+.aiawre-strong {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* A link-looking button: accent text with no button look. */
+.aiawre-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aia-accent);
+  cursor: pointer;
+}
+
+/* A bordered box with a soft grey header, used for each group of rows. */
+.aiawre-box {
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header of a box: the title on the left and an action on the right. */
+.aiawre-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* One row of a box: a line under it, except the last. */
+.aiawre-box-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+.aiawre-box-row:last-child {
+  border-bottom: 0;
+}
+
+/* A note box: a rounded, tinted strip of text. SLDS notify boxes have a different look. */
+.aiawre-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 4px;
+}
+
+/* A problem note: red. */
+.aiawre-note_danger {
+  background: var(--aia-danger-tint);
+  border-color: var(--aia-danger);
+  color: var(--aia-danger);
+}
+
+/* A good news note: green. */
+.aiawre-note_success {
+  background: var(--aia-success-tint);
+  border-color: var(--aia-success);
+  color: var(--aia-success);
+}
+
+/* A pill: a small rounded label. SLDS badges have a different size and shape. */
+.aiawre-pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--aia-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+  white-space: nowrap;
+}
+
+/* A green pill: live, active or connected. */
+.aiawre-pill_success {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* An orange pill: something to look at. */
+.aiawre-pill_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* A red pill: something is wrong. */
+.aiawre-pill_danger {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}

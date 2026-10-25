@@ -1,0 +1,81 @@
+<template>
+  <!-- List card: a white card with the title, the search, the segments and the table -->
+  <div class="aiawl-card slds-is-relative">
+    <!-- Busy: shown while the agents are read or changed -->
+    <template lwc:if={isLoading}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Intro: what an agent is, with the button that starts a new one -->
+    <div class="aiawl-top slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+      <p class="aiawl-intro slds-col">{introText}</p>
+      <lightning-button variant="brand" label={labels.createAgent} onclick={handleCreate}></lightning-button>
+    </div>
+
+    <!-- Error: shown when the agents could not be read -->
+    <template lwc:if={hasError}>
+      <div class="aiawl-note slds-m-bottom_medium" role="alert">{errorMessage}</div>
+    </template>
+
+    <template lwc:if={hasRows}>
+      <!-- Toolbar: the search box on the left and the segments on the right -->
+      <div class="aiawl-toolbar slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap">
+        <div class="aiawl-search">
+          <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchTerm} onchange={handleSearchChange}></lightning-input>
+        </div>
+        <div class="aiawl-segments slds-grid" role="group" aria-label={labels.segmentsAria}>
+          <template for:each={segmentViews} for:item="segmentView">
+            <button key={segmentView.value} type="button" class={segmentView.buttonClass} aria-pressed={segmentView.isSelected} data-segment={segmentView.value} onclick={handleSegmentClick}>{segmentView.label}</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Table: one row for each agent, with the hint line under its name -->
+      <template lwc:if={hasVisibleRows}>
+        <div class="aiawl-table-box">
+          <table class="slds-table slds-table_cell-buffer slds-table_fixed-layout">
+            <thead>
+              <tr class="aiawl-head-row">
+                <th scope="col" class="aiawl-col-name">{labels.columnName}</th>
+                <th scope="col" class="aiawl-col-status">{labels.columnStatus}</th>
+                <th scope="col">{labels.columnPages}</th>
+                <th scope="col">{labels.columnModel}</th>
+                <th scope="col" class="aiawl-col-users">{labels.columnUsers}</th>
+                <th scope="col" class="aiawl-col-changed">{labels.columnChanged}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template for:each={visibleRowViews} for:item="rowView">
+                <tr key={rowView.agentId} class="aiawl-row" data-id={rowView.agentId} onclick={handleRowClick}>
+                  <td>
+                    <button type="button" class="aiawl-name-button">{rowView.name}</button>
+                    <template lwc:if={rowView.hasHint}><div class={rowView.hintClass}>{rowView.hintText}</div></template>
+                  </td>
+                  <td><span class={rowView.pillClass}>{rowView.statusLabel}</span></td>
+                  <td class="aiawl-cell-text">{rowView.pagesText}</td>
+                  <td class="aiawl-cell-text">{rowView.modelText}</td>
+                  <td>{rowView.usersText}</td>
+                  <td>{rowView.lastChangedText}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
+      <!-- No match: shown when the segment and the search leave no agent -->
+      <template lwc:else>
+        <p class="aiawl-muted slds-p-vertical_large slds-text-align_center">{labels.noMatch}</p>
+      </template>
+    </template>
+
+    <!-- Empty state: shown when there are no agents at all -->
+    <template lwc:elseif={isEmptyState}>
+      <div class="aiawl-empty slds-text-align_center">
+        <h3 class="aiawl-empty-title slds-m-around_none">{labels.emptyTitle}</h3>
+        <p class="aiawl-muted slds-m-vertical_small">{labels.emptyDetail}</p>
+        <lightning-button variant="brand" label={labels.createAgent} onclick={handleCreate}></lightning-button>
+      </div>
+    </template>
+  </div>
+</template>

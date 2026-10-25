@@ -1,0 +1,52 @@
+<template>
+  <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aiawdi-title" class="slds-modal slds-fade-in-open">
+    <div class="slds-modal__container aiawdi-container">
+      <!-- Title -->
+      <header class="slds-modal__header"><h2 id="aiawdi-title" class="slds-modal__title slds-hyphenate">{labels.title}</h2></header>
+
+      <!-- Content: the type switch, the search box and the matches -->
+      <div class="slds-modal__content slds-p-around_medium aiawdi-content">
+        <!-- Type: add a permission set or a user -->
+        <div class="aiawdi-seg slds-m-bottom_small">
+          <template for:each={typeButtons} for:item="typeButton">
+            <button key={typeButton.value} type="button" class={typeButton.buttonClass} data-value={typeButton.value} onclick={handleTypeClick}>{typeButton.label}</button>
+          </template>
+        </div>
+
+        <!-- Search: type part of a name -->
+        <label class="aiawdi-label" for="aiawdi-search">{searchLabel}</label>
+        <input id="aiawdi-search" type="text" class="slds-input" value={searchText} oninput={handleSearchInput} />
+
+        <!-- Hints: how to start, and that a search is running -->
+        <template lwc:if={isSearching}><p class="aiawdi-muted slds-m-top_x-small slds-m-bottom_none">{labels.searching}</p></template>
+        <template lwc:elseif={showNoMatches}><p class="aiawdi-muted slds-m-top_x-small slds-m-bottom_none">{labels.noMatches}</p></template>
+        <template lwc:elseif={showTypeMore}><p class="aiawdi-muted slds-m-top_x-small slds-m-bottom_none">{labels.typeMore}</p></template>
+
+        <!-- Matches: one checkbox row for each user or permission set -->
+        <template lwc:if={showOptions}>
+          <div class="aiawdi-options slds-m-top_small">
+            <template for:each={optionViews} for:item="option">
+              <label key={option.key} class={option.optionClass}>
+                <input type="checkbox" data-key={option.key} checked={option.isSelected} disabled={option.isAdded} onchange={handleOptionChange} />
+                <span class="aiawdi-option-text"><span class="aiawdi-strong">{option.label}</span><span class="aiawdi-muted slds-text-body_small">{option.detail}</span></span>
+                <template lwc:if={option.isAdded}><span class="aiawdi-pill">{option.addedLabel}</span></template>
+              </label>
+            </template>
+          </div>
+        </template>
+
+        <!-- Error: the reason the search failed -->
+        <template lwc:if={hasError}><p class="aiawdi-note aiawdi-note_danger slds-m-top_small" role="alert">{errorMessage}</p></template>
+      </div>
+
+      <!-- Buttons: Cancel and Add -->
+      <footer class="slds-modal__footer">
+        <lightning-button label={labels.cancel} onclick={handleCancel}></lightning-button>
+        <lightning-button class="slds-m-left_x-small" variant="brand" label={addLabel} onclick={handleAdd} disabled={isAddDisabled}></lightning-button>
+      </footer>
+    </div>
+  </section>
+  <!-- Backdrop: dims the page behind the dialog -->
+  <div class="slds-backdrop slds-backdrop_open"></div>
+</template>
