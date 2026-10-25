@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Instructions__c</fullName>
-    <description>Numbered steps the model follows once it has picked the skill. Tools are named with @ and the name of the data source or workflow action; every @ name must be a tool in the skill before it can be activated.</description>
-    <inlineHelpText>Number the steps in the order tools are called, and say what to do when a tool returns nothing.</inlineHelpText>
+    <description
+  >Numbered steps the model follows once it has picked the skill. Tools are named with @ and the name of the data source or workflow action; every @ name must be a tool in the skill before it can be activated.</description>
+    <inlineHelpText
+  >Number the steps in the order tools are called, and say what to do when a tool returns nothing.</inlineHelpText>
     <label>Instructions</label>
     <length>8000</length>
     <trackHistory>true</trackHistory>

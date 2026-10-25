@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AISkillCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>A bundle of existing data sources and workflow actions with instructions for one job. An agent sees only the skill name and its When To Use It text until the model picks the skill; then the instructions and the skill&apos;s tools are added for the rest of the turn. Built on the AI Tools tab, given to agents in the AI Agent Wizard.</description>
+    <description
+  >A bundle of existing data sources and workflow actions with instructions for one job. An agent sees only the skill name and its When To Use It text until the model picks the skill; then the instructions and the skill&apos;s tools are added for the rest of the turn. Built on the AI Tools tab, given to agents in the AI Agent Wizard.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

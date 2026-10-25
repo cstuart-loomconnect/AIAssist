@@ -143,7 +143,8 @@
     <allowInChatterGroups>false</allowInChatterGroups>
     <compactLayoutAssignment>AIAgentSkillCompact</compactLayoutAssignment>
     <deploymentStatus>Deployed</deploymentStatus>
-    <description>Junction giving a skill to an agent. Written by the Skills step of the AI Agent Wizard. The agent can call the skill&apos;s data sources through it, without them being linked to the agent directly.</description>
+    <description
+  >Junction giving a skill to an agent. Written by the Skills step of the AI Agent Wizard. The agent can call the skill&apos;s data sources through it, without them being linked to the agent directly.</description>
     <enableActivities>false</enableActivities>
     <enableBulkApi>true</enableBulkApi>
     <enableFeeds>false</enableFeeds>

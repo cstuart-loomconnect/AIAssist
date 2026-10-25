@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AISkill__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <description>The skill the model picked to produce this reply. Blank when no skill was used. Shown as the skill chip in chat and used for QA reporting.</description>
+    <description
+  >The skill the model picked to produce this reply. Blank when no skill was used. Shown as the skill chip in chat and used for QA reporting.</description>
     <inlineHelpText>Set by AI Assist when a reply is saved.</inlineHelpText>
     <label>AI Skill</label>
     <referenceTo>AISkill__c</referenceTo>

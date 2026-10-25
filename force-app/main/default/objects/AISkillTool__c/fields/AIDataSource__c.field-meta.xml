@@ -2,8 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AIDataSource__c</fullName>
     <deleteConstraint>Restrict</deleteConstraint>
-    <description>The data source this tool is. Blank when the tool is a workflow action.</description>
-    <inlineHelpText>Pick a data source or a workflow action, not both.</inlineHelpText>
+    <description
+  >The data source this tool is. Blank when the tool is a workflow action.</description>
+    <inlineHelpText
+  >Pick a data source or a workflow action, not both.</inlineHelpText>
     <label>AI Data Source</label>
     <referenceTo>AIDataSource__c</referenceTo>
     <relationshipLabel>AI Skill Tools</relationshipLabel>

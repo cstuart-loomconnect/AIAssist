@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>AISkill__c</fullName>
     <deleteConstraint>Restrict</deleteConstraint>
-    <description>The skill given to the agent. A skill an agent has cannot be deleted.</description>
+    <description
+  >The skill given to the agent. A skill an agent has cannot be deleted.</description>
     <inlineHelpText>Select the skill this agent may use.</inlineHelpText>
     <label>AI Skill</label>
     <referenceTo>AISkill__c</referenceTo>
