@@ -279,6 +279,30 @@
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {
+      "files": "**/lwc/aiToolsSkills/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkillWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepBasics/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepTools/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepInstructions/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepTest/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
       "files": "**/lwc/aiPromptTemplates/*.html",
       "options": { "parser": "lwc", "printWidth": 300 }
     },

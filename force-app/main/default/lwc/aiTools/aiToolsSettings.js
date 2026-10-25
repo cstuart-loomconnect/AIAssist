@@ -20,10 +20,12 @@ Version      Author                   Description
 export const LABELS = {
   title: "AI Tools",
   subtitle: "Skills, data sources and workflow actions that agents can use",
+  skillsTab: "Skills",
   dataSourcesTab: "Data Sources",
   workflowActionsTab: "Workflow Actions"
 };
 
 // The values of the tabs.
+export const TAB_SKILLS = "skills";
 export const TAB_DATA_SOURCES = "dataSources";
 export const TAB_WORKFLOW_ACTIONS = "workflowActions";

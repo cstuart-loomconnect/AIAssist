@@ -1,0 +1,115 @@
+/* The line at the top: muted text. */
+.aitsk-intro {
+  margin: 0 0 12px;
+  color: var(--aia-muted);
+}
+
+/* The agent and record boxes sit side by side and wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aitsk-fields {
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+/* One field: it shares the row. */
+.aitsk-field {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* The banner: a tinted box with bold text. */
+.aitsk-banner {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Passed: green. */
+.aitsk-banner_passed {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* Not picked: orange. */
+.aitsk-banner_warning {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* Failed: red. */
+.aitsk-banner_failed {
+  background: var(--aia-danger-tint);
+  color: var(--aia-danger);
+}
+
+/* The timings under the banner: small muted text. */
+.aitsk-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* A section title: dark bold text with room above. */
+.aitsk-section-title {
+  margin: 16px 0 6px;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The reply: a soft box that keeps the model's line breaks. */
+.aitsk-reply {
+  padding: 12px 14px;
+  border: 1px solid var(--aia-line);
+  border-radius: 6px;
+  background: var(--aia-surface-soft);
+  white-space: pre-wrap;
+}
+
+/* The suggested action: an accent tinted line. */
+.aitsk-suggested {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The steps: no numbers, one line each. */
+.aitsk-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One step: a line under it and gaps between its parts. */
+.aitsk-step-row {
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The tick or cross of a step. */
+.aitsk-step-mark {
+  flex: 0 0 16px;
+  font-weight: 700;
+}
+
+.aitsk-step-mark_ok {
+  color: var(--aia-success);
+}
+
+.aitsk-step-mark_failed {
+  color: var(--aia-danger);
+}
+
+/* The kind of step: a fixed width so the details line up. */
+.aitsk-step-type {
+  flex: 0 0 130px;
+  font-weight: 600;
+  color: var(--aia-ink-soft);
+}
+
+/* The detail of a step: muted text. */
+.aitsk-step-detail {
+  color: var(--aia-muted);
+}

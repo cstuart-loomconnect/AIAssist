@@ -1,0 +1,25 @@
+<template>
+  <!-- Names: the name the admins see and the API name the model picks the skill by -->
+  <div class="slds-grid slds-wrap aitsk-names">
+    <div class="aitsk-name"><lightning-input label={labels.name} required max-length={nameMaxLength} value={draft.skillName} onchange={handleNameChange}></lightning-input></div>
+    <div class="aitsk-name aitsk-code"><lightning-input label={labels.apiName} required max-length={apiNameMaxLength} value={draft.developerName} field-level-help={labels.apiNameHelp} disabled={isApiNameLocked} onchange={handleApiNameChange}></lightning-input></div>
+  </div>
+
+  <!-- When To Use It: the only text the model sees before it picks the skill, with a counter -->
+  <lightning-textarea label={labels.description} required max-length={descriptionMaxLength} value={draft.description} onchange={handleDescriptionChange}></lightning-textarea>
+  <div class="slds-grid slds-grid_align-spread aitsk-under">
+    <p class="aitsk-help">{labels.descriptionHelp}</p>
+    <span class={counterView.counterClass}>{counterView.text}</span>
+  </div>
+
+  <!-- Output: what the skill produces, or a note when Apex sets it from a write action -->
+  <template lwc:if={isRecordChange}><div class="aitsk-note">{labels.recordChangeNote}</div></template>
+  <template lwc:else><lightning-radio-group label={labels.output} options={outputOptions} value={draft.outputType} type="button" onchange={handleOutputChange}></lightning-radio-group></template>
+
+  <!-- Active: whether agents that have the skill can use it -->
+  <div class="slds-grid slds-grid_vertical-align-center aitsk-active">
+    <lightning-input type="toggle" variant="label-hidden" label={labels.active} checked={draft.isActive} message-toggle-active="" message-toggle-inactive="" onchange={handleActiveChange}></lightning-input>
+    <strong class="aitsk-active-label">{labels.active}</strong>
+    <span class="aitsk-help aitsk-help_inline">{labels.activeHelp}</span>
+  </div>
+</template>

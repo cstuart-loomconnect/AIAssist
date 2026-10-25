@@ -1,0 +1,74 @@
+<template>
+  <!-- Panel: the list, or the wizard in place of it -->
+  <div class="slds-is-relative slds-p-vertical_small">
+    <!-- List: shown until the admin starts or opens a skill -->
+    <template lwc:if={isListView}>
+      <!-- Busy: shown while the list loads again over rows already shown -->
+      <template lwc:if={showRefreshSpinner}>
+        <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+      </template>
+
+      <!-- Top row: what a skill is, and the button that starts a new one -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aitsk-top">
+        <p class="aitsk-intro slds-col">{labels.intro}</p>
+        <lightning-button variant="brand" label={labels.newSkill} onclick={handleNewSkill}></lightning-button>
+      </div>
+
+      <!-- Tools row: the search box on the left and the filter buttons on the right -->
+      <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aitsk-tools">
+        <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchText} onchange={handleSearchChange} class="aitsk-search"></lightning-input>
+        <div class="aitsk-filters slds-grid">
+          <template for:each={filterViews} for:item="filter">
+            <button key={filter.key} type="button" class={filter.buttonClass} data-key={filter.key} onclick={handleFilterClick}>{filter.label}</button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Table: one row for each skill -->
+      <div class="aitsk-table-wrap">
+        <table class="aitsk-table slds-table slds-table_cell-buffer">
+          <thead>
+            <tr>
+              <th scope="col">{labels.columnSkill}</th>
+              <th scope="col">{labels.columnTools}</th>
+              <th scope="col">{labels.columnOutput}</th>
+              <th scope="col">{labels.columnRecord}</th>
+              <th scope="col">{labels.columnAgents}</th>
+              <th scope="col">{labels.columnTested}</th>
+              <th scope="col">{labels.columnStatus}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template for:each={rowViews} for:item="row">
+              <tr key={row.key} class="aitsk-row" data-id={row.key} onclick={handleRowClick}>
+                <td class="aitsk-name">{row.skillName}<span class="aitsk-when" title={row.description}>{row.description}</span></td>
+                <td>{row.toolsLabel}</td>
+                <td>{row.outputLabel}</td>
+                <td>{row.recordLabel}</td>
+                <td>{row.agentCount}</td>
+                <td><span class={row.testedClass}>{row.testedLabel}</span><span class="aitsk-date">{row.testedDate}</span></td>
+                <td><span class={row.statusClass}>{row.statusLabel}</span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        <!-- First load: a spinner and the words, so an empty table is not mistaken for no skills -->
+        <template lwc:if={showLoading}>
+          <div class="aitsk-loading slds-is-relative">
+            <lightning-spinner size="medium" alternative-text={labels.loading}></lightning-spinner>
+            <p class="aitsk-loading-text">{labels.loading}</p>
+          </div>
+        </template>
+
+        <!-- No skills: shown when the load is done and nothing matches -->
+        <template lwc:if={showNoSkills}><p class="aitsk-empty slds-p-around_medium">{labels.noSkills}</p></template>
+      </div>
+    </template>
+
+    <!-- Wizard: builds a new skill, or changes the one that was clicked -->
+    <template lwc:if={isWizardView}>
+      <c-ai-tools-skill-wizard skill-id={editSkillId} onclose={handleWizardClose}></c-ai-tools-skill-wizard>
+    </template>
+  </div>
+</template>

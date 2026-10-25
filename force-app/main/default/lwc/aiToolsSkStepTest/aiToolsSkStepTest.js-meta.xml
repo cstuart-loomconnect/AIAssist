@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>67.0</apiVersion>
+    <isExposed>false</isExposed>
+    <description
+  >Step 4 of the skill wizard: ask an agent's model one question with the skill offered on its own, and see whether it picks the skill and what each step did.</description>
+</LightningComponentBundle>

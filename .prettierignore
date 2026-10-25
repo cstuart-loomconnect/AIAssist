@@ -80,6 +80,12 @@ force-app/main/default/lwc/aiToolsWaStepTest/*.js
 force-app/main/default/lwc/aiToolsWaStepType/*.js
 force-app/main/default/lwc/aiToolsWaWizard/*.js
 force-app/main/default/lwc/aiToolsWorkflowActions/*.js
+force-app/main/default/lwc/aiToolsSkills/*.js
+force-app/main/default/lwc/aiToolsSkillWizard/*.js
+force-app/main/default/lwc/aiToolsSkStepBasics/*.js
+force-app/main/default/lwc/aiToolsSkStepTools/*.js
+force-app/main/default/lwc/aiToolsSkStepInstructions/*.js
+force-app/main/default/lwc/aiToolsSkStepTest/*.js
 force-app/main/default/lwc/aiPromptTemplates/*.js
 force-app/main/default/lwc/aiPromptTemplatesList/*.js
 force-app/main/default/lwc/aiPromptTemplatesDetail/*.js

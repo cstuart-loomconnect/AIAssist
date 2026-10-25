@@ -1,0 +1,148 @@
+/* The wizard box: a white card with a rounded border. SLDS has no utility for a bordered card in this colour. */
+.aitsk-wizard {
+  overflow: hidden;
+  background: var(--aia-surface);
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+}
+
+/* The header band: dark ink with a white title. The padding is not an SLDS step. */
+.aitsk-head {
+  padding: 14px 24px;
+  background: var(--aia-ink);
+  color: var(--aia-surface);
+}
+
+/* The skill name in the header: white and bold. */
+.aitsk-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--aia-surface);
+}
+
+/* The text on the right of the header: soft white. */
+.aitsk-status {
+  font-size: 13px;
+  color: var(--aia-surface);
+}
+
+/* The pills beside the title: small rounded labels. SLDS badges have a different size and shape. */
+.aitsk-pill {
+  margin-left: 10px;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The Draft pill: orange. */
+.aitsk-pill_draft {
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The type pill: accent colour. */
+.aitsk-pill_type {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* The stepper: the steps in a row on a soft grey bar with a line under it. */
+.aitsk-stepper {
+  padding: 14px 24px;
+  background: var(--aia-surface);
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* One step and the line that follows it: the lines share the space left over. */
+.aitsk-step-wrap {
+  flex: 1 1 auto;
+}
+
+/* The last step has no line after it, so it does not grow. */
+.aitsk-step-wrap:last-child {
+  flex: 0 0 auto;
+}
+
+/* One step: a round marker and a label, with no button look. */
+.aitsk-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* A step that cannot be reached yet: faded, with no hand. */
+.aitsk-step:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* The round marker: an outlined circle with the number inside. */
+.aitsk-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 50%;
+  background: var(--aia-surface);
+  font-size: 13px;
+}
+
+/* The step the admin is on: an accent circle with white text, and an accent label. */
+.aitsk-step_current {
+  color: var(--aia-accent);
+}
+
+.aitsk-step_current .aitsk-marker {
+  border-color: var(--aia-accent);
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A finished step: a green circle with a tick. */
+.aitsk-step_done .aitsk-marker {
+  border-color: var(--aia-success);
+  background: var(--aia-success);
+  color: var(--aia-surface);
+}
+
+/* A step with a problem: a red circle with an exclamation mark. */
+.aitsk-step_error {
+  color: var(--aia-ink-soft);
+}
+
+.aitsk-step_error .aitsk-marker {
+  border-color: var(--aia-danger);
+  background: var(--aia-danger);
+  color: var(--aia-surface);
+}
+
+/* The line between two steps: a thin grey rule that fills the gap. */
+.aitsk-line {
+  flex: 1 1 auto;
+  height: 1px;
+  margin: 0 12px;
+  background: var(--aia-line-strong);
+}
+
+/* The step area: room around whatever the step shows. */
+.aitsk-body {
+  padding: 20px 24px;
+}
+
+/* The footer: a soft grey bar with a line above it. */
+.aitsk-foot {
+  padding: 14px 24px;
+  background: var(--aia-surface-soft);
+  border-top: 1px solid var(--aia-line);
+}
