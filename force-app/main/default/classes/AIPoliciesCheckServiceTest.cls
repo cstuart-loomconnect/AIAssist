@@ -172,7 +172,7 @@ Version      Author                   Description
             // [1] Create a user who holds only the end user permission set
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
-            Id missingId = User.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = User.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String missingRefusal;
             String accessRefusal;
 

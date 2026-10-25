@@ -106,7 +106,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of a registry that was never saved
-            Id missingId = AIPIIRegistry__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIPIIRegistry__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String refusal;
 
             // [2] Ask for its pane

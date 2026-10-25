@@ -224,7 +224,7 @@ Version      Author                   Description
             insert policy;
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIPoliciesAssignmentService.addAssignment(policy.Id, AIAssistApplicationConstants.ASSIGNEE_TYPE_USER, users[0].Id);
-            Id missingId = AIUsagePolicy__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIUsagePolicy__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String duplicate;
             String missingSet;
             String blankSet;

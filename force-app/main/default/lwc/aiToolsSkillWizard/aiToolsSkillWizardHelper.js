@@ -60,9 +60,9 @@ export function isDescriptionLengthValid(description) {
 
   // [1] Count the characters the trigger counts
   const descriptionLength = (description || NO_TEXT).trim().length;
-  const isDescriptionLengthValid = descriptionLength >= DESCRIPTION_MIN_LENGTH && descriptionLength <= DESCRIPTION_MAX_LENGTH;
+  const isLengthValid = descriptionLength >= DESCRIPTION_MIN_LENGTH && descriptionLength <= DESCRIPTION_MAX_LENGTH;
 
-  return isDescriptionLengthValid;
+  return isLengthValid;
 }
 
 // True when the step holds everything it needs to go on.
@@ -85,9 +85,9 @@ export function isStepValid(draft, stepNumber) {
 export function hasStepProblem(draft, stepNumber, currentStep) {
 
   // [1] Only a step already passed can show a problem
-  const hasStepProblem = stepNumber < currentStep && !isStepValid(draft, stepNumber);
+  const isProblem = stepNumber < currentStep && !isStepValid(draft, stepNumber);
 
-  return hasStepProblem;
+  return isProblem;
 }
 
 // Builds the stepper: one view for each step with its class, marker and whether it can be clicked.

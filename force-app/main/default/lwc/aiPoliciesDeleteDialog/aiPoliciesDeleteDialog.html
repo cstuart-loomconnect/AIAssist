@@ -1,18 +1,10 @@
 <template>
   <!-- Dialog: a box in the middle of the page over a dimmed backdrop -->
-  <section
-    role="dialog"
-    tabindex="-1"
-    aria-modal="true"
-    aria-labelledby="aipdd-title"
-    class="slds-modal slds-fade-in-open"
-  >
+  <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="aipdd-title" class="slds-modal slds-fade-in-open">
     <div class="slds-modal__container aipdd-container">
       <!-- Title: asks whether to delete the policy -->
       <header class="slds-modal__header">
-        <h2 id="aipdd-title" class="slds-modal__title slds-hyphenate">
-          {title}
-        </h2>
+        <h2 id="aipdd-title" class="slds-modal__title slds-hyphenate">{title}</h2>
       </header>
 
       <!-- Content: who is affected, where they move to, and a note about usage -->
@@ -20,125 +12,55 @@
         <!-- Loading: shown until Apex says who the policy covers -->
         <template lwc:if={isLoading}>
           <div class="slds-is-relative slds-p-around_large">
-            <lightning-spinner
-              size="small"
-              alternative-text={labels.loading}
-            ></lightning-spinner>
+            <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
           </div>
         </template>
 
         <template lwc:else>
           <!-- Message: who the policy is assigned to -->
           <template lwc:if={messageParts.hasPeople}
-            ><p class="slds-m-bottom_small">
-              <strong>{messageParts.policyName}</strong
-              >{messageParts.beforeCount}<strong>{messageParts.countText}</strong>{messageParts.afterCount}
-            </p></template
+            ><p class="slds-m-bottom_small"><strong>{messageParts.policyName}</strong>{messageParts.beforeCount}<strong>{messageParts.countText}</strong>{messageParts.afterCount}</p></template
           >
           <template lwc:else
-            ><p class="slds-m-bottom_small">
-              <strong>{messageParts.policyName}</strong
-              >{messageParts.noPeopleText}
-            </p></template
+            ><p class="slds-m-bottom_small"><strong>{messageParts.policyName}</strong>{messageParts.noPeopleText}</p></template
           >
 
           <!-- Choices: move the people to the default policy, or to another policy -->
           <template lwc:if={showChoices}>
             <div class="aipdd-choices slds-m-bottom_small">
               <template lwc:if={hasDefaultPolicy}>
-                <label class="aipdd-choice"
-                  ><input
-                    type="radio"
-                    name="aipdd-move"
-                    value={defaultMode}
-                    checked={isDefaultMode}
-                    onchange={handleModeChange}
-                  /><span>{defaultChoiceLabel}</span></label
-                >
+                <label class="aipdd-choice"><input type="radio" name="aipdd-move" value={defaultMode} checked={isDefaultMode} onchange={handleModeChange} /><span>{defaultChoiceLabel}</span></label>
               </template>
-              <label class="aipdd-choice"
-                ><input
-                  type="radio"
-                  name="aipdd-move"
-                  value={otherMode}
-                  checked={isOtherMode}
-                  onchange={handleModeChange}
-                /><span>{labels.moveToOther}</span></label
-              >
+              <label class="aipdd-choice"><input type="radio" name="aipdd-move" value={otherMode} checked={isOtherMode} onchange={handleModeChange} /><span>{labels.moveToOther}</span></label>
               <!-- Other policy: the policies the people can move to -->
               <template lwc:if={isOtherMode}>
-                <select
-                  class="slds-select aipdd-select"
-                  aria-label={labels.moveToOther}
-                  onchange={handleOtherPolicyChange}
-                >
+                <select class="slds-select aipdd-select" aria-label={labels.moveToOther} onchange={handleOtherPolicyChange}>
                   <option value="">{labels.chooseAPolicy}</option>
                   <template for:each={policyChoices} for:item="choice">
-                    <option
-                      key={choice.value}
-                      value={choice.value}
-                      selected={choice.isSelected}
-                    >
-                      {choice.label}
-                    </option>
+                    <option key={choice.value} value={choice.value} selected={choice.isSelected}>{choice.label}</option>
                   </template>
                 </select>
               </template>
             </div>
-            <p class="aipdd-note aipdd-note_info slds-p-around_small">
-              {labels.openUsage}
-            </p>
+            <p class="aipdd-note aipdd-note_info slds-p-around_small">{labels.openUsage}</p>
           </template>
 
           <!-- No other policy: shown when the people have nowhere to go -->
-          <template lwc:if={hasNoOtherPolicy}
-            ><p
-              class="aipdd-note aipdd-note_blocked slds-m-top_small slds-p-around_small"
-            >
-              {labels.noOtherPolicy}
-            </p></template
-          >
+          <template lwc:if={hasNoOtherPolicy}><p class="aipdd-note aipdd-note_blocked slds-m-top_small slds-p-around_small">{labels.noOtherPolicy}</p></template>
 
           <!-- Default policy: shown when the policy is the default, which cannot be deleted -->
-          <template lwc:if={isDefaultPolicy}
-            ><p class="aipdd-note aipdd-note_blocked slds-p-around_small">
-              {labels.defaultCannotBeDeleted}
-            </p></template
-          >
-          <template lwc:else
-            ><p
-              class="aipdd-muted slds-text-body_small slds-m-top_small slds-m-bottom_none"
-            >
-              {labels.defaultCannotBeDeleted}
-            </p></template
-          >
+          <template lwc:if={isDefaultPolicy}><p class="aipdd-note aipdd-note_blocked slds-p-around_small">{labels.defaultCannotBeDeleted}</p></template>
+          <template lwc:else><p class="aipdd-muted slds-text-body_small slds-m-top_small slds-m-bottom_none">{labels.defaultCannotBeDeleted}</p></template>
         </template>
 
         <!-- Error: the reason the dialog could not load or the delete was refused -->
-        <template lwc:if={hasError}
-          ><p
-            class="aipdd-note aipdd-note_blocked slds-m-top_small slds-p-around_small"
-            role="alert"
-          >
-            {shownError}
-          </p></template
-        >
+        <template lwc:if={hasError}><p class="aipdd-note aipdd-note_blocked slds-m-top_small slds-p-around_small" role="alert">{shownError}</p></template>
       </div>
 
       <!-- Buttons: Cancel and the delete button -->
       <footer class="slds-modal__footer">
-        <lightning-button
-          label={labels.cancel}
-          onclick={handleCancel}
-          disabled={isSaving}
-        ></lightning-button>
-        <lightning-button
-          variant="destructive"
-          label={confirmLabel}
-          onclick={handleConfirm}
-          disabled={isConfirmDisabled}
-          class="slds-m-left_x-small"
-        ></lightning-button>
+        <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+        <lightning-button variant="destructive" label={confirmLabel} onclick={handleConfirm} disabled={isConfirmDisabled} class="slds-m-left_x-small"></lightning-button>
       </footer>
     </div>
   </section>

@@ -290,7 +290,7 @@ Version      Author                   Description
             AIUsagePolicy__c withPeople = new AIUsagePolicy__c(Name = 'With people', IsActive__c = true);
             insert withPeople;
             insert new AIUsagePolicyAssignment__c(AIUsagePolicy__c = withPeople.Id, AssigneeType__c = AIAssistApplicationConstants.ASSIGNEE_TYPE_USER, User__c = superUser.Id, IsActive__c = true);
-            Id missingId = AIUsagePolicy__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIUsagePolicy__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             String defaultRefusal;
             String noTargetRefusal;
             String sameTargetRefusal;

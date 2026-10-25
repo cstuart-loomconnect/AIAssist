@@ -42,6 +42,8 @@ Version      Author                   Description
             // [1] Create two data sources that read Case and one that reads EmailMessage
             List<AIDataSource__c> caseSources = AIAssistTestDataFactory.createAIDataSources(2, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, SELECT_CASE, false);
             caseSources[0].TargetObject__c = 'Case';
+            caseSources[0].SourceName__c = 'AI Assist Test Case Source A';
+            caseSources[1].SourceName__c = 'AI Assist Test Case Source B';
             caseSources[1].TargetObject__c = 'Case';
             caseSources[1].SOQLTemplate__c = 'SELECT Id, Subject, Description FROM Case LIMIT 5';
             List<AIDataSource__c> emailSources = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT FromAddress FROM EmailMessage LIMIT 5', false);

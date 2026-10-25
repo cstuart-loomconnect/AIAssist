@@ -3,7 +3,8 @@
     <fullName>ActiveRequiresInstructions</fullName>
     <active>true</active>
     <description>An active skill must have instructions.</description>
-    <errorConditionFormula>AND(IsActive__c, ISBLANK(Instructions__c))</errorConditionFormula>
+    <errorConditionFormula
+  >AND(IsActive__c, ISBLANK(Instructions__c))</errorConditionFormula>
     <errorDisplayField>Instructions__c</errorDisplayField>
     <errorMessage>Add instructions before activating the skill.</errorMessage>
 </ValidationRule>

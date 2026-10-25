@@ -2,9 +2,11 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>DeveloperName__c</fullName>
     <caseSensitive>false</caseSensitive>
-    <description>The API name of the skill. The model picks a skill by this name, so it is unique and never changes once agents use it.</description>
+    <description
+  >The API name of the skill. The model picks a skill by this name, so it is unique and never changes once agents use it.</description>
     <externalId>true</externalId>
-    <inlineHelpText>Letters, numbers and underscores, starting with a letter.</inlineHelpText>
+    <inlineHelpText
+  >Letters, numbers and underscores, starting with a letter.</inlineHelpText>
     <label>Developer Name</label>
     <length>75</length>
     <required>true</required>

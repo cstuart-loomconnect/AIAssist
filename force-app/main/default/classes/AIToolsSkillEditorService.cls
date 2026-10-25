@@ -199,7 +199,7 @@ public without sharing class AIToolsSkillEditorService {
         try {
 
             // [6] Save the skill
-            upsert skill;
+            Database.upsert(skill, AccessLevel.SYSTEM_MODE);
 
             // [7] Remove the tools taken out, renumber the ones kept and add the new ones
             Map<Id, AISkillTool__c> existingToolByRecordId = new Map<Id, AISkillTool__c>();
@@ -225,11 +225,11 @@ public without sharing class AIToolsSkillEditorService {
                 toolsToSave.add(skillTool);
             }
 
-            if (!toolsToDelete.isEmpty()) delete toolsToDelete;
-            if (!toolsToSave.isEmpty()) upsert toolsToSave;
+            if (!toolsToDelete.isEmpty()) Database.delete(toolsToDelete, AccessLevel.SYSTEM_MODE);
+            if (!toolsToSave.isEmpty()) Database.upsert(toolsToSave, AccessLevel.SYSTEM_MODE);
 
             // [8] Switch the skill on last, so the trigger checks it with its final tools
-            if (detail.isActive == true) update new AISkill__c(Id = skill.Id, IsActive__c = true);
+            if (detail.isActive == true) Database.update(new AISkill__c(Id = skill.Id, IsActive__c = true), AccessLevel.SYSTEM_MODE);
 
         } catch (DmlException ex) {
 

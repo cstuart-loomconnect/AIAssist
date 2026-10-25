@@ -2,7 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>UniqueKey__c</fullName>
     <caseSensitive>false</caseSensitive>
-    <description>The skill Id and the tool Id, set by the trigger, so a tool can be in a skill only once.</description>
+    <description
+  >The skill Id and the tool Id, set by the trigger, so a tool can be in a skill only once.</description>
     <externalId>false</externalId>
     <inlineHelpText>Set automatically. Do not edit.</inlineHelpText>
     <label>Unique Key</label>
