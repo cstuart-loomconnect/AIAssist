@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Develop and test · AI Assist</title>
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body data-root="../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../" class="">Home</a><a href="../architecture/" class="">Architecture</a><a href="../data-model/" class="">Data model</a><a href="../interface/" class="">User interface</a><a href="../security/" class="">Security</a><a href="../develop/" class="current">Develop and test</a></nav>
+      <main><div class="crumbs"><a href="../">Home</a></div> <h1>Develop and test</h1>
+
+<pre><code>sf org create scratch -f config/project-scratch-def.json -a ai_assist
+sf project deploy start
+sf org assign permset -n AIAssistAdminUser
+sf apex run test --test-level RunLocalTests --wait 30</code></pre>
+
+<h2>Update these docs</h2>
+<p>
+  The data model pages are generated from the object metadata. After changing
+  objects or fields, run:
+</p>
+<pre><code>npm run docs:build    # regenerates site/
+npm run docs:serve    # preview at http://localhost:8080</code></pre>
+
+<p>Where things live:</p>
+<ul>
+  <li>
+    <code>scripts/docs/pages/</code> - the text of the Home, Architecture,
+    Security and Develop pages (plain HTML).
+  </li>
+  <li>
+    <code>scripts/docs/content/navigation.mjs</code> - the list of screens shown
+    under User interface.
+  </li>
+  <li>
+    <code>scripts/docs/templates/</code> - the page layout and the screen page
+    template.
+  </li>
+  <li><code>site/</code> - the generated output. Do not edit it by hand.</li>
+</ul>
+<p>Pushing to master publishes the site through GitHub Pages.</p>
+
+<h2>Project notes</h2>
+<ul>
+  <li>
+    <a
+      href="https://github.com/cstuart-loomconnect/AIAssist/blob/master/docs/known-issues.txt"
+      >Known issues</a
+    >
+  </li>
+  <li>
+    <a href="https://github.com/cstuart-loomconnect/AIAssist/tree/master/docs"
+      >Review checklists and code patterns</a
+    >
+  </li>
+</ul>
+ <div class="pager"><a href="../security/">← Security</a></div></main>
+    </div>
+    <script type="module" src="../assets/js/site.js"></script>
+  </body>
+</html>

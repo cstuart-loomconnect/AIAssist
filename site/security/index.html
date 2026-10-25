@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security · AI Assist</title>
+    <link rel="stylesheet" href="../assets/css/site.css" />
+  </head>
+  <body data-root="../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../" class="">Home</a><a href="../architecture/" class="">Architecture</a><a href="../data-model/" class="">Data model</a><a href="../interface/" class="">User interface</a><a href="../security/" class="current">Security</a><a href="../develop/" class="">Develop and test</a></nav>
+      <main><div class="crumbs"><a href="../">Home</a></div> <h1>Security</h1>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Permission set</th>
+        <th>For</th>
+        <th>Grants</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>AIAssistUser</code></td>
+        <td>Everyone who chats</td>
+        <td>Use the chat window and own conversations.</td>
+      </tr>
+      <tr>
+        <td><code>AIAssistSuperUser</code></td>
+        <td>Power users and support</td>
+        <td>User access plus review of logs, usage and conversations.</td>
+      </tr>
+      <tr>
+        <td><code>AIAssistAdminUser</code></td>
+        <td>Administrators</td>
+        <td>
+          Configure agents, models, templates, tools, policies, the PII registry
+          and settings.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Rules</h2>
+<ul>
+  <li>
+    <b>Conversations are private.</b> Their sharing model is Private; sharing
+    goes through <code>AIConversationShareService</code>.
+  </li>
+  <li>
+    <b>Agent access.</b> <em>Assigned Users Only</em> (default) limits an agent
+    to users on its Agent Assignments; <em>All AI Assist Users</em> opens it to
+    everyone with the user permission set.
+  </li>
+  <li>
+    <b>Child records follow their parent.</b> Messages, assignments, junctions
+    and PII child objects are Controlled by Parent.
+  </li>
+  <li><b>PII masking</b> happens before any text is sent to a provider.</li>
+</ul>
+
+<h2>Sharing by object</h2>
+<div class="table-wrap"><table><thead><tr><th>Object</th><th>Sharing</th></tr></thead><tbody><tr><td><a href="../data-model/agent-configuration/#AIAgentAssignment__c">AI Agent Assignment</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/agent-configuration/#AIAgentDataSource__c">AI Agent Data Source</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/agent-configuration/#AIAgentWorkflowAction__c">AI Agent Workflow Action</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/agent-configuration/#AIAgent__c">AI Agent</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/conversations/#AIConversationMessage__c">AI Conversation Message</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/conversations/#AIConversation__c">AI Conversation</a></td><td>Private</td></tr><tr><td><a href="../data-model/agent-configuration/#AIDataSource__c">AI Data Source</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/conversations/#AIFeedback__c">AI Feedback</a></td><td>Private</td></tr><tr><td><a href="../data-model/agent-configuration/#AIModelConfiguration__c">AI Model Configuration</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/pii-protection/#AIPIIFieldMetadata__c">AI PII Field Metadata</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/pii-protection/#AIPIIMapping__c">AI PII Mapping</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/pii-protection/#AIPIIMaskingRecord__c">AI PII Masking Record</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/pii-protection/#AIPIIRegistry__c">AI PII Registry</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/settings-and-logging/#AIPlatformLog__c">AI Platform Log</a></td><td>Private</td></tr><tr><td><a href="../data-model/agent-configuration/#AIPromptTemplate__c">AI Prompt Template</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/agent-configuration/#AIPromptTestMessage__c">AI Prompt Test Message</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/conversations/#AITermsAcknowledgment__c">AI Terms Acknowledgment</a></td><td>Private</td></tr><tr><td><a href="../data-model/usage-and-policies/#AIUsagePolicyAssignment__c">AI Usage Policy Assignment</a></td><td>ControlledByParent</td></tr><tr><td><a href="../data-model/usage-and-policies/#AIUsagePolicy__c">AI Usage Policy</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/usage-and-policies/#AIUsage__c">AI Usage</a></td><td>ReadWrite</td></tr><tr><td><a href="../data-model/agent-configuration/#AIWorkflowAction__c">AI Workflow Action</a></td><td>ReadWrite</td></tr></tbody></table></div>
+ <div class="pager"><a href="../interface/settings/">← AI Assist Settings</a><a href="../develop/">Develop and test →</a></div></main>
+    </div>
+    <script type="module" src="../assets/js/site.js"></script>
+  </body>
+</html>

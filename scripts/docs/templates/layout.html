@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{title}} · AI Assist</title>
+    <link rel="stylesheet" href="{{rel}}assets/css/site.css" />
+  </head>
+  <body data-root="{{rel}}">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="{{rel}}">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections">{{nav}}</nav>
+      <main>{{crumbs}} {{body}} {{pager}}</main>
+    </div>
+    <script type="module" src="{{rel}}assets/js/site.js"></script>
+  </body>
+</html>

@@ -105,3 +105,5 @@ force-app/main/default/lwc/aiPiiRegistryFields/*.js
 force-app/main/default/lwc/aiPiiRegistryTest/*.js
 force-app/main/default/lwc/aiPiiRegistryAddDialog/*.js
 force-app/main/default/lwc/aiPiiRegistryUnprotected/*.js
+
+site/

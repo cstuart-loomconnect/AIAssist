@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Usage and policies · AI Assist</title>
+    <link rel="stylesheet" href="../../assets/css/site.css" />
+  </head>
+  <body data-root="../../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub current">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub ">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
+<h1>Usage and policies</h1>
+<p class="lead">Limits live on policies, assigned to users; consumption is counted one row per user per day.</p>
+<div class="diagram"><pre class="mermaid">erDiagram
+  AIUsagePolicy ||--o{ AIUsagePolicyAssignment : "AIUsagePolicy"
+  AIUsagePolicy {
+    string Name
+  }
+  AIUsagePolicyAssignment {
+    string AIUsagePolicy FK
+    string AssigneeType
+    string User FK
+  }</pre></div>
+<h2>Objects</h2>
+<div class="table-wrap"><table><thead><tr><th>Object</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="#AIUsagePolicyAssignment__c">AI Usage Policy Assignment</a></td><td>Assigns a usage policy to a user.</td></tr><tr><td><a href="#AIUsagePolicy__c">AI Usage Policy</a></td><td>Limits (messages, tokens) applied to the users it is assigned to.</td></tr><tr><td><a href="#AIUsage__c">AI Usage</a></td><td>Daily consumption for one user: one row per user per day.</td></tr></tbody></table></div>
+<h2>Field reference</h2>
+
+<details class="obj" id="AIUsagePolicyAssignment__c">
+  <summary>
+    <b>AI Usage Policy Assignment</b> <code>AIUsagePolicyAssignment__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">5 fields</span>
+  </summary>
+  <div class="body">
+    <p>Assigns a usage policy to a user.</p>
+    <p><b>Relationships:</b> AI Usage Policy → AI Usage Policy (master-detail); User → User (lookup)</p>
+    <p><b>Validation rules:</b> <code>AssigneeMatchesType</code> <code>PermissionSetNameFormat</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Usage Policy</td><td><code>AIUsagePolicy__c</code></td><td>MasterDetail → AIUsagePolicy</td><td>required · The usage policy this assignment applies.</td></tr><tr><td>Assignee Type</td><td><code>AssigneeType__c</code></td><td>Picklist</td><td>required · values: User, Permission Set</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Permission Set Name</td><td><code>PermissionSetName__c</code></td><td>Text</td><td></td></tr><tr><td>User</td><td><code>User__c</code></td><td>Lookup → User</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIUsagePolicy__c">
+  <summary>
+    <b>AI Usage Policy</b> <code>AIUsagePolicy__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">13 fields</span>
+  </summary>
+  <div class="body">
+    <p>Limits (messages, tokens) applied to the users it is assigned to.</p>
+    
+    <p><b>Validation rules:</b> <code>LimitsMustBePositive</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Allowed Channels</td><td><code>AllowedChannels__c</code></td><td>MultiselectPicklist</td><td></td></tr><tr><td>Conversation Export Enabled</td><td><code>ConversationExportEnabled__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Conversation Visibility Scope</td><td><code>ConversationVisibilityScope__c</code></td><td>Picklist</td><td>values: My Conversations Only, My Subordinates Conversations, All Conversations</td></tr><tr><td>Debug Mode Enabled</td><td><code>DebugModeEnabled__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>Text</td><td>What this policy is for and who it is meant for.</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Is Default</td><td><code>IsDefault__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Is User Initiated Chat Enabled</td><td><code>IsUserInitiatedChatEnabled__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Max Concurrent Conversations</td><td><code>MaxConcurrentConversations__c</code></td><td>Number</td><td></td></tr><tr><td>Max Conversations Per Day</td><td><code>MaxConversationsPer24Hours__c</code></td><td>Number</td><td></td></tr><tr><td>Max Tokens Per Day</td><td><code>MaxTokensPer24Hours__c</code></td><td>Number</td><td></td></tr><tr><td>Should Capture Execution Steps</td><td><code>ShouldCaptureExecutionSteps__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Usage Limit Reached Behavior</td><td><code>UsageLimitReachedBehavior__c</code></td><td>Picklist</td><td>values: Block New Messages, Block New Conversations Only, Notify Only</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIUsage__c">
+  <summary>
+    <b>AI Usage</b> <code>AIUsage__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">6 fields</span>
+  </summary>
+  <div class="body">
+    <p>Daily consumption for one user: one row per user per day.</p>
+    <p><b>Relationships:</b> User → User (lookup)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Conversations Started</td><td><code>ConversationsStarted__c</code></td><td>Number</td><td></td></tr><tr><td>Input Tokens</td><td><code>InputTokens__c</code></td><td>Number</td><td></td></tr><tr><td>Output Tokens</td><td><code>OutputTokens__c</code></td><td>Number</td><td></td></tr><tr><td>Tokens Used</td><td><code>TokensUsed__c</code></td><td>Number</td><td></td></tr><tr><td>Usage Date</td><td><code>UsageDate__c</code></td><td>Date</td><td></td></tr><tr><td>User</td><td><code>User__c</code></td><td>Lookup → User</td><td></td></tr></tbody></table></div>
+  </div>
+</details> <div class="pager"><a href="../../data-model/conversations/">← Conversations</a><a href="../../data-model/pii-protection/">PII protection →</a></div></main>
+    </div>
+    <script type="module" src="../../assets/js/site.js"></script>
+  </body>
+</html>

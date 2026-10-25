@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent configuration · AI Assist</title>
+    <link rel="stylesheet" href="../../assets/css/site.css" />
+  </head>
+  <body data-root="../../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub current">Agent configuration</a><a href="../../data-model/conversations/" class="sub ">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub ">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
+<h1>Agent configuration</h1>
+<p class="lead">What an agent is made of: its model, prompt template, tools and who may use it.</p>
+<div class="diagram"><pre class="mermaid">erDiagram
+  AIAgent ||--o{ AIAgentAssignment : "AIAgent"
+  AIAgent ||--o{ AIAgentDataSource : "AIAgent"
+  AIDataSource |o..o{ AIAgentDataSource : "AIDataSource"
+  AIAgent ||--o{ AIAgentWorkflowAction : "AIAgent"
+  AIWorkflowAction |o..o{ AIAgentWorkflowAction : "AIWorkflowAction"
+  AIModelConfiguration |o..o{ AIAgent : "AIModelConfiguration"
+  AIPromptTemplate |o..o{ AIAgent : "AIPromptTemplate"
+  AIPromptTemplate ||--o{ AIPromptTestMessage : "AIPromptTemplate"
+  AIAgent {
+    string AIModelConfiguration FK
+    string AIPromptTemplate FK
+    string DeveloperName UK
+    string ExternalReference UK
+  }
+  AIModelConfiguration {
+    string AIProvider
+  }
+  AIPromptTemplate {
+    string DeveloperName UK
+  }
+  AIPromptTestMessage {
+    string AIPromptTemplate FK
+  }
+  AIDataSource {
+    string DeveloperName UK
+    string SourceName
+    string SourceType
+  }
+  AIWorkflowAction {
+    string ActionName
+    string ActionType
+    string DeveloperName UK
+    string ExecutionType
+  }
+  AIAgentDataSource {
+    string AIAgent FK
+    string AIDataSource FK
+  }
+  AIAgentWorkflowAction {
+    string AIAgent FK
+    string AIWorkflowAction FK
+  }
+  AIAgentAssignment {
+    string AIAgent FK
+    string AssigneeType
+    string User FK
+  }</pre></div>
+<h2>Objects</h2>
+<div class="table-wrap"><table><thead><tr><th>Object</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="#AIAgentAssignment__c">AI Agent Assignment</a></td><td>Grants a user access to an agent when its access mode is Assigned Users Only.</td></tr><tr><td><a href="#AIAgentDataSource__c">AI Agent Data Source</a></td><td>Junction: which data sources an agent may call.</td></tr><tr><td><a href="#AIAgentWorkflowAction__c">AI Agent Workflow Action</a></td><td>Junction: which workflow actions an agent may suggest.</td></tr><tr><td><a href="#AIAgent__c">AI Agent</a></td><td>An assistant a user can chat with: persona, access mode, conversation limits and retention, tied to a model and a prompt template.</td></tr><tr><td><a href="#AIDataSource__c">AI Data Source</a></td><td>A tool that fetches data for the model, e.g. a SOQL template, Apex or Flow.</td></tr><tr><td><a href="#AIModelConfiguration__c">AI Model Configuration</a></td><td>A connection to an AI provider: named credential, model identifier, temperature and output limits.</td></tr><tr><td><a href="#AIPromptTemplate__c">AI Prompt Template</a></td><td>The system prompt an agent answers with, including merge fields. Can be tested with Try It.</td></tr><tr><td><a href="#AIPromptTestMessage__c">AI Prompt Test Message</a></td><td>A saved test message used to try a prompt template.</td></tr><tr><td><a href="#AIWorkflowAction__c">AI Workflow Action</a></td><td>A tool that does something on the user's behalf, e.g. an Apex action or a Screen Flow.</td></tr></tbody></table></div>
+<h2>Field reference</h2>
+
+<details class="obj" id="AIAgentAssignment__c">
+  <summary>
+    <b>AI Agent Assignment</b> <code>AIAgentAssignment__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">5 fields</span>
+  </summary>
+  <div class="body">
+    <p>Grants a user access to an agent when its access mode is Assigned Users Only.</p>
+    <p><b>Relationships:</b> AI Agent → AI Agent (master-detail); User → User (lookup)</p>
+    <p><b>Validation rules:</b> <code>AssigneeMatchesType</code> <code>PermissionSetNameFormat</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Agent</td><td><code>AIAgent__c</code></td><td>MasterDetail → AIAgent</td><td>required · The Agent this assignment gives access to.</td></tr><tr><td>Assignee Type</td><td><code>AssigneeType__c</code></td><td>Picklist</td><td>required · values: User, Permission Set</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td>Whether this assignment currently grants access.</td></tr><tr><td>Permission Set Name</td><td><code>PermissionSetName__c</code></td><td>Text</td><td></td></tr><tr><td>User</td><td><code>User__c</code></td><td>Lookup → User</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIAgentDataSource__c">
+  <summary>
+    <b>AI Agent Data Source</b> <code>AIAgentDataSource__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">3 fields</span>
+  </summary>
+  <div class="body">
+    <p>Junction: which data sources an agent may call.</p>
+    <p><b>Relationships:</b> AI Agent → AI Agent (master-detail); AI Data Source → AI Data Source (lookup)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Agent</td><td><code>AIAgent__c</code></td><td>MasterDetail → AIAgent</td><td>required · The Agent this data source is assigned to.</td></tr><tr><td>AI Data Source</td><td><code>AIDataSource__c</code></td><td>Lookup → AIDataSource</td><td>required · The Data Source being assigned to this Agent.</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIAgentWorkflowAction__c">
+  <summary>
+    <b>AI Agent Workflow Action</b> <code>AIAgentWorkflowAction__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">3 fields</span>
+  </summary>
+  <div class="body">
+    <p>Junction: which workflow actions an agent may suggest.</p>
+    <p><b>Relationships:</b> AI Agent → AI Agent (master-detail); AI Workflow Action → AI Workflow Action (lookup)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Agent</td><td><code>AIAgent__c</code></td><td>MasterDetail → AIAgent</td><td>required · The Agent this workflow action is assigned to.</td></tr><tr><td>AI Workflow Action</td><td><code>AIWorkflowAction__c</code></td><td>Lookup → AIWorkflowAction</td><td>required · The Workflow Action being assigned to this Agent.</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIAgent__c">
+  <summary>
+    <b>AI Agent</b> <code>AIAgent__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    <span class="badge">trigger</span>
+    <span class="muted">21 fields</span>
+  </summary>
+  <div class="body">
+    <p>An assistant a user can chat with: persona, access mode, conversation limits and retention, tied to a model and a prompt template.</p>
+    <p><b>Relationships:</b> AI Model Configuration → AI Model Configuration (lookup); AI Prompt Template → AI Prompt Template (lookup)</p>
+    <p><b>Validation rules:</b> <code>ActiveRequiresModelConfiguration</code> <code>ConversationLimitsMustBePositive</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Agent Persona</td><td><code>AIAgentPersona__c</code></td><td>TextArea</td><td></td></tr><tr><td>AI Model Configuration</td><td><code>AIModelConfiguration__c</code></td><td>Lookup → AIModelConfiguration</td><td></td></tr><tr><td>AI Prompt Template</td><td><code>AIPromptTemplate__c</code></td><td>Lookup → AIPromptTemplate</td><td></td></tr><tr><td>Access Mode</td><td><code>AccessMode__c</code></td><td>Picklist</td><td>values: Assigned Users Only, All AI Assist Users</td></tr><tr><td>Allow Conversation Resume</td><td><code>AllowConversationResume__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Conversation Load Trigger</td><td><code>ConversationLoadTrigger__c</code></td><td>Picklist</td><td>values: On Page Load, On Chat Window Open, Manual Only</td></tr><tr><td>Conversation Retention Days</td><td><code>ConversationRetentionDays__c</code></td><td>Number</td><td></td></tr><tr><td>Conversation Visibility</td><td><code>ConversationVisibility__c</code></td><td>Picklist</td><td>values: Private, Global</td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td></td></tr><tr><td>Developer Name</td><td><code>DeveloperName__c</code></td><td>Text</td><td>required · unique · external ID</td></tr><tr><td>External Reference</td><td><code>ExternalReference__c</code></td><td>Text</td><td>external ID</td></tr><tr><td>Greeting Message</td><td><code>GreetingMessage__c</code></td><td>TextArea</td><td></td></tr><tr><td>Idle Timeout Minutes</td><td><code>IdleTimeoutMinutes__c</code></td><td>Number</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Max Messages Per Conversation</td><td><code>MaxMessagesPerConversation__c</code></td><td>Number</td><td></td></tr><tr><td>Max Tokens Per Conversation</td><td><code>MaxTokensPerConversation__c</code></td><td>Number</td><td></td></tr><tr><td>Max Tool Calling Iterations</td><td><code>MaxToolCallingIterations__c</code></td><td>Number</td><td></td></tr><tr><td>Object API Names</td><td><code>ObjectApiNames__c</code></td><td>Text</td><td></td></tr><tr><td>Retention Trigger</td><td><code>RetentionTrigger__c</code></td><td>Picklist</td><td>values: Conversation Created Date, Conversation Closed Date, Last Message Date</td></tr><tr><td>Single Active Conversation Per Record</td><td><code>SingleActiveConversationPerRecord__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Token Tracking Method</td><td><code>TokenTrackingMethod__c</code></td><td>Picklist</td><td>values: Estimate Token Usage, Track Token Usage, Pre-Request Usage Check</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIDataSource__c">
+  <summary>
+    <b>AI Data Source</b> <code>AIDataSource__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">14 fields</span>
+  </summary>
+  <div class="body">
+    <p>A tool that fetches data for the model, e.g. a SOQL template, Apex or Flow.</p>
+    
+    <p><b>Validation rules:</b> <code>ApexClassNameFormat</code> <code>ApexClassRequired</code> <code>MaxRowsRange</code> <code>SOQLTemplateRequired</code> <code>SourceTypeFieldsExclusive</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Apex Class Name</td><td><code>ApexClassName__c</code></td><td>Text</td><td></td></tr><tr><td>Binding Type</td><td><code>BindingType__c</code></td><td>Picklist</td><td>values: Bound, Unbound</td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td></td></tr><tr><td>Developer Name</td><td><code>DeveloperName__c</code></td><td>Text</td><td>required · unique · external ID</td></tr><tr><td>Input Schema</td><td><code>InputSchema__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Last Test Status</td><td><code>LastTestStatus__c</code></td><td>Picklist</td><td>values: Passed, Partial, Failed</td></tr><tr><td>Last Tested On</td><td><code>LastTestedOn__c</code></td><td>DateTime</td><td></td></tr><tr><td>Max Rows</td><td><code>MaxRows__c</code></td><td>Number</td><td></td></tr><tr><td>Output Description</td><td><code>OutputDescription__c</code></td><td>TextArea</td><td></td></tr><tr><td>SOQL Template</td><td><code>SOQLTemplate__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Source Name</td><td><code>SourceName__c</code></td><td>Text</td><td>required</td></tr><tr><td>Source Type</td><td><code>SourceType__c</code></td><td>Picklist</td><td>required · values: SOQL, Apex</td></tr><tr><td>Target Object</td><td><code>TargetObject__c</code></td><td>Text</td><td>The object this data source is scoped to.</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIModelConfiguration__c">
+  <summary>
+    <b>AI Model Configuration</b> <code>AIModelConfiguration__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">10 fields</span>
+  </summary>
+  <div class="body">
+    <p>A connection to an AI provider: named credential, model identifier, temperature and output limits.</p>
+    
+    <p><b>Validation rules:</b> <code>ActiveRequiresConnectionDetails</code> <code>ApiPathFormat</code> <code>MaximumOutputTokensPositive</code> <code>NamedCredentialFormat</code> <code>TemperatureRange</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Provider</td><td><code>AIProvider__c</code></td><td>Picklist</td><td>required · values: Anthropic, AnthropicAgent, OpenAI · The AI provider this configuration calls.</td></tr><tr><td>API Path</td><td><code>ApiPath__c</code></td><td>Text</td><td></td></tr><tr><td>API Version Header Name</td><td><code>ApiVersionHeaderName__c</code></td><td>Text</td><td></td></tr><tr><td>API Version Header Value</td><td><code>ApiVersionHeaderValue__c</code></td><td>Text</td><td></td></tr><tr><td>Environment Id</td><td><code>EnvironmentId__c</code></td><td>Text</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Maximum Output Tokens</td><td><code>MaximumOutputTokens__c</code></td><td>Number</td><td></td></tr><tr><td>Model Identifier</td><td><code>ModelIdentifier__c</code></td><td>Text</td><td></td></tr><tr><td>Named Credential</td><td><code>NamedCredential__c</code></td><td>Text</td><td></td></tr><tr><td>Temperature</td><td><code>Temperature__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPromptTemplate__c">
+  <summary>
+    <b>AI Prompt Template</b> <code>AIPromptTemplate__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    <span class="badge">trigger</span>
+    <span class="muted">10 fields</span>
+  </summary>
+  <div class="body">
+    <p>The system prompt an agent answers with, including merge fields. Can be tested with Try It.</p>
+    
+    <p><b>Validation rules:</b> <code>ActiveRequiresPrompt</code> <code>DefaultRequiresActive</code> <code>DeveloperNameFormat</code> <code>MaxResponseLengthPositive</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Exclusion Rules</td><td><code>AIExclusionRules__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>AI Prompt</td><td><code>AIPrompt__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>AI System Context</td><td><code>AISystemContext__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>AI Tone</td><td><code>AITone__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td></td></tr><tr><td>Developer Name</td><td><code>DeveloperName__c</code></td><td>Text</td><td>unique · external ID</td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Is Default</td><td><code>IsDefault__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Max Response Length</td><td><code>MaxResponseLength__c</code></td><td>Number</td><td></td></tr><tr><td>Version</td><td><code>Version__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIPromptTestMessage__c">
+  <summary>
+    <b>AI Prompt Test Message</b> <code>AIPromptTestMessage__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    
+    <span class="muted">8 fields</span>
+  </summary>
+  <div class="body">
+    <p>A saved test message used to try a prompt template.</p>
+    <p><b>Relationships:</b> AI Prompt Template → AI Prompt Template (master-detail)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Prompt Template</td><td><code>AIPromptTemplate__c</code></td><td>MasterDetail → AIPromptTemplate</td><td>required · The prompt template this test message belongs to.</td></tr><tr><td>Edited Verdict</td><td><code>EditedVerdict__c</code></td><td>Picklist</td><td>values: Better, Worse</td></tr><tr><td>Last Edited Reply</td><td><code>LastEditedReply__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Last Run On</td><td><code>LastRunOn__c</code></td><td>DateTime</td><td></td></tr><tr><td>Last Run Status</td><td><code>LastRunStatus__c</code></td><td>Picklist</td><td>values: Passed, Failed</td></tr><tr><td>Last Saved Reply</td><td><code>LastSavedReply__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Message Body</td><td><code>MessageBody__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Saved Verdict</td><td><code>SavedVerdict__c</code></td><td>Picklist</td><td>values: Better, Worse</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIWorkflowAction__c">
+  <summary>
+    <b>AI Workflow Action</b> <code>AIWorkflowAction__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ReadWrite</span>
+    
+    <span class="muted">16 fields</span>
+  </summary>
+  <div class="body">
+    <p>A tool that does something on the user's behalf, e.g. an Apex action or a Screen Flow.</p>
+    
+    <p><b>Validation rules:</b> <code>ActionTypeFieldsExclusive</code> <code>ApexClassNameFormat</code> <code>ApexClassRequired</code> <code>ConfirmationMessageRequired</code> <code>FlowAPINameFormat</code> <code>FlowAPINameRequired</code> <code>WriteActionsRequireConfirmation</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Action Name</td><td><code>ActionName__c</code></td><td>Text</td><td>required</td></tr><tr><td>Action Type</td><td><code>ActionType__c</code></td><td>Picklist</td><td>required · values: Apex, Flow, Screen Flow</td></tr><tr><td>Apex Class Name</td><td><code>ApexClassName__c</code></td><td>Text</td><td></td></tr><tr><td>Confirmation Message</td><td><code>ConfirmationMessage__c</code></td><td>TextArea</td><td></td></tr><tr><td>Description</td><td><code>Description__c</code></td><td>TextArea</td><td></td></tr><tr><td>Developer Name</td><td><code>DeveloperName__c</code></td><td>Text</td><td>required · unique · external ID</td></tr><tr><td>Execution Type</td><td><code>ExecutionType__c</code></td><td>Picklist</td><td>required · values: Read Only, Write</td></tr><tr><td>Flow API Name</td><td><code>FlowAPIName__c</code></td><td>Text</td><td></td></tr><tr><td>Input Schema</td><td><code>InputSchema__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Is Active</td><td><code>IsActive__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Last Test Status</td><td><code>LastTestStatus__c</code></td><td>Picklist</td><td>values: Passed, Failed</td></tr><tr><td>Last Tested On</td><td><code>LastTestedOn__c</code></td><td>DateTime</td><td></td></tr><tr><td>Output Description</td><td><code>OutputDescription__c</code></td><td>TextArea</td><td></td></tr><tr><td>Requires Confirmation</td><td><code>RequiresConfirmation__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Target Object</td><td><code>TargetObject__c</code></td><td>Text</td><td>The object this action operates on.</td></tr><tr><td>Tested Flow Version</td><td><code>TestedFlowVersion__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
+  </div>
+</details> <div class="pager"><a href="../../data-model/">← Data model</a><a href="../../data-model/conversations/">Conversations →</a></div></main>
+    </div>
+    <script type="module" src="../../assets/js/site.js"></script>
+  </body>
+</html>

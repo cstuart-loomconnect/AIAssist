@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Conversations · AI Assist</title>
+    <link rel="stylesheet" href="../../assets/css/site.css" />
+  </head>
+  <body data-root="../../">
+    <header class="top">
+      <button id="menu" aria-label="Menu">☰</button>
+      <a class="brand" href="../../">AI Assist</a>
+      <span class="muted">Documentation</span>
+      <input
+        id="search"
+        type="search"
+        placeholder="Find an object, field or page…"
+        aria-label="Search"
+      />
+      <button id="theme" aria-label="Toggle theme">◐</button>
+      <div id="results" hidden></div>
+    </header>
+    <div class="layout">
+      <nav id="nav" aria-label="Sections"><a href="../../" class="">Home</a><a href="../../architecture/" class="">Architecture</a><a href="../../data-model/" class="">Data model</a><a href="../../data-model/agent-configuration/" class="sub ">Agent configuration</a><a href="../../data-model/conversations/" class="sub current">Conversations</a><a href="../../data-model/usage-and-policies/" class="sub ">Usage and policies</a><a href="../../data-model/pii-protection/" class="sub ">PII protection</a><a href="../../data-model/settings-and-logging/" class="sub ">Settings and logging</a><a href="../../interface/" class="">User interface</a><a href="../../security/" class="">Security</a><a href="../../develop/" class="">Develop and test</a></nav>
+      <main><div class="crumbs"><a href="../../">Home</a> / <a href="../../data-model/">Data model</a></div> 
+<h1>Conversations</h1>
+<p class="lead">What users say to an agent, what it answers, and the feedback and terms around it.</p>
+<div class="diagram"><pre class="mermaid">erDiagram
+  AIModelConfiguration |o..o{ AIAgent : "AIModelConfiguration"
+  AIPromptTemplate |o..o{ AIAgent : "AIPromptTemplate"
+  AIConversation ||--o{ AIConversationMessage : "AIConversation"
+  AIModelConfiguration |o..o{ AIConversationMessage : "AIModelConfiguration"
+  AIPromptTemplate |o..o{ AIConversationMessage : "AIPromptTemplate"
+  AIConversationMessage |o..o{ AIConversationMessage : "InReplyTo"
+  AIWorkflowAction |o..o{ AIConversationMessage : "SuggestedWorkflowAction"
+  AIAgent |o..o{ AIConversation : "AIAgent"
+  AIPromptTemplate |o..o{ AIConversation : "AIPromptTemplate"
+  AIConversationMessage |o..o{ AIFeedback : "AIConversationMessage"
+  AIConversation |o..o{ AIFeedback : "AIConversation"
+  AIConversation {
+    string AIAgent FK
+    string AIPromptTemplate FK
+    string ExternalReference UK
+    string RelatedRecordId UK
+  }
+  AIConversationMessage {
+    string AIConversation FK
+    string AIModelConfiguration FK
+    string AIPromptTemplate FK
+    string InReplyTo FK
+    string SuggestedWorkflowAction FK
+  }
+  AIFeedback {
+    string AIConversationMessage FK
+    string AIConversation FK
+  }
+  AIAgent {
+    string AIModelConfiguration FK
+    string AIPromptTemplate FK
+    string DeveloperName UK
+    string ExternalReference UK
+  }
+  AIPromptTemplate {
+    string DeveloperName UK
+  }
+  AIModelConfiguration {
+    string AIProvider
+  }
+  AIWorkflowAction {
+    string ActionName
+    string ActionType
+    string DeveloperName UK
+    string ExecutionType
+  }</pre></div>
+<h2>Objects</h2>
+<div class="table-wrap"><table><thead><tr><th>Object</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="#AIConversationMessage__c">AI Conversation Message</a></td><td>A single message in a conversation, user or assistant, with status, tokens and any suggested action.</td></tr><tr><td><a href="#AIConversation__c">AI Conversation</a></td><td>One chat between a user and an agent. Private to its owner unless shared.</td></tr><tr><td><a href="#AIFeedback__c">AI Feedback</a></td><td>Thumbs up or down, with comments, on an assistant message.</td></tr><tr><td><a href="#AITermsAcknowledgment__c">AI Terms Acknowledgment</a></td><td>Records that a user accepted the AI terms.</td></tr></tbody></table></div>
+<h2>Field reference</h2>
+
+<details class="obj" id="AIConversationMessage__c">
+  <summary>
+    <b>AI Conversation Message</b> <code>AIConversationMessage__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">ControlledByParent</span>
+    <span class="badge">trigger</span>
+    <span class="muted">21 fields</span>
+  </summary>
+  <div class="body">
+    <p>A single message in a conversation, user or assistant, with status, tokens and any suggested action.</p>
+    <p><b>Relationships:</b> AI Conversation → AI Conversation (master-detail); AI Model Configuration → AI Model Configuration (lookup); AI Prompt Template → AI Prompt Template (lookup); In Reply To → AI Conversation Message (lookup); Suggested Workflow Action → AI Workflow Action (lookup)</p>
+    
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Conversation</td><td><code>AIConversation__c</code></td><td>MasterDetail → AIConversation</td><td>required · The conversation this message belongs to.</td></tr><tr><td>AI Model Configuration</td><td><code>AIModelConfiguration__c</code></td><td>Lookup → AIModelConfiguration</td><td></td></tr><tr><td>AI Prompt Template</td><td><code>AIPromptTemplate__c</code></td><td>Lookup → AIPromptTemplate</td><td></td></tr><tr><td>Debug Request Json</td><td><code>DebugRequestJson__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Debug Response Json</td><td><code>DebugResponseJson__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Debug Sent Preview Text</td><td><code>DebugSentPreviewText__c</code></td><td>Text</td><td></td></tr><tr><td>Execution Trace Json</td><td><code>ExecutionTraceJson__c</code></td><td>LongTextArea</td><td></td></tr><tr><td>Failure Reason</td><td><code>FailureReason__c</code></td><td>Picklist</td><td>values: Provider Error, Timeout, Limit Reached, Request Blocked, PII Masking Failed, Configuration Error, Authentication Failed, Model Retired, Rate Limited, Service Busy, Other</td></tr><tr><td>In Reply To</td><td><code>InReplyTo__c</code></td><td>Lookup → AIConversationMessage</td><td></td></tr><tr><td>Input Token Count</td><td><code>InputTokenCount__c</code></td><td>Number</td><td></td></tr><tr><td>Is Awaiting Capacity</td><td><code>IsAwaitingCapacity__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Is Superseded</td><td><code>IsSuperseded__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Latency (ms)</td><td><code>LatencyMilliseconds__c</code></td><td>Number</td><td></td></tr><tr><td>Message Body</td><td><code>MessageBody__c</code></td><td>LongTextArea</td><td>The content of this message.</td></tr><tr><td>Output Token Count</td><td><code>OutputTokenCount__c</code></td><td>Number</td><td></td></tr><tr><td>PII Values Masked</td><td><code>PIIValuesMasked__c</code></td><td>Summary</td><td></td></tr><tr><td>Processing Status</td><td><code>ProcessingStatus__c</code></td><td>Picklist</td><td>values: Queued, Processing, Complete, Failed</td></tr><tr><td>Prompt Template Version</td><td><code>PromptTemplateVersion__c</code></td><td>Number</td><td></td></tr><tr><td>Sender</td><td><code>Sender__c</code></td><td>Picklist</td><td>values: User, AI Agent, System · Indicates who sent this message.</td></tr><tr><td>Suggested Workflow Action</td><td><code>SuggestedWorkflowAction__c</code></td><td>Lookup → AIWorkflowAction</td><td></td></tr><tr><td>Token Count</td><td><code>TokenCount__c</code></td><td>Number</td><td></td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIConversation__c">
+  <summary>
+    <b>AI Conversation</b> <code>AIConversation__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">Private</span>
+    <span class="badge">trigger</span>
+    <span class="muted">16 fields</span>
+  </summary>
+  <div class="body">
+    <p>One chat between a user and an agent. Private to its owner unless shared.</p>
+    <p><b>Relationships:</b> AI Agent → AI Agent (lookup); AI Prompt Template → AI Prompt Template (lookup)</p>
+    <p><b>Validation rules:</b> <code>ClosedRequiresReasonAndTimestamp</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Agent</td><td><code>AIAgent__c</code></td><td>Lookup → AIAgent</td><td>The Agent handling this conversation.</td></tr><tr><td>AI Prompt Template</td><td><code>AIPromptTemplate__c</code></td><td>Lookup → AIPromptTemplate</td><td></td></tr><tr><td>Channel</td><td><code>Channel__c</code></td><td>Picklist</td><td>Where this conversation took place.</td></tr><tr><td>Conversation Close Reason</td><td><code>ConversationCloseReason__c</code></td><td>Picklist</td><td>values: User Closed, Idle Timeout, Message Limit Reached, Token Limit Reached, System Override</td></tr><tr><td>Conversation Closed Timestamp</td><td><code>ConversationClosedTimestamp__c</code></td><td>DateTime</td><td></td></tr><tr><td>Conversation Token Usage</td><td><code>ConversationTokenUsage__c</code></td><td>Number</td><td></td></tr><tr><td>External Reference</td><td><code>ExternalReference__c</code></td><td>Text</td><td>external ID</td></tr><tr><td>Is On Legal Hold</td><td><code>IsOnLegalHold__c</code></td><td>Checkbox</td><td></td></tr><tr><td>Last Message Timestamp</td><td><code>LastMessageTimestamp__c</code></td><td>DateTime</td><td></td></tr><tr><td>Message Count</td><td><code>MessageCount__c</code></td><td>Summary</td><td></td></tr><tr><td>Processing Locked Until</td><td><code>ProcessingLockedUntil__c</code></td><td>DateTime</td><td></td></tr><tr><td>Related Object API Name</td><td><code>RelatedObjectAPIName__c</code></td><td>Text</td><td></td></tr><tr><td>Related Record Id</td><td><code>RelatedRecordId__c</code></td><td>Text</td><td>external ID</td></tr><tr><td>Retention Expiry Date</td><td><code>RetentionExpiryDate__c</code></td><td>Date</td><td></td></tr><tr><td>Status Display</td><td><code>StatusDisplay__c</code></td><td>Text</td><td></td></tr><tr><td>Status</td><td><code>Status__c</code></td><td>Picklist</td><td>values: Active, Closed, Archived · The current state of this conversation.</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AIFeedback__c">
+  <summary>
+    <b>AI Feedback</b> <code>AIFeedback__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">Private</span>
+    
+    <span class="muted">7 fields</span>
+  </summary>
+  <div class="body">
+    <p>Thumbs up or down, with comments, on an assistant message.</p>
+    <p><b>Relationships:</b> AI Conversation Message → AI Conversation Message (lookup); AI Conversation → AI Conversation (lookup)</p>
+    <p><b>Validation rules:</b> <code>ConversationOrMessageRequired</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>AI Conversation Message</td><td><code>AIConversationMessage__c</code></td><td>Lookup → AIConversationMessage</td><td>The specific AI response this feedback is about.</td></tr><tr><td>AI Conversation</td><td><code>AIConversation__c</code></td><td>Lookup → AIConversation</td><td>The conversation this feedback relates to.</td></tr><tr><td>Comment</td><td><code>Comment__c</code></td><td>TextArea</td><td>Free-text detail explaining the rating.</td></tr><tr><td>Rating Display</td><td><code>RatingDisplay__c</code></td><td>Text</td><td>Rating with an emoji for list views.</td></tr><tr><td>Rating</td><td><code>Rating__c</code></td><td>Picklist</td><td>values: Helpful, Not Helpful</td></tr><tr><td>Reason Display</td><td><code>ReasonDisplay__c</code></td><td>Text</td><td>Reason with an emoji for list views.</td></tr><tr><td>Reason</td><td><code>Reason__c</code></td><td>Picklist</td><td>values: Inaccurate, Incomplete, Not Relevant, Too Slow, Unsafe Or Inappropriate, Other</td></tr></tbody></table></div>
+  </div>
+</details>
+<details class="obj" id="AITermsAcknowledgment__c">
+  <summary>
+    <b>AI Terms Acknowledgment</b> <code>AITermsAcknowledgment__c</code>
+    <span class="badge">Custom object</span>
+    <span class="badge">Private</span>
+    
+    <span class="muted">4 fields</span>
+  </summary>
+  <div class="body">
+    <p>Records that a user accepted the AI terms.</p>
+    <p><b>Relationships:</b> User → User (lookup)</p>
+    <p><b>Validation rules:</b> <code>AcknowledgmentMustBeOwn</code> <code>SignatureRequired</code> <code>SignedRecordImmutable</code></p>
+    <div class="table-wrap"><table><thead><tr><th>Field</th><th>API name</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td>Acknowledged Date</td><td><code>AcknowledgedDate__c</code></td><td>DateTime</td><td>When this acknowledgment was signed.</td></tr><tr><td>Signature Text</td><td><code>SignatureText__c</code></td><td>Text</td><td></td></tr><tr><td>Terms Version</td><td><code>TermsVersion__c</code></td><td>Text</td><td>Which version of the usage terms was agreed to.</td></tr><tr><td>User</td><td><code>User__c</code></td><td>Lookup → User</td><td>Who signed.</td></tr></tbody></table></div>
+  </div>
+</details> <div class="pager"><a href="../../data-model/agent-configuration/">← Agent configuration</a><a href="../../data-model/usage-and-policies/">Usage and policies →</a></div></main>
+    </div>
+    <script type="module" src="../../assets/js/site.js"></script>
+  </body>
+</html>

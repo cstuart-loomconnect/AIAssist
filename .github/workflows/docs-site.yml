@@ -1,0 +1,37 @@
+name: Documentation site
+
+# Rebuilds site/model.json from the metadata and publishes site/ to GitHub Pages.
+# One-off setup: Settings > Pages > Build and deployment > Source = GitHub Actions.
+on:
+  push:
+    branches: [master]
+    paths: ['site/**', 'force-app/main/default/objects/**', 'scripts/docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: node scripts/docs/build-model.mjs && node scripts/docs/build-site.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
