@@ -13,6 +13,9 @@ coverage/
 .github
 CONTRIBUTING.md
 
+# Browser tests have their own tooling (Playwright) and are not part of the package
+e2e/
+
 # Apex is formatted by hand to the house pattern (Code patterns and Testing pages on the docs site).
 # prettier-plugin-apex re-wraps calls and changes indentation, so never run it on Apex.
 **/*.cls
