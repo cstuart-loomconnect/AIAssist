@@ -14,7 +14,7 @@ These need no seed data and never call an AI provider.
 
 ## In CI
 
-The PR Validation workflow (from AIAssist-CICD) runs these after the Apex tests pass, in the same scratch org. It logs in with `sf org open --url-only`, so no password is stored. Failures show as annotations on the PR, and the Playwright report (screenshots, video and a step-by-step trace) is attached to the run as the `e2e-report` artifact.
+The **Browser tests** workflow (`.github/workflows/browser-tests.yml`) creates a scratch org, deploys `force-app` and runs only these tests, with no Apex unit tests. Start it by adding the `e2e` label to a pull request (it then reruns on every push while the label is on), or by hand from **Actions > Browser tests > Run workflow**. PR Validation does not run them. It logs in with `sf org open --url-only`, so no password is stored. Failures show as annotations on the PR, and the Playwright report (screenshots, video and a step-by-step trace) is attached to the run as the `e2e-report` artifact.
 
 ## Run them on your machine
 

@@ -45,7 +45,7 @@ If a name genuinely has to break a rule, for example a name that already shipped
 | Naming conventions        | The table above                                                                       |
 | Dependency audit          | `npm audit` at high severity                                                          |
 | Scratch org + Apex tests  | Creates a scratch org, deploys, runs all local tests and requires 75% coverage        |
-| Browser tests (e2e)       | Playwright tests in `e2e/`, run in the same scratch org once the Apex tests pass      |
+| Browser tests (e2e)       | Playwright tests in `e2e/`, in their own scratch org. Add the `e2e` label to a PR, or run Browser tests from Actions |
 | PR title / labels         | Conventional title and area labels                                                    |
 | Nightly build             | Full scratch org test run on `development`. Manual for now. Opens an issue if it fails |
 
