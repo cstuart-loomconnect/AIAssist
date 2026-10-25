@@ -50,7 +50,7 @@ If a name genuinely has to break a rule, for example a name that already shipped
 
 All of these run on every pull request into `development` or `master`, and results are posted as a comment on the PR.
 
-The workflows themselves live in [AIAssist-CICD](https://github.com/cstuart-loomconnect/AIAssist-CICD). This repo's `.github/workflows/` only holds small callers pinned to a tag (`@v1`). To change a check, open a PR there, not here.
+The workflows themselves live in [AIAssist-CICD](https://github.com/cstuart-loomconnect/AIAssist-CICD). This repo's `.github/workflows/` only holds small callers pinned to the `v1` release branch (`@v1`). To change a check, open a PR there, not here.
 
 ## Documentation
 
