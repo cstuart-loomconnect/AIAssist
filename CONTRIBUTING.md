@@ -54,4 +54,4 @@ The workflows themselves live in [AIAssist-CICD](https://github.com/cstuart-loom
 
 ## Documentation
 
-The documentation site is in [AIAssist-Docs](https://github.com/cstuart-loomconnect/AIAssist-Docs) and is published at https://cstuart-loomconnect.github.io/AIAssist-Docs/. Its reference pages are generated from this repo's `development` branch, so they update on their own. Hand-written pages, including known issues, are edited in that repo.
+The documentation site is in [AIAssist-Docs](https://github.com/cstuart-loomconnect/AIAssist-Docs) and is published at https://cstuart-loomconnect.github.io/AIAssist-Docs/. Its reference pages are generated from this repo's `master` branch and republished on every merge into `master`. Hand-written pages, including known issues, are edited in that repo.
