@@ -136,8 +136,7 @@ Version      Author                   Description
             Test.startTest();
                 Boolean isDataSourceGranted = AISkillService.isDataSourceGrantedThroughSkill(dataSource.Id, agent.Id);
                 Boolean isActionGranted = AISkillService.isWorkflowActionGrantedThroughSkill(action.Id, agent.Id);
-                agentSkill.IsActive__c = false;
-                update agentSkill;
+                update new AIAgentSkill__c(Id = agentSkill.Id, IsActive__c = false);
                 Boolean isDataSourceGrantedAfter = AISkillService.isDataSourceGrantedThroughSkill(dataSource.Id, agent.Id);
                 Boolean isActionGrantedAfter = AISkillService.isWorkflowActionGrantedThroughSkill(action.Id, agent.Id);
             Test.stopTest();
