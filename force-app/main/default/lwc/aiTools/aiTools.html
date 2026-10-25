@@ -10,6 +10,10 @@
     <!-- Body: the tabs on a white card -->
     <div class="aiat-body slds-p-around_medium">
       <lightning-tabset>
+        <!-- Skills: the list and the wizard for skills built from data sources and workflow actions -->
+        <lightning-tab label={labels.skillsTab} value={skillsTabValue}>
+          <c-ai-tools-skills></c-ai-tools-skills>
+        </lightning-tab>
         <!-- Data Sources: the list and the wizard for data sources -->
         <lightning-tab label={labels.dataSourcesTab} value={dataSourcesTabValue}>
           <c-ai-tools-data-sources></c-ai-tools-data-sources>

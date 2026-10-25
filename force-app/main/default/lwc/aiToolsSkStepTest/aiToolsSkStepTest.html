@@ -1,0 +1,52 @@
+<template>
+  <div class="slds-is-relative">
+    <!-- Busy: shown while the test runs -->
+    <template lwc:if={isRunning}>
+      <lightning-spinner size="small" alternative-text={labels.running}></lightning-spinner>
+    </template>
+
+    <!-- Intro: what the test does and does not do -->
+    <p class="aitsk-intro">{labels.intro}</p>
+
+    <!-- Fields: the agent, the record and the question -->
+    <div class="slds-grid slds-wrap aitsk-fields">
+      <div class="aitsk-field"><lightning-combobox label={labels.agent} placeholder={labels.agentPlaceholder} field-level-help={labels.agentHelp} options={agentOptions} value={agentId} disabled={isLoadingAgents} onchange={handleAgentChange}></lightning-combobox></div>
+      <div class="aitsk-field">
+        <template lwc:if={hasBoundObject}><lightning-record-picker label={labels.record} object-api-name={boundObject} required onchange={handleRecordChange}></lightning-record-picker></template>
+        <template lwc:else><lightning-input label={labels.recordId} field-level-help={labels.recordHelp} value={recordId} onchange={handleRecordChange}></lightning-input></template>
+      </div>
+    </div>
+    <lightning-textarea label={labels.question} placeholder={labels.questionPlaceholder} value={question} onchange={handleQuestionChange}></lightning-textarea>
+    <div class="slds-grid slds-grid_align-end slds-m-top_small">
+      <lightning-button variant="brand-outline" label={labels.runTest} icon-name="utility:play" disabled={isRunDisabled} onclick={handleRunTest}></lightning-button>
+    </div>
+
+    <!-- Error: shown when the test was refused before it ran -->
+    <template lwc:if={hasError}><div class="slds-notify slds-notify_alert slds-alert_error slds-m-vertical_small" role="alert">{errorMessage}</div></template>
+
+    <!-- Result: the banner, the reply, the suggested action and each step -->
+    <template lwc:if={hasResult}>
+      <div class={bannerView.bannerClass}>{bannerView.text}</div>
+      <div class="aitsk-meta">{metaText}</div>
+
+      <!-- Reply: what the model answered -->
+      <template lwc:if={result.replyText}>
+        <div class="aitsk-section-title">{labels.reply}</div>
+        <div class="aitsk-reply">{result.replyText}</div>
+      </template>
+      <template lwc:if={suggestedText}><div class="aitsk-suggested">{suggestedText}</div></template>
+
+      <!-- Steps: what happened, in order -->
+      <div class="aitsk-section-title">{labels.steps}</div>
+      <ol class="aitsk-steps">
+        <template for:each={stepViews} for:item="step">
+          <li key={step.key} class="aitsk-step-row slds-grid">
+            <span class={step.markClass}>{step.mark}</span>
+            <span class="aitsk-step-type">{step.stepType}</span>
+            <span class="aitsk-step-detail slds-col">{step.detail}</span>
+          </li>
+        </template>
+      </ol>
+    </template>
+  </div>
+</template>

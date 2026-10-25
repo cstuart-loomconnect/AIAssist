@@ -1,0 +1,75 @@
+<template>
+  <!-- Columns: the tools to pick from on the left and the tools in the skill on the right -->
+  <div class="slds-grid slds-wrap aitsk-columns">
+    <!-- Pick: the existing data sources and workflow actions, with a search and filters -->
+    <div class="aitsk-column aitsk-box">
+      <div class="aitsk-box-head">{labels.pickTitle}</div>
+      <div class="aitsk-box-body">
+        <p class="aitsk-help">{labels.pickHelp}</p>
+        <lightning-input type="search" variant="label-hidden" label={labels.searchLabel} placeholder={labels.searchPlaceholder} value={searchText} onchange={handleSearchChange}></lightning-input>
+        <div class="aitsk-filters slds-grid">
+          <template for:each={filterViews} for:item="filter">
+            <button key={filter.key} type="button" class={filter.buttonClass} data-key={filter.key} onclick={handleFilterClick}>{filter.label}</button>
+          </template>
+        </div>
+
+        <!-- Options: one line for each tool that matches -->
+        <ul class="aitsk-list">
+          <template for:each={optionViews} for:item="option">
+            <li key={option.key} class="aitsk-item slds-grid slds-grid_vertical-align-center">
+              <span class={option.kindClass}>{option.kindLabel}</span>
+              <div class="aitsk-item-text slds-col">
+                <div class="aitsk-item-name">{option.name}</div>
+                <div class="aitsk-item-code">{option.developerName}</div>
+                <div class="aitsk-tags">
+                  <template for:each={option.tags} for:item="tag"><span key={tag.key} class={tag.tagClass}>{tag.label}</span></template>
+                </div>
+              </div>
+              <lightning-button label={option.buttonLabel} data-id={option.key} disabled={option.isAdded} onclick={handleAdd}></lightning-button>
+            </li>
+          </template>
+        </ul>
+        <template lwc:if={showNoOptions}><p class="aitsk-empty">{labels.noOptions}</p></template>
+      </div>
+    </div>
+
+    <!-- Skill: the tools in the skill, in order -->
+    <div class="aitsk-column aitsk-box">
+      <div class="aitsk-box-head slds-grid slds-grid_align-spread"><span>{labels.skillTitle}</span><span class="aitsk-count">{countText}</span></div>
+      <div class="aitsk-box-body">
+        <p class="aitsk-help">{labels.skillHelp}</p>
+
+        <!-- Tools: one row for each, with its order, kind, tags, Required and the buttons that move or remove it -->
+        <template lwc:if={hasTools}>
+          <ol class="aitsk-list">
+            <template for:each={toolViews} for:item="tool">
+              <li key={tool.key} class="aitsk-item slds-grid slds-grid_vertical-align-center">
+                <span class="aitsk-order">{tool.orderLabel}</span>
+                <span class={tool.kindClass}>{tool.kindLabel}</span>
+                <div class="aitsk-item-text slds-col">
+                  <div class="aitsk-item-name">{tool.name}</div>
+                  <div class="aitsk-item-code">{tool.developerName}</div>
+                  <div class="aitsk-tags">
+                    <template for:each={tool.tags} for:item="tag"><span key={tag.key} class={tag.tagClass}>{tag.label}</span></template>
+                  </div>
+                </div>
+                <lightning-input type="checkbox" label={labels.required} field-level-help={labels.requiredHelp} checked={tool.isRequired} data-index={tool.index} onchange={handleRequiredChange}></lightning-input>
+                <lightning-button-group>
+                  <lightning-button-icon icon-name="utility:arrowup" alternative-text={labels.moveUp} title={labels.moveUp} data-index={tool.index} disabled={tool.isFirst} onclick={handleMoveUp}></lightning-button-icon>
+                  <lightning-button-icon icon-name="utility:arrowdown" alternative-text={labels.moveDown} title={labels.moveDown} data-index={tool.index} disabled={tool.isLast} onclick={handleMoveDown}></lightning-button-icon>
+                  <lightning-button-icon icon-name="utility:close" alternative-text={labels.remove} title={labels.remove} data-index={tool.index} onclick={handleRemove}></lightning-button-icon>
+                </lightning-button-group>
+              </li>
+            </template>
+          </ol>
+        </template>
+        <template lwc:else><p class="aitsk-empty">{labels.noTools}</p></template>
+
+        <!-- Problems: bound data sources on two objects, too many tools, and switched off tools -->
+        <template lwc:if={mixedObjectsText}><div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{mixedObjectsText}</div></template>
+        <template lwc:if={isTooMany}><div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{labels.tooMany}</div></template>
+        <template lwc:if={hasInactiveTool}><div class="aitsk-note slds-m-top_small">{labels.inactiveNote}</div></template>
+      </div>
+    </div>
+  </div>
+</template>

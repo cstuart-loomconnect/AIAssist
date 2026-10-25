@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AIAgent__c</fullName>
+    <description>The agent the skill is given to.</description>
+    <inlineHelpText>This link is deleted automatically if the agent is deleted.</inlineHelpText>
+    <label>AI Agent</label>
+    <referenceTo>AIAgent__c</referenceTo>
+    <relationshipLabel>AI Agent Skills</relationshipLabel>
+    <relationshipName>AIAgentSkills</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

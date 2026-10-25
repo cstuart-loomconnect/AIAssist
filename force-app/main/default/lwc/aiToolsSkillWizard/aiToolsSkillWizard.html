@@ -1,0 +1,51 @@
+<template>
+  <!-- Wizard: the dark header, the stepper, the step and the buttons in one bordered box -->
+  <div class="aitsk-wizard slds-is-relative">
+    <!-- Busy: shown while the skill and the tools to choose from are read -->
+    <template lwc:if={isLoading}>
+      <lightning-spinner size="small" alternative-text={labels.loading}></lightning-spinner>
+    </template>
+
+    <!-- Header: the skill's name with a pill, and whether it is saved -->
+    <div class="aitsk-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+      <div class="slds-grid slds-grid_vertical-align-center">
+        <span class="aitsk-title">{titleText}</span>
+        <span class={pillClass}>{pillLabel}</span>
+      </div>
+      <span class="aitsk-status">{statusText}</span>
+    </div>
+
+    <!-- Stepper: the four steps with a line between each -->
+    <div class="aitsk-stepper slds-grid slds-grid_vertical-align-center">
+      <template for:each={stepViews} for:item="stepView">
+        <div key={stepView.number} class="slds-grid slds-grid_vertical-align-center aitsk-step-wrap">
+          <button type="button" class={stepView.stepClass} data-step={stepView.number} disabled={stepView.isDisabled} onclick={handleStepClick}><span class="aitsk-marker">{stepView.marker}</span><span class="aitsk-step-label">{stepView.label}</span></button>
+          <template lwc:if={stepView.hasLine}><span class="aitsk-line"></span></template>
+        </div>
+      </template>
+    </div>
+
+    <!-- Step: only the step the admin is on is shown -->
+    <div class="aitsk-body">
+      <template lwc:if={isStepBasics}><c-ai-tools-sk-step-basics draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-sk-step-basics></template>
+      <template lwc:if={isStepTools}><c-ai-tools-sk-step-tools draft={draft} tool-options={toolOptions} ondraftchange={handleDraftChange}></c-ai-tools-sk-step-tools></template>
+      <template lwc:if={isStepInstructions}><c-ai-tools-sk-step-instructions draft={draft} ondraftchange={handleDraftChange}></c-ai-tools-sk-step-instructions></template>
+      <template lwc:if={isStepTest}><c-ai-tools-sk-step-test draft={draft} skill-detail={skillDetail} ondraftchange={handleDraftChange}></c-ai-tools-sk-step-test></template>
+
+      <!-- Error: shown when the last save failed -->
+      <template lwc:if={hasError}>
+        <div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{errorMessage}</div>
+      </template>
+    </div>
+
+    <!-- Footer: Cancel on the left, Back and Next or Save on the right -->
+    <div class="aitsk-foot slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+      <lightning-button label={labels.cancel} onclick={handleCancel} disabled={isSaving}></lightning-button>
+      <div>
+        <template lwc:if={hasBack}><lightning-button label={labels.back} onclick={handleBack} disabled={isSaving}></lightning-button></template>
+        <template lwc:if={isLastStep}><lightning-button class="slds-m-left_x-small" variant="brand" label={labels.save} onclick={handleSave} disabled={isSaveDisabled}></lightning-button></template>
+        <template lwc:else><lightning-button class="slds-m-left_x-small" variant="brand" label={labels.next} onclick={handleNext} disabled={isNextDisabled}></lightning-button></template>
+      </div>
+    </div>
+  </div>
+</template>

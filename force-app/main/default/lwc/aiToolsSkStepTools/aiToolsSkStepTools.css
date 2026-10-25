@@ -1,0 +1,185 @@
+/* The two columns sit side by side and stack on a narrow screen. The 16px gap is not an SLDS step. */
+.aitsk-columns {
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* One column: it shares the row. */
+.aitsk-column {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+/* A box: a bordered card with a soft header. SLDS has no utility for a bordered card in this colour. */
+.aitsk-box {
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 8px;
+  background: var(--aia-surface);
+}
+
+.aitsk-box-head {
+  padding: 12px 16px;
+  background: var(--aia-surface-soft);
+  border-bottom: 1px solid var(--aia-line);
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+.aitsk-box-body {
+  padding: 12px 16px 16px;
+}
+
+/* The count in the header: muted and not bold. */
+.aitsk-count {
+  font-weight: 400;
+  color: var(--aia-muted);
+}
+
+/* Help text at the top of a box: muted text. */
+.aitsk-help {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The filter buttons: one joined bordered strip. SLDS button groups do not look like this. */
+.aitsk-filters {
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 4px;
+}
+
+/* One filter button: plain text with a line between it and the next. */
+.aitsk-filter {
+  flex: 1 1 auto;
+  padding: 8px 10px;
+  border: 0;
+  border-right: 1px solid var(--aia-line-strong);
+  background: var(--aia-surface);
+  color: var(--aia-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The last filter button has no line after it. */
+.aitsk-filter:last-child {
+  border-right: 0;
+}
+
+/* The chosen filter: the accent colour with white text. */
+.aitsk-filter_selected {
+  background: var(--aia-accent);
+  color: var(--aia-surface);
+}
+
+/* A list of tools: no bullets or numbers, and a scroll when it is long. */
+.aitsk-list {
+  max-height: 420px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* One tool: a line under it and a gap between its parts. */
+.aitsk-item {
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--aia-line);
+}
+
+/* The text of a tool: it takes the room left over. */
+.aitsk-item-text {
+  min-width: 0;
+}
+
+/* The name of a tool: dark and bold. */
+.aitsk-item-name {
+  font-weight: 600;
+  color: var(--aia-ink);
+}
+
+/* The API name of a tool: a small code font. */
+.aitsk-item-code {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--aia-muted);
+}
+
+/* The order number: a round grey marker. */
+.aitsk-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--aia-surface-soft);
+  border: 1px solid var(--aia-line-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The kind badge: a small square label. */
+.aitsk-kind {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* A data source: the accent colour. */
+.aitsk-kind_data {
+  background: var(--aia-accent-tint);
+  color: var(--aia-accent);
+}
+
+/* A workflow action: green. */
+.aitsk-kind_action {
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* The tags under a tool: small grey labels in a row. */
+.aitsk-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.aitsk-tag {
+  padding: 0 6px;
+  border: 1px solid var(--aia-line);
+  border-radius: 10px;
+  background: var(--aia-surface-soft);
+  font-size: 11px;
+  color: var(--aia-muted);
+}
+
+/* A switched off tool: orange. */
+.aitsk-tag_warning {
+  border-color: var(--aia-warning-tint);
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}
+
+/* The message when a list is empty: muted text. */
+.aitsk-empty {
+  margin: 8px 0 0;
+  color: var(--aia-muted);
+}
+
+/* A note: an orange tinted box. */
+.aitsk-note {
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--aia-warning-tint);
+  color: var(--aia-warning);
+}

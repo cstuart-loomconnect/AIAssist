@@ -27,16 +27,18 @@ export const SCREEN_DONE = "done";
 // The steps, in order. The number is the step number the admin sees, and the Finding.step the Apex checks use.
 export const STEP_BASICS = 1;
 export const STEP_MODEL = 2;
-export const STEP_DATA_SOURCES = 3;
-export const STEP_ACTIONS = 4;
-export const STEP_CONVERSATIONS = 5;
-export const STEP_LIMITS = 6;
-export const STEP_ACCESS = 7;
-export const STEP_REVIEW = 8;
-export const FIRST_CHECKED_STEP = STEP_DATA_SOURCES;
+export const STEP_SKILLS = 3;
+export const STEP_DATA_SOURCES = 4;
+export const STEP_ACTIONS = 5;
+export const STEP_CONVERSATIONS = 6;
+export const STEP_LIMITS = 7;
+export const STEP_ACCESS = 8;
+export const STEP_REVIEW = 9;
+export const FIRST_CHECKED_STEP = STEP_SKILLS;
 export const STEP_NAMES = [
   { number: STEP_BASICS, label: "Basics", title: "Basics", detail: "Name and purpose" },
   { number: STEP_MODEL, label: "Model", title: "Model", detail: "Which AI model" },
+  { number: STEP_SKILLS, label: "Skills", title: "Skills", detail: "Jobs it can do" },
   { number: STEP_DATA_SOURCES, label: "Data sources", title: "Data sources", detail: "What it can read" },
   { number: STEP_ACTIONS, label: "Workflow actions", title: "Workflow actions", detail: "What it can change" },
   { number: STEP_CONVERSATIONS, label: "Conversations", title: "Conversations", detail: "History and retention" },
@@ -71,6 +73,7 @@ export const BLANK_DRAFT = {
   modelConfigurationId: null,
   dataSourceIds: [],
   workflowActionIds: [],
+  skillIds: [],
   conversationLoadTrigger: LOAD_TRIGGER_CHAT_OPEN,
   allowConversationResume: true,
   singleActiveConversationPerRecord: true,

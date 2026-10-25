@@ -274,6 +274,7 @@ function buildAgentItem(base, message, shared, showAgentHeader, isLastAgentMessa
     agentName,
     hasSources: sources.length > 0,
     sources: sourceItems,
+    skillName: message.skillName || null,
     showFeedback: canAct && !!ui.feedbackEnabled,
     isHelpful: message.feedbackRating === FEEDBACK_RATING.HELPFUL,
     isNotHelpful: message.feedbackRating === FEEDBACK_RATING.NOT_HELPFUL,

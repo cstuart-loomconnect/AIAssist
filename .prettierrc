@@ -51,6 +51,10 @@
       "options": { "parser": "lwc", "printWidth": 1000 }
     },
     {
+      "files": "**/lwc/aiAgentWizardStepSkills/*.html",
+      "options": { "parser": "lwc", "printWidth": 1000 }
+    },
+    {
       "files": "**/lwc/aiAgentWizardPicker/*.html",
       "options": { "parser": "lwc", "printWidth": 1000 }
     },
@@ -276,6 +280,30 @@
     },
     {
       "files": "**/lwc/aiToolsWorkflowActions/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkills/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkillWizard/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepBasics/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepTools/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepInstructions/*.html",
+      "options": { "parser": "lwc", "printWidth": 300 }
+    },
+    {
+      "files": "**/lwc/aiToolsSkStepTest/*.html",
       "options": { "parser": "lwc", "printWidth": 300 }
     },
     {

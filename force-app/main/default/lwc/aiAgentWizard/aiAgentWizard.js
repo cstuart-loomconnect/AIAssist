@@ -26,7 +26,7 @@ import getWizardPage from "@salesforce/apex/AIAgentWizardController.getWizardPag
 import getCopyDraft from "@salesforce/apex/AIAgentWizardController.getCopyDraft";
 import checkDraft from "@salesforce/apex/AIAgentWizardController.checkDraft";
 import saveAgent from "@salesforce/apex/AIAgentWizardController.saveAgent";
-import { SCREEN_LIST, SCREEN_START, SCREEN_WIZARD, SCREEN_DONE, STEP_BASICS, STEP_MODEL, STEP_DATA_SOURCES, STEP_ACTIONS, STEP_CONVERSATIONS, STEP_LIMITS, STEP_ACCESS, STEP_REVIEW, FIRST_CHECKED_STEP, STEP_NAMES, STEPS_WITH_REQUIRED_FIELDS, BLANK_DRAFT, CHECK_DELAY_MILLISECONDS, AGENT_ID_STATE_KEY, SETTINGS_TAB_API_NAME, TOAST_VARIANT_ERROR, CONFIRM_VARIANT, NO_TEXT, LABELS } from "./aiAgentWizardSettings";
+import { SCREEN_LIST, SCREEN_START, SCREEN_WIZARD, SCREEN_DONE, STEP_BASICS, STEP_MODEL, STEP_SKILLS, STEP_DATA_SOURCES, STEP_ACTIONS, STEP_CONVERSATIONS, STEP_LIMITS, STEP_ACCESS, STEP_REVIEW, FIRST_CHECKED_STEP, STEP_NAMES, STEPS_WITH_REQUIRED_FIELDS, BLANK_DRAFT, CHECK_DELAY_MILLISECONDS, AGENT_ID_STATE_KEY, SETTINGS_TAB_API_NAME, TOAST_VARIANT_ERROR, CONFIRM_VARIANT, NO_TEXT, LABELS } from "./aiAgentWizardSettings";
 import { buildFieldErrors, buildFieldErrorMap, getStepFindings, buildReviewFindings, buildStepViews, formatLastChanged, formatErrorMessage, toApexDraft } from "./aiAgentWizardHelper";
 
 // The tab. It holds one draft, and each step shows part of it and reports changes to it.
@@ -122,6 +122,11 @@ export default class AiAgentWizard extends NavigationMixin(LightningElement) {
   get isStepDataSources() {
 
     return this.step === STEP_DATA_SOURCES;
+  }
+
+  get isStepSkills() {
+
+    return this.step === STEP_SKILLS;
   }
 
   get isStepActions() {

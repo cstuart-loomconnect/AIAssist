@@ -257,6 +257,64 @@ public without sharing class AIAssistTestDataFactory {
         return links;
     }
 
+    // Inactive skills with a When To Use It text of the right length and one instruction line. A skill needs tools before it can be activated.
+    public static List<AISkill__c> createAISkills(Integer numberOfSkills, Boolean shouldDoInsert) {
+
+        // [1] Build each skill with a unique name
+        List<AISkill__c> skills = new List<AISkill__c>();
+
+        for (Integer itemIndex = 0; itemIndex < numberOfSkills; itemIndex++) {
+
+            String suffix = uniqueSuffix();
+
+            skills.add(new AISkill__c(Name = 'AI Assist Test Skill ' + suffix, DeveloperName__c = 'Skill_' + suffix, Description__c = 'Use this skill when the user asks for a summary of the open record and its recent activity.', Instructions__c = '1. Answer the user with the information you have.', OutputType__c = 'Chat Answer', IsActive__c = false));
+        }
+
+        // [2] Insert them when asked, and return them
+        if (shouldDoInsert && !skills.isEmpty()) insert skills;
+
+        return skills;
+    }
+
+    // Puts the data sources, then the workflow actions, into the skill in that order. Either list may be null.
+    public static List<AISkillTool__c> createAISkillTools(Id skillId, List<AIDataSource__c> dataSources, List<AIWorkflowAction__c> actions, Boolean shouldDoInsert) {
+
+        // [1] Build one tool for each data source and each action, numbered in order
+        List<AISkillTool__c> skillTools = new List<AISkillTool__c>();
+
+        for (AIDataSource__c dataSource : dataSources == null ? new List<AIDataSource__c>() : dataSources) {
+
+            skillTools.add(new AISkillTool__c(AISkill__c = skillId, AIDataSource__c = dataSource.Id, StepOrder__c = skillTools.size() + 1, IsRequired__c = true));
+        }
+
+        for (AIWorkflowAction__c action : actions == null ? new List<AIWorkflowAction__c>() : actions) {
+
+            skillTools.add(new AISkillTool__c(AISkill__c = skillId, AIWorkflowAction__c = action.Id, StepOrder__c = skillTools.size() + 1, IsRequired__c = true));
+        }
+
+        // [2] Insert them when asked, and return them
+        if (shouldDoInsert && !skillTools.isEmpty()) insert skillTools;
+
+        return skillTools;
+    }
+
+    // Gives the skills to the agent, active.
+    public static List<AIAgentSkill__c> createAIAgentSkills(Id agentId, List<AISkill__c> skills, Boolean shouldDoInsert) {
+
+        // [1] Build one active link for each skill
+        List<AIAgentSkill__c> links = new List<AIAgentSkill__c>();
+
+        for (AISkill__c skill : skills) {
+
+            links.add(new AIAgentSkill__c(AIAgent__c = agentId, AISkill__c = skill.Id, IsActive__c = true));
+        }
+
+        // [2] Insert them when asked, and return them
+        if (shouldDoInsert && !links.isEmpty()) insert links;
+
+        return links;
+    }
+
     // One active assignment per user, plus one to the permission set (by API name) when given. Either may be null.
     public static List<AIAgentAssignment__c> createAIAgentAssignments(Id agentId, List<User> users, String permissionSetName, Boolean shouldDoInsert) {
 

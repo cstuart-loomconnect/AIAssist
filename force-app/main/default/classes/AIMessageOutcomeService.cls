@@ -32,6 +32,7 @@ public without sharing class AIMessageOutcomeService {
         public String modelIdentifier;
         public Id promptTemplateId;
         public Decimal promptTemplateVersion;
+        public Id skillId; // The AI Skill the model picked for the reply, if any.
         public String tokenTrackingMethod;
     }
 
@@ -68,7 +69,7 @@ public without sharing class AIMessageOutcomeService {
                     agentResult.replyText = String.isBlank(agentResult.replyText) ? Label.AI_Chat_Fallback_Default : agentResult.replyText;
 
                     // [6] Build the reply, counting its tokens by length when the agent estimates them
-                    AIConversationMessage__c replyMessage = new AIConversationMessage__c(AIConversation__c = responseContext.conversationId, Sender__c = AIAssistApplicationConstants.SENDER_AI_AGENT, MessageBody__c = agentResult.replyText, ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE, TokenCount__c = responseContext.tokenTrackingMethod == AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE ? AIConversationMessageService.estimateTokenCount(agentResult.replyText) : agentResult.totalTokensUsed, InputTokenCount__c = inputTokens, OutputTokenCount__c = outputTokens, LatencyMilliseconds__c = agentResult.latencyMilliseconds, AIModelConfiguration__c = responseContext.modelConfigurationId, AIPromptTemplate__c = responseContext.promptTemplateId, PromptTemplateVersion__c = responseContext.promptTemplateVersion, SuggestedWorkflowAction__c = suggestedActionId, InReplyTo__c = responseContext.triggeringMessageId);
+                    AIConversationMessage__c replyMessage = new AIConversationMessage__c(AIConversation__c = responseContext.conversationId, Sender__c = AIAssistApplicationConstants.SENDER_AI_AGENT, MessageBody__c = agentResult.replyText, ProcessingStatus__c = AIAssistApplicationConstants.PROCESSING_STATUS_COMPLETE, TokenCount__c = responseContext.tokenTrackingMethod == AIAssistApplicationConstants.TRACKING_METHOD_ESTIMATE ? AIConversationMessageService.estimateTokenCount(agentResult.replyText) : agentResult.totalTokensUsed, InputTokenCount__c = inputTokens, OutputTokenCount__c = outputTokens, LatencyMilliseconds__c = agentResult.latencyMilliseconds, AIModelConfiguration__c = responseContext.modelConfigurationId, AIPromptTemplate__c = responseContext.promptTemplateId, PromptTemplateVersion__c = responseContext.promptTemplateVersion, AISkill__c = responseContext.skillId, SuggestedWorkflowAction__c = suggestedActionId, InReplyTo__c = responseContext.triggeringMessageId);
 
                     // [7] Save the reply; if this fails the turn has not succeeded
                     AIMessagingDataService.insertOrThrow(new List<SObject>{ replyMessage });

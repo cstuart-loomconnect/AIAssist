@@ -48,6 +48,7 @@ force-app/main/default/lwc/aiAgentWizardStart/*.js
 force-app/main/default/lwc/aiAgentWizardStepBasics/*.js
 force-app/main/default/lwc/aiAgentWizardStepModel/*.js
 force-app/main/default/lwc/aiAgentWizardStepItems/*.js
+force-app/main/default/lwc/aiAgentWizardStepSkills/*.js
 force-app/main/default/lwc/aiAgentWizardPicker/*.js
 force-app/main/default/lwc/aiAgentWizardStepConversations/*.js
 force-app/main/default/lwc/aiAgentWizardStepLimits/*.js
@@ -80,6 +81,12 @@ force-app/main/default/lwc/aiToolsWaStepTest/*.js
 force-app/main/default/lwc/aiToolsWaStepType/*.js
 force-app/main/default/lwc/aiToolsWaWizard/*.js
 force-app/main/default/lwc/aiToolsWorkflowActions/*.js
+force-app/main/default/lwc/aiToolsSkills/*.js
+force-app/main/default/lwc/aiToolsSkillWizard/*.js
+force-app/main/default/lwc/aiToolsSkStepBasics/*.js
+force-app/main/default/lwc/aiToolsSkStepTools/*.js
+force-app/main/default/lwc/aiToolsSkStepInstructions/*.js
+force-app/main/default/lwc/aiToolsSkStepTest/*.js
 force-app/main/default/lwc/aiPromptTemplates/*.js
 force-app/main/default/lwc/aiPromptTemplatesList/*.js
 force-app/main/default/lwc/aiPromptTemplatesDetail/*.js

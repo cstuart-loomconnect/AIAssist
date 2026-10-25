@@ -23,7 +23,7 @@ public without sharing class AIChatConversationService {
 
     public class AIChatConversationServiceException extends Exception {}
 
-    private static final String MESSAGE_FIELDS = 'Id, AIConversation__c, Sender__c, MessageBody__c, TokenCount__c, ProcessingStatus__c, SuggestedWorkflowAction__c, ExecutionTraceJson__c, CreatedDate, (SELECT Rating__c FROM AIFeedbacks__r WHERE CreatedById = :userId ORDER BY CreatedDate DESC LIMIT 1)';
+    private static final String MESSAGE_FIELDS = 'Id, AIConversation__c, Sender__c, MessageBody__c, TokenCount__c, ProcessingStatus__c, SuggestedWorkflowAction__c, AISkill__r.Name, ExecutionTraceJson__c, CreatedDate, (SELECT Rating__c FROM AIFeedbacks__r WHERE CreatedById = :userId ORDER BY CreatedDate DESC LIMIT 1)';
 
     private static final String CONVERSATION_FIELDS = 'Id, Name, Status__c, ConversationCloseReason__c, AIAgent__c, AIAgent__r.Name, AIAgent__r.IsActive__c, AIAgent__r.AllowConversationResume__c, MessageCount__c, RelatedRecordId__c, RelatedObjectAPIName__c, ProcessingLockedUntil__c, LastModifiedDate, (SELECT MessageBody__c FROM AIConversationMessages__r WHERE Sender__c = :userSender ORDER BY CreatedDate ASC LIMIT 1)';
 
@@ -378,8 +378,9 @@ public without sharing class AIChatConversationService {
             chatMessage.commandName = AIChatCommandService.getCommandToken(chatMessage.displayText);
         }
 
-        // [3] Add the user's latest rating
+        // [3] Add the user's latest rating, and the skill the model picked when the message was read with it
         if (feedback != null && !feedback.isEmpty()) chatMessage.feedbackRating = feedback[0].Rating__c;
+        if (message.getPopulatedFieldsAsMap().containsKey('AISkill__r') && message.AISkill__r != null) chatMessage.skillName = message.AISkill__r.Name;
 
         // [4] Add each execution step, noting the data sources it read and the actions that ran
         Set<Id> ranActionIds = new Set<Id>();

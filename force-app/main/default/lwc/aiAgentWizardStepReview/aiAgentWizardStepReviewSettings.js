@@ -20,21 +20,23 @@ Version      Author                   Description
 // The steps the Edit links and the Go to buttons jump to. The numbers match the tab's steps.
 export const STEP_BASICS = 1;
 export const STEP_MODEL = 2;
-export const STEP_DATA_SOURCES = 3;
-export const STEP_ACTIONS = 4;
-export const STEP_CONVERSATIONS = 5;
-export const STEP_LIMITS = 6;
-export const STEP_ACCESS = 7;
+export const STEP_SKILLS = 3;
+export const STEP_DATA_SOURCES = 4;
+export const STEP_ACTIONS = 5;
+export const STEP_CONVERSATIONS = 6;
+export const STEP_LIMITS = 7;
+export const STEP_ACCESS = 8;
 
 // The names of the steps, for the Go to buttons.
 export const STEP_LABELS = {
   1: "Basics",
   2: "Model",
-  3: "Data sources",
-  4: "Workflow actions",
-  5: "Conversations",
-  6: "Limits",
-  7: "Access"
+  3: "Skills",
+  4: "Data sources",
+  5: "Workflow actions",
+  6: "Conversations",
+  7: "Limits",
+  8: "Access"
 };
 
 // Values that mirror AIAgentWizardDataStructure.Finding.severity.
@@ -86,6 +88,7 @@ export const LABELS = {
   edit: "Edit",
   basics: "Basics",
   model: "Model",
+  skills: "Skills",
   dataSources: "Data sources",
   actions: "Workflow actions",
   conversations: "Conversations",

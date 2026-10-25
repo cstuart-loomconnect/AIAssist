@@ -1,0 +1,66 @@
+/* The name boxes sit side by side and wrap on a narrow screen. The 16px gap is not an SLDS step. */
+.aitsk-names {
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+/* One name box: it shares the row. */
+.aitsk-name {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+/* The API name box: a code font. */
+.aitsk-code {
+  font-family: monospace;
+}
+
+/* The row under When To Use It: the help on the left and the counter on the right. */
+.aitsk-under {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Help text under a box: muted text. */
+.aitsk-help {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* Help text beside the Active switch: no extra margin. */
+.aitsk-help_inline {
+  margin: 0;
+}
+
+/* The When To Use It counter: small muted numbers that do not wrap. */
+.aitsk-counter {
+  margin-top: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--aia-muted);
+}
+
+/* The counter while the text is too short or too long: red. */
+.aitsk-counter_bad {
+  color: var(--aia-danger);
+}
+
+/* The note when Apex sets the output: an accent tinted box. */
+.aitsk-note {
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--aia-accent-tint);
+  color: var(--aia-ink-soft);
+}
+
+/* The Active row: a gap between the switch, its label and its help. */
+.aitsk-active {
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* The word Active: dark text. */
+.aitsk-active-label {
+  color: var(--aia-ink);
+}

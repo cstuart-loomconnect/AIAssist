@@ -161,6 +161,23 @@
   color: var(--aia-ink);
 }
 
+/* The skill line under the answer: the label and one chip, with a little room. SLDS has no 6px gap utility. */
+.skill {
+  gap: 6px;
+  padding-top: 4px;
+}
+
+/* Draws the skill as a rounded chip in the accent tint, so it stands apart from the sources. */
+.skill-chip {
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--aia-accent-tint);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--aia-accent);
+}
+
 /* Spaces the toolbar buttons tightly and pulls the toolbar up under the bubble. SLDS has no negative margin utility. */
 .toolbar {
   gap: 2px;
