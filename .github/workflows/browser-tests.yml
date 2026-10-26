@@ -26,9 +26,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' && github.event.label.name == 'e2e') ||
       (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'e2e'))
-    uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/scratch-org-tests.yml@v1
+    uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/scratch-org-tests.yml@master
     with:
-      cicd-ref: v1
+      cicd-ref: master
       apex-tests: false
       e2e: true
     secrets: inherit
