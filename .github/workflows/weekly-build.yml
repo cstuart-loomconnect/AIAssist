@@ -1,0 +1,22 @@
+name: Weekly Build
+
+# Full scratch org run (Apex and browser tests) against development, from AIAssist-CICD.
+# Opens an issue if it fails. Scheduled workflows only run from the default branch (master),
+# so the schedule starts working once this file reaches master.
+on:
+  # Switched off for now: uncomment to run every Monday at 02:00 UTC.
+  # schedule:
+  #   - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  weekly:
+    uses: cstuart-loomconnect/AIAssist-CICD/.github/workflows/weekly-build.yml@master
+    with:
+      ref: development
+      cicd-ref: master
+    secrets: inherit
