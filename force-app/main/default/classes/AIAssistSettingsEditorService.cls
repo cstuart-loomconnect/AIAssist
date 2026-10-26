@@ -152,7 +152,7 @@ public without sharing class AIAssistSettingsEditorService {
 
         // [2] Find the row
         String objectName = getObjectName(settingsName);
-        List<SObject> records = Database.query('SELECT Id, SetupOwnerId FROM ' + objectName + ' WHERE Id = :rowId LIMIT 1', AccessLevel.SYSTEM_MODE);
+        List<SObject> records = Database.query('SELECT Id, SetupOwnerId FROM ' + String.escapeSingleQuotes(objectName) + ' WHERE Id = :rowId LIMIT 1', AccessLevel.SYSTEM_MODE);
         if (records.isEmpty()) throw new AIAssistSettingsEditorServiceException(Label.AI_Settings_Error_Row_Not_Found);
 
         // [3] Refuse to delete the organisation row
@@ -280,7 +280,7 @@ public without sharing class AIAssistSettingsEditorService {
 
         // [1] Read the row and every field the tab edits
         Map<String, Schema.SObjectField> fieldTokens = getFieldTokens(settingsName);
-        String query = 'SELECT Id, SetupOwnerId, ' + String.join(getFieldNames(fieldTokens), ', ') + ' FROM ' + getObjectName(settingsName) + ' WHERE SetupOwnerId = :ownerId LIMIT 1';
+        String query = 'SELECT Id, SetupOwnerId, ' + String.escapeSingleQuotes(String.join(getFieldNames(fieldTokens), ', ')) + ' FROM ' + String.escapeSingleQuotes(getObjectName(settingsName)) + ' WHERE SetupOwnerId = :ownerId LIMIT 1';
         List<SObject> records = Database.query(query, AccessLevel.SYSTEM_MODE);
 
         return records.isEmpty() ? null : records[0];
@@ -305,7 +305,7 @@ public without sharing class AIAssistSettingsEditorService {
 
         // [1] Read every saved row
         Map<String, Schema.SObjectField> fieldTokens = getFieldTokens(settingsName);
-        String query = 'SELECT Id, SetupOwnerId, ' + String.join(getFieldNames(fieldTokens), ', ') + ' FROM ' + getObjectName(settingsName) + ' LIMIT 2000';
+        String query = 'SELECT Id, SetupOwnerId, ' + String.escapeSingleQuotes(String.join(getFieldNames(fieldTokens), ', ')) + ' FROM ' + String.escapeSingleQuotes(getObjectName(settingsName)) + ' LIMIT 2000';
         List<SObject> records = Database.query(query, AccessLevel.SYSTEM_MODE);
 
         // [2] Sort them into the organisation row, profile rows and user rows

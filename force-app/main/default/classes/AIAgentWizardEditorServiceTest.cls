@@ -249,7 +249,7 @@ Version      Author                   Description
         System.runAs(superUser) {
             // [1] Create a model and a provider that answers, and the Id of a model that was never saved
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
-            Id missingId = AIModelConfiguration__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIModelConfiguration__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             AIAssistTestProviderMock.install(AIAssistTestProviderMock.KIND_ANSWER);
             String refusal;
 
@@ -271,7 +271,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of an agent that was never saved, and a user who holds only the end user permission set
-            Id missingId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
             String missingRefusal;
@@ -385,7 +385,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of an agent that was never saved, and a user who holds only the end user permission set
-            Id missingId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
             String missingRefusal;

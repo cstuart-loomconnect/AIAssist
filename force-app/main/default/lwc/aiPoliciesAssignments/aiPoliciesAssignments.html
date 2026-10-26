@@ -2,15 +2,9 @@
   <!-- Who gets this policy: a bordered box with a head and a table -->
   <div class="aipa-box slds-m-bottom_medium">
     <!-- Head: the title and the button that adds an assignment -->
-    <div
-      class="aipa-box-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread"
-    >
+    <div class="aipa-box-head slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
       <span class="aipa-box-title">{labels.whoGets}</span>
-      <lightning-button
-        variant="brand"
-        label={labels.addAssignment}
-        onclick={handleAddAssignment}
-      ></lightning-button>
+      <lightning-button variant="brand" label={labels.addAssignment} onclick={handleAddAssignment}></lightning-button>
     </div>
 
     <!-- Table: one row for each user or permission set -->
@@ -33,34 +27,14 @@
               </td>
               <td>
                 <div class="aipa-name">{assignment.name}</div>
-                <template lwc:if={assignment.hasCaption}
-                  ><div class="aipa-caption slds-text-body_small">
-                    {assignment.caption}
-                  </div></template
-                >
+                <template lwc:if={assignment.hasCaption}><div class="aipa-caption slds-text-body_small">{assignment.caption}</div></template>
               </td>
               <td>{assignment.usersCovered}</td>
               <td>
-                <lightning-input
-                  type="toggle"
-                  variant="label-hidden"
-                  label={labels.columnActive}
-                  checked={assignment.isActive}
-                  data-id={assignment.assignmentId}
-                  message-toggle-active=""
-                  message-toggle-inactive=""
-                  onchange={handleActiveChange}
-                ></lightning-input>
+                <lightning-input type="toggle" variant="label-hidden" label={labels.columnActive} checked={assignment.isActive} data-id={assignment.assignmentId} message-toggle-active="" message-toggle-inactive="" onchange={handleActiveChange}></lightning-input>
               </td>
               <td class="aipa-actions">
-                <button
-                  type="button"
-                  class="slds-button slds-button_neutral"
-                  data-id={assignment.assignmentId}
-                  onclick={handleRemove}
-                >
-                  {labels.remove}
-                </button>
+                <button type="button" class="slds-button slds-button_neutral" data-id={assignment.assignmentId} onclick={handleRemove}>{labels.remove}</button>
               </td>
             </tr>
           </template>
@@ -69,11 +43,7 @@
     </template>
 
     <!-- Nobody: shown when the policy has no assignments -->
-    <template lwc:else
-      ><p class="aipa-caption slds-p-around_medium slds-m-bottom_none">
-        {labels.none}
-      </p></template
-    >
+    <template lwc:else><p class="aipa-caption slds-p-around_medium slds-m-bottom_none">{labels.none}</p></template>
   </div>
 
   <!-- How a user's policy is chosen: the three steps in order, and what happens when two permission sets disagree -->
@@ -82,25 +52,17 @@
       <span class="aipa-box-title">{labels.howChosen}</span>
     </div>
     <div class="slds-p-around_medium">
-      <div
-        class="slds-grid slds-wrap slds-grid_vertical-align-center aipa-steps"
-      >
+      <div class="slds-grid slds-wrap slds-grid_vertical-align-center aipa-steps">
         <span class="aipa-step">{labels.stepUser}</span>
         <span class="aipa-caption">{labels.then}</span>
         <span class="aipa-step">{labels.stepPermissionSet}</span>
         <span class="aipa-caption">{labels.then}</span>
         <span class="aipa-step">{labels.stepDefault}</span>
       </div>
-      <p
-        class="aipa-caption slds-text-body_small slds-m-top_small slds-m-bottom_none"
-      >
-        {labels.stricterWins}
-      </p>
+      <p class="aipa-caption slds-text-body_small slds-m-top_small slds-m-bottom_none">{labels.stricterWins}</p>
     </div>
   </div>
 
   <!-- Check a user: finds a user and says which policy they get -->
-  <c-ai-policies-check-user
-    onassign={handleAssignUser}
-  ></c-ai-policies-check-user>
+  <c-ai-policies-check-user onassign={handleAssignUser}></c-ai-policies-check-user>
 </template>

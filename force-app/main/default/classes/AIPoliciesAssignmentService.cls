@@ -123,7 +123,7 @@ public without sharing class AIPoliciesAssignmentService {
         // [3] The same assignee twice on one policy is refused
         if (hasAssignment(assignment)) throw new AIPoliciesAssignmentServiceException(Label.AI_Policies_Error_Duplicate);
 
-        insert assignment;
+        Database.insert(assignment, AccessLevel.SYSTEM_MODE);
 
         return AIPoliciesEditorService.getPolicy(policyId);
     }
@@ -136,7 +136,7 @@ public without sharing class AIPoliciesAssignmentService {
         AIUsagePolicyAssignment__c assignment = findAssignment(assignmentId);
 
         // [2] Save the new state
-        update new AIUsagePolicyAssignment__c(Id = assignmentId, IsActive__c = isActive == true);
+        Database.update(new AIUsagePolicyAssignment__c(Id = assignmentId, IsActive__c = isActive == true), AccessLevel.SYSTEM_MODE);
 
         return AIPoliciesEditorService.getPolicy(assignment.AIUsagePolicy__c);
     }
@@ -150,7 +150,7 @@ public without sharing class AIPoliciesAssignmentService {
 
         // [2] Delete it
         Id policyId = assignment.AIUsagePolicy__c;
-        delete assignment;
+        Database.delete(assignment, AccessLevel.SYSTEM_MODE);
 
         return AIPoliciesEditorService.getPolicy(policyId);
     }

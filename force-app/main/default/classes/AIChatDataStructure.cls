@@ -274,6 +274,8 @@ public without sharing class AIChatDataStructure {
         @AuraEnabled
         public SuggestedAction suggestedAction;
         @AuraEnabled
+        public String skillName; // The AI Skill the model picked for the reply, shown as a chip. Blank when none was used.
+        @AuraEnabled
         public List<String> sources = new List<String>();
         @AuraEnabled
         public List<ExecutionStep> steps = new List<ExecutionStep>();

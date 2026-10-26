@@ -40,7 +40,7 @@ public without sharing class AIToolsWorkflowActionTestService {
         if (detail.actionType == AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_SCREEN_FLOW) throw new AIToolsWorkflowActionTestServiceException(Label.AI_ToolsWa_Error_Screen_Flow_No_Test);
 
         // [3] Without a roll back, only a sandbox may run it
-        Boolean isSandbox = [SELECT IsSandbox FROM Organization LIMIT 1].IsSandbox;
+        Boolean isSandbox = [SELECT IsSandbox FROM Organization WITH SYSTEM_MODE LIMIT 1].IsSandbox;
         if (request.shouldRollBack != true && !isSandbox) throw new AIToolsWorkflowActionTestServiceException(Label.AI_ToolsWa_Error_Rollback_Sandbox);
 
         // [4] A class that says it does things that cannot be undone is only tested in a sandbox

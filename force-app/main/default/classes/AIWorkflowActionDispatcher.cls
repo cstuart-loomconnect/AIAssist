@@ -407,7 +407,7 @@ public without sharing class AIWorkflowActionDispatcher {
         return agents.isEmpty() ? null : agents[0];
     }
 
-    // One action the agent may offer: active, and linked to the agent through an active assignment. Null when it is neither.
+    // One action the agent may offer: active, and linked to the agent through an active assignment or through one of its active AI Skills. Null when it is neither.
     @TestVisible
     private static AIWorkflowAction__c getAssignedAction(Id actionId, Id agentId) {
 
@@ -417,7 +417,10 @@ public without sharing class AIWorkflowActionDispatcher {
         // [2] Read the action if it is active and actively assigned to the agent
         List<AIWorkflowAction__c> actions = [SELECT Id, DeveloperName__c, ActionName__c, ActionType__c, ExecutionType__c, ApexClassName__c, FlowAPIName__c, TargetObject__c, RequiresConfirmation__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id = :actionId AND IsActive__c = TRUE AND Id IN (SELECT AIWorkflowAction__c FROM AIAgentWorkflowAction__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE) WITH SYSTEM_MODE LIMIT 1];
 
-        // [3] Return it, or null when there is none
+        // [3] Not assigned directly, so read it when it reaches the agent through one of its active AI Skills
+        if (actions.isEmpty() && AISkillService.isWorkflowActionGrantedThroughSkill(actionId, agentId)) actions = [SELECT Id, DeveloperName__c, ActionName__c, ActionType__c, ExecutionType__c, ApexClassName__c, FlowAPIName__c, TargetObject__c, RequiresConfirmation__c, InputSchema__c FROM AIWorkflowAction__c WHERE Id = :actionId AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 1];
+
+        // [4] Return it, or null when there is none
         return actions.isEmpty() ? null : actions[0];
     }
 

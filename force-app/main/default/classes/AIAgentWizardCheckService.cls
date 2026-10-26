@@ -54,6 +54,7 @@ public without sharing class AIAgentWizardCheckService {
         check.isDeveloperNameTaken = false;
         addBasicsFindings(check, draft);
         addModelFindings(check, draft);
+        addSkillFindings(check, draft, getSkills(new Set<Id>(draft.skillIds)));
         addDataSourceFindings(check, draft, getDataSources(new Set<Id>(draft.dataSourceIds)));
         List<AIWorkflowAction__c> actions = getActions(new Set<Id>(draft.workflowActionIds));
         addActionFindings(check, draft, actions, getActiveFlowVersions(getFlowNames(actions)));
@@ -391,6 +392,29 @@ public without sharing class AIAgentWizardCheckService {
         if (models[0].IsActive__c != true) addFinding(check, false, step, AIAssistApplicationConstants.WIZARD_CODE_MODEL_INACTIVE, Label.AI_Wizard_Finding_ModelInactive_Title, Label.AI_Wizard_Finding_ModelInactive_Message, null);
     }
 
+    // Adds the warnings of the Skills step.
+    private static void addSkillFindings(AIAgentWizardDataStructure.DraftCheck check, AIAgentWizardDataStructure.AgentDraft draft, List<AISkill__c> skills) {
+
+        // [1] Warn when more skills are given than reach the model
+        Integer step = AIAssistApplicationConstants.WIZARD_STEP_SKILLS;
+        Set<Id> skillIds = new Set<Id>(draft.skillIds == null ? new List<Id>() : draft.skillIds);
+        Integer maxSkills = AIAssistApplicationConstants.MAX_SKILLS_PER_AGENT;
+
+        if (skillIds.size() > maxSkills) addFinding(check, false, step, AIAssistApplicationConstants.WIZARD_CODE_TOO_MANY_SKILLS, Label.AI_Wizard_Finding_TooManySkills_Title, String.format(Label.AI_Wizard_Finding_TooManySkills_Message, new List<String>{String.valueOf(maxSkills), String.valueOf(skillIds.size())}), null);
+
+        // [2] Warn about each one that is off, or needs a record of an object the agent does not appear on
+        Set<String> lowerObjectNames = getLowerObjectNames(draft);
+
+        for (AISkill__c skill : skills) {
+
+            if (skill.IsActive__c != true) addFinding(check, false, step, AIAssistApplicationConstants.WIZARD_CODE_ITEM_INACTIVE, Label.AI_Wizard_Finding_ItemInactive_Title, String.format(Label.AI_Wizard_Finding_ItemInactive_Message, new List<String>{skill.Name}), skill.Id);
+
+            Boolean isOtherObject = String.isNotBlank(skill.BoundObjectApiName__c) && !lowerObjectNames.isEmpty() && !lowerObjectNames.contains(skill.BoundObjectApiName__c.toLowerCase());
+
+            if (isOtherObject) addFinding(check, false, step, AIAssistApplicationConstants.WIZARD_CODE_OBJECT_NOT_ON_AGENT, Label.AI_Wizard_Finding_ObjectNotOnAgent_Title, String.format(Label.AI_Wizard_Finding_ObjectNotOnAgent_Message, new List<String>{skill.Name, skill.BoundObjectApiName__c}), skill.Id);
+        }
+    }
+
     // Adds the warnings of the Data sources step.
     private static void addDataSourceFindings(AIAgentWizardDataStructure.DraftCheck check, AIAgentWizardDataStructure.AgentDraft draft, List<AIDataSource__c> dataSources) {
 
@@ -554,6 +578,15 @@ public without sharing class AIAgentWizardCheckService {
         context.policy = getPolicyInfo();
 
         return context;
+    }
+
+    // The skills with these ids, in name order.
+    private static List<AISkill__c> getSkills(Set<Id> skillIds) {
+
+        // [1] Nothing to read without ids
+        if (skillIds.isEmpty()) return new List<AISkill__c>();
+
+        return [SELECT Id, Name, BoundObjectApiName__c, IsActive__c FROM AISkill__c WHERE Id IN :skillIds WITH SYSTEM_MODE ORDER BY Name LIMIT 2000];
     }
 
     // The data sources with these ids, in name order.

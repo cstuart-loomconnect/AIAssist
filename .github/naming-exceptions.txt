@@ -1,2 +1,0 @@
-# Paths (substring match) that are exempt from scripts/ci/check-naming.js.
-# One per line. Explain why in a comment above each entry.

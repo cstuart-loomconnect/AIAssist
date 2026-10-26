@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AISkill__c</fullName>
+    <description>The skill this tool belongs to.</description>
+    <inlineHelpText
+  >The tool is removed automatically when the skill is deleted.</inlineHelpText>
+    <label>AI Skill</label>
+    <referenceTo>AISkill__c</referenceTo>
+    <relationshipLabel>AI Skill Tools</relationshipLabel>
+    <relationshipName>AISkillTools</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

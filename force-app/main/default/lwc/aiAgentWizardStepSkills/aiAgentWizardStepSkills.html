@@ -1,0 +1,66 @@
+<template>
+  <!-- Findings: what the checks found for this step, with a button that removes the skill each one names -->
+  <template lwc:if={hasFindings}>
+    <div class="aiawsk-note aiawsk-note_warning"><strong>{findingCountText}</strong>{labels.wontStopSaving}</div>
+    <div class="aiawsk-box aiawsk-box_flush">
+      <template for:each={findingViews} for:item="finding">
+        <div key={finding.key} class="aiawsk-box-row slds-grid slds-grid_vertical-align-center aiawsk-gap">
+          <span class={finding.severityClass}>{finding.severityLabel}</span>
+          <div class="aiawsk-grow">
+            <div class="aiawsk-strong">{finding.title}</div>
+            <div class="aiawsk-muted">{finding.message}</div>
+          </div>
+          <template lwc:if={finding.showRemove}><lightning-button label={labels.remove} data-key={finding.itemId} onclick={handleRemove}></lightning-button></template>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Intro and search -->
+  <p class="aiawsk-muted">{labels.intro}</p>
+
+  <!-- No skills: none exist yet -->
+  <template lwc:if={hasNoSkills}>
+    <div class="aiawsk-empty"><p class="aiawsk-muted">{labels.noSkills}</p></div>
+  </template>
+  <template lwc:else>
+    <input type="search" class="slds-input aiawsk-search slds-m-top_small" placeholder={labels.search} value={searchText} oninput={handleSearchInput} />
+
+    <!-- Given: the skills the agent has, each with Remove -->
+    <div class="aiawsk-box">
+      <div class="aiawsk-box-head">{givenHeading}</div>
+      <template for:each={givenViews} for:item="skill">
+        <div key={skill.key} class="aiawsk-box-row slds-grid slds-grid_vertical-align-center aiawsk-gap">
+          <div class="aiawsk-grow">
+            <div class="aiawsk-strong">{skill.name}</div>
+            <div class="aiawsk-when">{skill.description}</div>
+            <div class="aiawsk-muted">{skill.detail}</div>
+          </div>
+          <template for:each={skill.pills} for:item="pill"><span key={pill.key} class={pill.pillClass}>{pill.label}</span></template>
+          <lightning-button label={labels.remove} data-key={skill.key} onclick={handleRemove}></lightning-button>
+        </div>
+      </template>
+      <template lwc:if={hasNoGiven}><div class="aiawsk-box-row aiawsk-muted">{givenEmptyText}</div></template>
+    </div>
+
+    <!-- Others: the skills the agent does not have, each with Add -->
+    <div class="aiawsk-box">
+      <div class="aiawsk-box-head">{labels.others}</div>
+      <template for:each={otherViews} for:item="skill">
+        <div key={skill.key} class="aiawsk-box-row slds-grid slds-grid_vertical-align-center aiawsk-gap">
+          <div class="aiawsk-grow">
+            <div class="aiawsk-strong">{skill.name}</div>
+            <div class="aiawsk-when">{skill.description}</div>
+            <div class="aiawsk-muted">{skill.detail}</div>
+          </div>
+          <template for:each={skill.pills} for:item="pill"><span key={pill.key} class={pill.pillClass}>{pill.label}</span></template>
+          <lightning-button variant="brand-outline" label={labels.add} data-key={skill.key} onclick={handleAdd}></lightning-button>
+        </div>
+      </template>
+      <template lwc:if={hasNoOthers}><div class="aiawsk-box-row aiawsk-muted">{labels.noMatches}</div></template>
+    </div>
+  </template>
+
+  <!-- Note: skills are built on the AI Tools tab, not here -->
+  <div class="aiawsk-note aiawsk-note_info">{labels.note}</div>
+</template>

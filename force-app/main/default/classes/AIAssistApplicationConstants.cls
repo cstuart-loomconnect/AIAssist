@@ -163,6 +163,7 @@ public without sharing class AIAssistApplicationConstants {
     public static final String STEP_TYPE_PROVIDER_CALL = 'Provider Call';
     public static final String STEP_TYPE_WORKFLOW_ACTION = 'Workflow Action';
     public static final String STEP_TYPE_PII_MASKING = 'PII Masking';
+    public static final String STEP_TYPE_SKILL = 'Skill';
     public static final String STEP_TYPE_OTHER = 'Other';
 
     // The status of an entry in AIConversationMessage__c.ExecutionTraceJson__c
@@ -298,6 +299,29 @@ public without sharing class AIAssistApplicationConstants {
     public static final String PROMPT_TEMPLATE_PROMPT_INSTRUCTION = 'Prompt templates (if the request clearly matches one, call ' + PROMPT_TEMPLATE_TOOL_NAME + ' with its name before answering; otherwise answer as normal):';
     public static final String TOOL_RESULT_PROMPT_TEMPLATE_SELECTED = 'The prompt template was selected and its instructions now apply. Answer the user\'s request.';
     public static final String TOOL_RESULT_PROMPT_TEMPLATE_UNKNOWN = 'That is not one of the listed prompt templates. Answer with the instructions you already have.';
+
+    // AIAgentManager - the skill tool, which lets the model pick one of the Agent's AI Skills. The model sees only each skill's name and When To Use It text until it picks one; then the skill's instructions and tools are added for the rest of the turn. It is only offered when the agent has skills.
+    public static final String SKILL_TOOL_NAME = 'use_skill';
+    public static final String SKILL_TOOL_ARGUMENT = 'skill';
+    public static final String SKILL_TOOL_DESCRIPTION = 'Pick the skill that fits what the user asked for. Its instructions and tools are added once picked. Call it before answering, only when the request clearly matches one of the skills listed in the instructions.';
+    public static final String SKILL_PROMPT_INSTRUCTION = 'Skills (if the request clearly matches one, call ' + SKILL_TOOL_NAME + ' with its name before answering; otherwise answer as normal):';
+    public static final String SKILL_SELECTED_PROMPT_HEADING = 'Skill in use: ';
+    public static final String TOOL_RESULT_SKILL_SELECTED = 'The skill was picked. Its instructions now apply and its tools are available. Follow the instructions to answer the user\'s request.';
+    public static final String TOOL_RESULT_SKILL_UNKNOWN = 'That is not one of the listed skills. Answer with the instructions and tools you already have.';
+    public static final Integer MAX_SKILLS_PER_AGENT = 32;
+
+    // AI Skills - the values of AISkill__c.OutputType__c and LastTestStatus__c, the two kinds of tool a skill holds, and what the AI Tools tab flags.
+    public static final String SKILL_OUTPUT_CHAT_ANSWER = 'Chat Answer';
+    public static final String SKILL_OUTPUT_RECORD_CHANGE = 'Record Change';
+    public static final String SKILL_OUTPUT_REPORT = 'Report';
+    public static final String SKILL_TEST_STATUS_PASSED = 'Passed';
+    public static final String SKILL_TEST_STATUS_FAILED = 'Failed';
+    public static final String SKILL_TEST_STATUS_NOT_PICKED = 'Not Picked';
+    public static final String SKILL_TOOL_KIND_DATA_SOURCE = 'dataSource';
+    public static final String SKILL_TOOL_KIND_ACTION = 'action';
+    public static final String SKILL_ATTENTION_TOOL_INACTIVE = 'Tool inactive';
+    public static final String SKILL_ATTENTION_NO_TOOLS = 'No tools';
+    public static final Integer SKILL_MAX_TOOLS = 20; // Every tool of a picked skill is added to the request, so a skill stays small.
 
     // AIAgentManager - AI provider callout request.
     public static final String HTTP_METHOD_POST = 'POST';
@@ -563,11 +587,12 @@ public without sharing class AIAssistApplicationConstants {
     public static final String WIZARD_SEVERITY_WARNING = 'Warning';
     public static final Integer WIZARD_STEP_BASICS = 1;
     public static final Integer WIZARD_STEP_MODEL = 2;
-    public static final Integer WIZARD_STEP_DATA_SOURCES = 3;
-    public static final Integer WIZARD_STEP_ACTIONS = 4;
-    public static final Integer WIZARD_STEP_CONVERSATIONS = 5;
-    public static final Integer WIZARD_STEP_LIMITS = 6;
-    public static final Integer WIZARD_STEP_ACCESS = 7;
+    public static final Integer WIZARD_STEP_SKILLS = 3;
+    public static final Integer WIZARD_STEP_DATA_SOURCES = 4;
+    public static final Integer WIZARD_STEP_ACTIONS = 5;
+    public static final Integer WIZARD_STEP_CONVERSATIONS = 6;
+    public static final Integer WIZARD_STEP_LIMITS = 7;
+    public static final Integer WIZARD_STEP_ACCESS = 8;
     public static final String WIZARD_DEVELOPER_NAME_PATTERN = '^[A-Za-z][A-Za-z0-9_]*$';
     public static final String WIZARD_COPY_NAME_PREFIX = 'Copy of ';
     public static final String WIZARD_CODE_NAME_REQUIRED = 'NameRequired';
@@ -590,4 +615,5 @@ public without sharing class AIAssistApplicationConstants {
     public static final String WIZARD_CODE_NO_TEMPLATE = 'NoTemplate';
     public static final String WIZARD_CODE_TOO_MANY_DATA_SOURCES = 'TooManyDataSources';
     public static final String WIZARD_CODE_TOO_MANY_ACTIONS = 'TooManyActions';
+    public static final String WIZARD_CODE_TOO_MANY_SKILLS = 'TooManySkills';
 }

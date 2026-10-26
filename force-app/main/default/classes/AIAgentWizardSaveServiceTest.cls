@@ -18,7 +18,7 @@ Version      Author                   Description
 
 @IsTest private class AIAgentWizardSaveServiceTest {
 
-    // testScenario1: A new agent with a data source, an action, a user and a permission set is saved and activated -> the agent is live with active links and both access lines, and the result counts them.
+    // testScenario1: A new agent with a skill, a data source, an action, a user and a permission set is saved and activated -> the agent is live with active links and both access lines, and the result counts them.
     // testScenario2: A new agent is saved as a draft with repeated ids and object names -> it is saved switched off with each id and name once.
     // testScenario3: A live agent is changed: a link removed, one added, a switched off link brought back, an access line removed, added and switched -> the links and lines match the draft, kept ones keep their records, and the agent stays live.
     // testScenario4: A live agent is saved without activating -> it is switched off and keeps its links.
@@ -41,8 +41,9 @@ Version      Author                   Description
         User superUser = AIAssistTestDataFactory.createSuperUser();
 
         System.runAs(superUser) {
-            // [1] Build a draft with a data source, an action, a user and a permission set
+            // [1] Build a draft with a skill, a data source, an action, a user and a permission set
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
+            AISkill__c skill = AIAssistTestDataFactory.createAISkills(1, true)[0];
             AIModelConfiguration__c model = AIAssistTestDataFactory.createAIModelConfigurations(1, true)[0];
             AIDataSource__c dataSource = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
             AIWorkflowAction__c action = AIAssistTestDataFactory.createAIWorkflowActions(1, AIAssistApplicationConstants.WORKFLOW_ACTION_TYPE_APEX, 'AIWorkflowActionDispatcherTest.EchoExecutor', true)[0];
@@ -50,6 +51,7 @@ Version      Author                   Description
             draft.accessMode = AIAssistApplicationConstants.ACCESS_MODE_ASSIGNED_ONLY;
             draft.dataSourceIds.add(dataSource.Id);
             draft.workflowActionIds.add(action.Id);
+            draft.skillIds.add(skill.Id);
             draft.assignments.add(AIAssistTestDataFactory.createAIAssignmentView(users[0].Id, null));
             draft.assignments.add(AIAssistTestDataFactory.createAIAssignmentView(null, 'AIAssistUser'));
 
@@ -62,6 +64,7 @@ Version      Author                   Description
             AIAgent__c agent = [SELECT Name, DeveloperName__c, ObjectApiNames__c, AIModelConfiguration__c, IsActive__c, AccessMode__c, MaxTokensPerConversation__c, GreetingMessage__c FROM AIAgent__c WHERE Id = :result.agentId];
             List<AIAgentDataSource__c> dataSourceLinks = [SELECT IsActive__c FROM AIAgentDataSource__c WHERE AIAgent__c = :agent.Id];
             List<AIAgentWorkflowAction__c> actionLinks = [SELECT IsActive__c FROM AIAgentWorkflowAction__c WHERE AIAgent__c = :agent.Id];
+            List<AIAgentSkill__c> skillLinks = [SELECT AISkill__c, IsActive__c FROM AIAgentSkill__c WHERE AIAgent__c = :agent.Id];
             List<AIAgentAssignment__c> assignments = [SELECT AssigneeType__c, IsActive__c FROM AIAgentAssignment__c WHERE AIAgent__c = :agent.Id];
 
             // [4] Check the outcome
@@ -71,6 +74,9 @@ Version      Author                   Description
             Assert.areEqual(model.Name, result.modelName, 'The model name is reported.');
             Assert.areEqual(1, result.dataSourceCount, 'The data source is counted.');
             Assert.areEqual(1, result.workflowActionCount, 'The action is counted.');
+            Assert.areEqual(1, result.skillCount, 'The skill is counted.');
+            Assert.areEqual(1, skillLinks.size(), 'The skill is linked.');
+            Assert.isTrue(skillLinks[0].IsActive__c, 'The skill link is active.');
             Assert.areEqual(2, result.assignmentCount, 'Both lines are counted.');
             Assert.isTrue(result.userCount >= 1, 'The users who have the agent are counted.');
             Assert.isTrue(agent.IsActive__c, 'The agent is saved live.');
@@ -265,7 +271,7 @@ Version      Author                   Description
             AIDataSource__c deletedDataSource = AIAssistTestDataFactory.createAIDataSources(1, AIAssistApplicationConstants.DATA_SOURCE_TYPE_SOQL, 'SELECT Id FROM Account', true)[0];
             delete deletedDataSource;
             AIAgentWizardDataStructure.AgentDraft missingDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
-            missingDraft.agentId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            missingDraft.agentId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             AIAgentWizardDataStructure.AgentDraft itemDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
             itemDraft.dataSourceIds = new List<Id>{deletedDataSource.Id};
             AIAgentWizardDataStructure.AgentDraft assigneeDraft = AIAssistTestDataFactory.createAIAgentDraft(model.Id);
@@ -385,7 +391,7 @@ Version      Author                   Description
 
         System.runAs(superUser) {
             // [1] Build the Id of an agent that was never saved, and a user who holds only the end user permission set
-            Id missingId = AIAgent__c.SObjectType.getDescribe().getKeyPrefix() + '000000000001AAA';
+            Id missingId = AIAgent__c.SObjectType.getDescribe(SObjectDescribeOptions.DEFERRED).getKeyPrefix() + '000000000001AAA';
             List<User> users = AIAssistTestDataFactory.createUsers(1, true);
             AIAssistTestDataFactory.assignPermissionSet(users, 'AIAssistUser');
             String missingRefusal;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UniqueKey__c</fullName>
+    <caseSensitive>false</caseSensitive>
+    <description
+  >The agent Id and the skill Id, set by the trigger, so an agent has a skill only once.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Set automatically. Do not edit.</inlineHelpText>
+    <label>Unique Key</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

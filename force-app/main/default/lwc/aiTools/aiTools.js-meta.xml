@@ -4,7 +4,7 @@
     <isExposed>true</isExposed>
     <masterLabel>AI Tools</masterLabel>
     <description
-  >Data sources and workflow actions that AI agents can use: list, build, test and change them.</description>
+  >Skills, data sources and workflow actions that AI agents can use: list, build, test and change them.</description>
     <targets>
         <target>lightning__Tab</target>
     </targets>

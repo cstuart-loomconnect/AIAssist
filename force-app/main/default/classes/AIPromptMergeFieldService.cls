@@ -160,7 +160,7 @@ public without sharing class AIPromptMergeFieldService {
         // [2] Describe the object, which fails for a name that is not an object
         try {
 
-            return Schema.describeSObjects(new List<String>{objectApiName.trim()})[0].getLabel();
+            return Schema.describeSObjects(new List<String>{objectApiName.trim()}, SObjectDescribeOptions.DEFERRED)[0].getLabel();
 
         } catch (Exception ex) {
             return '';
@@ -176,7 +176,7 @@ public without sharing class AIPromptMergeFieldService {
         try {
 
             // [2] Describe the object, which also makes sure the name is a real object
-            Schema.DescribeSObjectResult objectDescribe = Schema.describeSObjects(new List<String>{objectApiName.trim()})[0];
+            Schema.DescribeSObjectResult objectDescribe = Schema.describeSObjects(new List<String>{objectApiName.trim()}, SObjectDescribeOptions.DEFERRED)[0];
             String nameFieldApiName;
 
             for (Schema.SObjectField field : objectDescribe.fields.getMap().values()) {

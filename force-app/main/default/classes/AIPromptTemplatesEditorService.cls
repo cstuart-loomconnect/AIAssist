@@ -212,7 +212,7 @@ public without sharing class AIPromptTemplatesEditorService {
         template.AIExclusionRules__c = getTextOrNull(detail.exclusionRules);
 
         // [4] Save it, which raises the version when the wording changed
-        upsert template;
+        Database.upsert(template, AccessLevel.SYSTEM_MODE);
 
         // [5] Hand back the saved template as the editor should now show it
         result.isSaved = true;
@@ -291,11 +291,11 @@ public without sharing class AIPromptTemplatesEditorService {
             agent.AIPromptTemplate__c = newTemplateIdByAgentId.get(agent.Id);
         }
 
-        update agentsToMove;
+        Database.update(agentsToMove, AccessLevel.SYSTEM_MODE);
 
         // [4] Switch the template off
         template.IsActive__c = false;
-        update template;
+        Database.update(template, AccessLevel.SYSTEM_MODE);
     }
 
     // Brings an archived template back.
@@ -311,7 +311,7 @@ public without sharing class AIPromptTemplatesEditorService {
 
         // [3] Switch it on
         template.IsActive__c = true;
-        update template;
+        Database.update(template, AccessLevel.SYSTEM_MODE);
     }
 
     // Makes a template the default, and takes that away from the one that was.
@@ -334,7 +334,7 @@ public without sharing class AIPromptTemplatesEditorService {
 
         template.IsDefault__c = true;
         templatesToSave.add(template);
-        update templatesToSave;
+        Database.update(templatesToSave, AccessLevel.SYSTEM_MODE);
     }
 
     // The saved test messages of a template, oldest first.
@@ -374,7 +374,7 @@ public without sharing class AIPromptTemplatesEditorService {
 
         // [4] Save it
         AIPromptTestMessage__c testMessage = new AIPromptTestMessage__c(AIPromptTemplate__c = templateId, MessageBody__c = messageBody.trim());
-        insert testMessage;
+        Database.insert(testMessage, AccessLevel.SYSTEM_MODE);
 
         return buildTestMessage(testMessage);
     }

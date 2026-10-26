@@ -1,0 +1,22 @@
+<template>
+  <!-- Tools: one chip for each tool in the skill, and the button that writes a first draft from them -->
+  <div class="aitsk-chips-box">
+    <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-wrap aitsk-chips-head">
+      <strong>{labels.toolsTitle}</strong>
+      <lightning-button label={labels.startFromTools} title={labels.startFromToolsHelp} icon-name="utility:magicwand" disabled={isStartDisabled} onclick={handleStartFromTools}></lightning-button>
+    </div>
+    <p class="aitsk-help">{labels.toolsHelp}</p>
+    <div class="aitsk-chips">
+      <template for:each={chipViews} for:item="chip">
+        <button key={chip.key} type="button" class={chip.chipClass} data-name={chip.developerName} onclick={handleChipClick}>{chip.label}</button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Instructions: the numbered steps the model follows once it picks the skill -->
+  <lightning-textarea class="aitsk-instructions" label={labels.instructions} required max-length={instructionsMaxLength} placeholder={labels.instructionsPlaceholder} value={draft.instructions} onchange={handleInstructionsChange}></lightning-textarea>
+  <p class="aitsk-help">{labels.instructionsHelp}</p>
+
+  <!-- Unknown names: @ names that are not tools in the skill -->
+  <template lwc:if={unknownText}><div class="slds-notify slds-notify_alert slds-alert_error slds-m-top_small" role="alert">{unknownText}</div></template>
+</template>

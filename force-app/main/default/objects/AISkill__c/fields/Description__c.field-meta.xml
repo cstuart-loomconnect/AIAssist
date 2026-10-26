@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Description__c</fullName>
+    <description
+  >What the skill does and when to use it. This is the only text the model sees before it picks the skill, so it decides whether the skill fires. 40 to 400 characters, checked by the trigger.</description>
+    <inlineHelpText
+  >Say what the skill does, when to use it, and what it will not do.</inlineHelpText>
+    <label>When To Use It</label>
+    <length>1000</length>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

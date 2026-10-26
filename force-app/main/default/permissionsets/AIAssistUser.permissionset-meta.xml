@@ -61,6 +61,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>AIConversationMessage__c.AISkill__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>AIConversationMessage__c.FailureReason__c</field>
         <readable>true</readable>
     </fieldPermissions>

@@ -1,0 +1,53 @@
+/* The tools box: a soft bordered box above the instructions. */
+.aitsk-chips-box {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--aia-line);
+  border-radius: 8px;
+  background: var(--aia-surface-soft);
+}
+
+/* The head of the tools box: the title and the button, with room between. */
+.aitsk-chips-head {
+  gap: 12px;
+  color: var(--aia-ink);
+}
+
+/* Help text: muted text. */
+.aitsk-help {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--aia-muted);
+}
+
+/* The chips: a wrapping row with small gaps. */
+.aitsk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* One chip: a rounded code label that can be clicked. SLDS pills have a different size and shape. */
+.aitsk-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--aia-line-strong);
+  border-radius: 12px;
+  background: var(--aia-surface);
+  color: var(--aia-accent);
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* A chip the instructions already name: green. */
+.aitsk-chip_used {
+  border-color: var(--aia-success);
+  background: var(--aia-success-tint);
+  color: var(--aia-success);
+}
+
+/* The instructions box: a code font and room for many steps. */
+.aitsk-instructions {
+  --slds-c-textarea-sizing-min-height: 260px;
+  font-family: monospace;
+}

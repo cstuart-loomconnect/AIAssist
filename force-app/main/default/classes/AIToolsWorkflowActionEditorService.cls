@@ -268,7 +268,7 @@ public without sharing class AIToolsWorkflowActionEditorService {
         // [6] Save it, turning a refusal by the platform into a message the tab can show
         try {
 
-            upsert action;
+            Database.upsert(action, AccessLevel.SYSTEM_MODE);
 
         } catch (DmlException ex) {
 

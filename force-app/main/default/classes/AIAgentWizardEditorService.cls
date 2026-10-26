@@ -6,7 +6,7 @@ Class Name: AIAgentWizardEditorService
 
 Description: Reads what the AI Agent Wizard tab offers: the page, the list of agents, a saved agent as a draft, a copy of it, the objects it can appear on and the model connection check.
 
-Step 1: Read the agents to copy, prompt templates, models, data sources and workflow actions the steps offer
+Step 1: Read the agents to copy, prompt templates, models, skills, data sources and workflow actions the steps offer
 Step 2: Read a saved agent, with its links and access list, as a draft, or as a copy that is ready to save as a new agent
 Step 3: Search the objects an agent can appear on
 Step 4: Test the connection of a model
@@ -40,6 +40,7 @@ public without sharing class AIAgentWizardEditorService {
         page.models = getModelOptions(page.draft);
         page.dataSources = getDataSourceOptions();
         page.workflowActions = getWorkflowActionOptions();
+        page.skills = getSkillOptions();
 
         // [3] Read the settings the checks compare with
         page.assistUserCount = AIAgentWizardCheckService.getAssistUserCount();
@@ -92,6 +93,8 @@ public without sharing class AIAgentWizardEditorService {
         for (AIAgentDataSource__c link : [SELECT AIDataSource__c FROM AIAgentDataSource__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE WITH SYSTEM_MODE ORDER BY AIDataSource__r.SourceName__c LIMIT 2000]) draft.dataSourceIds.add(link.AIDataSource__c);
 
         for (AIAgentWorkflowAction__c link : [SELECT AIWorkflowAction__c FROM AIAgentWorkflowAction__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE WITH SYSTEM_MODE ORDER BY AIWorkflowAction__r.ActionName__c LIMIT 2000]) draft.workflowActionIds.add(link.AIWorkflowAction__c);
+
+        for (AIAgentSkill__c link : [SELECT AISkill__c FROM AIAgentSkill__c WHERE AIAgent__c = :agentId AND IsActive__c = TRUE WITH SYSTEM_MODE ORDER BY AISkill__r.Name LIMIT 2000]) draft.skillIds.add(link.AISkill__c);
 
         // [4] Read the access list, and count who can use the agent now
         draft.assignments = getAssignmentViews(agentId);
@@ -228,6 +231,8 @@ public without sharing class AIAgentWizardEditorService {
         for (AIAgentDataSource__c link : [SELECT AIAgent__c, AIDataSource__c FROM AIAgentDataSource__c WHERE AIAgent__c IN :agentIds AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 50000]) draftByAgentId.get(link.AIAgent__c).dataSourceIds.add(link.AIDataSource__c);
 
         for (AIAgentWorkflowAction__c link : [SELECT AIAgent__c, AIWorkflowAction__c FROM AIAgentWorkflowAction__c WHERE AIAgent__c IN :agentIds AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 50000]) draftByAgentId.get(link.AIAgent__c).workflowActionIds.add(link.AIWorkflowAction__c);
+
+        for (AIAgentSkill__c link : [SELECT AIAgent__c, AISkill__c FROM AIAgentSkill__c WHERE AIAgent__c IN :agentIds AND IsActive__c = TRUE WITH SYSTEM_MODE LIMIT 50000]) draftByAgentId.get(link.AIAgent__c).skillIds.add(link.AISkill__c);
 
         for (AIAgentAssignment__c assignment : [SELECT AIAgent__c, AssigneeType__c, User__c, PermissionSetName__c, IsActive__c FROM AIAgentAssignment__c WHERE AIAgent__c IN :agentIds WITH SYSTEM_MODE LIMIT 50000]) {
 
@@ -367,6 +372,42 @@ public without sharing class AIAgentWizardEditorService {
         return options;
     }
 
+    // Every skill, with its tools counted by kind and how many active agents have it.
+    private static List<AIAgentWizardDataStructure.SkillOption> getSkillOptions() {
+
+        // [1] Count the active agents of each skill
+        Map<Id, Integer> agentCountById = new Map<Id, Integer>();
+
+        for (AggregateResult countRow : [SELECT AISkill__c itemId, COUNT(Id) agentCount FROM AIAgentSkill__c WHERE IsActive__c = TRUE AND AIAgent__r.IsActive__c = TRUE WITH SYSTEM_MODE GROUP BY AISkill__c]) agentCountById.put((Id) countRow.get('itemId'), (Integer) countRow.get('agentCount'));
+
+        // [2] Build one option for each skill, counting its tools of each kind
+        List<AIAgentWizardDataStructure.SkillOption> options = new List<AIAgentWizardDataStructure.SkillOption>();
+
+        for (AISkill__c skill : [SELECT Id, Name, DeveloperName__c, Description__c, OutputType__c, BoundObjectApiName__c, LastTestStatus__c, IsActive__c, (SELECT AIDataSource__c FROM AISkillTools__r) FROM AISkill__c WITH SYSTEM_MODE ORDER BY Name LIMIT :AIAssistApplicationConstants.WIZARD_LIST_MAX_RESULTS]) {
+
+            AIAgentWizardDataStructure.SkillOption option = new AIAgentWizardDataStructure.SkillOption();
+            option.skillId = skill.Id;
+            option.name = skill.Name;
+            option.developerName = skill.DeveloperName__c;
+            option.description = skill.Description__c;
+            option.outputType = skill.OutputType__c;
+            option.boundObject = skill.BoundObjectApiName__c;
+            option.lastTestStatus = skill.LastTestStatus__c;
+            option.isActive = skill.IsActive__c == true;
+            option.agentCount = agentCountById.containsKey(skill.Id) ? agentCountById.get(skill.Id) : 0;
+
+            for (AISkillTool__c skillTool : skill.AISkillTools__r) {
+
+                if (skillTool.AIDataSource__c != null) option.dataSourceCount++;
+                else option.actionCount++;
+            }
+
+            options.add(option);
+        }
+
+        return options;
+    }
+
     // Every data source, with how many active agents use it and whether its object has an active PII registry.
     private static List<AIAgentWizardDataStructure.DataSourceOption> getDataSourceOptions() {
 
@@ -496,7 +537,7 @@ public without sharing class AIAgentWizardEditorService {
         return names;
     }
 
-    // Every object the page mentions: the agents to copy, the draft, the data sources and the workflow actions.
+    // Every object the page mentions: the agents to copy, the draft, the data sources, the workflow actions and the skills.
     private static Set<String> getMentionedObjectNames(AIAgentWizardDataStructure.WizardPage page) {
 
         // [1] Collect the names from each list
@@ -514,6 +555,11 @@ public without sharing class AIAgentWizardEditorService {
         for (AIAgentWizardDataStructure.WorkflowActionOption action : page.workflowActions) {
 
             if (String.isNotBlank(action.targetObject)) names.add(action.targetObject);
+        }
+
+        for (AIAgentWizardDataStructure.SkillOption skill : page.skills) {
+
+            if (String.isNotBlank(skill.boundObject)) names.add(skill.boundObject);
         }
 
         return names;
